@@ -1,0 +1,788 @@
+:root {
+  --overlay-width: min(392px, calc(100vw - 32px));
+  --overlay-font-display: "Unbounded", "Space Grotesk", system-ui, sans-serif;
+  --overlay-font-body: "Inter", system-ui, sans-serif;
+  --card-duration: 4200ms;
+  --text-secondary: rgba(255, 255, 255, 0.62);
+  --tier-iron-rgb: 113, 121, 126;
+  --tier-bronze-rgb: 205, 127, 50;
+  --tier-silver-rgb: 163, 163, 163;
+  --tier-gold-rgb: 234, 179, 8;
+  --tier-platinum-rgb: 56, 189, 248;
+  --tier-platinum-secondary-rgb: 192, 132, 252;
+}
+
+.overlay-toast-stack {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: var(--overlay-width);
+  max-width: calc(100vw - 32px);
+  pointer-events: none;
+  z-index: 10000;
+}
+
+.overlay-toast-stack[data-position="top-right"] {
+  top: 24px;
+  right: 24px;
+}
+
+.overlay-toast-stack[data-position="top-center"] {
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.overlay-toast-stack[data-position="top-left"] {
+  top: 24px;
+  left: 24px;
+}
+
+.overlay-toast-stack[data-position="bottom-right"] {
+  bottom: 64px;
+  right: 24px;
+  flex-direction: column-reverse;
+}
+
+.overlay-toast-stack[data-position="bottom-left"] {
+  bottom: 64px;
+  left: 24px;
+  flex-direction: column-reverse;
+}
+
+.overlay-card {
+  container-type: inline-size;
+  container-name: overlay-toast;
+  position: relative;
+  width: var(--overlay-width);
+  aspect-ratio: 447 / 157;
+  min-height: 0;
+  flex: 0 0 auto;
+  pointer-events: auto;
+}
+
+.overlay-shell {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: stretch;
+  flex-direction: row;
+  gap: 4.5cqw;
+  padding: 6cqw;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.05), transparent 38%),
+    linear-gradient(145deg, rgba(14, 14, 14, 0.90), rgba(4, 4, 4, 0.96));
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 20px 52px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+/* Welcome and Social cards use subtle dark gray border */
+.welcome-card .overlay-shell,
+.social-card .overlay-shell {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Accent bar adapts to layout side */
+.overlay-shell::before {
+  content: "";
+  position: absolute;
+  top: 18%;
+  bottom: 18%;
+  left: 0;
+  width: 2px;
+  pointer-events: none;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.18);
+  border-radius: 0 99px 99px 0;
+}
+
+.overlay-shell.layout-left::before,
+.overlay-shell.layout-center::before {
+  left: 0;
+  right: auto;
+  border-radius: 0 99px 99px 0;
+}
+
+.overlay-shell.layout-right::before {
+  right: 0;
+  left: auto;
+  border-radius: 99px 0 0 99px;
+}
+
+.overlay-shell.layout-left,
+.overlay-shell.layout-center {
+  flex-direction: row;
+}
+
+.overlay-shell.layout-right {
+  flex-direction: row-reverse;
+}
+
+.overlay-shell.layout-right .overlay-text {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.overlay-shell.layout-right .achievement-eyebrow,
+.overlay-shell.layout-right .social-badge {
+  margin-left: auto;
+}
+
+.overlay-shell.layout-center {
+  padding-inline: 5.5cqw;
+}
+
+/* Shine sweep on enter */
+.overlay-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.05) 48%,
+    rgba(255, 255, 255, 0.12) 50%,
+    transparent 58%
+  );
+  transform: translateX(-120%);
+  animation: shine-sweep 950ms cubic-bezier(0.16, 1, 0.3, 1) 1;
+  animation-delay: 120ms;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.overlay-icon {
+  position: relative;
+  flex: 0 0 auto;
+  width: 20cqw;
+  min-width: 48px;
+  max-width: 72px;
+  aspect-ratio: 1;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+}
+
+.icon-avatar {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  z-index: 1;
+}
+
+.icon-avatar.is-logo {
+  padding: 18%;
+}
+
+.icon-avatar.is-photo {
+  padding: 0;
+}
+
+.icon-avatar img,
+.icon-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.icon-avatar.is-logo img,
+.icon-avatar.is-logo .icon-image {
+  object-fit: contain;
+}
+
+.overlay-content {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.overlay-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.achievement-eyebrow,
+.social-badge {
+  width: max-content;
+  max-width: 100%;
+  padding: 3px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-family: var(--overlay-font-display);
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 5px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.achievement-title,
+.social-title {
+  margin: 0;
+  font-family: var(--overlay-font-display);
+  color: #fff;
+  font-size: clamp(14px, 4.3cqw, 17px);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.achievement-description,
+.social-description {
+  margin: 4px 0 0;
+  font-family: var(--overlay-font-body);
+  color: var(--text-secondary);
+  font-size: clamp(10px, 2.6cqw, 12px);
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.overlay-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.overlay-progress::after {
+  content: "";
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.4), #ffffff);
+  animation: progress-drain linear forwards;
+  animation-duration: var(--card-duration);
+}
+
+/* ─── Tier variants ───────────────────────────────────────────────────────── */
+
+.achievement-card.tier-iron { --tier-rgb: var(--tier-iron-rgb); --tier-glow: 0; --tier-bg-tint: 0.06; }
+.achievement-card.tier-bronze { --tier-rgb: var(--tier-bronze-rgb); --tier-glow: 0.85; --tier-bg-tint: 0.22; }
+.achievement-card.tier-silver { --tier-rgb: var(--tier-silver-rgb); --tier-glow: 0.85; --tier-bg-tint: 0.2; }
+.achievement-card.tier-gold { --tier-rgb: var(--tier-gold-rgb); --tier-glow: 1; --tier-bg-tint: 0.28; }
+.achievement-card.tier-platinum { --tier-rgb: var(--tier-platinum-rgb); --tier-glow: 1; --tier-bg-tint: 0.3; }
+
+.achievement-card.tier-iron .overlay-shell,
+.achievement-card.tier-bronze .overlay-shell,
+.achievement-card.tier-silver .overlay-shell,
+.achievement-card.tier-gold .overlay-shell,
+.achievement-card.tier-platinum .overlay-shell {
+  border: 1px solid rgba(var(--tier-rgb), 0.52);
+  border-color: rgba(var(--tier-rgb), 0.52);
+  background:
+    radial-gradient(circle at 16% 0%, rgba(var(--tier-rgb), var(--tier-bg-tint)), transparent 45%),
+    linear-gradient(145deg, rgba(14, 14, 14, 0.94), rgba(5, 5, 5, 0.98));
+  box-shadow:
+    0 20px 52px rgba(0, 0, 0, 0.65),
+    0 0 16px rgba(var(--tier-rgb), 0.16),
+    inset 0 1px 0 rgba(var(--tier-rgb), 0.28);
+}
+
+.achievement-card.tier-bronze .overlay-shell::before,
+.achievement-card.tier-silver .overlay-shell::before,
+.achievement-card.tier-gold .overlay-shell::before,
+.achievement-card.tier-platinum .overlay-shell::before {
+  background: rgb(var(--tier-rgb));
+  box-shadow: 0 0 10px rgba(var(--tier-rgb), 0.6);
+}
+
+.achievement-card.tier-bronze .achievement-eyebrow,
+.achievement-card.tier-silver .achievement-eyebrow,
+.achievement-card.tier-gold .achievement-eyebrow,
+.achievement-card.tier-platinum .achievement-eyebrow {
+  color: rgb(var(--tier-rgb));
+  border-color: rgba(var(--tier-rgb), 0.35);
+  background: rgba(var(--tier-rgb), 0.1);
+  text-shadow: 0 0 calc(10px + 6px * var(--tier-glow)) rgba(var(--tier-rgb), 0.5);
+}
+
+.achievement-card.tier-bronze .icon-avatar,
+.achievement-card.tier-silver .icon-avatar,
+.achievement-card.tier-gold .icon-avatar,
+.achievement-card.tier-platinum .icon-avatar {
+  border-color: rgba(var(--tier-rgb), 0.55);
+}
+
+.achievement-card.tier-platinum .overlay-shell {
+  border: 1px solid rgba(var(--tier-rgb), 0.58);
+  border-color: rgba(var(--tier-rgb), 0.58);
+  background:
+    radial-gradient(circle at 16% 0%, rgba(var(--tier-rgb), 0.24), transparent 45%),
+    radial-gradient(circle at 85% 100%, rgba(var(--tier-platinum-secondary-rgb), 0.14), transparent 50%),
+    linear-gradient(145deg, rgba(12, 26, 42, 0.95), rgba(5, 10, 20, 0.98));
+  box-shadow:
+    0 20px 52px rgba(0, 0, 0, 0.65),
+    0 0 18px rgba(var(--tier-rgb), 0.18),
+    inset 0 1px 0 rgba(var(--tier-rgb), 0.35);
+}
+
+.achievement-card.tier-platinum .overlay-shell::before {
+  background: linear-gradient(180deg, rgb(var(--tier-rgb)), #818cf8, rgb(var(--tier-platinum-secondary-rgb)));
+}
+
+.achievement-card .overlay-progress::after {
+  background: linear-gradient(90deg, rgba(var(--tier-rgb, 255, 255, 255), 0.35), rgb(var(--tier-rgb, 255, 255, 255)));
+}
+
+.achievement-card.tier-iron .overlay-progress::after {
+  background: linear-gradient(90deg, rgba(var(--tier-rgb), 0.25), rgba(var(--tier-rgb), 0.7));
+}
+
+.achievement-card .icon-avatar svg {
+  color: rgb(var(--tier-rgb, 255, 255, 255));
+}
+
+.achievement-card.is-clickable {
+  cursor: pointer;
+}
+
+.achievement-card.is-clickable:hover .overlay-shell {
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-2px) scale(1.012);
+}
+
+.achievement-card[data-side="right"].tier-iron .overlay-shell,
+.achievement-card[data-side="right"].tier-bronze .overlay-shell,
+.achievement-card[data-side="right"].tier-silver .overlay-shell,
+.achievement-card[data-side="right"].tier-gold .overlay-shell,
+.achievement-card[data-side="right"].tier-platinum .overlay-shell {
+  background:
+    radial-gradient(circle at 84% 0%, rgba(var(--tier-rgb), var(--tier-bg-tint)), transparent 45%),
+    linear-gradient(215deg, rgba(14, 14, 14, 0.94), rgba(5, 5, 5, 0.98));
+}
+
+.achievement-card[data-side="right"].tier-platinum .overlay-shell {
+  background:
+    radial-gradient(circle at 84% 0%, rgba(var(--tier-rgb), 0.22), transparent 45%),
+    radial-gradient(circle at 15% 100%, rgba(var(--tier-platinum-secondary-rgb), 0.14), transparent 50%),
+    linear-gradient(215deg, rgba(12, 26, 42, 0.95), rgba(5, 10, 20, 0.98));
+}
+
+.overlay-high-contrast .overlay-shell {
+  background: rgba(0, 0, 0, 0.94) !important;
+  border-color: rgba(255, 255, 255, 0.55) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35), 0 24px 60px rgba(0, 0, 0, 0.85) !important;
+}
+
+/* Conquistas preservam a cor do tier do troféu mesmo com high-contrast ativo */
+.overlay-high-contrast .achievement-card .overlay-shell {
+  border-color: rgba(var(--tier-rgb), 0.85) !important;
+  box-shadow: 0 0 0 1px rgba(var(--tier-rgb), 0.40), 0 24px 60px rgba(0, 0, 0, 0.85) !important;
+}
+
+.overlay-high-contrast .achievement-title,
+.overlay-high-contrast .social-title {
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+.overlay-high-contrast .achievement-description,
+.overlay-high-contrast .social-description {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.overlay-perf-hud {
+  position: fixed;
+  top: 12px;
+  left: 16px;
+  z-index: 11000;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.72);
+  font-family: var(--overlay-font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.overlay-reduced-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+.welcome-card,
+.social-card.welcome-card {
+  --card-duration: 6000ms;
+}
+
+.achievement-card {
+  --card-duration: 6500ms;
+}
+
+.social-card {
+  --card-duration: 5000ms;
+}
+
+.social-card.is-ringing {
+  --card-duration: 30000ms;
+}
+
+.overlay-toast-bundle {
+  width: 100%;
+}
+
+.overlay-toast-bundle .overlay-card {
+  width: 100%;
+}
+
+@keyframes progress-drain {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes shine-sweep {
+  0% {
+    transform: translateX(-120%) skewX(-15deg);
+  }
+  100% {
+    transform: translateX(150%) skewX(-15deg);
+  }
+}
+
+/* ─── Cards com ações (chamada, mensagem, pedido) ─────────────────────────── */
+
+.overlay-card.has-actions {
+  aspect-ratio: auto;
+  min-height: 150px;
+}
+
+.overlay-card.has-actions .overlay-shell {
+  position: relative;
+  inset: auto;
+  min-height: 150px;
+  align-items: flex-start;
+  padding-bottom: 18px;
+}
+
+.overlay-card.has-actions .overlay-icon {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.overlay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  position: relative;
+  z-index: 6;
+}
+
+.overlay-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: var(--overlay-font-body);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 0.14s ease, background-color 0.16s ease, border-color 0.16s ease;
+}
+
+.overlay-action:hover {
+  transform: translateY(-1px);
+}
+
+.overlay-action:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.overlay-action.is-accept {
+  color: #05060a;
+  box-shadow: 0 6px 18px rgba(255, 255, 255, 0.16);
+}
+
+.overlay-action.is-danger {
+  border-color: rgba(244, 63, 94, 0.35);
+  background: rgba(244, 63, 94, 0.14);
+  color: #fda4af;
+}
+
+.overlay-action.is-danger:hover {
+  background: rgba(244, 63, 94, 0.24);
+}
+
+.overlay-action.is-ghost {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.overlay-action.is-ghost:hover {
+  background: rgba(255, 255, 255, 0.11);
+  color: #fff;
+}
+
+.overlay-dismiss {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+}
+
+.overlay-card:hover .overlay-dismiss {
+  opacity: 1;
+}
+
+.overlay-dismiss:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+/* ─── Micro-animações ─────────────────────────────────────────────────────── */
+
+.overlay-icon {
+  z-index: 2;
+}
+
+.icon-halo {
+  position: absolute;
+  inset: -6px;
+  border-radius: 18px;
+  border: 1px solid rgba(var(--tier-rgb, 255, 255, 255), 0.6);
+  opacity: 0;
+  pointer-events: none;
+  animation: halo-pulse 2.4s cubic-bezier(0.16, 1, 0.3, 1) 0.3s infinite;
+}
+
+.social-card.is-ringing .overlay-shell {
+  animation: call-glow 1.4s ease-in-out infinite;
+}
+
+.social-card.is-ringing .icon-halo {
+  animation-duration: 1.15s;
+  animation-delay: 0.05s;
+  border-color: rgba(52, 211, 153, 0.85);
+}
+
+@keyframes call-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 20px 52px rgba(0, 0, 0, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+  50% {
+    box-shadow:
+      0 20px 52px rgba(0, 0, 0, 0.55),
+      0 0 28px rgba(52, 211, 153, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    border-color: rgba(52, 211, 153, 0.35);
+  }
+}
+
+.achievement-card.is-important .overlay-shell::after {
+  animation: shine-sweep 1.15s cubic-bezier(0.16, 1, 0.3, 1) 1,
+    shine-sweep 2.8s cubic-bezier(0.16, 1, 0.3, 1) 1.4s 1;
+}
+
+.achievement-card.tier-bronze .sparkle,
+.achievement-card.tier-silver .sparkle {
+  opacity: 0.7;
+}
+
+.overlay-reduced-motion .icon-halo,
+.overlay-reduced-motion .tier-aura,
+.overlay-reduced-motion .achievement-sparkles,
+.overlay-reduced-motion .overlay-shell::after,
+.overlay-reduced-motion .social-card.is-ringing .overlay-shell {
+  display: none;
+  animation: none !important;
+}
+
+@keyframes halo-pulse {
+  0% {
+    transform: scale(0.86);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.24);
+    opacity: 0;
+  }
+}
+
+.tier-aura {
+  position: absolute;
+  inset: -1px;
+  z-index: 0;
+  border-radius: 20px;
+  pointer-events: none;
+  background: radial-gradient(circle at 18% 50%, rgba(var(--tier-rgb), 0.28), transparent 62%);
+  animation: aura-breathe 3s ease-in-out infinite;
+}
+
+.overlay-shell.layout-right .tier-aura {
+  background: radial-gradient(circle at 82% 50%, rgba(var(--tier-rgb), 0.28), transparent 62%);
+}
+
+@keyframes aura-breathe {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.achievement-sparkles {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sparkle {
+  position: absolute;
+  bottom: 18%;
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgb(var(--tier-rgb, 255, 255, 255));
+  box-shadow: 0 0 8px rgba(var(--tier-rgb, 255, 255, 255), 0.9);
+  opacity: 0;
+  animation-name: sparkle-rise;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes sparkle-rise {
+  0% {
+    transform: translateY(10px) scale(0.3);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-30px) scale(1);
+    opacity: 0;
+  }
+}
+
+.overlay-reduced-motion .icon-halo,
+.overlay-reduced-motion .tier-aura,
+.overlay-reduced-motion .achievement-sparkles,
+.overlay-reduced-motion .overlay-shell::after,
+.overlay-reduced-motion .social-card.is-ringing .overlay-shell,
+.overlay-reduced-motion .capture-halo,
+.overlay-reduced-motion .capture-shutter .icon-avatar {
+  display: none;
+  animation: none !important;
+}
+
+.capture-card .overlay-icon {
+  overflow: visible;
+}
+
+.capture-halo {
+  animation: capture-pulse 900ms ease-out 1;
+}
+
+.capture-shutter .icon-avatar {
+  animation: capture-shutter 700ms cubic-bezier(0.16, 1, 0.3, 1) 1;
+}
+
+@keyframes capture-pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@keyframes capture-shutter {
+  0% {
+    transform: scale(0.55) rotate(-12deg);
+    filter: brightness(2.4);
+  }
+  40% {
+    transform: scale(1.08) rotate(0deg);
+    filter: brightness(1.4);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+}

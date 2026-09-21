@@ -1,0 +1,100 @@
+[package]
+name = "pherielium"
+version = "3.2.7"
+description = "Pherielium Game Hub — Tauri edition with Rust backend"
+authors = ["Guilherme Sant'Ana"]
+edition = "2021"
+
+[lib]
+name = "pherielium_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# ── Tauri Core ────────────────────────────────────────────────────────────────
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+
+# ── Tauri Plugins ─────────────────────────────────────────────────────────────
+tauri-plugin-opener       = "2"
+tauri-plugin-shell        = "2"
+tauri-plugin-fs           = "2"
+tauri-plugin-dialog       = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-store        = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-clipboard-manager = "2"
+tauri-plugin-os           = "2"
+tauri-plugin-http         = "2"
+tauri-plugin-updater      = "2"
+tauri-plugin-process      = "2"
+
+# ── Async runtime ─────────────────────────────────────────────────────────────
+tokio = { version = "1", features = ["full"] }
+
+# ── HTTP client ───────────────────────────────────────────────────────────────
+reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls", "multipart"] }
+
+# ── Serialização ──────────────────────────────────────────────────────────────
+serde       = { version = "1", features = ["derive"] }
+serde_json  = "1"
+
+# ── SQLite (game library local) ───────────────────────────────────────────────
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# ── UUID ──────────────────────────────────────────────────────────────────────
+uuid = { version = "1", features = ["v4"] }
+
+# ── Criptografia / Credential Store ──────────────────────────────────────────
+keyring = "3"
+base64  = "0.22"
+
+# ── Process / System Info ────────────────────────────────────────────────────
+sysinfo = "0.32"
+
+# ── Arquivos ZIP (Nexus mod installer) ───────────────────────────────────────
+zip = "2"
+
+# ── Regex ─────────────────────────────────────────────────────────────────────
+regex = "1"
+sha2  = "0.10"
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
+dirs = "5"
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+log = "0.4"
+
+# ── Error handling ────────────────────────────────────────────────────────────
+anyhow = "1"
+thiserror = "1"
+
+# ── Overlay & Captures ────────────────────────────────────────────────────────
+image       = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+parking_lot = "0.12"
+once_cell   = "1"
+open        = "5"
+
+# ── Windows-specific APIs ─────────────────────────────────────────────────────
+[target.'cfg(target_os = "windows")'.dependencies]
+winreg  = "0.52"
+windows = { version = "0.58", features = [
+  "Win32_Foundation",
+  "Win32_Graphics_Gdi",
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_Graphics_Dwm",
+  "Win32_Media_Audio",
+  "Win32_System_Com",
+] }
+
+# ── Build optimizations ──────────────────────────────────────────────────────
+[profile.release]
+codegen-units = 1
+lto           = true
+opt-level     = 3
+panic         = "abort"
+strip         = true
+
+[profile.dev]
+incremental = true

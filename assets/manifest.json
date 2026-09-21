@@ -1,0 +1,18 @@
+{
+  "version": "1",
+  "description": "Lista de assets pesados (sons/vídeos). Arquivos serão baixados on-demand por runtime ou por instalador separado.",
+  "assets": [
+    {
+      "id": "overlay_background",
+      "path": "Overlay_Background.mp4",
+      "url": "https://example-cdn.com/checkpoint/Overlay_Background.mp4",
+      "sizeBytes": 12345678
+    },
+    {
+      "id": "kristina_video",
+      "path": "Kristina_Lane__pindown.io_1785615277.mp4",
+      "url": "https://example-cdn.com/checkpoint/Kristina_Lane__pindown.io_1785615277.mp4",
+      "sizeBytes": 23456789
+    }
+  ]
+}

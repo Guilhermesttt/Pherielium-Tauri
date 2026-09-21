@@ -1,0 +1,16 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "overlay",
+  "description": "Capability for the overlay window",
+  "windows": ["overlay"],
+  "permissions": [
+    "core:default",
+    "core:event:allow-listen",
+    "core:event:allow-emit",
+    "core:window:allow-close",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-set-focus",
+    "core:webview:allow-internal-toggle-devtools"
+  ]
+}
