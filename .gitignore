@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Rust / Cargo build output
+target
+target-check
+
 # Env and secrets
 .env
 .env.*
