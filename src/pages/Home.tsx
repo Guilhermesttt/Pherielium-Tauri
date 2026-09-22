@@ -15,7 +15,8 @@ import {
   Gamepad2,
   X,
   Filter,
-  Trophy
+  Trophy,
+  Clock,
 } from "lucide-react";
 
 import DynamicBackground from "../components/DynamicBackground";
@@ -41,8 +42,11 @@ import {
 } from "../components/home/HomePanels";
 import { useNotification } from "../components/NotificationCenter";
 import ModalShell from "../components/ui/ModalShell";
+import FriendProfileModal from "../components/friends/FriendProfileModal";
 import { ProfileDropdown } from "../components/ui/ProfileDropdown";
 import { ShinyButton } from "../components/ui/shiny-button";
+import { ThinkingOrbLoader } from "../components/ThinkingOrbLoader";
+import { DigitPopIn } from "../components/ui/DigitPopIn";
 import { useAuth } from "../auth/AuthProvider";
 import { supabase } from "../services/supabase";
 // Correção 1: Importando Game, UserProfile e SocialFriend no mesmo lugar
@@ -148,6 +152,7 @@ const ChatModal = React.lazy(() =>
 );
 const LibraryFilterModal = React.lazy(() => import("../components/LibraryFilterModal"));
 const CommandPalette = React.lazy(() => import("../components/CommandPalette"));
+const WelcomeModal = React.lazy(() => import("../components/WelcomeModal"));
 
 const steamDiscKey = (uid: string) => `checkpoint_steam_disconnected_${uid}`;
 const LANGUAGE_OPTIONS: Array<{ id: LauncherLanguage; label: string; hint: string }> = [
@@ -243,6 +248,22 @@ const Home: React.FC = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState("ALL");
+  const isPlatformOrFavoritesPage = useMemo(() => {
+    return [
+      "ALL",
+      "FAVORITES",
+      "STEAM",
+      "EPIC",
+      "EA",
+      "UBISOFT",
+      "GOG",
+      "XBOX",
+      "RIOT",
+      "BATTLENET",
+      "ROCKSTAR",
+      "LOCAL",
+    ].includes(activeCategory);
+  }, [activeCategory]);
   const [isLoading, setIsLoading] = useState(true);
   const loadedLibraryOwnerRef = useRef<string | null>(null);
   const [localLibraryReady, setLocalLibraryReady] = useState(false);
@@ -413,6 +434,34 @@ const Home: React.FC = () => {
     };
   }, []);
 
+  const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const seenKey = `phelierium_welcome_modal_seen_${user.uid}`;
+    try {
+      const seen = localStorage.getItem(seenKey);
+      if (!seen) {
+        setIsWelcomeModalOpen(true);
+      }
+    } catch {}
+  }, [user?.uid]);
+
+  useEffect(() => {
+    const handleOpenTour = () => setIsWelcomeModalOpen(true);
+    window.addEventListener("phelierium:open-welcome-modal", handleOpenTour);
+    return () => window.removeEventListener("phelierium:open-welcome-modal", handleOpenTour);
+  }, []);
+
+  const handleCloseWelcomeModal = useCallback(() => {
+    setIsWelcomeModalOpen(false);
+    if (user?.uid) {
+      try {
+        localStorage.setItem(`phelierium_welcome_modal_seen_${user.uid}`, "true");
+      } catch {}
+    }
+  }, [user?.uid]);
+
   const gameRailWheelTimeRef = useRef(0);
   const previousSteamIdRef = useRef<string | undefined>(undefined);
   const previousDiscordIdRef = useRef<string | undefined>(undefined);
@@ -564,6 +613,7 @@ const Home: React.FC = () => {
     sessionStartedAt: overlaySessionStartedAt,
     presenceVerification,
     markCurrentPresence,
+    syncDetectedRunningGame,
   } = useGamePresence({
     userUid: user?.uid,
     userProfile,
@@ -608,18 +658,15 @@ const Home: React.FC = () => {
         setEpicAuthConnected(false);
         return;
       }
-      const linkedUid = localStorage.getItem("checkpoint_epic_linked_uid");
-      if (linkedUid !== user.uid) {
-        setEpicAuthConnected(false);
-        if (window.electronAPI?.logoutEpic) {
-          void window.electronAPI.logoutEpic().catch(() => { });
-        }
-        return;
-      }
       const data = await fetchEpicStatus();
       const isConnected = data.authenticated === true;
       setEpicAuthConnected(isConnected);
-      if (isConnected) previousEpicAuthRef.current = true;
+      if (isConnected) {
+        previousEpicAuthRef.current = true;
+        try {
+          localStorage.setItem("checkpoint_epic_linked_uid", user.uid);
+        } catch { }
+      }
       if (data.displayName) setEpicDisplayName(data.displayName);
     } catch {
       setEpicAuthConnected(false);
@@ -882,8 +929,18 @@ const Home: React.FC = () => {
         lastGameLaunchSoundRef.current = { title, time: now };
       }
       lastOverlayWelcomeGameRef.current = title;
-      markCurrentPresence(title, detail?.executablePath || null);
       void window.electronAPI?.showGameStartOverlay({ gameTitle: title });
+
+      // Para jogos com executável monitorável (.exe local), marcamos presença
+      // imediatamente — a detecção de processo confirmará em 10s.
+      // Para launchers via URI (Steam/Epic), NÃO marcamos presença aqui:
+      // o poll de 10s detectará o processo real, evitando contar horas de
+      // jogos não instalados que abrem apenas a tela de download/instalação.
+      const monitorablePath = detail?.executablePath || null;
+      const isLocalExe = Boolean(monitorablePath && /\.exe$/i.test(monitorablePath));
+      if (isLocalExe) {
+        markCurrentPresence(title, monitorablePath);
+      }
 
       if (user?.uid) {
         completeUserQuest(user.uid, "launch_game", {
@@ -896,6 +953,15 @@ const Home: React.FC = () => {
     window.addEventListener("checkpoint:game-launch", handleGameLaunch);
     return () => window.removeEventListener("checkpoint:game-launch", handleGameLaunch);
   }, [markCurrentPresence, playSound, user?.uid, notify]);
+
+  // Detecta jogos já abertos quando o hub inicia ou quando a lista de jogos
+  // é carregada pela primeira vez (caso o usuário tenha aberto o hub com um jogo já rodando).
+  const didInitialGameScanRef = React.useRef(false);
+  useEffect(() => {
+    if (!user?.uid || games.length === 0 || didInitialGameScanRef.current) return;
+    didInitialGameScanRef.current = true;
+    void syncDetectedRunningGame();
+  }, [user?.uid, games.length, syncDetectedRunningGame]);
 
   useEffect(() => {
     if (!currentPresenceGame) {
@@ -971,6 +1037,10 @@ const Home: React.FC = () => {
       notify("Conta Steam vinculada com sucesso!", "success");
       playSound("select");
       void handleSyncSteam();
+      // Se a Epic já estiver autenticada, sincroniza também automaticamente
+      if (epicAuthConnected) {
+        void handleSyncEpic();
+      }
     } else {
       previousSteamIdRef.current = resolvedSteamId;
     }
@@ -1093,6 +1163,8 @@ const Home: React.FC = () => {
   const dominantColor = useGameColor(
     currentGame?.cardImage || currentGame?.image,
   );
+
+
   const isAnyModalOpen =
     isAddModalOpen ||
     isDetailOpen ||
@@ -2109,6 +2181,21 @@ const Home: React.FC = () => {
     });
   }, []);
 
+  const currentGamePlatformInfo = useMemo(() => {
+    if (!currentGame) return null;
+    const launcher = currentGame.launcherType || currentGame.source;
+    if (launcher === "steam") return { icon: SteamBrandIcon, label: "Steam" };
+    if (launcher === "epic") return { icon: EpicBrandIcon, label: "Epic Games" };
+    if (launcher === "ea") return { icon: EaBrandIcon, label: "EA App" };
+    if (launcher === "ubisoft") return { icon: UbisoftBrandIcon, label: "Ubisoft" };
+    if (launcher === "gog") return { icon: GogBrandIcon, label: "GOG" };
+    if (launcher === "xbox") return { icon: XboxBrandIcon, label: "Xbox" };
+    if (launcher === "riot") return { icon: RiotBrandIcon, label: "Riot Games" };
+    if (launcher === "battlenet") return { icon: BattlenetBrandIcon, label: "Battle.net" };
+    if (launcher === "rockstar") return { icon: RockstarBrandIcon, label: "Rockstar" };
+    return { icon: Gamepad2, label: "Executável Local" };
+  }, [currentGame]);
+
   return (
     <div
       className="relative flex h-full min-h-0 w-full overflow-hidden overscroll-none text-white no-scrollbar transition-colors duration-1000"
@@ -2187,8 +2274,8 @@ const Home: React.FC = () => {
           className="shrink-0 flex items-center justify-between pl-4 pr-10 pt-8 relative will-change-transform"
         >
           <div className="flex items-center gap-2">
-            {/* Clean Pill Search Bar - Only in Menu & Platform views */}
-            {!["SETTINGS", "FRIENDS", "MODS", "RADAR", "PROFILE", "TROPHIES"].includes(activeCategory) && (
+            {/* Clean Pill Search Bar - Only in Platform & Favorites views */}
+            {isPlatformOrFavoritesPage && (
               <div className="relative flex items-center gap-2">
                 <motion.div
                   initial={false}
@@ -2265,11 +2352,12 @@ const Home: React.FC = () => {
           <div className="flex items-center gap-4">
             {/* Borda via casca sólida: o clip-path do Squircle recortaria uma
                 border CSS, então o anel de 1px é o próprio fundo do Squircle externo */}
-            <Squircle
-              cornerRadius={18}
-              cornerSmoothing={0.65}
-              className="p-px rounded-2xl bg-[#161616]"
-            >
+            {isPlatformOrFavoritesPage && (
+              <Squircle
+                cornerRadius={18}
+                cornerSmoothing={0.65}
+                className="p-px rounded-2xl bg-[#161616]"
+              >
             <Squircle
               cornerRadius={17}
               cornerSmoothing={0.65}
@@ -2318,8 +2406,10 @@ const Home: React.FC = () => {
                 >
                   {steamSyncing ? (
                     <span className="flex items-center gap-2 py-1">
-                      <LinearProgress className="w-14" label={t("syncing") || "Sincronizando..."} />
-                      <span className="text-xs font-medium text-[#D2D2D2]">{t("syncing") || "Sincronizando..."}</span>
+                      <ThinkingOrbLoader size={20} preset="sync" label={t("syncing") || "Sincronizando..."} />
+                      <span className="t-shimmer text-xs font-medium text-[#D2D2D2]" data-text={t("syncing") || "Sincronizando..."}>
+                        {t("syncing") || "Sincronizando..."}
+                      </span>
                     </span>
                   ) : (
                     <>
@@ -2345,8 +2435,10 @@ const Home: React.FC = () => {
                 >
                   {steamConnecting ? (
                     <span className="flex items-center gap-2 py-1">
-                      <LinearProgress className="w-14" label={t("connecting") || "Conectando..."} />
-                      <span className="text-xs font-medium text-[#D2D2D2]">{t("connecting") || "Conectando..."}</span>
+                      <ThinkingOrbLoader size={20} preset="connecting" label={t("connecting") || "Conectando..."} />
+                      <span className="t-shimmer text-xs font-medium text-[#D2D2D2]" data-text={t("connecting") || "Conectando..."}>
+                        {t("connecting") || "Conectando..."}
+                      </span>
                     </span>
                   ) : (
                     <>
@@ -2386,8 +2478,10 @@ const Home: React.FC = () => {
                 >
                   {epicSyncing ? (
                     <span className="flex items-center gap-2 py-1">
-                      <LinearProgress className="w-14" label={t("syncing") || "Sincronizando..."} />
-                      <span className="text-xs font-medium text-[#D2D2D2]">{t("syncing") || "Sincronizando..."}</span>
+                      <ThinkingOrbLoader size={20} preset="sync" label={t("syncing") || "Sincronizando..."} />
+                      <span className="t-shimmer text-xs font-medium text-[#D2D2D2]" data-text={t("syncing") || "Sincronizando..."}>
+                        {t("syncing") || "Sincronizando..."}
+                      </span>
                     </span>
                   ) : (
                     <>
@@ -2413,8 +2507,10 @@ const Home: React.FC = () => {
                 >
                   {epicConnecting ? (
                     <span className="flex items-center gap-2 py-1">
-                      <LinearProgress className="w-14" label={t("connecting") || "Conectando..."} />
-                      <span className="text-xs font-medium text-[#D2D2D2]">{t("connecting") || "Conectando..."}</span>
+                      <ThinkingOrbLoader size={20} preset="connecting" label={t("connecting") || "Conectando..."} />
+                      <span className="t-shimmer text-xs font-medium text-[#D2D2D2]" data-text={t("connecting") || "Conectando..."}>
+                        {t("connecting") || "Conectando..."}
+                      </span>
                     </span>
                   ) : (
                     <>
@@ -2428,6 +2524,7 @@ const Home: React.FC = () => {
               )}
               </Squircle>
             </Squircle>
+            )}
             <ProfileDropdown
               userDisplay={userDisplay}
               email={user?.email || undefined}
@@ -2745,15 +2842,21 @@ const Home: React.FC = () => {
                       transition={{ duration: 0.26, ease: [0.32, 0.72, 0, 1] }}
                       className="flex flex-col transform-gpu mt-4"
                     >
+                      <div
+                        key={`${currentGame?.id || canonicalIndex}-${currentGame?.title || "game"}`}
+                        className="t-stagger is-shown"
+                      >
                         <div className="flex items-center justify-between gap-8 w-full mb-3">
-                          <h1
-                            className="tracking-tight font-display font-black text-3xl md:text-6xl bg-linear-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent leading-[1.08] drop-shadow-[0_8px_32px_rgba(0,0,0,0.85)] line-clamp-1"
-                            style={{
-                              maxWidth: "84vw",
-                            }}
-                          >
-                            {currentGame?.title}
-                          </h1>
+                          <div className="t-stagger-line t-stagger-line--1 min-w-0 flex-1">
+                            <h1
+                              className="tracking-tight font-display font-black text-3xl md:text-6xl bg-linear-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent leading-[1.08] drop-shadow-[0_8px_32px_rgba(0,0,0,0.85)] line-clamp-1"
+                              style={{
+                                maxWidth: "84vw",
+                              }}
+                            >
+                              {currentGame?.title}
+                            </h1>
+                          </div>
                           <div className="flex items-center shrink-0">
                             <ShinyButton
                               onClick={() => currentGame && openDetails(currentGame)}
@@ -2771,61 +2874,33 @@ const Home: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2.5 flex-wrap font-body mb-8">
-                          {(currentGame?.launcherType === "steam" || currentGame?.source === "steam") ? (
-                            <span className="flex items-center gap-1.5 rounded-lg bg-white/3 border border-white/10 px-3 py-1 text-xs font-semibold text-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-3xl saturate-150">
-                              <SteamBrandIcon className="w-3.5 h-3.5 text-white" /> Steam
-                            </span>
-                          ) : (currentGame?.launcherType === "epic" || currentGame?.source === "epic") ? (
-                            <span className="flex items-center gap-1.5 rounded-lg bg-white/3 border border-white/10 px-3 py-1 text-xs font-semibold text-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-3xl saturate-150">
-                              <EpicBrandIcon className="w-3.5 h-3.5 text-white" /> Epic Games
-                            </span>
-                          ) : currentGame?.launcherType === "ea" ? (
-                            <span className="flex items-center gap-1.5 rounded-lg bg-white/3 border border-white/10 px-3 py-1 text-xs font-semibold text-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-3xl saturate-150">
-                              <EaBrandIcon className="w-3.5 h-3.5 text-white" /> EA App
-                            </span>
-                          ) : currentGame?.launcherType === "ubisoft" ? (
-                            <span className="flex items-center gap-1.5 rounded-lg bg-white/3 border border-white/10 px-3 py-1 text-xs font-semibold text-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-3xl saturate-150">
-                              <UbisoftBrandIcon className="w-3.5 h-3.5 text-white" /> Ubisoft
-                            </span>
-                          ) : currentGame?.launcherType === "gog" ? (
-                            <span className="flex items-center gap-1.5 rounded-lg bg-white/3 border border-white/10 px-3 py-1 text-xs font-semibold text-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-3xl saturate-150">
-                              <GogBrandIcon className="w-3.5 h-3.5 text-white" /> GOG
-                            </span>
-                          ) : currentGame?.launcherType === "xbox" ? (
-                            <span className="flex items-center gap-1.5 rounded-lg bg-white/3 border border-white/10 px-3 py-1 text-xs font-semibold text-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-3xl saturate-150">
-                              <XboxBrandIcon className="w-3.5 h-3.5 text-white" /> Xbox
-                            </span>
-                          ) : currentGame?.launcherType === "riot" ? (
-                            <span className="flex items-center gap-1.5 rounded-lg bg-white/3 border border-white/10 px-3 py-1 text-xs font-semibold text-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-3xl saturate-150">
-                              <RiotBrandIcon className="w-3.5 h-3.5 text-white" /> Riot Games
-                            </span>
-                          ) : currentGame?.launcherType === "battlenet" ? (
-                            <span className="flex items-center gap-1.5 rounded-lg bg-white/3 border border-white/10 px-3 py-1 text-xs font-semibold text-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-3xl saturate-150">
-                              <BattlenetBrandIcon className="w-3.5 h-3.5 text-white" /> Battle.net
-                            </span>
-                          ) : currentGame?.launcherType === "rockstar" ? (
-                            <span className="flex items-center gap-1.5 rounded-lg bg-white/3 border border-white/10 px-3 py-1 text-xs font-semibold text-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-3xl saturate-150">
-                              <RockstarBrandIcon className="w-3.5 h-3.5 text-white" /> Rockstar
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1.5 rounded-lg bg-white/3 border border-white/10 px-3 py-1 text-xs font-semibold text-white/90 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-3xl saturate-150">
-                              <Gamepad2 className="w-3.5 h-3.5 text-white" /> Executável Local
+                        <div className="t-stagger-line t-stagger-line--2 w-fit flex items-center gap-3 flex-wrap font-body mb-8">
+                          {currentGamePlatformInfo && (
+                            <span className="inline-flex h-7.5 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3.5 text-xs font-medium text-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.4)] backdrop-blur-md">
+                              <currentGamePlatformInfo.icon className="w-3.5 h-3.5 text-white/90 shrink-0" />
+                              <span>{currentGamePlatformInfo.label}</span>
                             </span>
                           )}
 
                           {currentGame && (
-                            <span className="flex items-center gap-1.5 rounded-lg bg-white/2 border border-white/8 px-3 py-1 text-xs font-medium text-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-3xl saturate-150">
-                              {formatPlayedHours(getGamePlayedHours(currentGame))}h jogadas
+                            <span className="inline-flex h-7.5 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3.5 text-xs font-medium text-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.4)] backdrop-blur-md">
+                              <Clock className="w-3.5 h-3.5 text-white/70 shrink-0" />
+                              <DigitPopIn
+                                value={formatPlayedHours(getGamePlayedHours(currentGame))}
+                                suffix="h jogadas"
+                                className="items-center"
+                              />
                             </span>
                           )}
 
                           {currentGame?.isFavorite && (
-                            <span className="flex items-center gap-1.5 rounded-lg bg-amber-500/10 border border-amber-400/25 px-3 py-1 text-xs font-semibold text-amber-300 shadow-[0_8px_32px_rgba(0,0,0,0.6)] backdrop-blur-3xl saturate-150">
-                              <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> Favorito
+                            <span className="inline-flex h-7.5 shrink-0 items-center gap-2 rounded-full border border-amber-400/25 bg-amber-500/10 px-3.5 text-xs font-medium text-amber-300 shadow-[0_4px_16px_rgba(0,0,0,0.4)] backdrop-blur-md">
+                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                              <span>Favorito</span>
                             </span>
                           )}
                         </div>
+                      </div>
                     </motion.div>
                   </motion.div>
 
@@ -2946,54 +3021,17 @@ const Home: React.FC = () => {
         />
       </React.Suspense>
 
-      <ModalShell
+      <FriendProfileModal
         isOpen={Boolean(friendProfileModal)}
         onClose={() => {
           playSound("back");
           setFriendProfileModal(null);
         }}
-        maxWidthClassName="max-w-[min(1440px,calc(100vw-48px))]"
-        containerClassName="p-6"
-        zIndexClassName="z-[165]"
-        className="relative h-[calc(100dvh-48px)] max-h-none overflow-visible p-0"
-      >
-        <div
-          data-friend-profile-surface
-          className="flex h-full flex-col overflow-hidden rounded-4xl border border-white/10 bg-[#050507] shadow-2xl"
-        >
-          {friendProfileModal && (
-            <React.Suspense fallback={
-              <div className="flex h-full items-center justify-center p-10">
-                <LoadingState label="Carregando Perfil" variant="breathing" />
-              </div>
-            }>
-              <UserProfilePage
-                userProfile={friendProfileModal.profile}
-                user={{ email: null, photoURL: friendProfileModal.profile.photoURL }}
-                userId={friendProfileModal.profile.uid}
-                games={friendProfileModal.games}
-                onOpenGame={undefined}
-                editable={false}
-                playSound={playSound as any}
-                language={launcherLanguage}
-                copyFriendDiscord
-                onNotify={notify}
-              />
-            </React.Suspense>
-          )}
-        </div>
-        <button
-          type="button"
-          aria-label="Fechar perfil do amigo"
-          onClick={() => {
-            playSound("back");
-            setFriendProfileModal(null);
-          }}
-          className="absolute -right-3 -top-3 z-20 flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-[#08080a] text-white/70 shadow-[0_12px_32px_rgba(0,0,0,0.6)] transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </ModalShell>
+        friendData={friendProfileModal}
+        onOpenChat={openFriendChatFromOverview}
+        playSound={playSound}
+        onNotify={notify}
+      />
 
       <ConfirmationModal
         isOpen={Boolean(pendingDeleteGame)}
@@ -3214,6 +3252,17 @@ const Home: React.FC = () => {
           games={games}
           currentFilters={libraryFilters}
         />
+      </React.Suspense>
+
+      {/* Welcome Tour Modal */}
+      <React.Suspense fallback={null}>
+        {isWelcomeModalOpen && (
+          <WelcomeModal
+            isOpen={isWelcomeModalOpen}
+            onClose={handleCloseWelcomeModal}
+            playSound={playSound}
+          />
+        )}
       </React.Suspense>
 
       {/* Level Up Toast — discreto, gamificado, não bloqueia */}

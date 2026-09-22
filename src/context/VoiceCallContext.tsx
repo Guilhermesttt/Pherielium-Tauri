@@ -220,13 +220,11 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (window.electronAPI?.showNotificationOverlay) {
         void window.electronAPI.showNotificationOverlay({
           type: "incoming-call",
-          kind: "incoming-call",
-          notificationId,
-          id: notificationId,
           title: "Chamada de Voz",
           message: `${voiceCall.incomingInvite.callerName} está te ligando. Clique para atender.`,
           imageUrl: voiceCall.incomingInvite.callerAvatar || undefined,
           friendId: voiceCall.incomingInvite.callerId,
+          metadata: { notificationId },
         });
       }
       return;

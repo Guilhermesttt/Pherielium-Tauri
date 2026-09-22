@@ -34,16 +34,54 @@ export type EpicAppDetailsFetchResult =
 
 export const searchEpicGames = async (query: string) => {
   if (window.electronAPI?.searchEpicStore) {
-    return { items: await window.electronAPI.searchEpicStore(query) };
+    try {
+      const items = await window.electronAPI.searchEpicStore(query);
+      if (Array.isArray(items) && items.length > 0) {
+        return { items };
+      }
+    } catch (e) {
+      console.warn("[searchEpicGames] searchEpicStore error:", e);
+    }
   }
-  const response = await fetch(
-    apiUrl(`/api/epic/search?query=${encodeURIComponent(query)}`),
-  );
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(payload.error || "Falha ao buscar jogos na Epic Games.");
+  try {
+    const response = await fetch(
+      apiUrl(`/api/epic/search?query=${encodeURIComponent(query)}`),
+    );
+    if (response.ok) {
+      const payload = (await response.json()) as { items?: any[] };
+      if (Array.isArray(payload?.items) && payload.items.length > 0) {
+        return { items: payload.items };
+      }
+    }
+  } catch {
+    // fallback
   }
-  return (await response.json()) as { items: any[] };
+
+  try {
+    const cleanQuery = query.replace(/[^\w\s]/gi, "").trim();
+    const sRes = await fetch(`https://steamcommunity.com/actions/SearchApps/${encodeURIComponent(cleanQuery)}`);
+    if (sRes.ok) {
+      const sItems = await sRes.json();
+      if (Array.isArray(sItems)) {
+        const items = sItems.slice(0, 8).map((it: any) => ({
+          id: `steam_${it.appid}`,
+          catalogId: `steam_${it.appid}`,
+          title: it.name,
+          name: it.name,
+          keyImages: [
+            { type: "OfferImageTall", url: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${it.appid}/library_600x900_2x.jpg` },
+            { type: "OfferImageWide", url: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${it.appid}/header.jpg` },
+            { type: "Thumbnail", url: it.logo || it.icon || "" },
+          ],
+        }));
+        return { items };
+      }
+    }
+  } catch {
+    // ignorar
+  }
+
+  return { items: [] };
 };
 
 export const fetchEpicAppDetailsResult = async (

@@ -814,13 +814,53 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
     try {
       const data = await searchEpicGames(query);
       if (requestId === searchRequestRef.current) {
-        setSearchResults(data.items || []);
+        // Normaliza resultados da Epic para o formato esperado pelo GameSearchDropdown.
+        // A API Epic retorna { id, title, namespace, productSlug, keyImages[] }
+        // mas o dropdown espera { name, tiny_image } (formato Steam).
+        const normalized = (data.items || []).map((item: any) => {
+          const keyImages: Array<{ type: string; url: string }> = item.keyImages || [];
+          const tallImg = keyImages.find(
+            (img) => img.type === "OfferImageTall" || img.type === "DieselGameBoxTall"
+          );
+          const wideImg = keyImages.find(
+            (img) => img.type === "OfferImageWide" || img.type === "DieselGameBox" || img.type === "OfferImageWidePortrait"
+          );
+          const thumbImg = keyImages.find(
+            (img) => img.type === "Thumbnail" || img.type === "OfferImageTall"
+          );
+
+          // Extrai o productSlug a partir dos mappings do catalogNs se não vier direto
+          const pageSlug =
+            item.productSlug ||
+            item.catalogNs?.mappings?.find(
+              (m: any) => m.pageType === "productHome"
+            )?.pageSlug ||
+            item.catalogNs?.mappings?.[0]?.pageSlug ||
+            "";
+
+          const cardImg = (tallImg || wideImg)?.url || item.cardImage || item.image || item.tiny_image || "";
+          const bgImg = wideImg?.url || item.backgroundImage || cardImg;
+          const thumb = (thumbImg || tallImg || wideImg)?.url || item.tiny_image || cardImg;
+
+          return {
+            // Campos originais preservados para handleSelectEpicGame
+            ...item,
+            productSlug: pageSlug,
+            catalogId: item.catalogId || item.id,
+            appName: item.appName || item.app_name || "",
+            // Campos normalizados para GameSearchDropdown
+            name: item.title || item.name || "",
+            tiny_image: thumb,
+            cardImage: cardImg,
+            backgroundImage: bgImg,
+          };
+        });
+        setSearchResults(normalized);
       }
     } catch (e) {
       console.error(e);
       if (requestId === searchRequestRef.current) {
         setSearchResults([]);
-        notify(copy.searchError, "error");
       }
     } finally {
       if (requestId === searchRequestRef.current) {
@@ -915,7 +955,7 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
         trailerUrl: d?.trailerUrl || "",
         screenshots: d?.screenshots || game.screenshots || [],
         source: "epic",
-        hasGame: false,
+        hasGame: true,
       }));
     } catch (e) {
       console.error(e);

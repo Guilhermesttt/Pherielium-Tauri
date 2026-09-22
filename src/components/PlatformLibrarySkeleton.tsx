@@ -41,7 +41,10 @@ export const PlatformLibrarySkeleton: React.FC<PlatformLibrarySkeletonProps> = (
       <div className="px-10 pt-2 shrink-0 flex items-center">
         <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-white/6 border border-white/10 backdrop-blur-md shadow-xl animate-pulse">
           <Loader2 className="w-4 h-4 text-white/80 animate-spin" />
-          <span className="text-xs font-semibold text-white/90 tracking-wide">
+          <span
+            className="t-shimmer text-xs font-semibold tracking-wide"
+            data-text={`Sincronizando ${platformName}: ${phaseLabel}${progressText}`}
+          >
             Sincronizando {platformName}: {phaseLabel}
             {progressText}
           </span>

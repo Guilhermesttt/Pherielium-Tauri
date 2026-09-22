@@ -72,6 +72,7 @@ import type { SettingsTab } from "../services/launcherNavigation";
 import type { ProfileVisibility } from "../types/domain";
 import { ElasticSlider } from "../components/ReactBits/ElasticSlider";
 import { LinearProgress } from "../components/ui/LinearProgress";
+import { ThinkingOrbLoader } from "../components/ThinkingOrbLoader";
 import { saveOverlayPrefs } from "../lib/overlayPrefs";
 import { formatRamGb, usePerfMonitor } from "../hooks/usePerfMonitor";
 
@@ -1549,7 +1550,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                     <SettingsRow
                       key={option.label}
                       title={option.label}
-                      hasBorder={idx !== behaviorOptions.length - 1}
+                      hasBorder={true}
                     >
                       <p className="mb-3 text-[11px] leading-relaxed text-white/40">{option.hint}</p>
                       <div className="flex items-center gap-3">
@@ -1558,6 +1559,27 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                       </div>
                     </SettingsRow>
                   ))}
+
+                  <SettingsRow
+                    icon={<Sparkles className="h-4 w-4" />}
+                    title="Guia do Ecossistema Pherielium"
+                    hasBorder={false}
+                  >
+                    <p className="mb-3 text-[11px] leading-relaxed text-white/40">
+                      Veja novamente o tour interativo explicando como adicionar jogos, conectar plataformas e usar o overlay.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playSound?.("select");
+                        window.dispatchEvent(new CustomEvent("phelierium:open-welcome-modal"));
+                      }}
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-white/10 px-4 text-xs font-semibold text-white transition-colors hover:bg-white/20 active:scale-[0.98] cursor-pointer"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Abrir Guia de Boas-Vindas</span>
+                    </button>
+                  </SettingsRow>
                 </section>
 
                 <div className="h-px w-full bg-[var(--color-surface)]" />
@@ -1851,7 +1873,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                           : "bg-[var(--color-surface)] text-white/40 border-white/10"
                         }`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${steamDisconnecting ? "bg-yellow-400 animate-pulse" : steamConnected ? "bg-emerald-400" : "bg-white/30"}`} />
-                        {steamDisconnecting ? "Desconectando..." : steamConnected ? t("connected") : t("notConnected")}
+                        {steamDisconnecting ? <span className="t-shimmer" data-text="Desconectando...">Desconectando...</span> : steamConnected ? t("connected") : t("notConnected")}
                       </span>
                       {steamConnected ? (
                         <button onClick={onDisconnectSteam} disabled={steamDisconnecting} className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[11.5px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer">
@@ -1861,8 +1883,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                         <button onClick={onConnectSteam} disabled={steamConnecting} className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-[12px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer">
                           {steamConnecting ? (
                             <span className="flex items-center gap-2">
-                              <LinearProgress className="w-12" label={t("connecting")} />
-                              <span>{t("connecting")}</span>
+                              <ThinkingOrbLoader size={20} preset="connecting" />
+                              <span className="t-shimmer" data-text={t("connecting")}>{t("connecting")}</span>
                             </span>
                           ) : t("connectSteam")}
                         </button>
@@ -1879,7 +1901,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                           : "bg-[var(--color-surface)] text-white/40 border-white/10"
                         }`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${discordDisconnecting ? "bg-yellow-400 animate-pulse" : discordConnected ? "bg-emerald-400" : "bg-white/30"}`} />
-                        {discordDisconnecting ? "Desconectando..." : discordConnected ? (discordUsername || t("connected")) : t("notConnected")}
+                        {discordDisconnecting ? <span className="t-shimmer" data-text="Desconectando...">Desconectando...</span> : discordConnected ? (discordUsername || t("connected")) : t("notConnected")}
                       </span>
                       {discordConnected ? (
                         <button onClick={onDisconnectDiscord} disabled={discordDisconnecting} className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[11.5px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer">
@@ -1890,7 +1912,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                           {discordConnecting ? (
                             <span className="flex items-center gap-2">
                               <LinearProgress className="w-12" label={t("connecting")} />
-                              <span>{t("connecting")}</span>
+                              <span className="t-shimmer" data-text={t("connecting")}>{t("connecting")}</span>
                             </span>
                           ) : t("connectDiscord")}
                         </button>
@@ -1907,7 +1929,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                           : "bg-[var(--color-surface)] text-white/40 border-white/10"
                         }`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${epicDisconnecting ? "bg-yellow-400 animate-pulse" : epicConnected ? "bg-emerald-400" : "bg-white/30"}`} />
-                        {epicDisconnecting ? "Desconectando..." : epicConnected ? (epicDisplayName || t("connected")) : t("notConnected")}
+                        {epicDisconnecting ? <span className="t-shimmer" data-text="Desconectando...">Desconectando...</span> : epicConnected ? (epicDisplayName || t("connected")) : t("notConnected")}
                       </span>
                       {epicConnected ? (
                         <button onClick={onDisconnectEpic} disabled={epicDisconnecting} className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[11.5px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer">
@@ -1917,8 +1939,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                         <button onClick={onConnectEpic} disabled={epicConnecting} className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-[12px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer">
                           {epicConnecting ? (
                             <span className="flex items-center gap-2">
-                              <LinearProgress className="w-12" label={t("connecting")} />
-                              <span>{t("connecting")}</span>
+                              <ThinkingOrbLoader size={20} preset="connecting" />
+                              <span className="t-shimmer" data-text={t("connecting")}>{t("connecting")}</span>
                             </span>
                           ) : t("connectEpic")}
                         </button>

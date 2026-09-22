@@ -5,6 +5,7 @@ import type { SoundEffectType } from "../../hooks/useSoundEffects";
 import { PHERIELIUM_LOGO_PATH } from "../../constants/assets";
 import { EmptyStateGraphic } from "../ui/EmptyStateGraphic";
 import { LinearProgress } from "../ui/LinearProgress";
+import { ThinkingOrbLoader } from "../ThinkingOrbLoader";
 
 export interface EmptyStateProps {
   searchTerm: string;
@@ -128,7 +129,7 @@ export const EmptyState: React.FC<EmptyStateProps> = React.memo(
                   {isSyncingSteam ? (
                     <span className="flex items-center gap-2">
                       <LinearProgress className="w-16" label="Sincronizando Steam" />
-                      <span>Sincronizando...</span>
+                      <span className="t-shimmer" data-text="Sincronizando...">Sincronizando...</span>
                     </span>
                   ) : (
                     <>
@@ -146,8 +147,8 @@ export const EmptyState: React.FC<EmptyStateProps> = React.memo(
                 >
                   {isConnectingSteam ? (
                     <span className="flex items-center gap-2">
-                      <LinearProgress className="w-16" label="Conectando Steam" />
-                      <span>Conectando...</span>
+                      <ThinkingOrbLoader size={20} preset="connecting" />
+                      <span className="t-shimmer" data-text="Conectando...">Conectando...</span>
                     </span>
                   ) : (
                     <>
@@ -167,8 +168,8 @@ export const EmptyState: React.FC<EmptyStateProps> = React.memo(
                 >
                   {isSyncingEpic ? (
                     <span className="flex items-center gap-2">
-                      <LinearProgress className="w-16" label="Sincronizando Epic Games" />
-                      <span>Sincronizando...</span>
+                      <ThinkingOrbLoader size={20} preset="sync" />
+                      <span className="t-shimmer" data-text="Sincronizando...">Sincronizando...</span>
                     </span>
                   ) : (
                     <>
@@ -186,8 +187,8 @@ export const EmptyState: React.FC<EmptyStateProps> = React.memo(
                 >
                   {isConnectingEpic ? (
                     <span className="flex items-center gap-2">
-                      <LinearProgress className="w-16" label="Conectando Epic Games" />
-                      <span>Conectando...</span>
+                      <ThinkingOrbLoader size={20} preset="connecting" />
+                      <span className="t-shimmer" data-text="Conectando...">Conectando...</span>
                     </span>
                   ) : (
                     <>

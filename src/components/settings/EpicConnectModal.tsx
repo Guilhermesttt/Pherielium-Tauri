@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ExternalLink, LogOut, CheckCircle2, KeyRound, AlertCircle } from "lucide-react";
 import type { SoundEffectType } from "../../hooks/useSoundEffects";
 import { LinearProgress } from "../ui/LinearProgress";
+import { ThinkingOrbLoader } from "../ThinkingOrbLoader";
 import { fetchEpicStatus, validateEpicSession } from "../../services/epic";
 import { PHERIELIUM_LOGO_PATH } from "../../constants/assets";
 
@@ -241,9 +242,11 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="space-y-1.5 pb-1">
-                        <LinearProgress label={busyLabel} />
-                        <p className="text-[11px] font-semibold text-[#6C6C6C]">{busyLabel}</p>
+                      <div className="flex items-center gap-2.5 pb-1">
+                        <ThinkingOrbLoader size={20} preset={operationState?.status === "syncing" ? "sync" : "connecting"} />
+                        <p className="text-[12px] font-semibold text-white/70">
+                          <span className="t-shimmer" data-text={busyLabel}>{busyLabel}</span>
+                        </p>
                       </div>
                     </motion.div>
                   )}

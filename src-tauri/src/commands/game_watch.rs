@@ -36,44 +36,15 @@ fn find_target_pid(system: &System, target: &str) -> Option<sysinfo::Pid> {
     })
 }
 
-#[cfg(windows)]
-fn foreground_window_bounds() -> Option<(i32, i32, u32, u32)> {
-    use windows::Win32::Foundation::RECT;
-    use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowRect};
-
-    unsafe {
-        let hwnd = GetForegroundWindow();
-        if hwnd.0.is_null() {
-            return None;
-        }
-        let mut rect = RECT::default();
-        if GetWindowRect(hwnd, &mut rect).is_err() {
-            return None;
-        }
-        let width = (rect.right - rect.left).max(0) as u32;
-        let height = (rect.bottom - rect.top).max(0) as u32;
-        if width == 0 || height == 0 {
-            return None;
-        }
-        Some((rect.left, rect.top, width, height))
-    }
-}
-
-#[cfg(not(windows))]
-fn foreground_window_bounds() -> Option<(i32, i32, u32, u32)> {
-    None
-}
-
-fn apply_overlay_bounds(app: &AppHandle, x: i32, y: i32, width: u32, height: u32) {
+pub fn ensure_overlay_fullscreen(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("overlay") {
-        let _ = window.set_position(tauri::Position::Physical(tauri::PhysicalPosition { x, y }));
-        let _ = window.set_size(tauri::Size::Physical(tauri::PhysicalSize { width, height }));
-        let _ = window.show();
+        if let Ok(Some(monitor)) = app.primary_monitor() {
+            let size = monitor.size();
+            let pos = monitor.position();
+            let _ = window.set_position(tauri::Position::Physical(*pos));
+            let _ = window.set_size(tauri::Size::Physical(*size));
+        }
     }
-    let _ = app.emit(
-        "overlay:game-bounds",
-        json!({ "x": x, "y": y, "width": width, "height": height }),
-    );
 }
 
 #[tauri::command]
@@ -116,7 +87,6 @@ pub fn start_game_watch(app: AppHandle) {
         let mut system = System::new_with_specifics(
             RefreshKind::new().with_processes(refresh_kind),
         );
-        let mut last_bounds: Option<(i32, i32, u32, u32)> = None;
         let mut was_running = false;
         let mut last_target: Option<String> = None;
         let mut tracked_pid: Option<sysinfo::Pid> = None;
@@ -140,7 +110,6 @@ pub fn start_game_watch(app: AppHandle) {
                         json!({ "executable": last_target }),
                     );
                 }
-                last_bounds = None;
                 last_target = None;
                 tracked_pid = None;
                 continue;
@@ -171,7 +140,6 @@ pub fn start_game_watch(app: AppHandle) {
                     was_running = false;
                     tracked_pid = None;
                     crate::commands::achievement_watcher::stop_all_achievement_watchers(&app);
-                    last_bounds = None;
                     reveal_main_window(&app);
                     let _ = app.emit("game-watch:ended", json!({ "executable": target }));
                 }
@@ -181,14 +149,8 @@ pub fn start_game_watch(app: AppHandle) {
             if !was_running {
                 was_running = true;
                 conceal_main_window(&app);
+                ensure_overlay_fullscreen(&app);
                 let _ = app.emit("game-watch:started", json!({ "executable": target }));
-            }
-
-            if let Some((x, y, width, height)) = foreground_window_bounds() {
-                if last_bounds != Some((x, y, width, height)) {
-                    apply_overlay_bounds(&app, x, y, width, height);
-                    last_bounds = Some((x, y, width, height));
-                }
             }
         }
     });

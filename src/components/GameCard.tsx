@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useCallback } from "react";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { Play, Star, Gamepad2 } from "lucide-react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { Play, Star, Gamepad2, MoreVertical, X } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSteam } from "@fortawesome/free-brands-svg-icons";
 import {
@@ -26,6 +26,9 @@ export interface GameCardProps {
   onClick: () => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
+  onMenuClick?: (e: React.MouseEvent) => void;
+  isMenuOpen?: boolean;
+  playSound?: (type: any) => void;
 }
 
 const EPIC_GAMES_ICON_PATH = "/epic_games_store.ico";
@@ -47,9 +50,35 @@ const GameCard: React.FC<GameCardProps> = ({
   onClick,
   onKeyDown,
   onContextMenu,
+  onMenuClick,
+  isMenuOpen = false,
+  playSound,
 }) => {
   const [imageFailed, setImageFailed] = useState(false);
   const [useFallbackSteamUrl, setUseFallbackSteamUrl] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const btn = menuButtonRef.current;
+    if (!btn) return;
+    const stopNative = (e: PointerEvent | MouseEvent | TouchEvent) => {
+      e.stopPropagation();
+    };
+    btn.addEventListener("pointerdown", stopNative, { capture: true });
+    btn.addEventListener("mousedown", stopNative, { capture: true });
+    btn.addEventListener("touchstart", stopNative, { capture: true });
+    return () => {
+      btn.removeEventListener("pointerdown", stopNative, { capture: true });
+      btn.removeEventListener("mousedown", stopNative, { capture: true });
+      btn.removeEventListener("touchstart", stopNative, { capture: true });
+    };
+  }, [isActive, onMenuClick]);
+
+  // Reseta erros de imagem quando a prop `image` muda (ex: após edição do card)
+  useEffect(() => {
+    setImageFailed(false);
+    setUseFallbackSteamUrl(false);
+  }, [image]);
 
   const currentImageSrc = useMemo(() => {
     if (steamAppId && !imageFailed) {
@@ -183,7 +212,7 @@ const GameCard: React.FC<GameCardProps> = ({
       style={{
         width: CARD_FRAME_WIDTH,
         height: CARD_FRAME_HEIGHT,
-        contain: "layout paint",
+        contain: "layout style",
       }}
     >
       <motion.div
@@ -242,8 +271,8 @@ const GameCard: React.FC<GameCardProps> = ({
           <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white/[0.08] to-transparent pointer-events-none" />
         </div>
 
-        {/* Top Badges (Platform & Favorite) - Solid surfaces per Apple CMF */}
-        <div className="absolute left-2.5 right-2.5 top-2.5 z-20 flex items-center justify-between pointer-events-none">
+        {/* Top Badges (Platform, Favorite & 3-Dots Morph Menu) */}
+        <div className="absolute left-2.5 right-2.5 top-2.5 z-30 flex items-center justify-between pointer-events-none">
           {platformBadge && (
             <div
               className="flex items-center gap-1.5 rounded-xl px-2 py-1 shadow-sm"
@@ -260,14 +289,79 @@ const GameCard: React.FC<GameCardProps> = ({
             </div>
           )}
 
-          {isFavorite && (
-            <div
-              className="flex h-6 w-6 items-center justify-center rounded-xl bg-[#12141A]/95 border border-white/20 shadow-sm"
-              style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15)" }}
-            >
-              <Star className="h-3 w-3 fill-amber-400 text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
-            </div>
-          )}
+          <div className="flex items-center gap-1.5 pointer-events-auto ml-auto">
+            {isFavorite && (
+              <div
+                className="flex h-6 w-6 items-center justify-center rounded-xl bg-[#12141A]/95 border border-white/20 shadow-sm pointer-events-none"
+                style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15)" }}
+              >
+                <Star className="h-3 w-3 fill-amber-400 text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
+              </div>
+            )}
+
+            {isActive && onMenuClick && (
+              <motion.button
+                ref={menuButtonRef}
+                type="button"
+                data-context-menu-trigger="true"
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.92 }}
+                transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                }}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                }}
+                onPointerUp={(e) => {
+                  e.stopPropagation();
+                }}
+                onMouseUp={(e) => {
+                  e.stopPropagation();
+                }}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onMenuClick(e);
+                }}
+                className="relative flex h-7 w-7 items-center justify-center rounded-full bg-black/60 hover:bg-white/20 text-white/80 hover:text-white border border-white/20 hover:border-white/50 shadow-md hover:shadow-[0_0_14px_rgba(255,255,255,0.3)] backdrop-blur-md cursor-pointer transition-colors duration-200"
+                aria-label={isMenuOpen ? "Fechar opções" : `Opções de ${title}`}
+                title={isMenuOpen ? "Fechar opções" : "Opções do jogo"}
+              >
+                <AnimatePresence mode="wait" initial={false}>
+                  {isMenuOpen ? (
+                    <motion.div
+                      key="close-icon"
+                      initial={{ rotate: -90, opacity: 0, scale: 0.7 }}
+                      animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                      exit={{ rotate: 90, opacity: 0, scale: 0.7 }}
+                      transition={{ type: "spring", bounce: 0.15, duration: 0.22 }}
+                      className="flex items-center justify-center"
+                    >
+                      <X className="w-3.5 h-3.5 stroke-[2.2] text-white/90" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="more-icon"
+                      initial={{ rotate: 90, opacity: 0, scale: 0.7 }}
+                      animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                      exit={{ rotate: -90, opacity: 0, scale: 0.7 }}
+                      transition={{ type: "spring", bounce: 0.15, duration: 0.22 }}
+                      className="flex items-center justify-center"
+                    >
+                      <MoreVertical className="w-3.5 h-3.5 text-white/90" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            )}
+          </div>
         </div>
 
         {/* Central Interactive Play/Action Indicator */}

@@ -6,6 +6,7 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -763,43 +764,286 @@ pub async fn epic_open_login_window(
     Ok(code)
 }
 
-#[command]
-pub async fn epic_search_store(query: String) -> Result<Vec<Value>, String> {
-    let client = reqwest::Client::new();
-    let gql_url = "https://store.epicgames.com/graphql";
-    let payload = json!({
-        "query": r#"query searchStoreQuery($keywords: String) {
-            Catalog {
-                searchStore(keywords: $keywords, category: "games/edition/base", count: 20) {
-                    elements {
-                        id
-                        title
-                        namespace
-                        productSlug
-                        catalogNs { mappings { pageSlug pageType } }
-                        keyImages { type url }
-                        price { totalPrice { discountPrice } }
+fn search_local_legendary_library(query: &str) -> Vec<Value> {
+    let mut results = Vec::new();
+    let q = query.to_lowercase().trim().to_string();
+    if q.is_empty() {
+        return results;
+    }
+
+    let mut dirs = vec![];
+    if let Ok(home) = std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")) {
+        dirs.push(PathBuf::from(home).join(".config").join("legendary").join("metadata"));
+    }
+    if let Ok(local) = std::env::var("LOCALAPPDATA") {
+        dirs.push(PathBuf::from(local).join("legendary").join("metadata"));
+    }
+    if let Ok(appdata) = std::env::var("APPDATA") {
+        dirs.push(PathBuf::from(appdata).join("legendary").join("metadata"));
+    }
+
+    for meta_dir in dirs {
+        if !meta_dir.exists() {
+            continue;
+        }
+        if let Ok(entries) = fs::read_dir(&meta_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().and_then(|s| s.to_str()) == Some("json") {
+                    if let Ok(content) = fs::read_to_string(&path) {
+                        if let Ok(item) = serde_json::from_str::<Value>(&content) {
+                            let metadata = item.get("metadata").cloned().unwrap_or(json!({}));
+                            let app_name = item
+                                .get("app_name")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("")
+                                .trim()
+                                .to_string();
+                            let title = item
+                                .get("app_title")
+                                .or_else(|| metadata.get("title"))
+                                .or_else(|| item.get("app_name"))
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("")
+                                .trim()
+                                .to_string();
+                            let catalog_id = metadata
+                                .get("id")
+                                .or_else(|| item.get("app_name"))
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("")
+                                .trim()
+                                .to_string();
+                            let namespace = metadata
+                                .get("namespace")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("")
+                                .trim()
+                                .to_string();
+                            let description = metadata
+                                .get("description")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("")
+                                .trim()
+                                .to_string();
+
+                            let title_lower = title.to_lowercase();
+                            let app_lower = app_name.to_lowercase();
+                            if title_lower.contains(&q) || app_lower.contains(&q) {
+                                let key_images = metadata.get("keyImages").cloned().unwrap_or(json!([]));
+                                results.push(json!({
+                                    "id": catalog_id,
+                                    "catalogId": catalog_id,
+                                    "title": title,
+                                    "appName": app_name,
+                                    "namespace": namespace,
+                                    "productSlug": "",
+                                    "keyImages": key_images,
+                                    "description": description,
+                                }));
+                            }
+                        }
                     }
                 }
             }
-        }"#,
-        "variables": { "keywords": query }
-    });
+        }
+    }
+    results
+}
 
-    let resp = client
-        .post(gql_url)
-        .json(&payload)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
+#[command]
+pub async fn epic_search_store(query: String) -> Result<Vec<Value>, String> {
+    let q = query.trim();
+    if q.is_empty() {
+        return Ok(vec![]);
+    }
+    let q_lower = q.to_lowercase();
+    let mut results: Vec<Value> = Vec::new();
+    let mut seen_titles = HashSet::<String>::new();
 
-    let val: Value = resp.json().await.map_err(|e| e.to_string())?;
-    let elements = val["data"]["Catalog"]["searchStore"]["elements"]
-        .as_array()
-        .cloned()
-        .unwrap_or_default();
+    // 1. Search local legendary library metadata cache
+    for item in search_local_legendary_library(q) {
+        let title = item.get("title").and_then(|v| v.as_str()).unwrap_or("").trim().to_string();
+        if !title.is_empty() && seen_titles.insert(title.to_lowercase()) {
+            results.push(item);
+        }
+    }
 
-    Ok(elements)
+    // 2. Search local installed Epic manifests
+    for inst in read_installed_epic_games() {
+        let title = inst.title.trim().to_string();
+        if !title.is_empty()
+            && (title.to_lowercase().contains(&q_lower) || inst.app_name.to_lowercase().contains(&q_lower))
+        {
+            if seen_titles.insert(title.to_lowercase()) {
+                results.push(json!({
+                    "id": inst.catalog_id,
+                    "catalogId": inst.catalog_id,
+                    "title": title,
+                    "appName": inst.app_name,
+                    "namespace": inst.namespace,
+                    "productSlug": "",
+                    "keyImages": [],
+                    "description": inst.description,
+                    "isInstalled": true,
+                    "executable": inst.executable,
+                }));
+            }
+        }
+    }
+
+    // 3. Search store-content productmapping (Akamai CDN, no Cloudflare block)
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(4))
+        .build()
+        .unwrap_or_else(|_| reqwest::Client::new());
+
+    let mapping_url = "https://store-content-ipv4.ak.epicgames.com/api/content/productmapping";
+    if let Ok(resp) = client.get(mapping_url).send().await {
+        if let Ok(mapping) = resp.json::<HashMap<String, String>>().await {
+            let query_words: Vec<&str> = q_lower.split_whitespace().collect();
+            let query_slug = q_lower.replace(' ', "-");
+            let mut matching_slugs: Vec<(String, String)> = Vec::new();
+
+            for (namespace_or_key, slug) in mapping {
+                let s_lower = slug.to_lowercase();
+                if s_lower.contains(&query_slug) || query_words.iter().all(|w| s_lower.contains(w)) {
+                    matching_slugs.push((namespace_or_key, slug));
+                    if matching_slugs.len() >= 6 {
+                        break;
+                    }
+                }
+            }
+
+            for (ns, slug) in matching_slugs {
+                let prod_url = format!("https://store-content-ipv4.ak.epicgames.com/api/pt-BR/content/products/{slug}");
+                if let Ok(prod_resp) = client.get(&prod_url).send().await {
+                    if let Ok(payload) = prod_resp.json::<Value>().await {
+                        if let Some(page) = payload.pointer("/pages/0") {
+                            let about = page.get("data").and_then(|d| d.get("about"));
+                            let hero = page.get("data").and_then(|d| d.get("hero"));
+                            let images = page.get("_images_").and_then(|i| i.as_array());
+
+                            let card_img = about
+                                .and_then(|a| a.get("image"))
+                                .and_then(|img| img.get("src"))
+                                .and_then(|s| s.as_str())
+                                .or_else(|| {
+                                    hero.and_then(|h| h.get("portraitBackgroundImageUrl"))
+                                        .and_then(|s| s.as_str())
+                                })
+                                .unwrap_or("");
+
+                            let bg_img = hero
+                                .and_then(|h| h.get("backgroundImageUrl"))
+                                .and_then(|s| s.as_str())
+                                .or_else(|| images.and_then(|arr| arr.first()).and_then(|v| v.as_str()))
+                                .unwrap_or(card_img);
+
+                            let thumb_img = about
+                                .and_then(|a| a.get("image"))
+                                .and_then(|img| img.get("src"))
+                                .and_then(|s| s.as_str())
+                                .or_else(|| {
+                                    hero.and_then(|h| h.get("logoImage"))
+                                        .and_then(|l| l.get("src"))
+                                        .and_then(|s| s.as_str())
+                                })
+                                .unwrap_or(card_img);
+
+                            let title = about
+                                .and_then(|a| a.get("title"))
+                                .and_then(|s| s.as_str())
+                                .or_else(|| page.get("_title").and_then(|s| s.as_str()))
+                                .or_else(|| page.get("productName").and_then(|s| s.as_str()))
+                                .unwrap_or(&slug)
+                                .to_string();
+
+                            let desc = about
+                                .and_then(|a| a.get("description"))
+                                .and_then(|s| s.as_str())
+                                .or_else(|| {
+                                    about
+                                        .and_then(|a| a.get("shortDescription"))
+                                        .and_then(|s| s.as_str())
+                                })
+                                .unwrap_or("")
+                                .to_string();
+
+                            let item_id = page
+                                .pointer("/offer/id")
+                                .or_else(|| page.pointer("/item/id"))
+                                .or_else(|| page.get("_id"))
+                                .and_then(|v| v.as_str())
+                                .unwrap_or(&slug)
+                                .to_string();
+
+                            if seen_titles.insert(title.to_lowercase()) {
+                                results.push(json!({
+                                    "id": item_id,
+                                    "catalogId": item_id,
+                                    "title": title,
+                                    "appName": "",
+                                    "namespace": page.get("namespace").and_then(|v| v.as_str()).unwrap_or(&ns),
+                                    "productSlug": slug,
+                                    "keyImages": [
+                                        { "type": "OfferImageTall", "url": card_img },
+                                        { "type": "OfferImageWide", "url": bg_img },
+                                        { "type": "Thumbnail", "url": thumb_img },
+                                    ],
+                                    "description": desc,
+                                }));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. Steam Community Search fallback if results are low
+    if results.len() < 4 {
+        let clean_q = q.replace(|c: char| !c.is_alphanumeric() && c != ' ', "");
+        let steam_url = format!("https://steamcommunity.com/actions/SearchApps/{}", clean_q.replace(' ', "%20"));
+        if let Ok(steam_resp) = client.get(&steam_url).send().await {
+            if let Ok(steam_items) = steam_resp.json::<Vec<Value>>().await {
+                for it in steam_items.into_iter().take(8) {
+                    let name = it.get("name").and_then(|v| v.as_str()).unwrap_or("").trim().to_string();
+                    let appid = it.get("appid").and_then(|v| v.as_str()).unwrap_or("").trim().to_string();
+                    if !name.is_empty() && !appid.is_empty() && seen_titles.insert(name.to_lowercase()) {
+                        let tall = format!(
+                            "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{appid}/library_600x900_2x.jpg"
+                        );
+                        let wide = format!(
+                            "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{appid}/header.jpg"
+                        );
+                        let thumb = it
+                            .get("logo")
+                            .or_else(|| it.get("icon"))
+                            .and_then(|v| v.as_str())
+                            .unwrap_or(&wide)
+                            .to_string();
+                        results.push(json!({
+                            "id": format!("steam_{appid}"),
+                            "catalogId": format!("steam_{appid}"),
+                            "title": name,
+                            "appName": "",
+                            "namespace": "",
+                            "productSlug": "",
+                            "keyImages": [
+                                { "type": "OfferImageTall", "url": tall },
+                                { "type": "OfferImageWide", "url": wide },
+                                { "type": "Thumbnail", "url": thumb },
+                            ],
+                            "description": "",
+                        }));
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(results)
 }
 
 #[command]
@@ -818,21 +1062,68 @@ pub async fn epic_fetch_store_details(request: Value) -> Result<Value, String> {
         .trim();
 
     if !product_slug.is_empty() {
-        let client = reqwest::Client::new();
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(5))
+            .build()
+            .unwrap_or_else(|_| reqwest::Client::new());
         let url = format!(
             "https://store-content-ipv4.ak.epicgames.com/api/pt-BR/content/products/{product_slug}"
         );
         if let Ok(resp) = client.get(&url).send().await {
             if let Ok(payload) = resp.json::<Value>().await {
+                let page = payload.pointer("/pages/0");
+                let about = page.and_then(|p| p.get("data")).and_then(|d| d.get("about"));
+                let hero = page.and_then(|p| p.get("data")).and_then(|d| d.get("hero"));
+                let images = page.and_then(|p| p.get("_images_")).and_then(|i| i.as_array());
+
+                let card_image = about
+                    .and_then(|a| a.get("image"))
+                    .and_then(|img| img.get("src"))
+                    .and_then(|s| s.as_str())
+                    .or_else(|| {
+                        hero.and_then(|h| h.get("portraitBackgroundImageUrl"))
+                            .and_then(|s| s.as_str())
+                    })
+                    .unwrap_or("");
+
+                let bg_image = hero
+                    .and_then(|h| h.get("backgroundImageUrl"))
+                    .and_then(|s| s.as_str())
+                    .or_else(|| images.and_then(|arr| arr.first()).and_then(|v| v.as_str()))
+                    .unwrap_or(card_image);
+
+                let logo_image = hero
+                    .and_then(|h| h.get("logoImage"))
+                    .and_then(|l| l.get("src"))
+                    .and_then(|s| s.as_str())
+                    .unwrap_or("");
+
+                let description = about
+                    .and_then(|a| a.get("description"))
+                    .and_then(|s| s.as_str())
+                    .or_else(|| {
+                        about
+                            .and_then(|a| a.get("shortDescription"))
+                            .and_then(|s| s.as_str())
+                    })
+                    .unwrap_or("");
+
+                let title = about
+                    .and_then(|a| a.get("title"))
+                    .and_then(|s| s.as_str())
+                    .or_else(|| page.and_then(|p| p.get("_title")).and_then(|s| s.as_str()))
+                    .unwrap_or(title_query);
+
                 return Ok(json!({
                     "catalogId": request.get("catalogId").cloned().unwrap_or(json!("")),
                     "namespace": request.get("namespace").cloned().unwrap_or(json!("")),
                     "appName": request.get("appName").cloned().unwrap_or(json!("")),
-                    "title": title_query,
-                    "image": payload.pointer("/pages/0/data/about/image").cloned().unwrap_or(json!("")),
-                    "cardImage": payload.pointer("/pages/0/data/about/image").cloned().unwrap_or(json!("")),
-                    "backgroundImage": payload.pointer("/pages/0/data/about/image").cloned().unwrap_or(json!("")),
-                    "description": payload.pointer("/pages/0/data/about/description").cloned().unwrap_or(json!("")),
+                    "title": title,
+                    "image": card_image,
+                    "cardImage": card_image,
+                    "backgroundImage": bg_image,
+                    "logoImage": logo_image,
+                    "description": description,
                     "productSlug": product_slug,
                 }));
             }

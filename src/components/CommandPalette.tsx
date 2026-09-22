@@ -170,6 +170,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           onOpenSettingsTab?.("connections");
         },
       },
+      {
+        id: "tour-welcome",
+        title: "Guia de Boas-Vindas",
+        subtitle: "Apresentação e tour pelo ecossistema Pherielium",
+        category: "Ajustes",
+        icon: Sparkles,
+        action: () => {
+          window.dispatchEvent(new CustomEvent("phelierium:open-welcome-modal"));
+        },
+      },
     );
 
     // 3. Social friends

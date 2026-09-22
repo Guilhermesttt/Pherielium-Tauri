@@ -69,17 +69,22 @@ const GameCardSlot = React.memo(
           isFavorite={game.isFavorite}
           playSound={playSound}
         >
-          <GameCard
-            title={game.title}
-            image={game.cardImage || game.image}
-            isActive={isActive}
-            isSteam={game.source === "steam" || game.launcherType === "steam"}
-            isEpic={game.source === "epic" || game.launcherType === "epic"}
-            launcherType={game.launcherType}
-            steamAppId={typeof game.steamAppId === "number" ? game.steamAppId : Number(game.steamAppId) || undefined}
-            isFavorite={game.isFavorite}
-            onClick={handleClick}
-          />
+          {({ toggleMenu, isOpen }) => (
+            <GameCard
+              title={game.title}
+              image={game.cardImage || game.image}
+              isActive={isActive}
+              isSteam={game.source === "steam" || game.launcherType === "steam"}
+              isEpic={game.source === "epic" || game.launcherType === "epic"}
+              launcherType={game.launcherType}
+              steamAppId={typeof game.steamAppId === "number" ? game.steamAppId : Number(game.steamAppId) || undefined}
+              isFavorite={game.isFavorite}
+              onClick={handleClick}
+              onMenuClick={toggleMenu}
+              isMenuOpen={isOpen}
+              playSound={playSound}
+            />
+          )}
         </ContextMenu>
       </div>
     );
@@ -110,6 +115,17 @@ const GameRow: React.FC<GameRowProps> = ({
     containScroll: false,
     dragFree: false,
     loop: false,
+    watchDrag: (_emblaApi, evt) => {
+      const target = evt.target as HTMLElement | null;
+      if (!target) return true;
+      if (
+        target.closest("[data-context-menu-trigger]") ||
+        target.closest("[data-context-menu]")
+      ) {
+        return false;
+      }
+      return true;
+    },
   });
 
   const canonicalIndex = Math.min(Math.max(selectedIndex, 0), games.length - 1);
@@ -158,7 +174,7 @@ const GameRow: React.FC<GameRowProps> = ({
 
   return (
     <div className="relative w-full flex flex-col" style={{ gap: 0 }}>
-      <div className="overflow-visible pb-2" ref={emblaRef}>
+      <div className="overflow-visible pt-3 pb-2" ref={emblaRef}>
         <div
           className="flex items-center"
           style={{

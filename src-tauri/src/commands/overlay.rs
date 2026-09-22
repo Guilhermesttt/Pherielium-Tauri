@@ -124,6 +124,8 @@ pub fn ensure_overlay(app: &AppHandle) -> Result<tauri::WebviewWindow, String> {
         .build()
         .map_err(|e| format!("Falha ao criar overlay: {e}"))?;
 
+    let _ = window.set_position(tauri::Position::Physical(*pos));
+    let _ = window.set_size(tauri::Size::Physical(*size));
     let _ = window.set_ignore_cursor_events(true);
 
     Ok(window)

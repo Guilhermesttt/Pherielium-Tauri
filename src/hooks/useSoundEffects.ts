@@ -14,6 +14,7 @@ import phelieriumAchievementSound from "../sounds/Phelierium Default/Achievment_
 import phelieriumAchievementGoldSound from "../sounds/Phelierium Default/Achievment_Unlock_Gold.mp3";
 import phelieriumAchievementPlatinumSound from "../sounds/Phelierium Default/Achievment_Unlock_Platinum.mp3";
 import phelieriumUiAchievementSound from "../sounds/Phelierium Default/ui_achievment.mp3";
+import phelieriumScreenshotSound from "../sounds/Phelierium Default/37. Take Screenshot Psfx Take Screen.mp3";
 import phelieriumCallEnterSound from "../sounds/Phelierium Default/ui_call_enter.mp3";
 import phelieriumGameStartSound from "../sounds/Phelierium Default/ui_game_start.wav";
 import phelieriumNewChatMessageSound from "../sounds/Phelierium Default/ui_new_chat_message.mp3";
@@ -133,7 +134,7 @@ export const soundThemes = {
     callEnter: phelieriumCallEnterSound,
     switchOn: phelieriumClickSound,
     switchOff: phelieriumClickSound,
-    screenshot: phelieriumUiAchievementSound,
+    screenshot: phelieriumScreenshotSound,
     showModal: phelieriumDeepSelectSound,
     overlayAchievement: phelieriumAchievementSound,
     overlayAchievementGold: phelieriumAchievementGoldSound,
@@ -160,7 +161,7 @@ export const soundThemes = {
     callEnter: ps5PlusShowModalSound,
     switchOn: ps5PlusSwitchOnSound,
     switchOff: ps5PlusSwitchOffSound,
-    screenshot: ps5PlusToastSound,
+    screenshot: phelieriumScreenshotSound,
     showModal: ps5PlusShowModalSound,
     overlayAchievement: ps5AchievementUnlockSound,
     overlayAchievementGold: ps5AchievementUnlockSound,

@@ -587,7 +587,7 @@ const OverlayApp: React.FC = () => {
       } else if (sound === "achievement-unlock") {
         playOverlaySound("unlock", t, vol);
       } else if (sound === "screenshot") {
-        playOverlaySound("toast", t, vol);
+        playOverlaySound("screenshot", t, vol);
       }
     });
 
@@ -797,7 +797,7 @@ const OverlayApp: React.FC = () => {
   }, []);
 
   const takeCapture = useCallback(async () => {
-    overlaySfx("select");
+    overlaySfx("screenshot");
     try {
       const item = await invoke<{ id: string; url: string; name?: string; gameTitle?: string }>("capture_screen", {
         gameTitle: panelDataRef.current.gameTitle || panelDataRef.current.playingGame?.title || null,
@@ -812,7 +812,6 @@ const OverlayApp: React.FC = () => {
         },
         4200,
       );
-      overlaySfx("screenshot");
       void loadCaptures();
     } catch (err) {
       overlayLogger.warn("Falha ao capturar tela:", err);
