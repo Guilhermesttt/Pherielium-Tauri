@@ -414,18 +414,29 @@ export const deleteLibraryGamesByLauncher = async (
   uid: string,
   launcherType: "steam" | "epic" | "local",
 ) => {
+  let localDeleted = 0;
   if (window.electronAPI?.deleteLocalGamesByLauncher) {
-    return window.electronAPI.deleteLocalGamesByLauncher(uid, launcherType);
+    try {
+      localDeleted = await window.electronAPI.deleteLocalGamesByLauncher(uid, launcherType);
+    } catch (err) {
+      console.warn(`[localLibrary] Falha ao deletar jogos locais da plataforma ${launcherType}:`, err);
+    }
   }
-  const { data, error } = await supabase
-    .from("user_games")
-    .delete()
-    .eq("user_id", uid)
-    .eq("launcher_type", launcherType)
-    .select("id");
-  if (error) throw error;
+  let cloudDeleted = 0;
+  try {
+    const { data, error } = await supabase
+      .from("user_games")
+      .delete()
+      .eq("user_id", uid)
+      .eq("launcher_type", launcherType)
+      .select("id");
+    if (error) console.warn("[localLibrary] Erro ao deletar jogos do Supabase:", error);
+    cloudDeleted = data?.length || 0;
+  } catch (err) {
+    console.warn("[localLibrary] Falha ao conectar Supabase para deleção:", err);
+  }
   invalidate(`games:list:${uid}`);
-  return data?.length || 0;
+  return localDeleted || cloudDeleted;
 };
 
 export const recordLibrarySession = async (

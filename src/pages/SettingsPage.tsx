@@ -934,7 +934,9 @@ export interface SettingsPageV2Props {
   discordDisconnecting?: boolean;
   epicDisconnecting?: boolean;
   onConnectSteam: () => void;
+  onCancelSteamConnect?: () => void;
   onConnectDiscord: () => void;
+  onCancelDiscordConnect?: () => void;
   onConnectEpic?: () => void;
   onDisconnectSteam: () => void;
   onDisconnectDiscord: () => void;
@@ -984,7 +986,9 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
   discordDisconnecting,
   epicDisconnecting,
   onConnectSteam,
+  onCancelSteamConnect,
   onConnectDiscord,
+  onCancelDiscordConnect,
   onConnectEpic,
   onDisconnectSteam,
   onDisconnectDiscord,
@@ -1879,14 +1883,26 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                         <button onClick={onDisconnectSteam} disabled={steamDisconnecting} className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[11.5px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer">
                           {steamDisconnecting ? "Desconectando..." : t("unlink")}
                         </button>
+                      ) : steamConnecting ? (
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[12px] text-white/70">
+                            <ThinkingOrbLoader size={20} preset="connecting" />
+                            <span className="t-shimmer" data-text={t("connecting")}>{t("connecting")}</span>
+                          </span>
+                          {onCancelSteamConnect && (
+                            <button
+                              type="button"
+                              onClick={onCancelSteamConnect}
+                              className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white/80 hover:text-white rounded-xl text-[11.5px] font-medium transition-colors active:scale-95 cursor-pointer"
+                              title="Cancelar tentativa de conexão"
+                            >
+                              Cancelar
+                            </button>
+                          )}
+                        </div>
                       ) : (
-                        <button onClick={onConnectSteam} disabled={steamConnecting} className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-[12px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer">
-                          {steamConnecting ? (
-                            <span className="flex items-center gap-2">
-                              <ThinkingOrbLoader size={20} preset="connecting" />
-                              <span className="t-shimmer" data-text={t("connecting")}>{t("connecting")}</span>
-                            </span>
-                          ) : t("connectSteam")}
+                        <button onClick={onConnectSteam} className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-[12px] font-medium transition-colors active:scale-95 cursor-pointer">
+                          {t("connectSteam")}
                         </button>
                       )}
                     </div>
@@ -1907,14 +1923,26 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                         <button onClick={onDisconnectDiscord} disabled={discordDisconnecting} className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[11.5px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer">
                           {discordDisconnecting ? "Desconectando..." : t("unlink")}
                         </button>
+                      ) : discordConnecting ? (
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[12px] text-white/70">
+                            <LinearProgress className="w-12" label={t("connecting")} />
+                            <span className="t-shimmer" data-text={t("connecting")}>{t("connecting")}</span>
+                          </span>
+                          {onCancelDiscordConnect && (
+                            <button
+                              type="button"
+                              onClick={onCancelDiscordConnect}
+                              className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white/80 hover:text-white rounded-xl text-[11.5px] font-medium transition-colors active:scale-95 cursor-pointer"
+                              title="Cancelar tentativa de conexão"
+                            >
+                              Cancelar
+                            </button>
+                          )}
+                        </div>
                       ) : (
-                        <button onClick={onConnectDiscord} disabled={discordConnecting} className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-[12px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer">
-                          {discordConnecting ? (
-                            <span className="flex items-center gap-2">
-                              <LinearProgress className="w-12" label={t("connecting")} />
-                              <span className="t-shimmer" data-text={t("connecting")}>{t("connecting")}</span>
-                            </span>
-                          ) : t("connectDiscord")}
+                        <button onClick={onConnectDiscord} className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-[12px] font-medium transition-colors active:scale-95 cursor-pointer">
+                          {t("connectDiscord")}
                         </button>
                       )}
                     </div>

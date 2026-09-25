@@ -62,17 +62,26 @@ pub fn run() {
                     let app_handle = app.handle().clone();
                     main_win.on_window_event(move |event| {
                         if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                            use tauri::Emitter;
                             use tauri_plugin_store::StoreExt;
-                            let min_to_tray = app_handle
-                                .store("settings.json")
-                                .ok()
+                            let store = app_handle.store("settings.json").ok();
+                            let min_to_tray = store
+                                .as_ref()
                                 .and_then(|s| s.get("minimize_to_tray"))
                                 .and_then(|v| v.as_bool())
                                 .unwrap_or(true);
+                            let confirm_before_exit = store
+                                .as_ref()
+                                .and_then(|s| s.get("confirm_before_exit"))
+                                .and_then(|v| v.as_bool())
+                                .unwrap_or(false);
 
                             if min_to_tray {
                                 api.prevent_close();
                                 let _ = win_clone.hide();
+                            } else if confirm_before_exit {
+                                api.prevent_close();
+                                let _ = app_handle.emit("system:exit-confirmation-requested", ());
                             }
                         }
                     });
@@ -103,6 +112,7 @@ pub fn run() {
             library_clear_steam_id,
             steam_fetch_public_library,
             steam_fetch_player_achievements_batch,
+            steam_search_store,
             // Launcher
             launcher_open_executable,
             launcher_select_executable,

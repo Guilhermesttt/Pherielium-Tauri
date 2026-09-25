@@ -34,7 +34,7 @@ pub fn create_tray(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                     show_main_window(app);
                 }
                 "quit" => {
-                    app.exit(0);
+                    let _ = crate::commands::system::request_quit_with_optional_confirm(app);
                 }
                 _ => {}
             }

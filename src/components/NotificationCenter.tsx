@@ -180,10 +180,12 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
 
         toast.add({
+          id: options?.id != null ? String(options.id) : undefined,
           title: options?.title,
           description: shortMessage,
           type: toastType as any,
-          timeout: duration,
+          // 0 / Infinity = sticky (same idea as incoming-call)
+          timeout: !duration || !Number.isFinite(duration) ? undefined : duration,
         });
       }
     },

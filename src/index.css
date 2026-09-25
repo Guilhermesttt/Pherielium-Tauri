@@ -1236,8 +1236,10 @@ video {
 }
 
 .t-stagger-line {
-  display: block;
   will-change: transform, opacity, filter;
+}
+.t-stagger-line:not([class*="flex"]):not([class*="grid"]) {
+  display: block;
 }
 
 .t-stagger.is-shown .t-stagger-line,

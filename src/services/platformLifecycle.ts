@@ -1,6 +1,7 @@
 import { supabase } from "./supabase";
 import { disconnectSteamAccount } from "./steam";
-import { syncPublicLibrarySummary } from "./localLibrary";
+import { syncPublicLibrarySummary, deleteLibraryGamesByLauncher } from "./localLibrary";
+import { invalidate } from "../lib/queryCache";
 import type { Platform, PlatformDisconnectingPhase } from "../types/platformOperations";
 import type { UserProfile } from "../types/domain";
 
@@ -74,6 +75,7 @@ export const disconnectPlatform = async (
   // Phase 2: Removing local data
   onPhaseChange?.("removing-local-data");
   await api.setPlatformCleanupPhase(uid, platform, operationId, "removing-local-data");
+  await deleteLibraryGamesByLauncher(uid, platform).catch(() => {});
   const local = await api.purgeLocalPlatformData(uid, platform);
 
   // Phase 3: Removing cloud data
@@ -93,10 +95,22 @@ export const disconnectPlatform = async (
     console.warn(`[platformLifecycle] Falha ao contatar nuvem para purge, prosseguindo:`, err);
   }
 
+  // Deleta diretamente de user_games no Supabase para garantir que nenhuma linha da plataforma persista
+  try {
+    await supabase
+      .from("user_games")
+      .delete()
+      .eq("user_id", uid)
+      .eq("launcher_type", platform);
+  } catch (err) {
+    console.warn(`[platformLifecycle] Falha ao deletar jogos da nuvem para ${platform}:`, err);
+  }
+
   // Phase 4: Refreshing profile & summary
   onPhaseChange?.("refreshing-profile");
   await api.setPlatformCleanupPhase(uid, platform, operationId, "refreshing-profile");
   clearPlatformCacheKeys(uid, platform);
+  invalidate(`games:list:${uid}`);
   await syncPublicLibrarySummary(uid, profile).catch(() => {});
 
   // Always complete cleanup journal to prevent infinite retry loop

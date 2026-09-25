@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+release
 
 # Rust / Cargo build output
 target

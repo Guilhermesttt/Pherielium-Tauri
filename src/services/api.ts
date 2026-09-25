@@ -11,7 +11,9 @@ const normalizeUrl = (value: string) => value.replace(/\/+$/, "");
 const isLocalHostname = (hostname: string) =>
   hostname === "localhost" ||
   hostname === "127.0.0.1" ||
-  hostname === "0.0.0.0";
+  hostname === "0.0.0.0" ||
+  hostname === "tauri.localhost" ||
+  hostname.endsWith(".localhost");
 
 export const resolveBackendUrl = (
   envUrl: string | undefined = import.meta.env.VITE_BACKEND_URL,
@@ -33,8 +35,16 @@ export const resolveBackendUrl = (
       }
     }
 
-    // Aplicacao web hospedada em uma origem HTTP(S) remota.
+    // Aplicacao web hospedada em uma origem HTTP(S) remota (ex: Vercel, Netlify).
+    // No Tauri / Electron empacotado, a origin e tauri://localhost, http://tauri.localhost ou file://
+    const isDesktopShell =
+      origin.startsWith("tauri://") ||
+      origin.includes("tauri.localhost") ||
+      origin.startsWith("file:") ||
+      origin === "null";
+
     if (
+      !isDesktopShell &&
       origin &&
       /^https?:\/\//i.test(origin) &&
       hostname &&
@@ -43,8 +53,8 @@ export const resolveBackendUrl = (
       return normalizeUrl(origin);
     }
 
-    // Electron empacotado normalmente roda em file:// (origin "null").
-    return PROD_BACKEND_URL;
+    // Desktop empacotado (Tauri / Electron).
+    return configured || PROD_BACKEND_URL;
   }
 
   if (configured === "http://localhost:8787" || configured === "https://localhost:8787") {

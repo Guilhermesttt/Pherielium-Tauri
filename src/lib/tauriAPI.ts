@@ -11,6 +11,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getVersion } from "@tauri-apps/api/app";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import {
+  checkGithubUpdates,
+  getAppUpdateState,
+  onAppDownloadProgress,
+  onAppUpdateMessage,
+  openReleaseAndQuitHint,
+  openUpdateDownload,
+} from "../services/githubUpdater";
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
@@ -45,6 +53,9 @@ export const tauriAPI = {
       sizeGb: number;
       lastPlayed: number;
     }>>("steam_scan_installed_games"),
+
+  searchSteamStore: (query: string) =>
+    invoke<any[]>("steam_search_store", { query }),
 
   listLocalGames: (uid: string) =>
     invoke<unknown[]>("library_list", { uid }),
@@ -223,8 +234,8 @@ export const tauriAPI = {
   searchEpicStore: (query: string) =>
     invoke<unknown[]>("epic_search_store", { query }),
 
-  fetchEpicStoreDetails: (_request: unknown) =>
-    Promise.resolve(null), // Phase 4 — requires Epic GraphQL integration
+  fetchEpicStoreDetails: (request: unknown) =>
+    invoke<Record<string, unknown>>("epic_fetch_store_details", { request }),
 
   getEpicLocalAchievements: (_request: unknown) =>
     Promise.resolve({ source: "epic-local", status: "not-installed", installed: false, achievements: [], total: 0, unlocked: 0, readableFileCount: 0, binarySaveDetected: false, scanTruncated: false }),
@@ -307,6 +318,33 @@ export const tauriAPI = {
   // ─── Window & App ──────────────────────────────────────────────────────────
   getVersion: () =>
     getVersion(),
+
+  getUpdateState: () => Promise.resolve(getAppUpdateState()),
+
+  checkForUpdates: () => checkGithubUpdates(() => getVersion()),
+
+  downloadUpdate: async () => {
+    const openExternal = (url: string) =>
+      invoke("system_open_external", { url }).catch(() => {
+        window.open(url, "_blank", "noopener,noreferrer");
+      });
+    return openUpdateDownload(openExternal);
+  },
+
+  quitAndInstallUpdate: async () => {
+    const openExternal = (url: string) =>
+      invoke("system_open_external", { url }).catch(() => {
+        window.open(url, "_blank", "noopener,noreferrer");
+      });
+    await openReleaseAndQuitHint(openExternal);
+  },
+
+  onUpdateMessage: (
+    callback: (message: string, data?: { version?: string } | string) => void,
+  ) => onAppUpdateMessage(callback),
+
+  onDownloadProgress: (callback: (progress: { percent?: number }) => void) =>
+    onAppDownloadProgress(callback),
 
   toggleFullScreen: () =>
     invoke<boolean>("window_fullscreen_toggle"),
@@ -562,9 +600,16 @@ export const tauriAPI = {
   getDisplays: () =>
     Promise.resolve([{ id: 0, label: "Primary", primary: true, width: 1920, height: 1080 }]),
 
-  // ─── Platform cleanup stubs ────────────────────────────────────────────────
-  purgeLocalPlatformData: (_uid: string, _platform: string) =>
-    Promise.resolve({ games: 0, sessions: 0, gameIds: [], steamAppIds: [], epicCatalogIds: [], deletedFiles: [] }),
+  // ─── Platform cleanup ─────────────────────────────────────────────────────
+  purgeLocalPlatformData: async (uid: string, platform: string) => {
+    let deleted = 0;
+    try {
+      deleted = await invoke<number>("library_delete_by_launcher", { uid, launcherType: platform });
+    } catch (err) {
+      console.warn("[tauriAPI] Erro ao deletar jogos na limpeza da plataforma:", err);
+    }
+    return { games: deleted, sessions: 0, gameIds: [], steamAppIds: [], epicCatalogIds: [], deletedFiles: [] };
+  },
   getPlatformCleanupState: (_uid: string, _platform: string) =>
     Promise.resolve(null),
   setPlatformCleanupPhase: (_uid: string, _platform: string, _opId: string, _phase: string) =>

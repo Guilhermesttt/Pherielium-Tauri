@@ -13,47 +13,35 @@ export interface ReleaseHighlights {
 }
 
 export const LATEST_RELEASE: ReleaseHighlights = {
-  version: "3.2.7",
-  title: "Confirmações claras & novo ícone",
+  version: "1.0.0",
+  title: "Pherielium 1.0",
   description:
-    "Modais de confirmação com ícones animados por contexto, Whats New redesenhado e o novo ícone do Pherielium na área de trabalho e no instalador.",
-  releaseUrl: "https://github.com/Guilhermesttt/Pherielium-Hub/releases/tag/v3.2.7",
+    "Primeira versão estável no GitHub: setup com ícone novo, tela de configuração inicial e atualizações pelo repositório.",
+  releaseUrl: "https://github.com/Guilhermesttt/Pherielium-Tauri/releases/tag/v1.0.0",
   highlights: [
     {
       id: "ui",
-      title: "Mensagens de confirmação claras",
+      title: "Configuração inicial",
       description:
-        "Ícones animados para remover jogo, sair da conta, desfazer amizade e desconectar plataformas — intenção óbvia antes de confirmar.",
+        "Wizard de first-run com o ícone do hub e preferências de janela (bandeja, confirmar saída, iniciar com o Windows).",
     },
     {
       id: "stability",
-      title: "Novo ícone do hub",
+      title: "Atualizações pelo GitHub",
       description:
-        "Identidade visual atualizada no atalho da área de trabalho, na janela do app e no instalador Windows.",
+        "O launcher verifica releases novas e mostra uma notificação fixa para você atualizar.",
     },
     {
-      id: "voice",
-      title: "Polimento da experiência social",
+      id: "security",
+      title: "Identidade 1.0",
       description:
-        "Ajustes de voz, chat e fluxo de amigos para uma navegação mais fluida no dia a dia.",
+        "Ícone e instalador alinhados à marca Pherielium neste repositório.",
     },
   ],
 };
 
 const releasesByVersion = new Map([
   [LATEST_RELEASE.version, LATEST_RELEASE],
-  ["3.2.6", LATEST_RELEASE],
-  ["3.2.5", LATEST_RELEASE],
-  ["3.2.4", {
-    version: "3.2.4",
-    title: "Telemetria de Controle, Voz Ultrarrápida & Galeria In-Game",
-    description: "Detecção nativa de bateria e conexão USB/Bluetooth para DualSense, DS4 e Xbox...",
-    releaseUrl: "https://github.com/Guilhermesttt/Checkpoint---Launcher/releases/tag/v3.2.4",
-    highlights: [
-      { id: "controller", title: "Telemetria & Bateria Precisa", description: "Leitura nativa precisa de bateria..." },
-      { id: "voice", title: "Voz com Conexão Instantânea", description: "Conexão ultrarrápida via LiveKit..." },
-    ]
-  } as ReleaseHighlights],
 ]);
 
 export const getReleaseHighlights = (version: string) =>

@@ -31,6 +31,7 @@ import {
 import {
   fetchSteamAppDetailsResult,
   fetchSteamAchievementSchema,
+  searchSteamGames,
 } from "../services/steam";
 import {
   fetchEpicAppDetailsResult,
@@ -712,21 +713,16 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
 
   const handleSteamSearch = async (query: string) => {
     const requestId = ++searchRequestRef.current;
-    if (query.length < 3) {
+    if (query.length < 2) {
       setSearchResults([]);
       setIsSearching(false);
       return;
     }
     setIsSearching(true);
     try {
-      const resp = await fetch(
-        apiUrl(
-          `/api/steam/search?query=${encodeURIComponent(query)}&language=${encodeURIComponent(language)}`,
-        ),
-      );
-      const data = await resp.json();
+      const items = await searchSteamGames(query);
       if (requestId === searchRequestRef.current) {
-        setSearchResults(data.items || []);
+        setSearchResults(items || []);
       }
     } catch (error) {
       console.error(error);
@@ -745,7 +741,8 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
     playSound("select");
     resetSearch();
     const requestId = ++detailsRequestRef.current;
-    const appId = String(game.id);
+    const appId = String(game.id || game.appid || "").trim();
+    if (!appId) return;
     setLoading(true);
     try {
       const [details, schema] = await Promise.all([
@@ -876,7 +873,7 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
       window.clearTimeout(searchDebounceRef.current);
       searchDebounceRef.current = null;
     }
-    if (query.length < 3) {
+    if (query.length < 2) {
       setSearchResults([]);
       setIsSearching(false);
       return;
@@ -888,7 +885,7 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
         return;
       }
       handleEpicSearch(query);
-    }, 350);
+    }, 300);
   };
 
   const handleSelectEpicGame = async (game: any) => {
@@ -902,36 +899,38 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
       ).trim();
       const namespace = String(game.namespace || "").trim();
       const productSlug = String(game.productSlug || "").trim();
-      const details =
-        productSlug
-          ? await fetchEpicAppDetailsResult(
-            catalogId,
-            namespace,
-            productSlug,
-            language,
-          ).catch(() => null)
-          : null;
+      const gameTitle = game.title || game.name || "";
+      const appName = String(game.appName || game.app_name || "").trim();
+
+      const details = await fetchEpicAppDetailsResult(
+        catalogId,
+        namespace,
+        productSlug,
+        language,
+        gameTitle,
+        appName,
+      ).catch(() => null);
       const d = details?.ok ? details.data : null;
       if (requestId !== detailsRequestRef.current) return;
 
       const resolvedCatalogId = String(d?.catalogId || catalogId).trim();
       const resolvedNamespace = String(d?.namespace || namespace).trim();
-      const appName = String(d?.appName || game.appName || "").trim();
+      const resolvedAppName = String(d?.appName || appName).trim();
       const launchId = String(
         d?.epicLaunchId
         || game.epicLaunchId
         || (
           resolvedNamespace && resolvedCatalogId
-            ? `${resolvedNamespace}:${resolvedCatalogId}${appName ? `:${appName}` : ""}`
+            ? `${resolvedNamespace}:${resolvedCatalogId}${resolvedAppName ? `:${resolvedAppName}` : ""}`
             : resolvedCatalogId
         ),
       ).trim();
-      const gameTitle = d?.title || game.title || game.name || "";
+      const finalGameTitle = d?.title || gameTitle;
 
       if (requestId !== detailsRequestRef.current) return;
       setFormData((prev) => ({
         ...prev,
-        title: gameTitle,
+        title: finalGameTitle,
         image: d?.cardImage || game.cardImage || game.tiny_image || game.image || "",
         cardImage: d?.cardImage || game.cardImage || game.tiny_image || game.image || "",
         backgroundImage: d?.backgroundImage || game.backgroundImage || game.image || "",
@@ -1348,7 +1347,7 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
                   aria-label={searchSource === "epic" ? copy.epicSearch : copy.steamSearch}
                   aria-autocomplete="list"
                   aria-controls="game-search-results"
-                  aria-expanded={searchQuery.length >= 3}
+                  aria-expanded={searchQuery.length >= 2}
                   value={searchQuery}
                   onChange={(event) => scheduleSearch(event.target.value, searchSource)}
                   placeholder={searchSource === "epic" ? copy.epicSearch : copy.steamSearch}
@@ -1359,7 +1358,7 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
                   id="game-search-results"
                   results={searchResults}
                   isSearching={isSearching}
-                  hasQuery={searchQuery.length >= 3}
+                  hasQuery={searchQuery.length >= 2}
                   noResultsLabel={copy.noSearchResults}
                   onSelect={searchSource === "epic" ? handleSelectEpicGame : handleSelectSteamGame}
                 />

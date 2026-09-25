@@ -84,6 +84,16 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
     (operationState.status === "syncing" || operationState.status === "connecting" || operationState.status === "disconnecting"),
   );
   const isBusy = loading || disconnecting || waitingBrowser || isOperationBusy;
+  const canClose = !loading && !disconnecting && !(operationState?.status === "syncing");
+
+  const handleModalClose = () => {
+    if (!canClose) return;
+    setWaitingBrowser(false);
+    setLoading(false);
+    setError(null);
+    onClose();
+  };
+
   const busyLabel =
     operationState && isOperationBusy && "phase" in operationState
       ? getPlatformPhaseLabel(operationState.phase, "pt-BR")
@@ -205,7 +215,7 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => !isBusy && onClose()}
+            onClick={handleModalClose}
             className="fixed inset-0 bg-black/60 backdrop-blur-[32px] z-50"
           />
 
@@ -222,8 +232,8 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                   <h2 className="text-lg font-bold text-white">Conectar Epic Games</h2>
                 </div>
                 <button
-                  onClick={() => !isBusy && onClose()}
-                  disabled={isBusy}
+                  onClick={handleModalClose}
+                  disabled={!canClose}
                   className="text-neutral-500 hover:text-white transition-colors disabled:opacity-30 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
@@ -242,11 +252,22 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                       className="overflow-hidden"
                     >
-                      <div className="flex items-center gap-2.5 pb-1">
-                        <ThinkingOrbLoader size={20} preset={operationState?.status === "syncing" ? "sync" : "connecting"} />
-                        <p className="text-[12px] font-semibold text-white/70">
-                          <span className="t-shimmer" data-text={busyLabel}>{busyLabel}</span>
-                        </p>
+                      <div className="flex items-center justify-between gap-2.5 pb-1">
+                        <div className="flex items-center gap-2.5">
+                          <ThinkingOrbLoader size={20} preset={operationState?.status === "syncing" ? "sync" : "connecting"} />
+                          <p className="text-[12px] font-semibold text-white/70">
+                            <span className="t-shimmer" data-text={busyLabel}>{busyLabel}</span>
+                          </p>
+                        </div>
+                        {waitingBrowser && (
+                          <button
+                            type="button"
+                            onClick={() => setWaitingBrowser(false)}
+                            className="text-[11px] text-white/50 hover:text-white underline cursor-pointer"
+                          >
+                            Cancelar espera
+                          </button>
+                        )}
                       </div>
                     </motion.div>
                   )}

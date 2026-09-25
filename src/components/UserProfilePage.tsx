@@ -29,6 +29,7 @@ import PherieliumTierSilver from "../assets/Pherielium_Tier_Prata.png";
 import PherieliumTierGold from "../assets/Pherielium_Tier_Ouro.png";
 import PherieliumTierPlatinum from "../assets/Pherielium_Tier_Platina.png";
 import { HomeOnboardingQuests } from "./home/HomeOnboardingQuests";
+import { areAllQuestsCompleted, getAllQuestsWithStatus, shouldShowOnboardingQuests } from "../services/userQuests";
 import { fetchUserGamesForProfile } from "../services/checkpointFriends";
 import { cn } from "../lib/utils";
 
@@ -504,6 +505,66 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
     });
   }, []);
 
+  // Ouvir atualizações de missões e XP em tempo real
+  useEffect(() => {
+    const handleUpdate = () => setQuestsRevision((r) => r + 1);
+    const unsub = progressionEventBus.onXpGained(handleUpdate);
+    window.addEventListener("checkpoint:xp-gained", handleUpdate);
+    window.addEventListener("checkpoint:quest-completed", handleUpdate);
+    return () => {
+      unsub();
+      window.removeEventListener("checkpoint:xp-gained", handleUpdate);
+      window.removeEventListener("checkpoint:quest-completed", handleUpdate);
+    };
+  }, []);
+  const playerLevel = useMemo(() => {
+    void questsRevision;
+    const isSelf = editable && authUser?.uid;
+    if (isSelf) {
+      return getUserUnifiedLevel(authUser.uid, normalizedGames);
+    }
+    // Amigos ou perfis consultados via busca
+    const anyProfile = userProfile as (UserProfile & { levelProgress?: { total_xp?: number; current_level?: number; progress_pct?: number }; level?: number }) | null;
+    const levelProgress = anyProfile?.levelProgress;
+    if (levelProgress?.total_xp != null && Number(levelProgress.total_xp) > 0) {
+      return calculatePlayerLevelFromXp(Number(levelProgress.total_xp));
+    }
+    const rawLvl = Number(levelProgress?.current_level ?? anyProfile?.level ?? 0);
+    if (rawLvl > 1) {
+      const tierInfo = getPSNTierInfo(rawLvl);
+      return {
+        level: rawLvl,
+        xp: 0,
+        progress: Number(levelProgress?.progress_pct ?? 0),
+        currentLevelXp: 0,
+        xpForNextLevel: 0,
+        tier: tierInfo.tier,
+        subTier: tierInfo.subTier,
+        tierName: tierInfo.name,
+        rank: tierInfo.name,
+        rankColor: tierInfo.color,
+        tierInfo,
+      };
+    }
+    const agg = aggregateTrophyCounts(normalizedGames);
+    return calculatePlayerLevel(stats.totalHours, stats.totalAchievements, stats.totalGames, agg);
+  }, [normalizedGames, stats, editable, authUser?.uid, userProfile, questsRevision]);
+
+  const shouldShowQuests = useMemo(() => {
+    const uid = userId || userProfile?.uid || authUser?.uid;
+    if (!uid) return false;
+    void questsRevision;
+
+    const quests = getAllQuestsWithStatus(uid);
+    const allDone = areAllQuestsCompleted(uid) || (quests.length > 0 && quests.every((q) => q.completed));
+    if (allDone) return false;
+
+    return shouldShowOnboardingQuests(uid, userProfile, {
+      totalGames: games.length,
+      level: playerLevel.level,
+    });
+  }, [userId, userProfile, authUser?.uid, questsRevision, games.length, playerLevel.level]);
+
   // Auto-validação de marcos alcançados (ex: jogos na biblioteca, plataformas conectadas, etc.)
   useEffect(() => {
     if (!editable || !authUser?.uid) return;
@@ -555,48 +616,6 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
     userProfile?.checkpointFriends?.length,
   ]);
 
-  useEffect(() => {
-    const handler = () => setQuestsRevision((r) => r + 1);
-    const unsub = progressionEventBus.onXpGained(handler);
-    window.addEventListener("checkpoint:xp-gained", handler);
-    return () => {
-      unsub();
-      window.removeEventListener("checkpoint:xp-gained", handler);
-    };
-  }, []);
-
-  const playerLevel = useMemo(() => {
-    void questsRevision;
-    const isSelf = editable && authUser?.uid;
-    if (isSelf) {
-      return getUserUnifiedLevel(authUser.uid, normalizedGames);
-    }
-    // Amigos ou perfis consultados via busca
-    const anyProfile = userProfile as (UserProfile & { levelProgress?: { total_xp?: number; current_level?: number; progress_pct?: number }; level?: number }) | null;
-    const levelProgress = anyProfile?.levelProgress;
-    if (levelProgress?.total_xp != null && Number(levelProgress.total_xp) > 0) {
-      return calculatePlayerLevelFromXp(Number(levelProgress.total_xp));
-    }
-    const rawLvl = Number(levelProgress?.current_level ?? anyProfile?.level ?? 0);
-    if (rawLvl > 1) {
-      const tierInfo = getPSNTierInfo(rawLvl);
-      return {
-        level: rawLvl,
-        xp: 0,
-        progress: Number(levelProgress?.progress_pct ?? 0),
-        currentLevelXp: 0,
-        xpForNextLevel: 0,
-        tier: tierInfo.tier,
-        subTier: tierInfo.subTier,
-        tierName: tierInfo.name,
-        rank: tierInfo.name,
-        rankColor: tierInfo.color,
-        tierInfo,
-      };
-    }
-    const agg = aggregateTrophyCounts(normalizedGames);
-    return calculatePlayerLevel(stats.totalHours, stats.totalAchievements, stats.totalGames, agg);
-  }, [normalizedGames, stats, editable, authUser?.uid, userProfile, questsRevision]);
 
   const [simulatedLevelDelta, setSimulatedLevelDelta] = useState(0);
   const [isTierMenuOpen, setIsTierMenuOpen] = useState(false);
@@ -1014,7 +1033,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
           </section>
         ) : (
           <>
-            {editable && (
+            {editable && shouldShowQuests && (
               <div className="w-full mb-6">
                 <div className="flex items-center justify-end mb-2">
                   <button

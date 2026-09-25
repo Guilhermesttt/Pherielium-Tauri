@@ -699,7 +699,7 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
       {/* Estado vazio de página inteira: sem nenhum amigo ainda, evita mostrar
           o layout de 2 colunas totalmente vazio (identidade + busca + grade). */}
       {activeSubTab === "AMIGOS" && friends.length === 0 && (
-        <div className="rounded-2xl border border-[var(--color-ui-detail)] shadow-2xl glass-panel">
+        <div className="py-6 flex justify-center w-full">
           <StandardEmptyState
             icon={Users}
             illustrated="friends"

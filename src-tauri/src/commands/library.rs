@@ -114,6 +114,93 @@ pub async fn steam_fetch_public_library(steam_id: String) -> Result<Value, Strin
 }
 
 #[command]
+pub async fn steam_search_store(query: String) -> Result<Vec<Value>, String> {
+    let q = query.trim();
+    if q.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(6))
+        .build()
+        .map_err(|e| format!("Falha ao inicializar HTTP client: {e}"))?;
+
+    let mut results: Vec<Value> = Vec::new();
+    let mut seen_ids = std::collections::HashSet::new();
+
+    // 1. Se for puramente numérico (Steam App ID direto, ex: 1593500 ou 730)
+    if q.chars().all(|c| c.is_ascii_digit()) && q.len() >= 2 {
+        let appid = q;
+        let details_url = format!("https://store.steampowered.com/api/appdetails?appids={appid}&l=brazilian");
+        if let Ok(res) = client.get(&details_url).send().await {
+            if let Ok(json) = res.json::<Value>().await {
+                if let Some(app_data) = json.get(appid).and_then(|v| v.get("data")) {
+                    let name = app_data.get("name").and_then(|v| v.as_str()).unwrap_or(appid);
+                    let header_img = app_data
+                        .get("header_image")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
+                    seen_ids.insert(appid.to_string());
+                    results.push(serde_json::json!({
+                        "id": appid,
+                        "appid": appid,
+                        "name": name,
+                        "title": name,
+                        "tiny_image": if !header_img.is_empty() {
+                            header_img.to_string()
+                        } else {
+                            format!("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{appid}/capsule_231x87.jpg")
+                        },
+                        "type": "app"
+                    }));
+                }
+            }
+        }
+    }
+
+    // 2. Busca via Steam SearchApps (rápido, direto da Steam Community)
+    let clean_q = q.replace(|c: char| !c.is_alphanumeric() && c != ' ', "");
+    let search_url = format!(
+        "https://steamcommunity.com/actions/SearchApps/{}",
+        clean_q.replace(' ', "%20")
+    );
+
+    if let Ok(res) = client.get(&search_url).header("User-Agent", "Pherielium/3.2.7").send().await {
+        if let Ok(items) = res.json::<Vec<Value>>().await {
+            for item in items.into_iter().take(15) {
+                let appid = item.get("appid").and_then(|v| v.as_str()).unwrap_or("").trim().to_string();
+                let name = item.get("name").and_then(|v| v.as_str()).unwrap_or("").trim().to_string();
+                if appid.is_empty() || name.is_empty() {
+                    continue;
+                }
+                if seen_ids.insert(appid.clone()) {
+                    let logo = item.get("logo").and_then(|v| v.as_str()).unwrap_or("");
+                    let icon = item.get("icon").and_then(|v| v.as_str()).unwrap_or("");
+                    let img = if !logo.is_empty() {
+                        logo.to_string()
+                    } else if !icon.is_empty() {
+                        icon.to_string()
+                    } else {
+                        format!("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{appid}/capsule_231x87.jpg")
+                    };
+
+                    results.push(serde_json::json!({
+                        "id": appid,
+                        "appid": appid,
+                        "name": name,
+                        "title": name,
+                        "tiny_image": img,
+                        "type": "app"
+                    }));
+                }
+            }
+        }
+    }
+
+    Ok(results)
+}
+
+#[command]
 pub async fn steam_fetch_player_achievements_batch(
     steam_id: String,
     app_ids: Vec<String>,

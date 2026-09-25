@@ -74,6 +74,20 @@ export function useAppUpdater() {
     }
   }, []);
 
+  /** Auto-check on launch + every 6h while the settings section (or any consumer) is mounted. */
+  useEffect(() => {
+    if (!(window as any).electronAPI?.checkForUpdates) return;
+    const run = () => {
+      void (window as any).electronAPI.checkForUpdates().catch(() => undefined);
+    };
+    const bootTimer = window.setTimeout(run, 4000);
+    const interval = window.setInterval(run, 6 * 60 * 60 * 1000);
+    return () => {
+      window.clearTimeout(bootTimer);
+      window.clearInterval(interval);
+    };
+  }, []);
+
   const checkForUpdates = async () => {
     if (!(window as any).electronAPI?.checkForUpdates) return;
     setUpdateStatus("checking");

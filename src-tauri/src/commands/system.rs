@@ -2,7 +2,29 @@
 //! Clipboard, external URLs, path opening, notifications, window management
 
 use serde::{Deserialize, Serialize};
-use tauri::{command, AppHandle, Manager};
+use tauri::{command, AppHandle, Emitter, Manager};
+
+fn store_bool(app: &AppHandle, key: &str, default: bool) -> bool {
+    use tauri_plugin_store::StoreExt;
+    app.store("settings.json")
+        .ok()
+        .and_then(|s| s.get(key))
+        .and_then(|v| v.as_bool())
+        .unwrap_or(default)
+}
+
+/// Ask the UI to confirm quit, or exit immediately when confirmation is off.
+pub fn request_quit_with_optional_confirm(app: &AppHandle) -> bool {
+    let confirm = store_bool(app, "confirm_before_exit", false);
+    if confirm {
+        crate::tray::show_main_window(app);
+        let _ = app.emit("system:exit-confirmation-requested", ());
+        true
+    } else {
+        app.exit(0);
+        false
+    }
+}
 
 #[command]
 pub async fn system_open_external(app: AppHandle, url: String) -> Result<(), String> {
@@ -100,16 +122,12 @@ pub async fn window_close(app: AppHandle) -> Result<(), String> {
         .get_webview_window("main")
         .ok_or("main window not found")?;
 
-    use tauri_plugin_store::StoreExt;
-    let min_to_tray = app
-        .store("settings.json")
-        .ok()
-        .and_then(|s| s.get("minimize_to_tray"))
-        .and_then(|v| v.as_bool())
-        .unwrap_or(true);
+    let min_to_tray = store_bool(&app, "minimize_to_tray", true);
 
     if min_to_tray {
         win.hide().map_err(|e| e.to_string())?;
+    } else if store_bool(&app, "confirm_before_exit", false) {
+        let _ = app.emit("system:exit-confirmation-requested", ());
     } else {
         win.close().map_err(|e| e.to_string())?;
     }
@@ -145,18 +163,8 @@ pub struct QuitConfirmation {
 
 #[command]
 pub async fn system_request_app_quit(app: AppHandle) -> Result<QuitConfirmation, String> {
-    use tauri_plugin_store::StoreExt;
-    let confirm = app
-        .store("settings.json")
-        .ok()
-        .and_then(|s| s.get("confirm_before_exit"))
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-
-    if !confirm {
-        app.exit(0);
-    }
-    Ok(QuitConfirmation { confirmation_required: confirm })
+    let confirmation_required = request_quit_with_optional_confirm(&app);
+    Ok(QuitConfirmation { confirmation_required })
 }
 
 #[command]

@@ -478,12 +478,6 @@ const GameRow = React.memo<GameRowProps>(
           <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
         </div>
 
-        {/* Highlight lateral sutil na cor da patente */}
-        {hasPlatinum ? (
-          <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-[#38bdf8]/90 via-[#38bdf8]/40 to-transparent rounded-l-2xl pointer-events-none z-0" />
-        ) : gameTier === "gold" ? (
-          <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-amber-400/70 via-amber-400/25 to-transparent rounded-l-2xl pointer-events-none z-0" />
-        ) : null}
 
         {/* Linha Superior: Cover + Info no lado esquerdo | Patente 3D Hero no lado direito */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">

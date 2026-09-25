@@ -278,6 +278,14 @@ declare global {
         source: "epic-store";
         installed: boolean;
       }>>;
+      searchSteamStore?: (query: string) => Promise<Array<{
+        id: string;
+        appid: string;
+        name: string;
+        title: string;
+        tiny_image: string;
+        type?: string;
+      }>>;
       fetchEpicStoreDetails: (request: {
         catalogId?: string;
         namespace?: string;

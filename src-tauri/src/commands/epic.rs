@@ -286,63 +286,121 @@ fn emit_epic_progress(app: &AppHandle, phase: &str, completed: Option<u64>, tota
 
 // ── Commands ─────────────────────────────────────────────────────────────────
 
-#[command]
-pub async fn epic_get_status() -> Result<EpicAccountStatus, String> {
-    let exe = match legendary_exe_path() {
-        Ok(p) => p,
-        Err(_) => {
-            return Ok(EpicAccountStatus {
-                authenticated: false,
-                account_id: None,
-                display_name: None,
+fn legendary_config_dirs() -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+    if let Ok(home) = std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")) {
+        dirs.push(PathBuf::from(&home).join(".config").join("legendary"));
+    }
+    if let Ok(local) = std::env::var("LOCALAPPDATA") {
+        dirs.push(PathBuf::from(local).join("legendary"));
+    }
+    if let Ok(appdata) = std::env::var("APPDATA") {
+        dirs.push(PathBuf::from(appdata).join("legendary"));
+    }
+    dirs
+}
+
+fn is_epic_account_name(value: &str) -> bool {
+    let account = value.trim();
+    !account.is_empty()
+        && !account.eq_ignore_ascii_case("none")
+        && !account.eq_ignore_ascii_case("null")
+        && !account.to_ascii_lowercase().contains("not logged in")
+}
+
+fn epic_status_from_user_json() -> Option<EpicAccountStatus> {
+    for dir in legendary_config_dirs() {
+        let path = dir.join("user.json");
+        let Ok(raw) = fs::read_to_string(&path) else {
+            continue;
+        };
+        let Ok(val) = serde_json::from_str::<Value>(&raw) else {
+            continue;
+        };
+        let display_name = val
+            .get("displayName")
+            .or_else(|| val.get("display_name"))
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|s| is_epic_account_name(s))
+            .map(String::from);
+        let account_id = val
+            .get("accountId")
+            .or_else(|| val.get("account_id"))
+            .or_else(|| val.get("id"))
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|s| is_epic_account_name(s))
+            .map(String::from);
+        if display_name.is_some() || account_id.is_some() {
+            return Some(EpicAccountStatus {
+                authenticated: true,
+                account_id: account_id.clone().or_else(|| display_name.clone()),
+                display_name: display_name.or(account_id),
             });
         }
-    };
+    }
+    None
+}
 
-    if !exe.exists() {
-        return Ok(EpicAccountStatus {
-            authenticated: false,
-            account_id: None,
-            display_name: None,
+fn epic_status_from_cli(exe: &Path) -> Option<EpicAccountStatus> {
+    // Prefer offline so a network blip does not look like a logout.
+    for args in [&["status", "--json", "--offline"][..], &["status", "--json"][..]] {
+        let mut cmd = Command::new(exe);
+        cmd.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
+        #[cfg(windows)]
+        cmd.creation_flags(0x08000000);
+
+        let Ok(output) = cmd.output() else {
+            continue;
+        };
+        if !output.status.success() {
+            continue;
+        }
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let Ok(val) = serde_json::from_str::<Value>(&stdout) else {
+            continue;
+        };
+        let account = val
+            .get("account")
+            .or_else(|| val.get("account_id"))
+            .or_else(|| val.get("display_name"))
+            .or_else(|| val.get("displayName"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        if !is_epic_account_name(&account) {
+            continue;
+        }
+        let display_name = val
+            .get("display_name")
+            .or_else(|| val.get("displayName"))
+            .and_then(|v| v.as_str())
+            .map(str::trim)
+            .filter(|s| is_epic_account_name(s))
+            .map(String::from)
+            .unwrap_or_else(|| account.clone());
+        return Some(EpicAccountStatus {
+            authenticated: true,
+            account_id: Some(account),
+            display_name: Some(display_name),
         });
     }
+    None
+}
 
-    let mut cmd = Command::new(&exe);
-    cmd.args(["status", "--json"])
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    #[cfg(windows)]
-    cmd.creation_flags(0x08000000);
+#[command]
+pub async fn epic_get_status() -> Result<EpicAccountStatus, String> {
+    // user.json is the durable source of truth; CLI can flake on network/timeouts.
+    if let Some(status) = epic_status_from_user_json() {
+        return Ok(status);
+    }
 
-    if let Ok(output) = cmd.output() {
-        if output.status.success() {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            if let Ok(val) = serde_json::from_str::<Value>(&stdout) {
-                let account = val.get("account")
-                    .or_else(|| val.get("account_id"))
-                    .or_else(|| val.get("display_name"))
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("")
-                    .trim()
-                    .to_string();
-
-                if !account.is_empty()
-                    && account != "none"
-                    && account != "null"
-                    && !account.contains("not logged in")
-                {
-                    let display_name = val.get("display_name")
-                        .or_else(|| val.get("displayName"))
-                        .and_then(|v| v.as_str())
-                        .map(String::from)
-                        .unwrap_or_else(|| account.clone());
-
-                    return Ok(EpicAccountStatus {
-                        authenticated: true,
-                        account_id: Some(account),
-                        display_name: Some(display_name),
-                    });
-                }
+    if let Ok(exe) = legendary_exe_path() {
+        if exe.exists() {
+            if let Some(status) = epic_status_from_cli(&exe) {
+                return Ok(status);
             }
         }
     }
@@ -585,18 +643,7 @@ pub async fn epic_get_achievements(
 pub async fn epic_logout() -> Result<Value, String> {
     let _ = run_legendary(&["auth", "--delete"]);
 
-    let mut dirs = vec![];
-    if let Ok(home) = std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")) {
-        dirs.push(PathBuf::from(home).join(".config").join("legendary"));
-    }
-    if let Ok(local) = std::env::var("LOCALAPPDATA") {
-        dirs.push(PathBuf::from(local).join("legendary"));
-    }
-    if let Ok(appdata) = std::env::var("APPDATA") {
-        dirs.push(PathBuf::from(appdata).join("legendary"));
-    }
-
-    for dir in dirs {
+    for dir in legendary_config_dirs() {
         for file in ["user.json", "token.json", "config.ini"] {
             let path = dir.join(file);
             let _ = fs::remove_file(path);
@@ -1052,7 +1099,8 @@ pub async fn epic_fetch_store_details(request: Value) -> Result<Value, String> {
         .get("productSlug")
         .and_then(|v| v.as_str())
         .unwrap_or("")
-        .trim();
+        .trim()
+        .to_string();
 
     let title_query = request
         .get("title")
@@ -1061,71 +1109,405 @@ pub async fn epic_fetch_store_details(request: Value) -> Result<Value, String> {
         .unwrap_or("")
         .trim();
 
+    let catalog_id = request
+        .get("catalogId")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim();
+
+    let namespace = request
+        .get("namespace")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim();
+
+    let app_name = request
+        .get("appName")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim();
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(6))
+        .build()
+        .unwrap_or_else(|_| reqwest::Client::new());
+
+    // 1. Gera lista de slugs candidatos para o endpoint da Epic (/p/[nome]-[do]-[jogo])
+    let mut candidate_slugs: Vec<String> = Vec::new();
     if !product_slug.is_empty() {
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(5))
-            .build()
-            .unwrap_or_else(|_| reqwest::Client::new());
-        let url = format!(
-            "https://store-content-ipv4.ak.epicgames.com/api/pt-BR/content/products/{product_slug}"
-        );
-        if let Ok(resp) = client.get(&url).send().await {
-            if let Ok(payload) = resp.json::<Value>().await {
-                let page = payload.pointer("/pages/0");
-                let about = page.and_then(|p| p.get("data")).and_then(|d| d.get("about"));
-                let hero = page.and_then(|p| p.get("data")).and_then(|d| d.get("hero"));
-                let images = page.and_then(|p| p.get("_images_")).and_then(|i| i.as_array());
+        candidate_slugs.push(product_slug.to_string());
+    }
 
-                let card_image = about
-                    .and_then(|a| a.get("image"))
-                    .and_then(|img| img.get("src"))
-                    .and_then(|s| s.as_str())
-                    .or_else(|| {
-                        hero.and_then(|h| h.get("portraitBackgroundImageUrl"))
+    let edition_words = [
+        "enhanced", "edition", "deluxe", "definitive", "standard",
+        "bundle", "complete", "goty", "remastered", "legacy", "online",
+        "the", "directors cut"
+    ];
+
+    if !title_query.is_empty() {
+        let title_lower = title_query.to_lowercase();
+        let mut clean_title = title_lower.clone();
+        for ew in &edition_words {
+            clean_title = clean_title.replace(ew, " ");
+        }
+
+        let clean_words: Vec<String> = clean_title
+            .replace(|c: char| !c.is_alphanumeric() && c != ' ', "")
+            .split_whitespace()
+            .map(|s| s.to_string())
+            .collect();
+        let clean_slug = clean_words.join("-");
+
+        let full_words: Vec<String> = title_lower
+            .replace(|c: char| !c.is_alphanumeric() && c != ' ', "")
+            .split_whitespace()
+            .map(|s| s.to_string())
+            .collect();
+        let full_slug = full_words.join("-");
+
+        if !clean_slug.is_empty() && !candidate_slugs.contains(&clean_slug) {
+            candidate_slugs.push(clean_slug.clone());
+        }
+        if !full_slug.is_empty() && !candidate_slugs.contains(&full_slug) {
+            candidate_slugs.push(full_slug);
+        }
+
+        // Sub-slugs progressivos (ex: 4 palavras, 3 palavras, 2 palavras)
+        if clean_words.len() >= 3 {
+            for len in (2..clean_words.len()).rev() {
+                let sub = clean_words[..len].join("-");
+                if !candidate_slugs.contains(&sub) {
+                    candidate_slugs.push(sub);
+                }
+            }
+        }
+    }
+
+    // Tenta também resolver via productmapping da Epic
+    let mapping_url = "https://store-content-ipv4.ak.epicgames.com/api/content/productmapping";
+    if let Ok(resp) = client.get(mapping_url).send().await {
+        if let Ok(mapping) = resp.json::<HashMap<String, String>>().await {
+            if !catalog_id.is_empty() {
+                if let Some(slug) = mapping.get(catalog_id) {
+                    if !candidate_slugs.contains(slug) {
+                        candidate_slugs.insert(0, slug.clone());
+                    }
+                }
+            }
+            if !namespace.is_empty() {
+                if let Some(slug) = mapping.get(namespace) {
+                    if !candidate_slugs.contains(slug) {
+                        candidate_slugs.insert(0, slug.clone());
+                    }
+                }
+            }
+            if !app_name.is_empty() {
+                let app_clean = app_name.to_lowercase().replace(' ', "-");
+                for (k, v) in &mapping {
+                    if k.eq_ignore_ascii_case(app_name)
+                        || v.eq_ignore_ascii_case(&app_clean)
+                        || v.to_lowercase().contains(&app_clean)
+                    {
+                        if !candidate_slugs.contains(v) {
+                            candidate_slugs.push(v.clone());
+                        }
+                    }
+                }
+            }
+            for candidate in candidate_slugs.clone() {
+                for (_k, v) in &mapping {
+                    let vl = v.to_lowercase();
+                    if vl == candidate || vl.contains(&candidate) || candidate.contains(&vl) {
+                        if !candidate_slugs.contains(v) {
+                            candidate_slugs.push(v.clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Itera sobre candidate_slugs tentando buscar página de produto no CDN Akamai da Epic
+    for candidate in &candidate_slugs {
+        let urls_to_try = [
+            format!("https://store-content-ipv4.ak.epicgames.com/api/pt-BR/content/products/{candidate}"),
+            format!("https://store-content-ipv4.ak.epicgames.com/api/en-US/content/products/{candidate}"),
+        ];
+
+        for url in &urls_to_try {
+            if let Ok(resp) = client.get(url).send().await {
+                if !resp.status().is_success() {
+                    continue;
+                }
+                if let Ok(payload) = resp.json::<Value>().await {
+                    if let Some(page) = payload.pointer("/pages/0") {
+                        let product_slug = candidate.clone();
+                        let about = page.get("data").and_then(|d| d.get("about"));
+                        let hero = page.get("data").and_then(|d| d.get("hero"));
+                        let meta = page.get("data").and_then(|d| d.get("meta"));
+                        let carousel_items = page.pointer("/data/carousel/items").and_then(|c| c.as_array());
+                        let images = page.get("_images_").and_then(|i| i.as_array());
+
+                        let mut screenshots: Vec<String> = Vec::new();
+                        let mut seen_screenshots = std::collections::HashSet::new();
+
+                        if let Some(items) = carousel_items {
+                            for item in items {
+                                if let Some(src) = item.get("image").and_then(|img| img.get("src")).and_then(|s| s.as_str()) {
+                                    if !src.is_empty() && seen_screenshots.insert(src.to_string()) {
+                                        screenshots.push(src.to_string());
+                                    }
+                                }
+                            }
+                        }
+
+                        if let Some(imgs) = images {
+                            for img in imgs {
+                                if let Some(src) = img.as_str() {
+                                    let lower = src.to_lowercase();
+                                    if !lower.contains("logo")
+                                        && !lower.contains("esrb")
+                                        && !lower.contains("icon")
+                                        && !lower.contains("publisher")
+                                        && seen_screenshots.insert(src.to_string())
+                                    {
+                                        screenshots.push(src.to_string());
+                                    }
+                                }
+                            }
+                        }
+
+                        let mut trailer_url = String::new();
+                        if let Some(items) = carousel_items {
+                            for item in items {
+                                if let Some(recipes_str) = item.pointer("/video/recipes").and_then(|s| s.as_str()) {
+                                    if let Ok(recipe_json) = serde_json::from_str::<Value>(recipes_str) {
+                                        if let Some(outputs) = recipe_json.get("output").and_then(|o| o.as_array()) {
+                                            for out in outputs {
+                                                if let Some(url_str) = out.as_str() {
+                                                    if url_str.ends_with(".mp4") {
+                                                        trailer_url = url_str.to_string();
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if !trailer_url.is_empty() {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        let card_image = about
+                            .and_then(|a| a.get("image"))
+                            .and_then(|img| img.get("src"))
                             .and_then(|s| s.as_str())
-                    })
-                    .unwrap_or("");
+                            .or_else(|| {
+                                hero.and_then(|h| h.get("portraitBackgroundImageUrl"))
+                                    .and_then(|s| s.as_str())
+                            })
+                            .or_else(|| screenshots.first().map(|s| s.as_str()))
+                            .unwrap_or("");
 
-                let bg_image = hero
-                    .and_then(|h| h.get("backgroundImageUrl"))
-                    .and_then(|s| s.as_str())
-                    .or_else(|| images.and_then(|arr| arr.first()).and_then(|v| v.as_str()))
-                    .unwrap_or(card_image);
+                        let bg_image = hero
+                            .and_then(|h| h.get("backgroundImageUrl"))
+                            .and_then(|s| s.as_str())
+                            .or_else(|| screenshots.first().map(|s| s.as_str()))
+                            .unwrap_or(card_image);
 
-                let logo_image = hero
-                    .and_then(|h| h.get("logoImage"))
-                    .and_then(|l| l.get("src"))
-                    .and_then(|s| s.as_str())
-                    .unwrap_or("");
+                        let logo_image = hero
+                            .and_then(|h| h.get("logoImage"))
+                            .and_then(|l| l.get("src"))
+                            .and_then(|s| s.as_str())
+                            .unwrap_or("");
 
-                let description = about
-                    .and_then(|a| a.get("description"))
-                    .and_then(|s| s.as_str())
-                    .or_else(|| {
-                        about
+                        let short_desc = about
                             .and_then(|a| a.get("shortDescription"))
                             .and_then(|s| s.as_str())
-                    })
-                    .unwrap_or("");
+                            .unwrap_or("");
 
-                let title = about
-                    .and_then(|a| a.get("title"))
-                    .and_then(|s| s.as_str())
-                    .or_else(|| page.and_then(|p| p.get("_title")).and_then(|s| s.as_str()))
-                    .unwrap_or(title_query);
+                        let full_desc = about
+                            .and_then(|a| a.get("description"))
+                            .and_then(|s| s.as_str())
+                            .unwrap_or("");
 
-                return Ok(json!({
-                    "catalogId": request.get("catalogId").cloned().unwrap_or(json!("")),
-                    "namespace": request.get("namespace").cloned().unwrap_or(json!("")),
-                    "appName": request.get("appName").cloned().unwrap_or(json!("")),
-                    "title": title,
-                    "image": card_image,
-                    "cardImage": card_image,
-                    "backgroundImage": bg_image,
-                    "logoImage": logo_image,
-                    "description": description,
-                    "productSlug": product_slug,
-                }));
+                        let description = if !short_desc.is_empty() {
+                            short_desc
+                        } else {
+                            full_desc
+                        };
+
+                        let about_the_game = if !full_desc.is_empty() {
+                            full_desc
+                        } else {
+                            short_desc
+                        };
+
+                        let developer = meta
+                            .and_then(|m| m.pointer("/developer/0"))
+                            .and_then(|s| s.as_str())
+                            .or_else(|| about.and_then(|a| a.get("developerAttribution")).and_then(|s| s.as_str()))
+                            .unwrap_or("");
+
+                        let publisher = meta
+                            .and_then(|m| m.pointer("/publisher/0"))
+                            .and_then(|s| s.as_str())
+                            .or_else(|| about.and_then(|a| a.get("publisherAttribution")).and_then(|s| s.as_str()))
+                            .unwrap_or("");
+
+                        let release_date = meta
+                            .and_then(|m| m.get("releaseDate"))
+                            .and_then(|s| s.as_str())
+                            .unwrap_or("");
+
+                        let mut tags: Vec<String> = Vec::new();
+                        if let Some(meta_tags) = meta.and_then(|m| m.get("tags")).and_then(|t| t.as_array()) {
+                            for t in meta_tags {
+                                if let Some(s) = t.as_str() {
+                                    tags.push(s.to_string());
+                                } else if let Some(s) = t.get("name").and_then(|n| n.as_str()) {
+                                    tags.push(s.to_string());
+                                }
+                            }
+                        }
+
+                        let title = about
+                            .and_then(|a| a.get("title"))
+                            .and_then(|s| s.as_str())
+                            .or_else(|| page.get("_title").and_then(|s| s.as_str()))
+                            .unwrap_or(title_query);
+
+                        if !card_image.is_empty() || !bg_image.is_empty() || !screenshots.is_empty() || !description.is_empty() {
+                            return Ok(json!({
+                                "catalogId": request.get("catalogId").cloned().unwrap_or(json!("")),
+                                "namespace": request.get("namespace").cloned().unwrap_or(json!("")),
+                                "appName": request.get("appName").cloned().unwrap_or(json!("")),
+                                "title": title,
+                                "image": card_image,
+                                "cardImage": card_image,
+                                "backgroundImage": bg_image,
+                                "logoImage": logo_image,
+                                "description": description,
+                                "aboutTheGame": about_the_game,
+                                "developer": developer,
+                                "publisher": publisher,
+                                "releaseDate": release_date,
+                                "tags": tags,
+                                "screenshots": screenshots,
+                                "trailerUrl": trailer_url,
+                                "productSlug": product_slug,
+                                "productUrl": format!("https://store.epicgames.com/p/{product_slug}"),
+                            }));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Fallback: Se não encontrou imagens na Epic, busca no catálogo público da Steam pelo título
+    if !title_query.is_empty() {
+        let clean_title = title_query.replace(|c: char| !c.is_alphanumeric() && c != ' ', "");
+        let steam_url = format!(
+            "https://steamcommunity.com/actions/SearchApps/{}",
+            clean_title.replace(' ', "%20")
+        );
+        if let Ok(steam_resp) = client.get(&steam_url).send().await {
+            if let Ok(steam_items) = steam_resp.json::<Vec<Value>>().await {
+                if let Some(first) = steam_items.first() {
+                    let appid = first
+                        .get("appid")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .trim();
+                    let matched_name = first
+                        .get("name")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or(title_query);
+
+                    if !appid.is_empty() {
+                        let card_img = format!(
+                            "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{appid}/library_600x900_2x.jpg"
+                        );
+                        let bg_img = format!(
+                            "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{appid}/header.jpg"
+                        );
+
+                        // Enriquecer com detalhes da loja Steam
+                        let mut steam_desc = String::new();
+                        let mut steam_about = String::new();
+                        let mut steam_dev = String::new();
+                        let mut steam_pub = String::new();
+                        let mut steam_release = String::new();
+                        let mut steam_tags = Vec::new();
+                        let mut steam_screenshots = Vec::new();
+
+                        let steam_detail_url = format!(
+                            "https://store.steampowered.com/api/appdetails?appids={appid}&l=brazilian"
+                        );
+                        if let Ok(detail_resp) = client.get(&steam_detail_url).send().await {
+                            if let Ok(detail_val) = detail_resp.json::<Value>().await {
+                                if let Some(app_data) = detail_val.get(appid).and_then(|v| v.get("data")) {
+                                    steam_desc = app_data.get("short_description").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                                    steam_about = app_data.get("detailed_description").or_else(|| app_data.get("about_the_game")).and_then(|v| v.as_str()).unwrap_or("").to_string();
+                                    if let Some(devs) = app_data.get("developers").and_then(|v| v.as_array()) {
+                                        if let Some(d) = devs.first().and_then(|v| v.as_str()) {
+                                            steam_dev = d.to_string();
+                                        }
+                                    }
+                                    if let Some(pubs) = app_data.get("publishers").and_then(|v| v.as_array()) {
+                                        if let Some(p) = pubs.first().and_then(|v| v.as_str()) {
+                                            steam_pub = p.to_string();
+                                        }
+                                    }
+                                    if let Some(rd) = app_data.pointer("/release_date/date").and_then(|v| v.as_str()) {
+                                        steam_release = rd.to_string();
+                                    }
+                                    if let Some(genres) = app_data.get("genres").and_then(|v| v.as_array()) {
+                                        for g in genres {
+                                            if let Some(d) = g.get("description").and_then(|v| v.as_str()) {
+                                                steam_tags.push(d.to_string());
+                                            }
+                                        }
+                                    }
+                                    if let Some(screens) = app_data.get("screenshots").and_then(|v| v.as_array()) {
+                                        for s in screens {
+                                            if let Some(p) = s.get("path_full").or_else(|| s.get("path_thumbnail")).and_then(|v| v.as_str()) {
+                                                steam_screenshots.push(p.to_string());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        return Ok(json!({
+                            "catalogId": request.get("catalogId").cloned().unwrap_or(json!("")),
+                            "namespace": request.get("namespace").cloned().unwrap_or(json!("")),
+                            "appName": request.get("appName").cloned().unwrap_or(json!("")),
+                            "title": matched_name,
+                            "image": card_img,
+                            "cardImage": card_img,
+                            "backgroundImage": bg_img,
+                            "logoImage": "",
+                            "description": steam_desc,
+                            "aboutTheGame": steam_about,
+                            "developer": steam_dev,
+                            "publisher": steam_pub,
+                            "releaseDate": steam_release,
+                            "tags": steam_tags,
+                            "screenshots": steam_screenshots,
+                            "productSlug": product_slug,
+                            "productUrl": if !product_slug.is_empty() {
+                                format!("https://store.epicgames.com/p/{product_slug}")
+                            } else {
+                                String::new()
+                            },
+                        }));
+                    }
+                }
             }
         }
     }

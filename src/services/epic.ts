@@ -103,15 +103,18 @@ export const fetchEpicAppDetailsResult = async (
 
   if (window.electronAPI?.fetchEpicStoreDetails) {
     try {
-      const data = await window.electronAPI.fetchEpicStoreDetails({
+      const data = (await window.electronAPI.fetchEpicStoreDetails({
         catalogId: itemId,
         namespace,
         productSlug: productSlug || undefined,
         title: titleOverride || undefined,
         appName: appNameOverride || undefined,
         language,
-      });
-      return { ok: true, data };
+      })) as EpicAppDetails | null;
+
+      if (data && (data.cardImage || data.backgroundImage || data.image || data.description)) {
+        return { ok: true, data };
+      }
     } catch {
       // Fallback para API HTTP se desktop store details falhar
     }
@@ -318,8 +321,14 @@ export const syncEpicLibraryToLocal = async (
         if (validDetails && gameTitle && validDetails.title) {
           const normGame = gameTitle.toLowerCase().replace(/[^a-z0-9]/g, "");
           const normStore = validDetails.title.toLowerCase().replace(/[^a-z0-9]/g, "");
-          const isMatch = normGame === normStore ||
-            (normGame.length >= 4 && normStore.length >= 4 && (normGame.startsWith(normStore) || normStore.startsWith(normGame) || (normGame.includes(normStore) && normStore.length / normGame.length > 0.65))) ||
+          const isMatch =
+            normGame === normStore ||
+            (normGame.length >= 3 && normStore.length >= 3 && (
+              normGame.startsWith(normStore) ||
+              normStore.startsWith(normGame) ||
+              normStore.includes(normGame) ||
+              normGame.includes(normStore)
+            )) ||
             Boolean(catalogId && validDetails.catalogId && catalogId.toLowerCase() === validDetails.catalogId.toLowerCase());
           if (!isMatch) {
             validDetails = null;

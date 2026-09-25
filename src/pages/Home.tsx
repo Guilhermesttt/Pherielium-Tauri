@@ -17,6 +17,7 @@ import {
   Filter,
   Trophy,
   Clock,
+  Compass,
 } from "lucide-react";
 
 import DynamicBackground from "../components/DynamicBackground";
@@ -30,9 +31,8 @@ import { LinearProgress } from "../components/ui/LinearProgress";
 import { HomeOverviewPanels } from "../components/HomeOverviewPanels";
 import DashboardContinuePlaying from "../components/DashboardContinuePlaying";
 import type { LibraryFilters } from "../components/LibraryFilterModal";
-import { Compass } from "lucide-react";
 import { HomeOnboardingQuests } from "../components/home/HomeOnboardingQuests";
-import { getAllQuestsWithStatus, shouldShowOnboardingQuests } from "../services/userQuests";
+import { getAllQuestsWithStatus, shouldShowOnboardingQuests, areAllQuestsCompleted } from "../services/userQuests";
 
 import { PHERIELIUM_LOGO_PATH } from "../constants/assets";
 import {
@@ -46,6 +46,7 @@ import FriendProfileModal from "../components/friends/FriendProfileModal";
 import { ProfileDropdown } from "../components/ui/ProfileDropdown";
 import { ShinyButton } from "../components/ui/shiny-button";
 import { ThinkingOrbLoader } from "../components/ThinkingOrbLoader";
+import { UpdateAvailableBanner } from "../components/UpdateAvailableBanner";
 import { DigitPopIn } from "../components/ui/DigitPopIn";
 import { useAuth } from "../auth/AuthProvider";
 import { supabase } from "../services/supabase";
@@ -306,6 +307,7 @@ const Home: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [signOutModalOpen, setSignOutModalOpen] = useState(false);
+  const [quitAppModalOpen, setQuitAppModalOpen] = useState(false);
   const [disconnectSteamModalOpen, setDisconnectSteamModalOpen] =
     useState(false);
   const [disconnectDiscordModalOpen, setDisconnectDiscordModalOpen] =
@@ -324,22 +326,43 @@ const Home: React.FC = () => {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isQuestsModalOpen, setIsQuestsModalOpen] = useState(false);
 
+  const [questsRevision, setQuestsRevision] = useState(0);
+
+  // Escutar atualizações de missões em tempo real
+  useEffect(() => {
+    const handleUpdate = () => setQuestsRevision((r) => r + 1);
+    const unsub = progressionEventBus.onXpGained(handleUpdate);
+    window.addEventListener("checkpoint:xp-gained", handleUpdate);
+    window.addEventListener("checkpoint:quest-completed", handleUpdate);
+    return () => {
+      unsub();
+      window.removeEventListener("checkpoint:xp-gained", handleUpdate);
+      window.removeEventListener("checkpoint:quest-completed", handleUpdate);
+    };
+  }, []);
+
   const isQuestsEligible = useMemo(() => {
     if (!user?.uid) return false;
+    void questsRevision;
+    const quests = getAllQuestsWithStatus(user.uid);
+    if (quests.length > 0 && quests.every((q) => q.completed)) return false;
+    if (areAllQuestsCompleted(user.uid)) return false;
+
     return shouldShowOnboardingQuests(user.uid, userProfile, {
       totalGames: games.length,
       level: playerLevel.level,
     });
-  }, [user?.uid, userProfile, games.length, playerLevel.level]);
+  }, [user?.uid, userProfile, games.length, playerLevel.level, questsRevision]);
 
   const questsStatus = useMemo(() => {
     if (!user?.uid || !isQuestsEligible) return { completed: 0, total: 0 };
+    void questsRevision;
     const list = getAllQuestsWithStatus(user.uid);
     return {
       completed: list.filter((q) => q.completed).length,
       total: list.length,
     };
-  }, [user?.uid, isQuestsEligible]);
+  }, [user?.uid, isQuestsEligible, questsRevision]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -486,6 +509,7 @@ const Home: React.FC = () => {
     setSoundTheme,
     setVisualTheme,
     minimizeToTrayOnClose,
+    confirmBeforeExit,
     restoreLastScreen,
     preferencesHydrated,
     t,
@@ -520,13 +544,12 @@ const Home: React.FC = () => {
     if (!preferencesHydrated) return;
     void window.electronAPI?.setWindowBehavior?.({
       minimizeToTray: minimizeToTrayOnClose,
-      confirmBeforeExit: false,
+      confirmBeforeExit,
     }).catch(console.error);
-  }, [minimizeToTrayOnClose, preferencesHydrated]);
+  }, [minimizeToTrayOnClose, confirmBeforeExit, preferencesHydrated]);
 
   useEffect(() => window.electronAPI?.onExitConfirmationRequested?.(() => {
-    // Sai direto — sem o modal "Sair do Phelierium".
-    void window.electronAPI?.confirmAppQuit?.();
+    setQuitAppModalOpen(true);
   }), []);
   const { playSound } = useSoundEffects(
     effectsVolume / 100,
@@ -630,7 +653,9 @@ const Home: React.FC = () => {
     setEpicConnecting,
     steamSyncing,
     connectSteam,
+    cancelSteamConnect,
     connectDiscord,
+    cancelDiscordConnect,
     handleDisconnectSteam,
     handleDisconnectDiscord,
     handleDisconnectEpic,
@@ -651,29 +676,54 @@ const Home: React.FC = () => {
     language: launcherLanguage,
   });
 
-  // Verifica se o usuário já está autenticado na Epic via Desktop IPC
+  // Verifica se o usuário já está autenticado na Epic via Desktop IPC.
+  // Não derruba o UI para "desconectado" em falha transitória do Legendary:
+  // o flag local só some no logout explícito (e os jogos Epic saem junto).
   const checkEpicStatus = useCallback(async () => {
+    if (!user?.uid) {
+      setEpicAuthConnected(false);
+      return;
+    }
+
+    let linkedLocally = false;
     try {
-      if (!user?.uid) {
-        setEpicAuthConnected(false);
-        return;
-      }
+      linkedLocally = localStorage.getItem("checkpoint_epic_linked_uid") === user.uid;
+    } catch { /* ignore */ }
+    if (linkedLocally) {
+      setEpicAuthConnected(true);
+    }
+
+    try {
       const data = await fetchEpicStatus();
-      const isConnected = data.authenticated === true;
-      setEpicAuthConnected(isConnected);
-      if (isConnected) {
+      if (data.authenticated === true) {
+        setEpicAuthConnected(true);
         previousEpicAuthRef.current = true;
         try {
           localStorage.setItem("checkpoint_epic_linked_uid", user.uid);
-        } catch { }
+        } catch { /* ignore */ }
+        if (data.displayName) setEpicDisplayName(data.displayName);
+        return;
       }
-      if (data.displayName) setEpicDisplayName(data.displayName);
-    } catch {
-      setEpicAuthConnected(false);
+
+      // Legendary disse "não autenticado". Só aceita se não houver vínculo local
+      // (logout real limpa o flag; falha transitória mantém o pill conectado).
+      if (!linkedLocally) {
+        setEpicAuthConnected(false);
+      }
+    } catch (err) {
+      console.warn("[Home] checkEpicStatus falhou; mantendo estado visual:", err);
     }
   }, [user?.uid]);
 
-  useEffect(() => { void checkEpicStatus(); }, [checkEpicStatus]);
+  useEffect(() => {
+    if (!user?.uid) return;
+    try {
+      if (localStorage.getItem("checkpoint_epic_linked_uid") === user.uid) {
+        setEpicAuthConnected(true);
+      }
+    } catch { /* ignore */ }
+    void checkEpicStatus();
+  }, [checkEpicStatus, user?.uid]);
 
   const isAnySyncing = steamSyncing || epicSyncing;
 
@@ -754,6 +804,15 @@ const Home: React.FC = () => {
     previousDiscordIdRef.current = resolvedDiscordId;
   }, [notify, resolvedDiscordId, resolvedSteamId, setDiscordConnecting, setSteamConnecting]);
 
+  useEffect(() => {
+    const openSettings = () => {
+      setSettingsTab("general");
+      selectCategory("SETTINGS");
+    };
+    window.addEventListener("phelierium:open-settings-tab", openSettings);
+    return () => window.removeEventListener("phelierium:open-settings-tab", openSettings);
+  }, [selectCategory]);
+
   // ── Auto-Updater Global Listener ──────────────────────────────────────────
   useEffect(() => {
     const api = window.electronAPI;
@@ -764,14 +823,14 @@ const Home: React.FC = () => {
       if (status === "update-available") {
         notify(
           `Nova atualização pendente${version ? ` (v${version})` : ""}. Abra as Configurações para baixar e atualizar.`,
-          "success",
-          { id: "checkpoint-app-update", title: "Atualização do Phelierium", duration: Infinity },
+          "warning",
+          { id: "checkpoint-app-update", title: "Atualização do Pherielium", duration: 0 },
         );
       } else if (status === "update-downloaded") {
         notify(
-          `A versão${version ? ` v${version}` : " nova"} está pronta. Vá em Configurações para reiniciar e atualizar.`,
+          `A versão${version ? ` v${version}` : " nova"} está pronta. Vá em Configurações para instalar.`,
           "success",
-          { id: "checkpoint-app-update", title: "Atualização pronta", duration: Infinity },
+          { id: "checkpoint-app-update", title: "Atualização pronta", duration: 0 },
         );
       }
     };
@@ -792,7 +851,19 @@ const Home: React.FC = () => {
       }
     });
 
-    return unsubscribe;
+    // Check GitHub even if Settings is never opened
+    const bootCheck = window.setTimeout(() => {
+      void api.checkForUpdates?.().catch(() => undefined);
+    }, 5000);
+    const interval = window.setInterval(() => {
+      void api.checkForUpdates?.().catch(() => undefined);
+    }, 6 * 60 * 60 * 1000);
+
+    return () => {
+      unsubscribe?.();
+      window.clearTimeout(bootCheck);
+      window.clearInterval(interval);
+    };
   }, [notify]);
 
   useEffect(() => {
@@ -1175,6 +1246,7 @@ const Home: React.FC = () => {
     Boolean(pendingDeleteGame) ||
     isAddFriendModalOpen ||
     signOutModalOpen ||
+    quitAppModalOpen ||
     disconnectSteamModalOpen ||
     disconnectDiscordModalOpen ||
     epicConnectModalOpen;
@@ -1254,6 +1326,11 @@ const Home: React.FC = () => {
       playSound("back");
       return;
     }
+    if (quitAppModalOpen) {
+      setQuitAppModalOpen(false);
+      playSound("back");
+      return;
+    }
     if (disconnectSteamModalOpen) {
       setDisconnectSteamModalOpen(false);
       playSound("back");
@@ -1312,6 +1389,7 @@ const Home: React.FC = () => {
     selectCategory,
     setActiveChatFriend,
     signOutModalOpen,
+    quitAppModalOpen,
   ]);
 
   useGamepadNavigation({
@@ -2427,11 +2505,11 @@ const Home: React.FC = () => {
                   cornerRadius={12}
                   cornerSmoothing={0.65}
                   type="button"
-                  aria-label={t("connectSteam") || "Conectar Steam"}
-                  onClick={connectSteam}
+                  aria-label={steamConnecting ? "Cancelar conexão Steam" : (t("connectSteam") || "Conectar Steam")}
+                  onClick={steamConnecting ? cancelSteamConnect : connectSteam}
                   onMouseEnter={() => playSound("hover")}
-                  disabled={steamConnecting}
-                  className="cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-200 hover:scale-105 hover:bg-[#161616] active:scale-95 disabled:opacity-70 group"
+                  className="cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-200 hover:scale-105 hover:bg-[#161616] active:scale-95 group"
+                  title={steamConnecting ? "Clique para cancelar a tentativa de conexão" : (t("connectSteam") || "Conectar Steam")}
                 >
                   {steamConnecting ? (
                     <span className="flex items-center gap-2 py-1">
@@ -2439,6 +2517,7 @@ const Home: React.FC = () => {
                       <span className="t-shimmer text-xs font-medium text-[#D2D2D2]" data-text={t("connecting") || "Conectando..."}>
                         {t("connecting") || "Conectando..."}
                       </span>
+                      <X className="w-3.5 h-3.5 text-white/50 group-hover:text-red-400 transition-colors ml-1" />
                     </span>
                   ) : (
                     <>
@@ -2613,7 +2692,9 @@ const Home: React.FC = () => {
                     discordDisconnecting={discordDisconnecting}
                     epicDisconnecting={epicDisconnecting}
                     onConnectSteam={connectSteam}
+                    onCancelSteamConnect={cancelSteamConnect}
                     onConnectDiscord={connectDiscord}
+                    onCancelDiscordConnect={cancelDiscordConnect}
                     onConnectEpic={() => setEpicConnectModalOpen(true)}
                     onDisconnectSteam={() => {
                       playSound("back");
@@ -2874,31 +2955,33 @@ const Home: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="t-stagger-line t-stagger-line--2 w-fit flex items-center gap-3 flex-wrap font-body mb-8">
-                          {currentGamePlatformInfo && (
-                            <span className="inline-flex h-7.5 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3.5 text-xs font-medium text-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.4)] backdrop-blur-md">
-                              <currentGamePlatformInfo.icon className="w-3.5 h-3.5 text-white/90 shrink-0" />
-                              <span>{currentGamePlatformInfo.label}</span>
-                            </span>
-                          )}
+                        <div className="t-stagger-line t-stagger-line--2 w-fit mb-8">
+                          <div className="flex items-center gap-3 flex-wrap font-body">
+                            {currentGamePlatformInfo && (
+                              <span className="inline-flex h-7.5 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3.5 text-xs font-medium text-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.4)] backdrop-blur-md">
+                                <currentGamePlatformInfo.icon className="w-3.5 h-3.5 text-white/90 shrink-0" />
+                                <span>{currentGamePlatformInfo.label}</span>
+                              </span>
+                            )}
 
-                          {currentGame && (
-                            <span className="inline-flex h-7.5 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3.5 text-xs font-medium text-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.4)] backdrop-blur-md">
-                              <Clock className="w-3.5 h-3.5 text-white/70 shrink-0" />
-                              <DigitPopIn
-                                value={formatPlayedHours(getGamePlayedHours(currentGame))}
-                                suffix="h jogadas"
-                                className="items-center"
-                              />
-                            </span>
-                          )}
+                            {currentGame && (
+                              <span className="inline-flex h-7.5 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3.5 text-xs font-medium text-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.4)] backdrop-blur-md">
+                                <Clock className="w-3.5 h-3.5 text-white/70 shrink-0" />
+                                <DigitPopIn
+                                  value={formatPlayedHours(getGamePlayedHours(currentGame))}
+                                  suffix="h jogadas"
+                                  className="items-center"
+                                />
+                              </span>
+                            )}
 
-                          {currentGame?.isFavorite && (
-                            <span className="inline-flex h-7.5 shrink-0 items-center gap-2 rounded-full border border-amber-400/25 bg-amber-500/10 px-3.5 text-xs font-medium text-amber-300 shadow-[0_4px_16px_rgba(0,0,0,0.4)] backdrop-blur-md">
-                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
-                              <span>Favorito</span>
-                            </span>
-                          )}
+                            {currentGame?.isFavorite && (
+                              <span className="inline-flex h-7.5 shrink-0 items-center gap-2 rounded-full border border-amber-400/25 bg-amber-500/10 px-3.5 text-xs font-medium text-amber-300 shadow-[0_4px_16px_rgba(0,0,0,0.4)] backdrop-blur-md">
+                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                                <span>Favorito</span>
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -3077,6 +3160,21 @@ const Home: React.FC = () => {
       />
 
       <ConfirmationModal
+        isOpen={quitAppModalOpen}
+        variant="logout"
+        title={t("quitAppTitle")}
+        description={t("quitAppDescription")}
+        confirmLabel={t("confirm")}
+        cancelLabel={t("cancel")}
+        onClose={() => setQuitAppModalOpen(false)}
+        onConfirm={async () => {
+          setQuitAppModalOpen(false);
+          await window.electronAPI?.confirmAppQuit?.();
+        }}
+        playSound={playSound}
+      />
+
+      <ConfirmationModal
         isOpen={disconnectSteamModalOpen}
         variant="disconnect"
         title={t("disconnectSteamTitle")}
@@ -3118,9 +3216,17 @@ const Home: React.FC = () => {
         onConfirm={async () => {
           setDisconnectEpicModalOpen(false);
           setEpicDisconnecting(true);
-          await handleDisconnectEpic();
-          await checkEpicStatus();
-          setEpicDisconnecting(false);
+          try {
+            await handleDisconnectEpic();
+            setEpicAuthConnected(false);
+            setEpicDisplayName("");
+            try {
+              localStorage.removeItem("checkpoint_epic_linked_uid");
+            } catch { /* ignore */ }
+            await refreshLibrary();
+          } finally {
+            setEpicDisconnecting(false);
+          }
         }}
         playSound={playSound}
       />
@@ -3223,6 +3329,7 @@ const Home: React.FC = () => {
         onDisconnect={async () => {
           await handleDisconnectEpic();
           await checkEpicStatus();
+          await refreshLibrary();
         }}
         onConnect={async (sid) => {
           setEpicConnectModalOpen(false);
@@ -3401,6 +3508,8 @@ const Home: React.FC = () => {
           />
         )
       }
+
+      <UpdateAvailableBanner />
     </div>
   );
 };

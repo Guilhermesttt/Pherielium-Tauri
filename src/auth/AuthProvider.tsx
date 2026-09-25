@@ -22,6 +22,7 @@ interface AuthContextValue {
   authIssue: AuthIssue;
   sessionStatus: SessionStatus;
   signInWithGoogle: () => Promise<void>;
+  cancelGoogleBrowserAuth: () => void;
   signUpWithEmail: (email: string, pass: string) => Promise<void>;
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signOutUser: () => Promise<void>;
@@ -425,79 +426,110 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return await fetchProfile(user.uid, user);
   }, [user, fetchProfile]);
 
+  const googleAbortControllerRef = useRef<AbortController | null>(null);
+
+  const cancelGoogleBrowserAuth = useCallback(() => {
+    if (googleAbortControllerRef.current) {
+      googleAbortControllerRef.current.abort();
+      googleAbortControllerRef.current = null;
+    }
+  }, []);
+
   const signInWithGoogle = useCallback(async () => {
     if (window.electronAPI) {
-      const res = await (window.electronAPI as any).startGoogleBrowserAuth();
-      const state = res?.state;
-      const pollSecret = res?.pollSecret;
-      if (!state || !pollSecret) throw new Error("Falha ao iniciar autenticação Google.");
+      const abortController = new AbortController();
+      googleAbortControllerRef.current = abortController;
+      const { signal } = abortController;
 
-      const deadline = Date.now() + 120_000;
+      try {
+        const res = await (window.electronAPI as any).startGoogleBrowserAuth();
+        if (signal.aborted) return;
+        const state = res?.state;
+        const pollSecret = res?.pollSecret;
+        if (!state || !pollSecret) throw new Error("Falha ao iniciar autenticação Google.");
 
-      while (Date.now() < deadline) {
-        await wait(1_500);
+        const deadline = Date.now() + 120_000;
 
-        let data: any = null;
+        while (Date.now() < deadline) {
+          if (signal.aborted) return;
+          await wait(1_500);
+          if (signal.aborted) return;
 
-        try {
-          if (typeof (window.electronAPI as any).pollGoogleBrowserAuth === "function") {
-            data = await (window.electronAPI as any).pollGoogleBrowserAuth(state, pollSecret);
-          } else {
-            const statusRes = await fetch(
-              apiUrl(
-                `/auth/desktop/google/status?state=${encodeURIComponent(state)}&pollSecret=${encodeURIComponent(pollSecret)}`,
-              ),
-            );
+          let data: any = null;
 
-            if (statusRes.status === 401) {
-              throw new Error("Sessão de login Google inválida. Tente novamente.");
+          try {
+            if (typeof (window.electronAPI as any).pollGoogleBrowserAuth === "function") {
+              data = await (window.electronAPI as any).pollGoogleBrowserAuth(state, pollSecret);
+            } else {
+              const statusRes = await fetch(
+                apiUrl(
+                  `/auth/desktop/google/status?state=${encodeURIComponent(state)}&pollSecret=${encodeURIComponent(pollSecret)}`,
+                ),
+                { signal },
+              );
+
+              if (statusRes.status === 401) {
+                throw new Error("Sessão de login Google inválida. Tente novamente.");
+              }
+
+              if (!statusRes.ok) {
+                throw new Error(`Falha ao consultar login Google (HTTP ${statusRes.status}).`);
+              }
+
+              data = await statusRes.json();
             }
-
-            if (!statusRes.ok) {
-              throw new Error(`Falha ao consultar login Google (HTTP ${statusRes.status}).`);
+          } catch (pollError: any) {
+            if (signal.aborted || pollError?.name === "AbortError") {
+              return;
             }
-
-            data = await statusRes.json();
+            // Oscilacoes de rede durante o polling podem ser tentadas novamente.
+            if (isTransientSessionEstablishmentError(pollError)) {
+              continue;
+            }
+            throw pollError;
           }
-        } catch (pollError) {
-          // Oscilacoes de rede durante o polling podem ser tentadas novamente.
-          if (isTransientSessionEstablishmentError(pollError)) {
+
+          if (signal.aborted) return;
+
+          if (!data || data.status === "pending") {
             continue;
           }
-          throw pollError;
-        }
 
-        if (!data || data.status === "pending") {
-          continue;
-        }
+          if (data.status === "error") {
+            throw new Error(data.error || "Falha na autenticação do Google.");
+          }
 
-        if (data.status === "error") {
-          throw new Error(data.error || "Falha na autenticação do Google.");
-        }
+          if (data.status !== "complete") {
+            throw new Error(`Status inesperado no login Google: ${String(data.status || "desconhecido")}.`);
+          }
 
-        if (data.status !== "complete") {
-          throw new Error(`Status inesperado no login Google: ${String(data.status || "desconhecido")}.`);
-        }
+          if (!data.accessToken || !data.refreshToken) {
+            throw new Error(
+              "O backend concluiu o login Google sem retornar uma sessão Supabase válida.",
+            );
+          }
 
-        if (!data.accessToken || !data.refreshToken) {
-          throw new Error(
-            "O backend concluiu o login Google sem retornar uma sessão Supabase válida.",
+          /*
+           * O backend ja consumiu o token hash one-time e criou a sessao.
+           * O renderer NUNCA deve chamar verifyOtp novamente com esse mesmo token.
+           */
+          await establishSessionFromBackendTokens(
+            String(data.accessToken),
+            String(data.refreshToken),
           );
+
+          return;
         }
 
-        /*
-         * O backend ja consumiu o token hash one-time e criou a sessao.
-         * O renderer NUNCA deve chamar verifyOtp novamente com esse mesmo token.
-         */
-        await establishSessionFromBackendTokens(
-          String(data.accessToken),
-          String(data.refreshToken),
-        );
-
-        return;
+        if (!signal.aborted) {
+          throw new Error("Tempo limite excedido aguardando login do Google. Tente novamente.");
+        }
+      } finally {
+        if (googleAbortControllerRef.current === abortController) {
+          googleAbortControllerRef.current = null;
+        }
       }
-
-      throw new Error("Tempo limite excedido aguardando login do Google. Tente novamente.");
+      return;
     }
 
     const { error } = await supabase.auth.signInWithOAuth({
@@ -849,6 +881,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authIssue,
       sessionStatus,
       signInWithGoogle,
+      cancelGoogleBrowserAuth,
       signUpWithEmail,
       signInWithEmail,
       signOutUser,
@@ -862,6 +895,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authIssue,
       sessionStatus,
       signInWithGoogle,
+      cancelGoogleBrowserAuth,
       signUpWithEmail,
       signInWithEmail,
       signOutUser,
@@ -888,6 +922,7 @@ export const useAuth = (): AuthContextValue => {
       authIssue: null,
       sessionStatus: "ok",
       signInWithGoogle: async () => { },
+      cancelGoogleBrowserAuth: () => { },
       signUpWithEmail: async () => { },
       signInWithEmail: async () => { },
       signOutUser: async () => { },

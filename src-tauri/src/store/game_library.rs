@@ -470,10 +470,22 @@ pub fn delete_game(uid: &str, game_id: &str) -> Result<bool> {
 
 pub fn delete_games_by_launcher(uid: &str, launcher_type: &str) -> Result<i64> {
     let conn = open(uid)?;
-    let rows = conn.execute(
-        "DELETE FROM games WHERE uid = ?1 AND launcher_type = ?2",
-        params![uid, launcher_type],
-    )?;
+    let rows = if launcher_type.eq_ignore_ascii_case("epic") {
+        conn.execute(
+            "DELETE FROM games WHERE uid = ?1 AND (launcher_type = 'epic' OR epic_catalog_id IS NOT NULL OR epic_launch_id IS NOT NULL)",
+            params![uid],
+        )?
+    } else if launcher_type.eq_ignore_ascii_case("steam") {
+        conn.execute(
+            "DELETE FROM games WHERE uid = ?1 AND (launcher_type = 'steam' OR steam_app_id IS NOT NULL)",
+            params![uid],
+        )?
+    } else {
+        conn.execute(
+            "DELETE FROM games WHERE uid = ?1 AND launcher_type = ?2",
+            params![uid, launcher_type],
+        )?
+    };
     Ok(rows as i64)
 }
 

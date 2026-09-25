@@ -157,7 +157,7 @@ export function useGameDetailAsync({
 
   // Fetch Epic Store Details
   React.useEffect(() => {
-    if (!isOpen || !game?.id || !isEpicGame || !game.epicCatalogId) {
+    if (!isOpen || !game?.id || !isEpicGame || (!game.epicCatalogId && !game.title && !game.epicLaunchId && !game.productSlug)) {
       setEpicAppDetails(null);
       setIsEpicAppDetailsLoading(false);
       return;
@@ -185,9 +185,16 @@ export function useGameDetailAsync({
           if (game.title && d.title) {
             const normGame = game.title.toLowerCase().replace(/[^a-z0-9]/g, "");
             const normResult = d.title.toLowerCase().replace(/[^a-z0-9]/g, "");
-            const isMatch = normGame === normResult ||
-              (normGame.length >= 4 && normResult.length >= 4 && (normGame.startsWith(normResult) || normResult.startsWith(normGame) || (normGame.includes(normResult) && normResult.length / normGame.length > 0.65))) ||
-              Boolean(d.catalogId && game.epicCatalogId && d.catalogId.toLowerCase() === game.epicCatalogId.toLowerCase());
+            const isMatch =
+              normGame === normResult ||
+              (normGame.length >= 3 && normResult.length >= 3 && (
+                normGame.startsWith(normResult) ||
+                normResult.startsWith(normGame) ||
+                normResult.includes(normGame) ||
+                normGame.includes(normResult)
+              )) ||
+              Boolean(d.catalogId && game.epicCatalogId && d.catalogId.toLowerCase() === game.epicCatalogId.toLowerCase()) ||
+              Boolean(d.productSlug && game.productSlug && d.productSlug.toLowerCase() === game.productSlug.toLowerCase());
             if (!isMatch) {
               if (!cancelled) setIsEpicAppDetailsLoading(false);
               return;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { AlertCircle, Eye, EyeOff, Check } from "lucide-react";
 
@@ -408,7 +408,7 @@ const AnimatedPherieliumLogo = () => {
 };
 
 const LoginContent: React.FC = () => {
-  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, loading: authLoading } = useAuth();
+  const { user, signInWithGoogle, cancelGoogleBrowserAuth, signInWithEmail, signUpWithEmail, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -421,11 +421,53 @@ const LoginContent: React.FC = () => {
 
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
+  const isGoogleCancelledRef = useRef(false);
+
+  const handleCancelGoogleLogin = useCallback(() => {
+    isGoogleCancelledRef.current = true;
+    cancelGoogleBrowserAuth();
+    setIsGoogleLoading(false);
+    setError(null);
+  }, [cancelGoogleBrowserAuth]);
+
   useEffect(() => {
     if (user && !authLoading) {
       navigate("/app", { replace: true });
     }
   }, [user, authLoading, navigate]);
+
+  // Listener para cancelar com tecla Escape caso o usuário desista ou feche o navegador
+  useEffect(() => {
+    if (!isGoogleLoading) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleCancelGoogleLogin();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isGoogleLoading, handleCancelGoogleLogin]);
+
+  // Se o usuário alternar de volta para a janela após abrir o navegador,
+  // damos uma tolerância e, se não autenticar, cancelamos automaticamente para não travar a tela.
+  useEffect(() => {
+    if (!isGoogleLoading) return;
+    let focusReturnTimer: any = null;
+
+    const handleWindowFocus = () => {
+      if (!focusReturnTimer) {
+        focusReturnTimer = setTimeout(() => {
+          handleCancelGoogleLogin();
+        }, 15_000);
+      }
+    };
+
+    window.addEventListener("focus", handleWindowFocus);
+    return () => {
+      window.removeEventListener("focus", handleWindowFocus);
+      if (focusReturnTimer) clearTimeout(focusReturnTimer);
+    };
+  }, [isGoogleLoading, handleCancelGoogleLogin]);
 
   if (authLoading && !user) {
     return (
@@ -484,15 +526,20 @@ const LoginContent: React.FC = () => {
   };
 
   const handleGoogleLogin = async () => {
+    isGoogleCancelledRef.current = false;
     setIsGoogleLoading(true);
     setError(null);
     try {
       await signInWithGoogle();
+      if (isGoogleCancelledRef.current) {
+        return;
+      }
       setIsGoogleLoading(false);
       setLoginSuccess(true);
       setTimeout(() => navigate("/app", { replace: true }), 1500);
       return;
     } catch (err: any) {
+      if (isGoogleCancelledRef.current) return;
       console.error("[Login] Erro no login Google:", err);
       setError(err?.message || "Falha ao entrar com Google.");
     } finally {
@@ -705,21 +752,31 @@ const LoginContent: React.FC = () => {
 
             {/* Social Login Button */}
             <motion.div variants={formItemVariants}>
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                disabled={isLoading || isGoogleLoading || authLoading}
-                className="w-full flex items-center justify-center gap-2.5 py-3 px-4 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/20 text-white/85 hover:text-white rounded-2xl text-xs font-body font-medium transition-all duration-200 disabled:opacity-50 cursor-pointer shadow-sm hover:scale-[1.01] active:scale-[0.99]"
-              >
-                {isGoogleLoading ? (
-                  <LoadingState label="Conectando Google..." variant="connecting" size="sm" />
-                ) : (
-                  <>
-                    <GoogleIcon />
-                    <span>Google</span>
-                  </>
-                )}
-              </button>
+              {isGoogleLoading ? (
+                <div className="w-full flex items-center gap-2">
+                  <div className="flex-1 flex items-center justify-center gap-2.5 py-3 px-4 bg-white/[0.04] border border-white/[0.08] text-white/85 rounded-2xl text-xs font-body font-medium">
+                    <LoadingState label="Aguardando no navegador..." variant="connecting" size="sm" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCancelGoogleLogin}
+                    className="py-3 px-4 bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 text-white/80 hover:text-white rounded-2xl text-xs font-medium transition-all active:scale-95 cursor-pointer shrink-0"
+                    title="Cancelar tentativa de login (Esc)"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={isLoading || authLoading}
+                  className="w-full flex items-center justify-center gap-2.5 py-3 px-4 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/20 text-white/85 hover:text-white rounded-2xl text-xs font-body font-medium transition-all duration-200 disabled:opacity-50 cursor-pointer shadow-sm hover:scale-[1.01] active:scale-[0.99]"
+                >
+                  <GoogleIcon />
+                  <span>Google</span>
+                </button>
+              )}
             </motion.div>
 
             {/* Bottom Toggle Text */}

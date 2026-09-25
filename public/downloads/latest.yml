@@ -1,6 +1,6 @@
-version: 3.1.2
+version: 1.0.0
 files:
-  - url: https://github.com/Guilhermesttt/Checkpoint---Launcher/releases/download/v3.1.2/Checkpoint-Launcher-Setup-3.1.2.exe
-path: https://github.com/Guilhermesttt/Checkpoint---Launcher/releases/download/v3.1.2/Checkpoint-Launcher-Setup-3.1.2.exe
-sha512: BvLGEPnm/RUUJ6UkZEo1DiT2fauczW6CUhZYxIWRkaGM+TlbPAOUMsxydMeR42HwQRxk+XqeG+ROVCA52GkL3w==
-releaseDate: '2026-08-18T08:17:06.388Z'
+  - url: https://github.com/Guilhermesttt/Pherielium-Tauri/releases/download/v1.0.0/Pherielium_1.0.0_x64-setup.exe
+path: https://github.com/Guilhermesttt/Pherielium-Tauri/releases/download/v1.0.0/Pherielium_1.0.0_x64-setup.exe
+sha512: ''
+releaseDate: '2026-09-25T00:00:00.000Z'

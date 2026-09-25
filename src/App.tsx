@@ -16,6 +16,9 @@ import { TooltipProvider } from "./components/ui/tooltip";
 import { VoiceCallProvider } from "./context/VoiceCallContext";
 import ControllerVirtualKeyboard from "./components/ui/ControllerVirtualKeyboard";
 import WhatsNewModal from "./components/WhatsNewModal";
+import InstallSetupScreen, {
+  isInstallSetupDone,
+} from "./components/InstallSetupScreen";
 import { useWhatsNewRelease } from "./hooks/useWhatsNewRelease";
 import { isBackendHealthy } from "./services/api";
 import { usePrefersReducedMotion } from "./hooks/usePrefersReducedMotion";
@@ -65,6 +68,7 @@ const AppContent: React.FC = () => {
   useControllerLed();
   const [isIntroVisible, setIsIntroVisible] = React.useState<boolean | null>(null);
   const [isPreloaderVisible, setIsPreloaderVisible] = React.useState<boolean>(false);
+  const [isInstallSetupVisible, setIsInstallSetupVisible] = React.useState(false);
 
   const musicRef = React.useRef<HTMLAudioElement | null>(null);
   const musicAudioContextRef = React.useRef<AudioContext | null>(null);
@@ -79,7 +83,12 @@ const AppContent: React.FC = () => {
   const {
     release: whatsNewRelease,
     dismiss: dismissWhatsNew,
-  } = useWhatsNewRelease(Boolean(user?.uid) && isIntroVisible === false && isPreloaderVisible === false);
+  } = useWhatsNewRelease(
+    Boolean(user?.uid) &&
+      isIntroVisible === false &&
+      isPreloaderVisible === false &&
+      !isInstallSetupVisible,
+  );
 
   React.useEffect(() => {
     const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -198,6 +207,16 @@ const AppContent: React.FC = () => {
       });
   }, [ensureMusicSource, fadeMusicTo, musicVolume, lowPerformanceMode]);
 
+  const finishBootSequence = React.useCallback(() => {
+    if (!isInstallSetupDone()) {
+      setIsInstallSetupVisible(true);
+      return;
+    }
+    window.requestAnimationFrame(() => {
+      startBackgroundMusic();
+    });
+  }, [startBackgroundMusic]);
+
   const activeMusicSignature = soundTheme;
 
   React.useEffect(() => {
@@ -265,6 +284,7 @@ const AppContent: React.FC = () => {
       completedIntroUserRef.current = null;
       setIsIntroVisible(null);
       setIsPreloaderVisible(false);
+      setIsInstallSetupVisible(false);
       if (musicStartTimerRef.current) {
         window.clearTimeout(musicStartTimerRef.current);
         musicStartTimerRef.current = null;
@@ -276,7 +296,11 @@ const AppContent: React.FC = () => {
     if (completedIntroUserRef.current === currentUid) {
       setIsIntroVisible(false);
       setIsPreloaderVisible(false);
-      musicStartTimerRef.current = window.setTimeout(startBackgroundMusic, 1200);
+      if (!isInstallSetupDone()) {
+        setIsInstallSetupVisible(true);
+      } else {
+        musicStartTimerRef.current = window.setTimeout(startBackgroundMusic, 1200);
+      }
       return;
     }
 
@@ -342,7 +366,13 @@ const AppContent: React.FC = () => {
 
   React.useEffect(() => {
     const handleFocus = () => {
-      if (user?.uid && !loading && isIntroVisible === false && isPreloaderVisible === false) {
+      if (
+        user?.uid &&
+        !loading &&
+        isIntroVisible === false &&
+        isPreloaderVisible === false &&
+        !isInstallSetupVisible
+      ) {
         startBackgroundMusic();
       }
     };
@@ -359,7 +389,7 @@ const AppContent: React.FC = () => {
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [user?.uid, loading, isIntroVisible, startBackgroundMusic]);
+  }, [user?.uid, loading, isIntroVisible, isPreloaderVisible, isInstallSetupVisible, startBackgroundMusic]);
 
   if (loading) {
     return <AsyncLoader />;
@@ -406,12 +436,20 @@ const AppContent: React.FC = () => {
                 onFinish={() => {
                   completedIntroUserRef.current = user.uid;
                   setIsIntroVisible(false);
-                  window.requestAnimationFrame(() => {
-                    startBackgroundMusic();
-                  });
+                  finishBootSequence();
                 }}
               />
             </MotionConfig>
+          ) : isInstallSetupVisible ? (
+            <InstallSetupScreen
+              key="install-setup"
+              onFinish={() => {
+                setIsInstallSetupVisible(false);
+                window.requestAnimationFrame(() => {
+                  startBackgroundMusic();
+                });
+              }}
+            />
           ) : null}
         </AnimatePresence>
       </div>

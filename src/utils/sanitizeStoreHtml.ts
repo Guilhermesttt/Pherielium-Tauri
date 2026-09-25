@@ -11,5 +11,15 @@ const config = {
 
 export const sanitizeStoreHtml = (value: unknown): string => {
   if (typeof value !== "string" || !value.trim()) return "";
-  return String(DOMPurify.sanitize(value.slice(0, 200_000), config));
+  let text = value.slice(0, 200_000);
+
+  // Se o texto não possui tags HTML de estrutura, formata quebras de linha em parágrafos
+  if (!/<(?:p|br|div|ul|ol|li|h[1-6])\b/i.test(text)) {
+    text = text
+      .split(/\r?\n\r?\n+/)
+      .map((paragraph) => `<p>${paragraph.trim().replace(/\r?\n/g, "<br />")}</p>`)
+      .join("");
+  }
+
+  return String(DOMPurify.sanitize(text, config));
 };

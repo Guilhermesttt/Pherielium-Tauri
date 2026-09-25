@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getSteamLinkUrl,
 } from "../services/steam";
@@ -64,48 +64,106 @@ export function useAccountConnections({
     };
   }, []);
 
-  // Polling da vinculação (reaproveitado pelos fluxos Electron e web):
-  // abre a URL, avisa e aguarda o perfil ganhar steamId/discordId.
-  const pollProfileLink = (
+  const cancelSteamConnect = useCallback(() => {
+    if (steamIntervalRef.current) {
+      clearInterval(steamIntervalRef.current);
+      steamIntervalRef.current = null;
+    }
+    if (steamFocusRef.current) {
+      window.removeEventListener("focus", steamFocusRef.current);
+      steamFocusRef.current = null;
+    }
+    setSteamConnecting(false);
+  }, []);
+
+  const cancelDiscordConnect = useCallback(() => {
+    if (discordIntervalRef.current) {
+      clearInterval(discordIntervalRef.current);
+      discordIntervalRef.current = null;
+    }
+    if (discordFocusRef.current) {
+      window.removeEventListener("focus", discordFocusRef.current);
+      discordFocusRef.current = null;
+    }
+    setDiscordConnecting(false);
+  }, []);
+
+  // Polling unificado e inteligente com detecção de foco e cancelamento ágil:
+  // Se o usuário abre o navegador, fecha a aba e volta ao app, detectamos o retorno
+  // e não o deixamos esperando 60 segundos à toa.
+  const startLinkPolling = (
     kind: "steam" | "discord",
     isLinked: (prof: any) => boolean,
-    onLinked?: () => void,
+    onLinked?: (prof: any) => void,
   ) => {
     const intervalRef = kind === "steam" ? steamIntervalRef : discordIntervalRef;
     const focusRef = kind === "steam" ? steamFocusRef : discordFocusRef;
     const setConnecting = kind === "steam" ? setSteamConnecting : setDiscordConnecting;
+    const cancelFn = kind === "steam" ? cancelSteamConnect : cancelDiscordConnect;
+
+    cancelFn();
+    setConnecting(true);
+
     let attempts = 0;
-    const maxAttempts = 40;
+    const maxAttempts = 30;
+    let returnToAppAttempts = 0;
+    let hasRegainedFocus = false;
+
+    const stop = () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = null;
+      if (focusRef.current) {
+        window.removeEventListener("focus", focusRef.current);
+        focusRef.current = null;
+      }
+      setConnecting(false);
+    };
 
     const check = async () => {
       attempts++;
+      if (hasRegainedFocus) {
+        returnToAppAttempts++;
+      }
+
       const prof = await refreshProfile();
       const linked = isLinked(prof);
-      if (linked || attempts >= maxAttempts) {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        intervalRef.current = null;
-        if (focusRef.current) {
-          window.removeEventListener("focus", focusRef.current);
-          focusRef.current = null;
-        }
-        setConnecting(false);
-        if (linked) onLinked?.();
+
+      if (linked) {
+        stop();
+        if (onLinked) onLinked(prof);
+        return;
+      }
+
+      // Se o usuário voltou para a janela do aplicativo (focou de volta)
+      // e após 6 checagens (~9 segundos no app) a conta ainda não foi conectada,
+      // encerramos a espera para o usuário não ficar preso com a aba fechada.
+      if (hasRegainedFocus && returnToAppAttempts >= 6) {
+        stop();
+        notify(
+          kind === "steam"
+            ? "Conexão Steam cancelada ou não concluída."
+            : "Conexão Discord cancelada ou não concluída.",
+          "info",
+        );
+        return;
+      }
+
+      if (attempts >= maxAttempts) {
+        stop();
       }
     };
 
     const onFocus = () => {
+      hasRegainedFocus = true;
       void check();
     };
 
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    if (focusRef.current) window.removeEventListener("focus", focusRef.current);
     intervalRef.current = setInterval(check, 1500);
     focusRef.current = onFocus;
     window.addEventListener("focus", onFocus);
   };
 
   const connectSteam = () => {
-    if (!userUid) return;
     if (!userUid) return;
     playSound("select");
     setSteamConnecting(true);
@@ -120,46 +178,19 @@ export function useAccountConnections({
         try {
           if (window.electronAPI?.openExternalUrl) {
             await window.electronAPI.openExternalUrl(url);
-            notify("Navegador aberto! Conecte sua conta Steam e volte ao app.", "info");
-
-            let attempts = 0;
-            const maxAttempts = 40;
-
-            const checkSteam = async () => {
-              attempts++;
-              const prof = await refreshProfile();
-              if (prof?.steamId || attempts >= maxAttempts) {
-                if (steamIntervalRef.current) clearInterval(steamIntervalRef.current);
-                steamIntervalRef.current = null;
-                if (steamFocusRef.current) window.removeEventListener("focus", steamFocusRef.current);
-                steamFocusRef.current = null;
-                setSteamConnecting(false);
-                if (prof?.steamId) {
-                  notify("Steam conectada com sucesso! Sincronizando jogos...", "info");
-                  void handleSyncSteam(prof.steamId);
-                }
-              }
-            };
-
-            const onFocus = () => {
-              void checkSteam();
-            };
-
-            if (steamIntervalRef.current) clearInterval(steamIntervalRef.current);
-            if (steamFocusRef.current) window.removeEventListener("focus", steamFocusRef.current);
-            steamIntervalRef.current = setInterval(checkSteam, 1500);
-            steamFocusRef.current = onFocus;
-            window.addEventListener("focus", onFocus);
           } else {
-            // Web (sem Electron): mesma espera do fluxo desktop — o loader
-            // fica visível enquanto o usuário conclui o login na outra aba.
             window.open(url, "_blank");
-            notify("Navegador aberto! Conecte sua conta Steam e volte ao app.", "info");
-            pollProfileLink("steam", (prof) => Boolean(prof?.steamId), () => {
-              notify("Steam conectada com sucesso! Sincronizando jogos...", "info");
-              void handleSyncSteam();
-            });
           }
+          notify("Navegador aberto! Conecte sua conta Steam e volte ao app.", "info");
+
+          startLinkPolling(
+            "steam",
+            (prof) => Boolean(prof?.steamId),
+            (prof) => {
+              notify("Steam conectada com sucesso! Sincronizando jogos...", "info");
+              void handleSyncSteam(prof?.steamId);
+            },
+          );
         } catch {
           notify("Não foi possível abrir o navegador.", "error");
           setSteamConnecting(false);
@@ -186,44 +217,18 @@ export function useAccountConnections({
         try {
           if (window.electronAPI?.openExternalUrl) {
             await window.electronAPI.openExternalUrl(url);
-            notify(
-              "Navegador aberto! Conecte sua conta Discord e volte ao app.",
-              "info",
-            );
-
-            let attempts = 0;
-            const maxAttempts = 40;
-
-            const checkDiscord = async () => {
-              attempts++;
-              const prof = await refreshProfile();
-              if (prof?.discordId || attempts >= maxAttempts) {
-                if (discordIntervalRef.current)
-                  clearInterval(discordIntervalRef.current);
-                discordIntervalRef.current = null;
-                if (discordFocusRef.current)
-                  window.removeEventListener("focus", discordFocusRef.current);
-                discordFocusRef.current = null;
-                setDiscordConnecting(false);
-              }
-            };
-
-            const onFocus = () => {
-              void checkDiscord();
-            };
-
-            discordIntervalRef.current = setInterval(checkDiscord, 1500);
-            discordFocusRef.current = onFocus;
-            window.addEventListener("focus", onFocus);
           } else {
-            // Web: aguarda como no desktop (antes o estado travava em true).
             window.open(url, "_blank");
-            notify(
-              "Navegador aberto! Conecte sua conta Discord e volte ao app.",
-              "info",
-            );
-            pollProfileLink("discord", (prof) => Boolean(prof?.discordId));
           }
+          notify("Navegador aberto! Conecte sua conta Discord e volte ao app.", "info");
+
+          startLinkPolling(
+            "discord",
+            (prof) => Boolean(prof?.discordId),
+            () => {
+              notify("Discord conectado com sucesso!", "info");
+            },
+          );
         } catch (e) {
           notify(
             e instanceof Error
@@ -283,7 +288,9 @@ export function useAccountConnections({
 
   const handleDisconnectEpic = async () => {
     playSound("back");
-    return platformOps.disconnectPlatform("epic");
+    const res = await platformOps.disconnectPlatform("epic");
+    await onLibraryChanged?.();
+    return res;
   };
 
   return {
@@ -298,7 +305,9 @@ export function useAccountConnections({
     platformOperations: platformOps.operations,
     platformOps,
     connectSteam,
+    cancelSteamConnect,
     connectDiscord,
+    cancelDiscordConnect,
     handleDisconnectSteam,
     handleDisconnectDiscord,
     handleDisconnectEpic,

@@ -1,6 +1,6 @@
 [package]
 name = "pherielium"
-version = "3.2.7"
+version = "1.0.0"
 description = "Pherielium Game Hub — Tauri edition with Rust backend"
 authors = ["Guilherme Sant'Ana"]
 edition = "2021"

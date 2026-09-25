@@ -128,6 +128,15 @@ export function getAllQuestsWithStatus(uid: string): UserQuest[] {
   });
 }
 
+export function areAllQuestsCompleted(uid: string): boolean {
+  if (!uid) return false;
+  const completedMap = getUserCompletedQuests(uid);
+  if (Object.keys(completedMap).length >= QUEST_DEFINITIONS.length) {
+    return true;
+  }
+  return QUEST_DEFINITIONS.every((q) => Boolean(completedMap[q.id]));
+}
+
 export function isQuestsDismissed(uid: string): boolean {
   try {
     return localStorage.getItem(`phelierium_quests_dismissed:${uid}`) === "1";

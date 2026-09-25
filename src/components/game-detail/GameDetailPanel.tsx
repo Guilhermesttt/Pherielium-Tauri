@@ -282,13 +282,27 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
 
   const galleryItems = React.useMemo(() => {
     const items: Array<{ id: string; type: "image"; url: string }> = [];
-    if (asyncData.localScreenshots.length > 0) {
-      asyncData.localScreenshots.forEach((url, i) => items.push({ id: `local-${i}`, type: "image", url }));
-    } else if (game?.screenshots?.length) {
-      game.screenshots.forEach((url, i) => items.push({ id: `remote-${i}`, type: "image", url }));
-    }
+    const seen = new Set<string>();
+
+    const addUrl = (url: string, prefix: string, idx: number) => {
+      if (url && typeof url === "string" && !seen.has(url)) {
+        seen.add(url);
+        items.push({ id: `${prefix}-${idx}`, type: "image", url });
+      }
+    };
+
+    asyncData.localScreenshots.forEach((url, i) => addUrl(url, "local", i));
+    (game?.screenshots || []).forEach((url, i) => addUrl(url, "game", i));
+    (asyncData.epicDetails.data?.screenshots || []).forEach((url, i) => addUrl(url, "epic", i));
+    (asyncData.steamDetails.data?.screenshots || []).forEach((url, i) => addUrl(url, "steam", i));
+
     return items;
-  }, [asyncData.localScreenshots, game?.screenshots]);
+  }, [
+    asyncData.localScreenshots,
+    game?.screenshots,
+    asyncData.epicDetails.data?.screenshots,
+    asyncData.steamDetails.data?.screenshots,
+  ]);
 
   if (!game) return null;
 

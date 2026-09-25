@@ -402,17 +402,80 @@ export const fetchSteamAchievementSchema = async (
 
 export const fetchSteamAchievementsSchema = fetchSteamAchievementSchema;
 
-export const searchSteamGames = async (query: string) => {
-  const response = await fetch(
-    apiUrl(`/api/steam/search?query=${encodeURIComponent(query)}`),
-  );
+export const searchSteamGames = async (query: string): Promise<any[]> => {
+  const q = String(query || "").trim();
+  if (q.length < 2) return [];
 
-  if (!response.ok) {
-    throw new Error("Falha ao buscar jogos na Steam.");
+  // 1. Rust Tauri invoke nativo (sem problemas de CORS, rápido e seguro)
+  if (typeof window !== "undefined" && window.electronAPI?.searchSteamStore) {
+    try {
+      const items = await window.electronAPI.searchSteamStore(q);
+      if (Array.isArray(items) && items.length > 0) {
+        return items.map((it: any) => ({
+          id: String(it.id || it.appid),
+          appid: String(it.appid || it.id),
+          name: it.name || it.title || "",
+          title: it.title || it.name || "",
+          tiny_image: it.tiny_image || it.logo || it.icon || "",
+          type: "app",
+        }));
+      }
+    } catch (e) {
+      console.warn("[searchSteamGames] searchSteamStore error:", e);
+    }
   }
 
-  const payload = (await response.json()) as { items?: Array<Record<string, unknown>> };
-  return payload.items ?? [];
+  // 2. Tentar endpoint do backend Pherielium
+  try {
+    const response = await fetch(
+      apiUrl(`/api/steam/search?query=${encodeURIComponent(q)}`),
+    );
+    if (response.ok) {
+      const payload = (await response.json()) as { items?: Array<any> };
+      if (Array.isArray(payload.items) && payload.items.length > 0) {
+        return payload.items.map((it) => ({
+          id: String(it.id || it.appid),
+          appid: String(it.appid || it.id),
+          name: it.name || it.title || "",
+          title: it.title || it.name || "",
+          tiny_image: it.tiny_image || it.logo || it.icon || "",
+          type: "app",
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn("[searchSteamGames] backend search error:", err);
+  }
+
+  // 3. Fallback direto da Steam Community (SearchApps)
+  try {
+    const cleanQ = q.replace(/[^\w\s]/gi, "").trim();
+    if (cleanQ) {
+      const res = await fetch(
+        `https://steamcommunity.com/actions/SearchApps/${encodeURIComponent(cleanQ)}`,
+      );
+      if (res.ok) {
+        const items = (await res.json()) as any[];
+        if (Array.isArray(items) && items.length > 0) {
+          return items.slice(0, 15).map((it: any) => ({
+            id: String(it.appid),
+            appid: String(it.appid),
+            name: it.name,
+            title: it.name,
+            tiny_image:
+              it.logo ||
+              it.icon ||
+              `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${it.appid}/capsule_231x87.jpg`,
+            type: "app",
+          }));
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[searchSteamGames] direct steamcommunity search error:", err);
+  }
+
+  return [];
 };
 
 export const fetchSteamAppDetails = async (
