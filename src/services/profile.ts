@@ -162,6 +162,12 @@ export const saveCurrentUserProfile = async ({
 
     // Atualiza metadados do Supabase Auth para consistência
     try {
+      // NUNCA salvar data: URI ou strings longas (> 500 chars) em user_metadata do Supabase!
+      // user_metadata é codificado dentro do JWT de autenticação. Se for base64, o token atinge dezenas de KB,
+      // estourando limites de header HTTP (431 no Vite e 500/520 no gateway Kong/Supabase).
+      const isBase64OrOversized = typeof photoURL === "string" && (photoURL.startsWith("data:") || photoURL.length > 500);
+      const safeAvatarUrl = isBase64OrOversized ? null : (photoURL || null);
+
       await supabase.auth.updateUser({
         data: {
           custom_display_name: normalized.displayName,
@@ -169,8 +175,8 @@ export const saveCurrentUserProfile = async ({
           display_name: normalized.displayName,
           full_name: normalized.displayName,
           name: normalized.displayName,
-          avatar_url: photoURL || undefined,
-          picture: photoURL || undefined,
+          avatar_url: safeAvatarUrl,
+          picture: safeAvatarUrl,
         },
       });
     } catch (authMetaErr) {

@@ -238,77 +238,27 @@ const RankProgressionRail = React.memo<{
   completionPct: number;
   currentTier: "platinum" | "gold" | "silver" | "bronze";
 }>(({ completionPct, currentTier }) => {
-  const nodes = useMemo(
-    () => [
-      { id: "bronze" as const, label: "Bronze", minPct: 0, image: PherieliumLogoBronze, color: "#cd7f32" },
-      { id: "silver" as const, label: "Prata", minPct: 35, image: PherieliumLogoSilver, color: "#cbd5e1" },
-      { id: "gold" as const, label: "Ouro", minPct: 65, image: PherieliumLogoGold, color: "#fbbf24" },
-      { id: "platinum" as const, label: "Platina", minPct: 100, image: PherieliumLogoPlatinum, color: "#38bdf8" },
-    ],
-    [],
-  );
+  const tierColor = useMemo(() => {
+    switch (currentTier) {
+      case "platinum": return "#38bdf8";
+      case "gold": return "#fbbf24";
+      case "silver": return "#cbd5e1";
+      case "bronze":
+      default: return "#cd7f32";
+    }
+  }, [currentTier]);
 
   return (
-    <div className="relative pt-2 pb-0.5">
-      {/* Linha de progresso */}
-      <div className="relative h-1.5 w-full rounded-full bg-white/[0.05] overflow-hidden">
-        <div
-          className="absolute inset-y-0 left-0 rounded-full transition-all duration-300"
-          style={{
-            width: `${Math.max(0, Math.min(100, completionPct))}%`,
-            background:
-              completionPct >= 100
-                ? "linear-gradient(90deg, #cd7f32 0%, #cbd5e1 35%, #fbbf24 65%, #38bdf8 100%)"
-                : completionPct >= 65
-                  ? "linear-gradient(90deg, #cd7f32 0%, #cbd5e1 45%, #fbbf24 100%)"
-                  : completionPct >= 35
-                    ? "linear-gradient(90deg, #cd7f32 0%, #cbd5e1 100%)"
-                    : "#cd7f32",
-            boxShadow:
-              completionPct >= 100
-                ? "0 0 10px rgba(56,189,248,0.5)"
-                : completionPct >= 65
-                  ? "0 0 8px rgba(251,191,36,0.35)"
-                  : undefined,
-          }}
+    <div className="relative pt-1 pb-0.5">
+      {/* Linha de progresso sutil focada no metal alcançado */}
+      <div className="relative h-1 w-full rounded-full bg-white/[0.06] overflow-hidden">
+        <motion.div
+          className="h-full rounded-full"
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.max(0, Math.min(100, completionPct))}%` }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          style={{ backgroundColor: tierColor }}
         />
-      </div>
-
-      {/* Marcadores dos Ranks na Trilha */}
-      <div className="relative -mt-3 flex items-center justify-between pointer-events-none">
-        {nodes.map((node) => {
-          const isReached = completionPct >= node.minPct;
-          const isCurrent = currentTier === node.id;
-
-          return (
-            <div key={node.id} className="flex flex-col items-center">
-              <div
-                className={`relative flex items-center justify-center rounded-full transition-all duration-200 ${isCurrent
-                  ? "h-5 w-5 ring-2 ring-white/30 shadow-md scale-110"
-                  : isReached
-                    ? "h-4 w-4"
-                    : "h-4 w-4 opacity-25 grayscale"
-                  }`}
-                style={{
-                  background: isReached ? "#151719" : "#111315",
-                  boxShadow: isCurrent ? `0 0 10px ${node.color}` : undefined,
-                }}
-              >
-                <img src={node.image} alt={node.label} className="h-3 w-3 object-contain" />
-              </div>
-              <div className="mt-1 flex items-center gap-1">
-                <span
-                  className={`text-[9px] font-black uppercase tracking-wider ${isCurrent ? "text-white font-extrabold" : isReached ? "text-neutral-400" : "text-neutral-600"
-                    }`}
-                  style={{ color: isCurrent ? node.color : undefined }}
-                >
-                  {node.label}
-                </span>
-                <span className="text-[8px] text-neutral-600 font-medium">{node.minPct}%</span>
-              </div>
-            </div>
-          );
-        })}
       </div>
     </div>
   );
@@ -427,7 +377,7 @@ const GameRow = React.memo<GameRowProps>(
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         onMouseEnter={handleMouseEnter}
-        className="group relative flex flex-col gap-4 rounded-2xl p-4 sm:p-5 transition-all duration-300 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 shadow-[0_4px_24px_rgba(0,0,0,0.4)]"
+        className="group relative flex flex-col gap-3 rounded-2xl p-4 sm:p-5 transition-all duration-300 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
       >
         {/* Glow ambiente externo expansivo e suave no card inteiro */}
         <div
@@ -469,15 +419,21 @@ const GameRow = React.memo<GameRowProps>(
         {/* Borda estática base sutil em repouso */}
         <div className="absolute inset-0 rounded-2xl border border-white/[0.08] group-hover:border-transparent transition-colors duration-300 pointer-events-none z-0" />
 
-        {/* Superfície interna do Card (cobre o miolo deixando a borda de 1.5px visível) */}
-        <div className="absolute inset-[1.5px] rounded-[14.5px] bg-[#0E1012] group-hover:bg-[#121519] transition-colors duration-300 pointer-events-none z-0 overflow-hidden">
+        {/* Superfície interna do Card (mantém fundo sólido conforme DIRETRIZES DA APPLE, deixando borda de 1.5px visível) */}
+        <div className="absolute inset-[1.5px] rounded-[14.5px] bg-[#0C0D10] group-hover:bg-[#101217] transition-colors duration-300 pointer-events-none z-0 overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
           {/* Efeito Sheen transversal dinâmico com brilho vívido passando no hover */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.06] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
 
-          {/* Gradiente sutil no topo do card dando profundidade de vidro fosco */}
+          {/* Gradiente sutil no topo do card dando profundidade */}
           <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
         </div>
 
+        {/* Highlight lateral sutil na cor da patente (exclusivo para troféus raros: Platina e Ouro) */}
+        {hasPlatinum ? (
+          <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-[#38bdf8]/90 via-[#38bdf8]/40 to-transparent rounded-l-2xl pointer-events-none z-0" />
+        ) : gameTier === "gold" ? (
+          <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-amber-400/80 via-amber-400/30 to-transparent rounded-l-2xl pointer-events-none z-0" />
+        ) : null}
 
         {/* Linha Superior: Cover + Info no lado esquerdo | Patente 3D Hero no lado direito */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
@@ -486,14 +442,16 @@ const GameRow = React.memo<GameRowProps>(
             <div className="relative shrink-0 group/cover">
               {/* Luz ambiente suave atrás da capa */}
               <div
-                className="absolute -inset-1 rounded-xl blur-md opacity-25 group-hover/cover:opacity-45 transition-opacity pointer-events-none"
+                className="absolute -inset-1 rounded-xl blur-md opacity-25 group-hover/cover:opacity-50 transition-opacity pointer-events-none"
                 style={{
                   background: hasPlatinum
-                    ? "radial-gradient(circle, rgba(56,189,248,0.4) 0%, transparent 70%)"
-                    : "radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)",
+                    ? "radial-gradient(circle, rgba(56,189,248,0.45) 0%, transparent 70%)"
+                    : gameTier === "gold"
+                      ? "radial-gradient(circle, rgba(251,191,36,0.35) 0%, transparent 70%)"
+                      : "radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%)",
                 }}
               />
-              <div className="relative w-16 h-22 sm:w-[66px] sm:h-[90px] rounded-xl overflow-hidden border border-white/10 bg-neutral-900 shadow-md">
+              <div className="relative w-14 h-20 sm:w-16 sm:h-[86px] rounded-xl overflow-hidden border border-white/10 bg-neutral-900 shadow-md">
                 {game.cardImage || game.image ? (
                   <img
                     src={game.cardImage || game.image}
@@ -507,46 +465,46 @@ const GameRow = React.memo<GameRowProps>(
                     {game.title?.slice(0, 2).toUpperCase()}
                   </div>
                 )}
-                {/* Highlight interno e vinheta */}
                 <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-xl pointer-events-none" />
               </div>
             </div>
 
-            <div className="min-w-0 flex-1 space-y-1.5">
+            <div className="min-w-0 flex-1 space-y-1">
               <h3
-                className={`truncate text-base sm:text-lg font-black transition-colors ${hasPlatinum ? "text-white group-hover:text-[#7dd3fc]" : "text-neutral-100 group-hover:text-white"
-                  }`}
+                className={`truncate text-sm sm:text-base font-bold transition-colors ${
+                  hasPlatinum
+                    ? "text-white group-hover:text-[#7dd3fc]"
+                    : gameTier === "gold"
+                      ? "text-white group-hover:text-amber-200"
+                      : "text-white/90 group-hover:text-white"
+                }`}
               >
                 {game.title}
               </h3>
 
-              {/* Metadados elegantes sem excesso de pílulas */}
-              <div className="flex items-center gap-2 text-xs text-neutral-400 flex-wrap">
-                <span className="font-semibold text-neutral-300">{launcherLabel}</span>
+              {/* Metadados elegantes sem ruído */}
+              <div className="flex items-center gap-2 text-xs text-white/45 flex-wrap">
+                <span className="font-semibold text-white/70">{launcherLabel}</span>
                 {hours > 0 && (
                   <>
-                    <span className="text-neutral-600">•</span>
-                    <span className="flex items-center gap-1 font-medium text-neutral-400">
-                      <Clock className="h-3 w-3 text-neutral-500" /> {formatPlayedHours(hours)}h
+                    <span className="text-white/20">•</span>
+                    <span className="flex items-center gap-1 font-medium text-white/60">
+                      <Clock className="h-3 w-3 text-white/40" /> {formatPlayedHours(hours)}h
                     </span>
                   </>
                 )}
-                {trophyCounts.points ? (
-                  <>
-                    <span className="text-neutral-600">•</span>
-                    <span className="flex items-center gap-1 font-bold text-amber-400/90">
-                      <Zap className="h-3 w-3 text-amber-400" /> +{trophyCounts.points} XP
-                    </span>
-                  </>
-                ) : null}
+                <span className="text-white/20">•</span>
+                <span className="font-medium text-white/60">
+                  {trophyCounts.completed} de {trophyCounts.total} marcos
+                </span>
               </div>
             </div>
           </div>
 
-          {/* LADO DIREITO: Insígnia 3D Hero Flutuante + Status Semântico */}
+          {/* LADO DIREITO: Único Destaque Heroico — Insígnia Metálica 3D + Status */}
           <div className="flex items-center justify-between sm:justify-end gap-5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
             <div className="flex items-center gap-3.5">
-              {/* Emblema 3D Flutuante (sem caixa quadrada) */}
+              {/* Emblema 3D com a marca Pherielium nos 4 metais nobres */}
               <div className="relative flex items-center justify-center shrink-0">
                 <div
                   className="absolute -inset-3 rounded-full blur-xl pointer-events-none opacity-40 group-hover:opacity-95 group-hover:scale-125 transition-all duration-500"
@@ -564,41 +522,37 @@ const GameRow = React.memo<GameRowProps>(
                 <img
                   src={tierStyle.trophyImage}
                   alt={tierName}
-                  width={64}
-                  height={64}
-                  className="object-contain shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1 select-none"
+                  width={52}
+                  height={52}
+                  className="object-contain shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-0.5 select-none drop-shadow-lg"
                   style={{
-                    width: 64,
-                    height: 64,
+                    width: 52,
+                    height: 52,
                     filter: `${tierStyle.glow} ${tierStyle.filter}`,
                   }}
                 />
               </div>
 
               {/* Status da Patente */}
-              <div className="flex flex-col items-start min-w-[110px]">
-                <span className={`text-xs font-black tracking-widest uppercase ${tierStyle.textColor}`}>
+              <div className="flex flex-col items-start min-w-[95px]">
+                <span className={`text-[11px] font-bold tracking-wider uppercase ${tierStyle.textColor}`}>
                   {tierName}
                 </span>
-                <span className={`text-sm font-black tracking-tight ${hasPlatinum ? "text-[#38bdf8]" : "text-white"}`}>
-                  {completionPct === 100 ? "100% Concluído" : `${completionPct}% Concluído`}
-                </span>
-                <span className="text-[10px] text-neutral-400 font-medium">
-                  {completionPct === 100
-                    ? `${trophyCounts.total} de ${trophyCounts.total} marcos`
-                    : `${trophyCounts.completed} de ${trophyCounts.total} marcos`}
+                <span className={`text-sm font-semibold tracking-tight ${hasPlatinum ? "text-[#38bdf8]" : "text-white/95"}`}>
+                  {completionPct === 100 ? "100%" : `${completionPct}%`}
                 </span>
               </div>
             </div>
 
             <ChevronRight
-              className={`h-4 w-4 transition-transform duration-200 group-hover:translate-x-1 ${hasPlatinum ? "text-[#38bdf8]" : "text-neutral-500 group-hover:text-white"
-                }`}
+              className={`h-4 w-4 transition-transform duration-200 group-hover:translate-x-1 ${
+                hasPlatinum ? "text-[#38bdf8]" : "text-white/30 group-hover:text-white"
+              }`}
             />
           </div>
         </div>
 
-        {/* Linha Inferior: Trilha Visual de Progressão de Patentes (Rank Progression Rail) */}
+        {/* Linha Inferior: Trilha Visual de Progressão Limpa */}
         <div className="relative z-10 pt-1">
           <RankProgressionRail completionPct={completionPct} currentTier={gameTier} />
         </div>
@@ -916,13 +870,22 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                   </div>
                 </div>
 
-                {/* Total Acumulado com peso visual reduzido */}
-                <div className="flex items-center gap-1.5 text-[11px] font-medium text-neutral-500">
-                  <span>Total acumulado:</span>
-                  <span className="text-neutral-300 font-semibold flex items-center gap-1">
-                    <Zap className="h-3 w-3 text-amber-400/80" />
-                    {levelInfo.xp.toLocaleString()} XP
-                  </span>
+                {/* Total Acumulado e contexto de XP */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2 text-[11px] font-medium text-white/50 flex-wrap">
+                    <span>XP do Hub:</span>
+                    <span className="text-white/90 font-semibold flex items-center gap-1">
+                      <Zap className="h-3 w-3 text-amber-400" />
+                      {levelInfo.xp.toLocaleString()} XP
+                    </span>
+                    <span className="text-white/20">•</span>
+                    <span className="text-white/60">{totalStats.unlocked} troféus sincronizados</span>
+                  </div>
+                  {levelInfo.xp === 0 && totalStats.unlocked > 0 && (
+                    <p className="text-[10px] text-white/40 leading-snug">
+                      Troféus sincronizados alimentam sua vitrine. Ganhe XP em sessões pelo hub e completando missões.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

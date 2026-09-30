@@ -208,7 +208,7 @@ const GameCard: React.FC<GameCardProps> = ({
       aria-label={title}
       aria-pressed={isActive}
       data-game-card={true}
-      className="group relative flex items-center justify-center p-0 text-left select-none focus:outline-none cursor-pointer"
+      className="group relative flex items-center justify-center p-0 text-left select-none outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-base)] cursor-pointer rounded-[var(--radius-card)]"
       style={{
         width: CARD_FRAME_WIDTH,
         height: CARD_FRAME_HEIGHT,
@@ -216,28 +216,32 @@ const GameCard: React.FC<GameCardProps> = ({
       }}
     >
       <motion.div
-        whileHover={{ scale: isActive ? 1.05 : 0.98, y: isActive ? -8 : -2 }}
+        whileHover={{ scale: isActive ? 1.035 : 0.99, y: isActive ? -8 : -3 }}
         whileTap={{ scale: 0.95 }}
         animate={{
-          scale: isActive ? 1.05 : 0.95,
-          y: isActive ? -8 : 0,
-          borderColor: isActive ? "var(--color-ui-detail)" : "rgba(255,255,255,0.08)"
+          scale: isActive ? 1.025 : 0.96,
+          y: isActive ? -6 : 0,
+          borderColor: isActive ? "var(--border-selected)" : "var(--border-subtle)",
         }}
-        transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
+        transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
         style={{
           width: CARD_WIDTH,
           height: CARD_HEIGHT,
-          borderRadius: 24, /* Squircle outer approximation */
+          borderRadius: "var(--radius-card, 16px)",
           boxShadow: isActive
-            ? "0 25px 60px rgba(0,0,0,0.95), inset 0 1px 0 rgba(255,255,255,0.25)"
-            : "0 10px 28px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.12)",
+            ? "0 22px 50px rgba(0,0,0,0.85), var(--focus-shadow), var(--surface-chamfer)"
+            : "0 8px 24px rgba(0,0,0,0.65), var(--surface-chamfer)",
           transition: "box-shadow 0.3s ease",
         }}
-        className={`relative isolate bg-[var(--color-surface)] border transform-gpu will-change-transform flex flex-col justify-between ${isActive ? "ring-2 ring-[var(--color-ui-detail)] z-20" : "z-10"
-          }`}
+        className={`relative isolate bg-[var(--surface-raised)] border transform-gpu will-change-transform flex flex-col justify-between ${
+          isActive ? "ring-2 ring-[var(--border-selected)] z-20" : "z-10"
+        }`}
       >
-        {/* Clip container isolado - borda arredondada fica aqui, fora do layer de transform 3D */}
-        <div className="absolute inset-0 overflow-hidden isolate" style={{ borderRadius: 23 }}>
+        {/* Clip container isolado - borda arredondada herdada de var(--radius-card) */}
+        <div
+          className="absolute inset-0 overflow-hidden isolate"
+          style={{ borderRadius: "calc(var(--radius-card, 16px) - 1px)" }}
+        >
           {/* Full-Bleed Cover Image Artwork */}
           {hasAllFailed ? (
             <div
@@ -390,14 +394,11 @@ const GameCard: React.FC<GameCardProps> = ({
         </motion.div>
 
 
-        {/* Bottom Title and Source Metadata (Consistent Typography Scale) */}
+        {/* Bottom Title (Clean & uncluttered) */}
         <div className="relative z-20 mt-auto p-3.5 flex flex-col justify-end pointer-events-none">
-          <h3 className="line-clamp-2 text-sm font-display font-bold text-white tracking-tight leading-snug drop-shadow-md">
+          <h3 className="line-clamp-2 text-sm font-display font-semibold text-white/95 tracking-tight leading-snug drop-shadow-md">
             {title}
           </h3>
-          <p className="mt-0.5 text-[11px] font-body font-medium text-white/50 line-clamp-1 drop-shadow-sm">
-            {platformBadge?.label || "Jogo"} • Pherielium
-          </p>
         </div>
       </motion.div>
     </div>

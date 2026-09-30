@@ -68,19 +68,18 @@ export async function buildProcessedAudioTrack(
   gainNode.gain.value = Math.max(0, gainPercent) / 100;
 
   // -- DynamicsCompressor ----------------------------------------------------
-  // Prevents clipping and levels voice dynamics.
+  // Soft leveling for speech: keeps quiet talkers audible without pumping noise.
   const compressor = ctx.createDynamicsCompressor();
-  compressor.threshold.value = -16;
-  compressor.ratio.value = 3.5;
+  compressor.threshold.value = -24;
+  compressor.ratio.value = 2.5;
   compressor.attack.value = 0.003;
-  compressor.release.value = 0.20;
-  compressor.knee.value = 8;
+  compressor.release.value = 0.22;
+  compressor.knee.value = 12;
 
   // -- Makeup Gain -----------------------------------------------------------
-  // Web Audio's DynamicsCompressor and RNNoise lack automatic makeup gain.
-  // Adding +3.2 dB (1.45x) makeup gain restores natural loudness and presence.
+  // Restaura presença da voz após compressão (+~2.5 dB).
   const makeupGain = ctx.createGain();
-  makeupGain.gain.value = 1.45;
+  makeupGain.gain.value = 1.33;
 
   // -- Mono (baixa latencia) ---------------------------------------------------
   // Voz e mono por natureza. Forcar STEREO aqui dobra o bitrate do Opus,

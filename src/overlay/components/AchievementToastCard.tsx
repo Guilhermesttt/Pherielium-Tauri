@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Trophy } from "lucide-react";
+import PherieliumLogoBronze from "../../assets/Pherielium_Logo_Bronze.png";
+import PherieliumLogoSilver from "../../assets/Pherielium_Logo_Prata.png";
+import PherieliumLogoGold from "../../assets/Pherielium_Logo_Ouro.png";
+import PherieliumLogoPlatinum from "../../assets/Pherielium_Logo_Platina.png";
 import { PHERIELIUM_LOGO_PATH } from "../../constants/assets";
 import type { AchievementNotificationPosition } from "../../types/overlay";
 import type { AchievementToast } from "../OverlayApp";
@@ -13,14 +17,20 @@ const tierLabels: Record<NonNullable<AchievementToast["tier"]>, string> = {
   iron: "BLOQUEADA",
 };
 
-const SPARKLE_SEEDS = [
-  { left: "10%", delay: "0s", duration: "2.2s" },
-  { left: "22%", delay: "0.28s", duration: "2.7s" },
-  { left: "36%", delay: "0.55s", duration: "2.4s" },
-  { left: "48%", delay: "0.12s", duration: "3s" },
-  { left: "61%", delay: "0.7s", duration: "2.5s" },
-  { left: "74%", delay: "0.4s", duration: "2.9s" },
-  { left: "87%", delay: "0.9s", duration: "2.3s" },
+const METALLIC_TIER_LOGOS: Record<string, string> = {
+  platinum: PherieliumLogoPlatinum,
+  gold: PherieliumLogoGold,
+  silver: PherieliumLogoSilver,
+  bronze: PherieliumLogoBronze,
+  iron: PHERIELIUM_LOGO_PATH,
+};
+
+const PLATINUM_SPARKLES = [
+  { left: "14%", delay: "0.04s" },
+  { left: "32%", delay: "0.14s" },
+  { left: "54%", delay: "0.08s" },
+  { left: "72%", delay: "0.18s" },
+  { left: "88%", delay: "0.12s" },
 ];
 
 type CardSide = "left" | "right" | "center";
@@ -32,10 +42,9 @@ function sideFromPosition(position: AchievementNotificationPosition): CardSide {
 }
 
 function entryMotion(position: AchievementNotificationPosition) {
-  if (position === "top-center") return { x: 0, y: -32 };
-  if (position === "bottom-left" || position === "bottom-right") return { x: 0, y: 32 };
-  if (position === "top-left") return { x: -32, y: 0 };
-  return { x: 32, y: 0 };
+  if (position === "top-center") return { x: 0, y: -20 };
+  if (position === "top-left" || position === "bottom-left") return { x: -24, y: 0 };
+  return { x: 24, y: 0 };
 }
 
 function useCountUp(target: number, enabled: boolean) {
@@ -47,7 +56,7 @@ function useCountUp(target: number, enabled: boolean) {
     }
     setValue(0);
     const started = performance.now();
-    const duration = 720;
+    const duration = 650;
     let raf = 0;
     const tick = (now: number) => {
       const progress = Math.min((now - started) / duration, 1);
@@ -68,11 +77,10 @@ interface AchievementToastCardProps {
   onOpenDetails?: () => void;
 }
 
-function resolveIconSource(toast: AchievementToast, imgFailed: boolean): "game" | "logo" | "trophy" {
+function resolveIconSource(toast: AchievementToast, imgFailed: boolean): "game" | "logo" {
   const icon = toast.icon?.trim();
   if (icon && !imgFailed) return "game";
-  if (toast.isPreview) return "logo";
-  return "trophy";
+  return "logo";
 }
 
 export const AchievementToastCard: React.FC<AchievementToastCardProps> = ({
@@ -81,30 +89,43 @@ export const AchievementToastCard: React.FC<AchievementToastCardProps> = ({
   animated = true,
   onOpenDetails,
 }) => {
-  const tier = toast.tier || "iron";
+  const tier = toast.tier || "bronze";
   const [imgFailed, setImgFailed] = useState(false);
   const iconMode = useMemo(() => resolveIconSource(toast, imgFailed), [toast, imgFailed]);
   const side = sideFromPosition(position);
   const entry = entryMotion(position);
   const xp = toast.xpGained ?? 0;
   const shownXp = useCountUp(xp, animated && xp > 0);
-  const eyebrow = xp > 0 ? `${tierLabels[tier]} • +${shownXp} XP` : tierLabels[tier];
-  const isHighTier = tier === "gold" || tier === "platinum";
-  const celebrate = animated && tier !== "iron";
+  const eyebrow = xp > 0 ? `${tierLabels[tier] || "TROFÉU"} • +${shownXp} XP` : (tierLabels[tier] || "TROFÉU");
+  const isPlatinum = tier === "platinum";
+  const metallicEmblem = METALLIC_TIER_LOGOS[tier] || PherieliumLogoBronze;
+  const hasDescription = Boolean(toast.description && toast.description.trim());
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: entry.x, y: entry.y, scale: 0.86, rotateZ: side === "right" ? 2.4 : -2.4, filter: "blur(10px)" }}
-      animate={{ opacity: 1, x: 0, y: 0, scale: 1, rotateZ: 0, filter: "blur(0px)" }}
-      exit={{ opacity: 0, x: entry.x, y: entry.y, scale: 0.94, transition: { duration: 0.26 } }}
+      initial={
+        animated
+          ? { opacity: 0, x: entry.x, y: entry.y, scale: 0.96 }
+          : { opacity: 0, x: 0, y: 0, scale: 1 }
+      }
+      animate={
+        animated
+          ? { opacity: 1, x: 0, y: 0, scale: 1 }
+          : { opacity: 1, x: 0, y: 0, scale: 1 }
+      }
+      exit={
+        animated
+          ? { opacity: 0, x: entry.x * 0.6, y: entry.y * 0.6, scale: 0.97, transition: { duration: 0.22, ease: "easeOut" } }
+          : { opacity: 0, transition: { duration: 0.12 } }
+      }
       transition={
         animated
-          ? { type: "spring", stiffness: 280, damping: 20, mass: 0.85 }
-          : { duration: 0.22 }
+          ? { type: "spring", stiffness: 320, damping: 24, mass: 0.9 }
+          : { duration: 0.15 }
       }
-      whileHover={animated ? { scale: 1.025, y: -4 } : undefined}
+      whileHover={animated ? { scale: 1.015 } : undefined}
       whileTap={onOpenDetails && animated ? { scale: 0.985 } : undefined}
-      className={`overlay-card achievement-card tier-${tier}${onOpenDetails ? " is-clickable" : ""}${isHighTier ? " is-important" : ""}`}
+      className={`overlay-card achievement-card tier-${tier}${onOpenDetails ? " is-clickable" : ""}${isPlatinum ? " is-platinum" : ""}`}
       data-side={side}
       onClick={onOpenDetails}
       role={onOpenDetails ? "button" : undefined}
@@ -121,51 +142,37 @@ export const AchievementToastCard: React.FC<AchievementToastCardProps> = ({
       }
     >
       <div className={`overlay-shell layout-${side}`}>
-        {celebrate ? <span className="tier-aura" aria-hidden /> : null}
-        {celebrate ? (
+        {/* Celebração única de entrada da Platina (sem loop perpétuo) */}
+        {isPlatinum && animated ? (
           <span className="achievement-sparkles" aria-hidden>
-            {SPARKLE_SEEDS.map((sparkle) => (
+            {PLATINUM_SPARKLES.map((sparkle) => (
               <span
                 key={sparkle.left}
                 className="sparkle"
                 style={{
                   left: sparkle.left,
                   animationDelay: sparkle.delay,
-                  animationDuration: sparkle.duration,
                 }}
               />
             ))}
           </span>
         ) : null}
 
+        {/* Suporte único do emblema com iluminação concentrada */}
         <motion.div
           className="overlay-icon"
           aria-hidden
-          initial={{ scale: 0.2, rotate: -28, opacity: 0 }}
-          animate={{ scale: 1, rotate: 0, opacity: 1 }}
+          initial={animated ? { scale: 0.8, opacity: 0 } : { opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
           transition={
             animated
-              ? { type: "spring", stiffness: 520, damping: 14, delay: 0.08 }
-              : { duration: 0.2 }
+              ? { type: "spring", stiffness: 360, damping: 22, delay: 0.05 }
+              : { duration: 0.15 }
           }
         >
           {animated ? <span className="icon-halo" /> : null}
-          <motion.div
-            className={`icon-avatar${
-              iconMode === "logo" ? " is-logo" : iconMode === "game" ? " is-photo" : ""
-            }`}
-            animate={
-              celebrate
-                ? isHighTier
-                  ? { scale: [1, 1.08, 1], rotate: [0, -3, 3, 0] }
-                  : { scale: [1, 1.04, 1] }
-                : undefined
-            }
-            transition={
-              celebrate
-                ? { duration: isHighTier ? 2.2 : 2.8, repeat: Infinity, ease: "easeInOut", delay: 0.55 }
-                : undefined
-            }
+          <div
+            className={`icon-avatar${iconMode === "game" ? " is-photo" : " is-logo"}`}
           >
             {iconMode === "game" ? (
               <img
@@ -175,38 +182,43 @@ export const AchievementToastCard: React.FC<AchievementToastCardProps> = ({
                 referrerPolicy="no-referrer"
                 onError={() => setImgFailed(true)}
               />
-            ) : iconMode === "logo" ? (
-              <img src={PHERIELIUM_LOGO_PATH} alt="" className="icon-image" />
             ) : (
-              <Trophy className="h-6 w-6" />
+              <img
+                src={metallicEmblem}
+                alt={tier}
+                className="icon-image"
+              />
             )}
-          </motion.div>
+          </div>
         </motion.div>
 
+        {/* Conteúdo textual estruturado: Eyebrow + Título até 2 linhas + Descrição opcional */}
         <div className="overlay-content">
           <div className="overlay-text">
             <motion.div
               className="achievement-eyebrow"
-              initial={{ opacity: 0, y: -10, scale: 0.82 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.42, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+              initial={animated ? { opacity: 0, y: -6 } : { opacity: 0 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={animated ? { duration: 0.35, delay: 0.10, ease: [0.16, 1, 0.3, 1] } : { duration: 0.15 }}
             >
               {eyebrow}
             </motion.div>
+
             <motion.h2
               className="achievement-title"
-              initial={{ opacity: 0, y: 14, filter: "blur(8px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              transition={{ duration: 0.5, delay: 0.26, ease: [0.16, 1, 0.3, 1] }}
+              initial={animated ? { opacity: 0, y: 6, filter: "blur(4px)" } : { opacity: 0 }}
+              animate={{ opacity: 1, y: 0, filter: "none" }}
+              transition={animated ? { duration: 0.40, delay: 0.15, ease: [0.16, 1, 0.3, 1] } : { duration: 0.15 }}
             >
               {toast.title}
             </motion.h2>
-            {toast.description ? (
+
+            {hasDescription ? (
               <motion.p
                 className="achievement-description"
-                initial={{ opacity: 0, y: 10 }}
+                initial={animated ? { opacity: 0, y: 4 } : { opacity: 0 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.44, delay: 0.34, ease: [0.16, 1, 0.3, 1] }}
+                transition={animated ? { duration: 0.38, delay: 0.20, ease: [0.16, 1, 0.3, 1] } : { duration: 0.15 }}
               >
                 {toast.description}
               </motion.p>
@@ -214,6 +226,7 @@ export const AchievementToastCard: React.FC<AchievementToastCardProps> = ({
           </div>
         </div>
 
+        {/* Linha única inferior de contagem regressiva temporal */}
         <div className="overlay-progress" aria-hidden />
       </div>
     </motion.div>

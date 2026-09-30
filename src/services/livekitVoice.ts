@@ -18,7 +18,7 @@ import {
   createLocalVideoTrack,
   createLocalScreenTracks,
 } from "livekit-client";
-import { apiUrl, getUsableSession } from "./api";
+import { apiFetch } from "./api";
 
 export interface LiveKitTokenResponse {
   token: string;
@@ -49,19 +49,10 @@ export const fetchLiveKitToken = async (
     throw new Error("Identificador de sala inválido.");
   }
 
-  const session = await getUsableSession();
-  const token = session?.access_token;
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  const response = await fetch(apiUrl("/api/voice/livekit-token"), {
+  const response = await apiFetch("/api/voice/livekit-token", {
     method: "POST",
-    headers,
+    authenticated: true,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       roomName: String(roomName).trim(),
       identity: String(identity).trim(),
@@ -71,7 +62,7 @@ export const fetchLiveKitToken = async (
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
+    const errorData = (await response.json().catch(() => ({}))) as { error?: string };
     throw new Error(errorData.error || `Erro ao obter token do LiveKit (${response.status})`);
   }
 

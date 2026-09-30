@@ -38,13 +38,13 @@ export const CallControlButton: React.FC<CallControlButtonProps> = ({
     default:
       "bg-white/[0.05] text-white/90 hover:bg-white/[0.09] hover:text-white border border-[#161616] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
     active:
-      "bg-white text-black font-semibold border border-white shadow-[0_4px_16px_rgba(255,255,255,0.18)]",
+      "bg-white text-black font-semibold border border-white shadow-[0_2px_8px_rgba(255,255,255,0.14)]",
     muted:
-      "bg-[#3A1D23] text-[#FF5A79] border border-[#FF2B55]/30 hover:bg-[#482029] shadow-[inset_0_1px_0_rgba(255,43,85,0.15)]",
+      "bg-[#261619] text-[#FF6B81] border border-[#FF3B5C]/25 hover:bg-[#331C21] shadow-[inset_0_1px_0_rgba(255,59,92,0.12)]",
     danger:
-      "bg-[#FF2B55] text-white font-semibold hover:bg-[#FF1A45] border border-[#FF4D71]/40 shadow-[0_4px_20px_rgba(255,43,85,0.4),inset_0_1px_0_rgba(255,255,255,0.2)]",
+      "bg-[#E02424] text-white font-medium hover:bg-[#C81E1E] active:bg-[#B91C1C] border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]",
     ghost:
-      "bg-transparent text-white/70 hover:text-white hover:bg-white/[0.08] border border-transparent",
+      "bg-transparent text-white/60 hover:text-white hover:bg-white/[0.08] border border-transparent",
   };
 
   const sizeStyles = {

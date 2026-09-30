@@ -313,7 +313,7 @@ const SidebarButton: React.FC<SidebarButtonProps> = ({
 
     ? {
 
-        color: "rgb(var(--launcher-accent))",
+        color: "var(--selection-text, rgb(var(--launcher-accent)))",
 
         filter: "drop-shadow(0 0 10px rgb(var(--launcher-accent) / 0.7))",
 
@@ -339,7 +339,7 @@ const SidebarButton: React.FC<SidebarButtonProps> = ({
 
   const showGlide = Boolean(!reducedMotion && !active && isHovered);
 
-  const glideRadius = isExpanded ? "rounded-2xl" : nested ? "rounded-xl" : "rounded-2xl";
+  const glideRadius = "rounded-[var(--radius-control,12px)]";
 
   const buttonContent = (
 
@@ -371,23 +371,27 @@ const SidebarButton: React.FC<SidebarButtonProps> = ({
 
       transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
 
-      className={`relative group flex cursor-pointer items-center
+      className={`relative group flex cursor-pointer items-center border border-transparent
 
-        focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)]
 
         ${isExpanded
 
-          ? `w-full ${nested ? "h-10 px-3 gap-3" : "h-12 px-4 gap-4"} rounded-2xl text-left`
+          ? `w-full ${nested ? "h-10 px-3 gap-3" : "h-12 px-4 gap-4"} rounded-[var(--radius-control,12px)] text-left`
 
-          : (nested ? "h-10 w-10 justify-center rounded-xl" : "h-12 w-12 justify-center rounded-2xl")}`}
+          : (nested ? "h-10 w-10 justify-center rounded-[var(--radius-control,8px)]" : "h-12 w-12 justify-center rounded-[var(--radius-control,12px)]")}`}
 
       style={{
 
-        background: active ? "rgb(var(--launcher-accent) / 0.14)" : "transparent",
+        background: active ? "var(--selection-bg, rgb(var(--launcher-accent) / 0.14))" : "transparent",
+
+        borderColor: active ? "var(--selection-border, transparent)" : "transparent",
+
+        color: active ? "var(--selection-text, inherit)" : undefined,
 
         boxShadow: active
 
-          ? "0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15)"
+          ? "0 4px 12px rgba(0, 0, 0, 0.2), var(--surface-chamfer, inset 0 1px 0 rgba(255, 255, 255, 0.15))"
 
           : "none",
 
@@ -443,7 +447,7 @@ const SidebarButton: React.FC<SidebarButtonProps> = ({
 
               ${active ? "font-semibold" : "text-[#6C6C6C] group-hover:text-white"}`}
 
-            style={active ? { color: "rgb(var(--launcher-accent))", textShadow: "0 0 8px rgb(var(--launcher-accent) / 0.5)" } : undefined}
+            style={active ? { color: "var(--selection-text, rgb(var(--launcher-accent)))", textShadow: "0 0 8px rgb(var(--launcher-accent) / 0.5)" } : undefined}
 
           >
 
@@ -714,7 +718,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       <div
 
-        className="pointer-events-auto flex-1 flex flex-col py-6 px-4 min-h-0 rounded-4xl border-4 border-[#161616] bg-[#0F0F0F]/95"
+        className="pointer-events-auto flex-1 flex flex-col py-6 px-4 min-h-0 rounded-[var(--radius-panel,28px)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-[0_20px_50px_rgba(0,0,0,0.6)] [box-shadow:var(--surface-chamfer)] transition-colors duration-300"
 
       >
 

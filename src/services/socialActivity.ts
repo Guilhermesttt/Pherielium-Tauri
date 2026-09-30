@@ -1,6 +1,6 @@
+import { apiFetch, getUsableSession } from "./api";
 import { supabase } from "./supabase";
 import type { SocialActivity, UserProfile } from "../types/domain";
-import { apiUrl, getUsableSession } from "./api";
 
 type ActivityInput = Omit<SocialActivity, "id" | "userId" | "userName" | "userAvatar" | "audienceIds" | "createdAt"> & {
   dedupeKey?: string;
@@ -19,12 +19,10 @@ export const publishSocialActivity = async (
   const activity = { ...input };
   delete activity.dedupeKey;
 
-  const response = await fetch(apiUrl("/api/social/activity"), {
+  const response = await apiFetch("/api/social/activity", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${session.access_token}`,
-      "Content-Type": "application/json",
-    },
+    authenticated: true,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(activity),
   });
 

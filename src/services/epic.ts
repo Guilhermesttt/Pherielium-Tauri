@@ -1,4 +1,4 @@
-import { apiUrl } from "./api";
+import { apiFetch } from "./api";
 import type { LauncherLanguage } from "../context/PreferencesContext";
 import type { Game, LauncherType } from "../types/domain";
 import { createLibraryGame, updateLibraryGame, listLibraryGames, deleteLibraryGame } from "./localLibrary";
@@ -44,9 +44,7 @@ export const searchEpicGames = async (query: string) => {
     }
   }
   try {
-    const response = await fetch(
-      apiUrl(`/api/epic/search?query=${encodeURIComponent(query)}`),
-    );
+    const response = await apiFetch(`/api/epic/search?query=${encodeURIComponent(query)}`);
     if (response.ok) {
       const payload = (await response.json()) as { items?: any[] };
       if (Array.isArray(payload?.items) && payload.items.length > 0) {
@@ -92,14 +90,15 @@ export const fetchEpicAppDetailsResult = async (
   titleOverride?: string,
   appNameOverride?: string,
 ): Promise<EpicAppDetailsFetchResult> => {
-  const parts = decodeURIComponent(catalogId).split(":");
+  let parts: string[] = [];
+  try {
+    parts = decodeURIComponent(catalogId || "").split(":");
+  } catch {
+    parts = (catalogId || "").split(":");
+  }
   const namespace = namespaceOverride || (parts.length >= 2 ? parts[0] : "");
-  const itemId = parts.length >= 2 ? parts[1] : catalogId;
-  const params = new URLSearchParams({ catalogId: itemId });
-  if (namespace) params.set("namespace", namespace);
+  const itemId = parts.length >= 2 ? parts[1] : (catalogId || "");
   const productSlug = String(productSlugOverride || "").trim();
-  if (productSlug) params.set("productSlug", productSlug);
-  params.set("language", language);
 
   if (window.electronAPI?.fetchEpicStoreDetails) {
     try {
@@ -112,20 +111,39 @@ export const fetchEpicAppDetailsResult = async (
         language,
       })) as EpicAppDetails | null;
 
-      if (data && (data.cardImage || data.backgroundImage || data.image || data.description)) {
-        return { ok: true, data };
+      if (data && (data.cardImage || data.backgroundImage || data.image || data.description || data.title)) {
+        return {
+          ok: true,
+          data: {
+            ...data,
+            catalogId: data.catalogId || itemId || catalogId,
+            namespace: data.namespace || namespace,
+          },
+        };
       }
-    } catch {
-      // Fallback para API HTTP se desktop store details falhar
+    } catch (e) {
+      console.warn("[fetchEpicAppDetailsResult] desktop store details error:", e);
     }
   }
 
-  const response = await fetch(apiUrl(`/api/epic/app-details?${params}`));
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => ({}))) as { error?: string };
-    return { ok: false, message: payload.error || "Falha ao buscar detalhes da Epic Games." };
+  try {
+    const params = new URLSearchParams({ catalogId: itemId });
+    if (namespace) params.set("namespace", namespace);
+    if (productSlug) params.set("productSlug", productSlug);
+    params.set("language", language);
+
+    const response = await apiFetch(`/api/epic/app-details?${params}`);
+    if (response.ok) {
+      const payload = (await response.json()) as EpicAppDetails;
+      if (payload && (payload.title || payload.cardImage)) {
+        return { ok: true, data: payload };
+      }
+    }
+  } catch (err) {
+    console.warn("[fetchEpicAppDetailsResult] backend fetch error:", err);
   }
-  return { ok: true, data: (await response.json()) as EpicAppDetails };
+
+  return { ok: false, message: "Falha ao buscar detalhes completos da Epic Games." };
 };
 
 const requireEpicDesktop = () => {

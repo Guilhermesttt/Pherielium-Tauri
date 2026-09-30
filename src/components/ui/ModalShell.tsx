@@ -190,7 +190,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
       <div
         onClick={() => onClose()}
         className={cn(
-          "absolute inset-0 bg-[#0F0F0F]/88 backdrop-blur-sm transition-opacity",
+          "absolute inset-0 bg-[var(--surface-base)]/88 backdrop-blur-sm transition-opacity",
           shouldReduceEffects ? "duration-0" : "duration-320ms ease-[cubic-bezier(0.22,1,0.36,1)]",
           renderState === "open" ? "opacity-100" : "opacity-0",
           backdropClassName

@@ -110,6 +110,8 @@ interface VoiceCallWindowProps {
   onChangeNoiseSuppression?: (val: boolean) => void;
   advancedNoiseSuppression?: boolean;
   onChangeAdvancedNoiseSuppression?: (val: boolean) => void;
+  noiseSuppressionMode?: "none" | "native" | "rnnoise" | "krisp";
+  onChangeNoiseSuppressionMode?: (mode: "none" | "native" | "rnnoise" | "krisp") => void;
   autoGainControl?: boolean;
   onChangeAutoGainControl?: (val: boolean) => void;
   onToggleMute: () => void;
@@ -187,6 +189,8 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
   onChangeNoiseSuppression,
   advancedNoiseSuppression = true,
   onChangeAdvancedNoiseSuppression,
+  noiseSuppressionMode,
+  onChangeNoiseSuppressionMode,
   autoGainControl = true,
   onChangeAutoGainControl,
   onToggleMute,
@@ -220,6 +224,25 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isEditAppearanceModalOpen, setIsEditAppearanceModalOpen] = useState(false);
   const [isOrbloomModalOpen, setIsOrbloomModalOpen] = useState(false);
+  const [isCompactMode, setIsCompactMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("checkpoint_voice_compact_mode") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleCompactMode = () => {
+    setIsCompactMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("checkpoint_voice_compact_mode", String(next));
+      } catch {
+        /* noop */
+      }
+      return next;
+    });
+  };
 
   // Focus & View state
   const [isStreamFocused, setIsStreamFocused] = useState(true);
@@ -830,9 +853,11 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed top-9 inset-x-0 bottom-0 z-40 flex items-center justify-center p-3 sm:p-5 bg-black/50 backdrop-blur-2xl select-none"
+          className={`fixed top-9 inset-x-0 bottom-0 z-40 flex items-center justify-center p-3 sm:p-5 select-none transition-all duration-300 ${
+            isCompactMode ? "bg-black/35 backdrop-blur-md" : "bg-black/50 backdrop-blur-2xl"
+          }`}
         >
-          {/* Main Call Window Container — Apple minimalist, solid surface bg-[#0F0F0F]/80 with border #161616 */}
+          {/* Main Call Window Container — Apple minimalist, solid surface bg-[#0F0F0F] with border #161616 */}
           <motion.div
             ref={containerRef}
             initial={{ scale: 0.96, opacity: 0, y: 18, filter: "blur(6px)" }}
@@ -842,7 +867,11 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             style={{
               cornerShape: "squircle",
             } as React.CSSProperties}
-            className="relative flex flex-col w-full max-w-6xl h-[88vh] overflow-hidden rounded-[28px] bg-[#0F0F0F] border border-[#161616] shadow-[0_30px_90px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.05)]"
+            className={`relative flex flex-col w-full overflow-hidden bg-[#0F0F0F] border border-[#161616] shadow-[0_30px_90px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-300 ${
+              isCompactMode
+                ? "max-w-xl h-[440px] sm:h-[460px] rounded-[24px]"
+                : "max-w-5xl h-[84vh] rounded-[28px]"
+            }`}
           >
             {/* AREA 1: HEADER */}
             <CallHeader
@@ -852,7 +881,9 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
               participantsCount={activeFeeds.filter((f) => !f.isScreen).length}
               isReconnecting={isReconnecting}
               isFullscreen={isFullscreen}
+              isCompactMode={isCompactMode}
               onToggleFullscreen={() => void toggleFullscreen()}
+              onToggleCompactMode={handleToggleCompactMode}
               onClose={onClose}
               onOpenInvite={() => setIsInviteModalOpen(true)}
               onOpenPrivacy={() => setIsPrivacyModalOpen(true)}
@@ -928,12 +959,13 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                 isSharingScreen={isSharingScreen}
                 isSettingsOpen={isSettingsOpen}
                 isOnlyOnePerson={isOnlyOnePerson}
+                isMicAvailable={Boolean(!audioInputDevices || audioInputDevices.length > 0)}
+                isCameraAvailable={Boolean(!videoInputDevices || videoInputDevices.length > 0)}
                 onToggleMute={onToggleMute}
                 onToggleDeafen={onToggleDeafen}
                 onToggleCamera={onToggleCamera}
                 onToggleScreenShare={onToggleScreenShare}
                 onToggleSettings={() => setIsSettingsOpen((prev) => !prev)}
-                onOpenInvite={() => setIsInviteModalOpen(true)}
                 onOpenOrbloomCustomizer={() => setIsOrbloomModalOpen(true)}
                 onHangUp={beginDisconnect}
               />
@@ -1060,6 +1092,8 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
               onChangeNoiseSuppression={onChangeNoiseSuppression}
               advancedNoiseSuppression={advancedNoiseSuppression}
               onChangeAdvancedNoiseSuppression={onChangeAdvancedNoiseSuppression}
+              noiseSuppressionMode={noiseSuppressionMode}
+              onChangeNoiseSuppressionMode={onChangeNoiseSuppressionMode}
               autoGainControl={autoGainControl}
               onChangeAutoGainControl={onChangeAutoGainControl}
               onCalibrateNoise={onCalibrateNoise}

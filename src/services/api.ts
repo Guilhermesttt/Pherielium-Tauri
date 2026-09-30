@@ -15,6 +15,56 @@ const isLocalHostname = (hostname: string) =>
   hostname === "tauri.localhost" ||
   hostname.endsWith(".localhost");
 
+const isTauriRuntime = () =>
+  typeof window !== "undefined" &&
+  ("__TAURI_INTERNALS__" in window || "__TAURI__" in window);
+
+let tauriFetchLoader: Promise<typeof globalThis.fetch> | null = null;
+
+const loadTauriFetch = () => {
+  if (!tauriFetchLoader) {
+    tauriFetchLoader = import("@tauri-apps/plugin-http")
+      .then((mod) => mod.fetch as typeof globalThis.fetch)
+      .catch((error) => {
+        console.warn("[API] Falha ao carregar @tauri-apps/plugin-http, usando fetch do webview:", error);
+        return globalThis.fetch.bind(globalThis);
+      });
+  }
+  return tauriFetchLoader;
+};
+
+/**
+ * No desktop Tauri, fetch do webview e bloqueado por CORS ao falar com o
+ * backend Render. O plugin HTTP nativo nao tem essa restricao.
+ * Em same-origin (dev com proxy Vite) o fetch do browser continua melhor.
+ */
+const resolveFetchImpl = async (requestUrl: string): Promise<typeof globalThis.fetch> => {
+  if (!isTauriRuntime()) {
+    return globalThis.fetch.bind(globalThis);
+  }
+
+  try {
+    const absolute = new URL(
+      requestUrl,
+      typeof window !== "undefined" ? window.location.href : PROD_BACKEND_URL,
+    );
+    const sameOrigin =
+      typeof window !== "undefined" &&
+      window.location?.origin &&
+      absolute.origin === window.location.origin;
+    if (sameOrigin) {
+      return globalThis.fetch.bind(globalThis);
+    }
+    if (absolute.protocol === "http:" || absolute.protocol === "https:") {
+      return loadTauriFetch();
+    }
+  } catch {
+    // URL relativa invalida — cai no fetch padrao
+  }
+
+  return globalThis.fetch.bind(globalThis);
+};
+
 export const resolveBackendUrl = (
   envUrl: string | undefined = import.meta.env.VITE_BACKEND_URL,
   isProd: boolean = import.meta.env.PROD,
@@ -137,7 +187,14 @@ export const fetchWithTimeout = async (
   }, timeoutMs);
 
   try {
-    return await fetch(input, {
+    const requestUrl =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : input.url;
+    const runtimeFetch = await resolveFetchImpl(requestUrl);
+    return await runtimeFetch(input, {
       ...init,
       signal: controller.signal,
     });
@@ -203,6 +260,21 @@ export const getUsableSession = async (): Promise<Session | null> => {
 
   if (!session) {
     return null;
+  }
+
+  // Se o access_token estiver inflado (> 3KB) ou contiver metadados base64 legados,
+  // força um refresh imediato para obter o JWT limpo e evitar HTTP 431 / 500 / 520
+  const isBloatedToken = (session.access_token?.length || 0) > 3000;
+  const hasBase64Meta = Boolean(
+    session.user?.user_metadata?.avatar_url?.startsWith?.("data:") ||
+    session.user?.user_metadata?.picture?.startsWith?.("data:")
+  );
+
+  if (isBloatedToken || hasBase64Meta) {
+    const refreshed = await refreshSupabaseSessionOnce();
+    if (refreshed) {
+      return refreshed;
+    }
   }
 
   if (!session.expires_at) {
@@ -308,7 +380,7 @@ export const apiFetch = async (
 
     if (
       authenticated &&
-      response.status === 401 &&
+      (response.status === 401 || response.status === 431) &&
       !hasRetried
     ) {
       const refreshed = await refreshSupabaseSessionOnce();

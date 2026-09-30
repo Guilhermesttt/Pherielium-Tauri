@@ -1,7 +1,7 @@
 import React from "react";
 import type { Game, GameLaunchProfile } from "../types/domain";
 import type { GameDetailState, GameDetailAction, GameDetailCopy } from "../types/gameDetail";
-import { getMonitorableExecutablePath, launchGame } from "../services/launcher";
+import { launchGame, resolveMonitorableExecutablePath } from "../services/launcher";
 import { deleteLibraryGame, updateLibraryGame } from "../services/localLibrary";
 import { MIN_LAUNCH_SCREEN_MS, wait } from "../types/gameDetail";
 
@@ -54,11 +54,19 @@ export function useGameDetailActions({
           .then(() => onLibraryChanged?.())
           .catch(() => undefined);
       }
+      const monitorablePath = await resolveMonitorableExecutablePath(game);
+
+      if (monitorablePath && window.electronAPI?.setGameWatchTarget) {
+        void window.electronAPI.setGameWatchTarget(monitorablePath).catch(() => undefined);
+      }
+
       window.dispatchEvent(
         new CustomEvent("checkpoint:game-launch", {
           detail: {
             title: game.title,
-            executablePath: getMonitorableExecutablePath(game),
+            gameId: game.id,
+            executablePath: monitorablePath,
+            game,
             soundPlayed: true,
           },
         }),

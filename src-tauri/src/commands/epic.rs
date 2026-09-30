@@ -599,26 +599,54 @@ pub async fn epic_get_achievements(
             if api_name.is_empty() {
                 return None;
             }
+            let display_name = ach.get("display_name")
+                .or_else(|| ach.get("unlockedDisplayName"))
+                .or_else(|| ach.get("name"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("Conquista");
+
+            let description = ach.get("description")
+                .or_else(|| ach.get("unlockedDescription"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+
+            let achieved = ach.get("unlocked")
+                .or_else(|| ach.get("achieved"))
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+
+            let icon_url = ach.get("icon_link")
+                .or_else(|| ach.get("iconLink"))
+                .or_else(|| ach.get("unlockedIconLink"))
+                .or_else(|| ach.get("unlocked_icon_link"))
+                .or_else(|| ach.get("icon_url"))
+                .or_else(|| ach.get("icon"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("");
+
+            let icon_gray_url = ach.get("locked_icon_link")
+                .or_else(|| ach.get("lockedIconLink"))
+                .or_else(|| ach.get("icon_gray"))
+                .and_then(|v| v.as_str())
+                .unwrap_or(icon_url);
+
+            let percent = ach.get("rarity")
+                .and_then(|r| r.get("percent"))
+                .and_then(|v| v.as_f64())
+                .or_else(|| ach.get("percent").and_then(|v| v.as_f64()))
+                .unwrap_or(0.0);
+
             Some(json!({
                 "apiName": api_name,
-                "name": ach.get("unlockedDisplayName")
-                    .or_else(|| ach.get("display_name"))
-                    .or_else(|| ach.get("name"))
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("Conquista"),
-                "description": ach.get("unlockedDescription")
-                    .or_else(|| ach.get("description"))
-                    .and_then(|v| v.as_str())
-                    .unwrap_or(""),
-                "achieved": ach.get("unlocked").or_else(|| ach.get("achieved"))
-                    .and_then(|v| v.as_bool())
-                    .unwrap_or(false),
-                "icon": ach.get("unlockedIconLink")
-                    .or_else(|| ach.get("icon_url"))
-                    .or_else(|| ach.get("icon"))
-                    .and_then(|v| v.as_str())
-                    .unwrap_or(""),
+                "name": display_name,
+                "description": description,
+                "achieved": achieved,
+                "icon": icon_url,
+                "iconGray": icon_gray_url,
                 "hidden": ach.get("hidden").and_then(|v| v.as_bool()).unwrap_or(false),
+                "percent": percent,
+                "unlockDate": ach.get("unlock_date"),
+                "xp": ach.get("xp").and_then(|v| v.as_i64()).unwrap_or(0),
             }))
         })
         .collect();
@@ -1210,25 +1238,19 @@ pub async fn epic_fetch_store_details(request: Value) -> Result<Value, String> {
                     {
                         if !candidate_slugs.contains(v) {
                             candidate_slugs.push(v.clone());
+                            if candidate_slugs.len() >= 4 {
+                                break;
+                            }
                         }
                     }
                 }
             }
-            for candidate in candidate_slugs.clone() {
-                for (_k, v) in &mapping {
-                    let vl = v.to_lowercase();
-                    if vl == candidate || vl.contains(&candidate) || candidate.contains(&vl) {
-                        if !candidate_slugs.contains(v) {
-                            candidate_slugs.push(v.clone());
-                        }
-                    }
-                }
-            }
+            candidate_slugs.truncate(4);
         }
     }
 
     // 2. Itera sobre candidate_slugs tentando buscar página de produto no CDN Akamai da Epic
-    for candidate in &candidate_slugs {
+    for candidate in candidate_slugs.iter().take(4) {
         let urls_to_try = [
             format!("https://store-content-ipv4.ak.epicgames.com/api/pt-BR/content/products/{candidate}"),
             format!("https://store-content-ipv4.ak.epicgames.com/api/en-US/content/products/{candidate}"),
@@ -1419,9 +1441,12 @@ pub async fn epic_fetch_store_details(request: Value) -> Result<Value, String> {
                 if let Some(first) = steam_items.first() {
                     let appid = first
                         .get("appid")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("")
-                        .trim();
+                        .and_then(|v| {
+                            v.as_str().map(|s| s.to_string()).or_else(|| v.as_u64().map(|n| n.to_string()))
+                        })
+                        .unwrap_or_default()
+                        .trim()
+                        .to_string();
                     let matched_name = first
                         .get("name")
                         .and_then(|v| v.as_str())
@@ -1432,7 +1457,7 @@ pub async fn epic_fetch_store_details(request: Value) -> Result<Value, String> {
                             "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{appid}/library_600x900_2x.jpg"
                         );
                         let bg_img = format!(
-                            "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{appid}/header.jpg"
+                            "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{appid}/library_hero.jpg"
                         );
 
                         // Enriquecer com detalhes da loja Steam
@@ -1449,7 +1474,11 @@ pub async fn epic_fetch_store_details(request: Value) -> Result<Value, String> {
                         );
                         if let Ok(detail_resp) = client.get(&steam_detail_url).send().await {
                             if let Ok(detail_val) = detail_resp.json::<Value>().await {
-                                if let Some(app_data) = detail_val.get(appid).and_then(|v| v.get("data")) {
+                                let app_data = detail_val
+                                    .get(&appid)
+                                    .or_else(|| detail_val.as_object().and_then(|m| m.values().next()))
+                                    .and_then(|v| v.get("data"));
+                                if let Some(app_data) = app_data {
                                     steam_desc = app_data.get("short_description").and_then(|v| v.as_str()).unwrap_or("").to_string();
                                     steam_about = app_data.get("detailed_description").or_else(|| app_data.get("about_the_game")).and_then(|v| v.as_str()).unwrap_or("").to_string();
                                     if let Some(devs) = app_data.get("developers").and_then(|v| v.as_array()) {
@@ -1505,6 +1534,9 @@ pub async fn epic_fetch_store_details(request: Value) -> Result<Value, String> {
                             } else {
                                 String::new()
                             },
+                            "catalogId": request.get("catalogId").cloned().unwrap_or(json!("")),
+                            "namespace": request.get("namespace").cloned().unwrap_or(json!("")),
+                            "appName": request.get("appName").cloned().unwrap_or(json!("")),
                         }));
                     }
                 }

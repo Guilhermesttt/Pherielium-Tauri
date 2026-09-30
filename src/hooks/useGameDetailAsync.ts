@@ -31,6 +31,7 @@ interface UseGameDetailAsyncProps {
   userProfile: { steamId?: string } | null;
   onGameHydrated?: (game: Game) => void;
   onLibraryChanged?: () => Promise<void> | void;
+  currentPresenceGame?: string | null;
 }
 
 export function useGameDetailAsync({
@@ -41,6 +42,7 @@ export function useGameDetailAsync({
   userProfile,
   onGameHydrated,
   onLibraryChanged,
+  currentPresenceGame,
 }: UseGameDetailAsyncProps) {
   const [steamAppDetails, setSteamAppDetails] = React.useState<SteamAppDetails | null>(null);
   const [isSteamAppDetailsLoading, setIsSteamAppDetailsLoading] = React.useState(false);
@@ -85,14 +87,30 @@ export function useGameDetailAsync({
 
   // Monitoramento de jogo em execução
   React.useEffect(() => {
-    if (!isOpen || !game?.executablePath) {
+    if (!isOpen || !game) {
       setIsRunning(false);
       return;
     }
     const checkRunning = async () => {
       try {
-        const running = await window.electronAPI?.isExecutableRunning(game.executablePath!);
-        setIsRunning(Boolean(running));
+        if (game.executablePath) {
+          const running = await window.electronAPI?.isExecutableRunning(game.executablePath);
+          if (running) {
+            setIsRunning(true);
+            return;
+          }
+        }
+        if (
+          currentPresenceGame &&
+          game.title &&
+          (currentPresenceGame.trim().toLowerCase() === game.title.trim().toLowerCase() ||
+            currentPresenceGame.toLowerCase().includes(game.title.toLowerCase()) ||
+            game.title.toLowerCase().includes(currentPresenceGame.toLowerCase()))
+        ) {
+          setIsRunning(true);
+          return;
+        }
+        setIsRunning(false);
       } catch {
         setIsRunning(false);
       }
@@ -100,7 +118,7 @@ export function useGameDetailAsync({
     void checkRunning();
     const interval = setInterval(checkRunning, 5000);
     return () => clearInterval(interval);
-  }, [isOpen, game?.executablePath]);
+  }, [isOpen, game?.executablePath, game?.title, currentPresenceGame]);
 
   // Limpeza de estado ao trocar de jogo
   React.useEffect(() => {
@@ -282,8 +300,9 @@ export function useGameDetailAsync({
       try {
         if (window.electronAPI?.getLocalAchievementDefinitions) {
           const raw = await window.electronAPI.getLocalAchievementDefinitions(game.id);
-          if (raw && (raw as any).achievements?.length > 0) {
-            localDefs = (raw as any).achievements;
+          const rawDefs = (raw as any)?.definitions || (raw as any)?.achievements;
+          if (rawDefs && Array.isArray(rawDefs) && rawDefs.length > 0) {
+            localDefs = rawDefs;
             localSteamAppId = (raw as any).steamAppId || "";
           }
         }
@@ -316,9 +335,12 @@ export function useGameDetailAsync({
 
         let retroactiveState: Record<string, { earned?: boolean; earnedTime?: number }> = {};
         if (window.electronAPI?.getLocalAchievementState) {
+          const gameDir = game.executablePath
+            ? game.executablePath.replace(/[/\\][^/\\]+$/, "")
+            : undefined;
           for (const key of progressKeys) {
             try {
-              const state = await window.electronAPI.getLocalAchievementState(key);
+              const state = await window.electronAPI.getLocalAchievementState(key, gameDir);
               if (state && Object.keys(state).length > 0) {
                 retroactiveState = state;
                 break;
@@ -378,7 +400,23 @@ export function useGameDetailAsync({
 
           if (onlineAchievements && onlineAchievements.list.length > 0) {
             setAchievementSourceAppId("epic-online");
-            setAchievementItems(onlineAchievements.list);
+            setAchievementItems(
+              onlineAchievements.list.map((ach: any) => ({
+                apiName: ach.apiName || ach.name,
+                name: ach.name || ach.display_name || "Conquista",
+                description: ach.description || ach.unlockedDescription || "",
+                achieved: Boolean(ach.achieved || ach.unlocked),
+                icon: ach.icon || ach.icon_link || ach.iconLink || ach.unlockedIconLink || "",
+                iconGray: ach.iconGray || ach.locked_icon_link || ach.icon || ach.icon_link || "",
+                hidden: Boolean(ach.hidden),
+                percent: typeof ach.percent === "number" ? ach.percent : (ach.rarity?.percent ?? 0),
+                unlockTime: typeof ach.unlockTime === "number" && ach.unlockTime > 0
+                  ? ach.unlockTime
+                  : ach.unlockDate || ach.unlock_date
+                    ? Math.round(new Date(ach.unlockDate || ach.unlock_date).getTime() / 1000)
+                    : 0,
+              }))
+            );
             setIsAchievementsLoading(false);
             if (user?.uid) {
               void updateLibraryGame(user.uid, game.id, {

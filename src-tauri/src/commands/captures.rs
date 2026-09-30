@@ -5,6 +5,7 @@ use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
+use tauri::{AppHandle, Manager};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -158,10 +159,49 @@ pub fn get_captures_dir() -> Result<String, String> {
     Ok(captures_dir()?.to_string_lossy().to_string())
 }
 
-/// Captura a tela inteira (ou o monitor principal) e salva em Pictures/Phelierium Captures.
+/// Captura a tela do jogo/monitor ativo (ou a área de trabalho inteira caso explicitamente solicitada)
+/// e salva em Pictures/Phelierium Captures.
 #[tauri::command]
-pub fn capture_screen(game_title: Option<String>) -> Result<CaptureItem, String> {
-    let (w, h, bgra) = super::screen_capture::grab_target_bgra("desktop")?;
+pub fn capture_screen(
+    app: AppHandle,
+    game_title: Option<String>,
+    target: Option<String>,
+) -> Result<CaptureItem, String> {
+    // 1. Temporariamente oculta o overlay caso esteja visível para não sair na captura
+    let overlay_win = app.get_webview_window("overlay");
+    let was_overlay_visible = overlay_win
+        .as_ref()
+        .and_then(|w| w.is_visible().ok())
+        .unwrap_or(false);
+
+    if was_overlay_visible {
+        if let Some(ref w) = overlay_win {
+            let _ = w.hide();
+            // Permite ao compositor do SO redesenhar a tela sem o overlay
+            std::thread::sleep(std::time::Duration::from_millis(60));
+        }
+    }
+
+    // 2. Determina o alvo da captura: alvo explícito ou o monitor onde o jogo/janela ativa está
+    let target_id = match target.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        Some(explicit) => explicit.to_string(),
+        None => {
+            let mon_idx = super::screen_capture::find_game_or_active_monitor_index(game_title.as_deref());
+            format!("screen:{mon_idx}")
+        }
+    };
+
+    let grab_result = super::screen_capture::grab_target_bgra(&target_id);
+
+    // 3. Restaura o overlay caso estivesse aberto antes
+    if was_overlay_visible {
+        if let Some(ref w) = overlay_win {
+            let _ = w.show();
+        }
+    }
+
+    let (w, h, bgra) = grab_result.map_err(|e| format!("Falha ao capturar ({target_id}): {e}"))?;
+
     let mut rgb = Vec::with_capacity((w * h * 3) as usize);
     for px in bgra.chunks_exact(4) {
         rgb.extend_from_slice(&[px[2], px[1], px[0]]);
@@ -204,6 +244,27 @@ pub fn capture_screen(game_title: Option<String>) -> Result<CaptureItem, String>
         created_at: stamp.to_string(),
         game_title,
     })
+}
+
+#[tauri::command]
+pub fn get_capture_full_image(path: String) -> Result<String, String> {
+    let p = PathBuf::from(path.trim());
+    if !p.exists() || !p.is_file() {
+        return Err("Arquivo de captura nao encontrado.".into());
+    }
+    if !is_image(&p) {
+        return Err("Arquivo nao e uma imagem suportada.".into());
+    }
+    let bytes = fs::read(&p).map_err(|e| format!("Falha ao ler arquivo: {e}"))?;
+    let ext = p.extension().and_then(|e| e.to_str()).unwrap_or("png").to_lowercase();
+    let mime = match ext.as_str() {
+        "jpg" | "jpeg" => "image/jpeg",
+        "webp" => "image/webp",
+        "bmp" => "image/bmp",
+        _ => "image/png",
+    };
+    let b64 = B64.encode(&bytes);
+    Ok(format!("data:{mime};base64,{b64}"))
 }
 
 #[tauri::command]

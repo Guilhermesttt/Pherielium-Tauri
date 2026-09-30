@@ -36,6 +36,7 @@ import type { CallRoomConfig, RoomCategory, VoiceRoomParticipant } from "../type
 import { getChatId } from "../services/chat";
 import { getTurnServers } from "../services/turnCredentials";
 import { buildProcessedAudioTrack } from "../services/audio/audioProcessing";
+import { attachKrispToTrack, detachKrispFromTrack } from "../services/audio/krispNoiseFilter";
 import { createCallAudioBarrier, type CallAudioBarrierInstance } from "../services/audio/CallAudioBarrier";
 import { createVoiceRoom, joinVoiceRoom, leaveVoiceRoom } from "../services/voiceRooms";
 import {
@@ -43,6 +44,7 @@ import {
   replaceOutgoingAudioTrack,
   unpublishScreenPublications,
 } from "@/services/voiceCall/voiceMediaLifecycle";
+import { createTauriScreenCaptureStream } from "@/services/voiceCall/tauriScreenCapture";
 import {
   fetchLiveKitToken,
   isLiveKitCompatibleRoom,
@@ -51,6 +53,7 @@ import {
   Track as LiveKitTrack,
   VideoQuality as LiveKitVideoQuality,
   AudioPresets as LiveKitAudioPresets,
+  LocalAudioTrack as LiveKitLocalAudioTrack,
   type LocalTrackPublication,
 } from "../services/livekitVoice";
 
@@ -85,6 +88,9 @@ const playSfx = (src: string, volume = 1.0) => {
 
 export type VoiceInputMode = "voice-activity" | "push-to-talk";
 
+/** Pipeline de ruído do microfone */
+export type NoiseSuppressionMode = "none" | "native" | "rnnoise" | "krisp";
+
 export interface ScreenShareOptions {
   sourceId?: string;
   resolution?: "720p" | "1080p" | "source";
@@ -93,12 +99,37 @@ export interface ScreenShareOptions {
   callAudioBarrier?: boolean;
 }
 
-const screenShareProfile = (options: ScreenShareOptions) => {
+/**
+ * Bitrate máximo por perfil (bits/s) — mira nitidez de gameplay/UI no LiveKit.
+ * Baseline da ficha: 720p≈2.5 Mbps, 1080p≈5 Mbps; aqui sobe para extrair qualidade.
+ *
+ * | Perfil   | Bitrate | ≈ GB/h (só vídeo) |
+ * |----------|---------|-------------------|
+ * | 720p30   | 4.5 Mbps | ~2.0 |
+ * | 720p60   | 6.5 Mbps | ~2.9 |
+ * | 1080p30  | 8.0 Mbps | ~3.6 |
+ * | 1080p60  | 12 Mbps  | ~5.4 |
+ */
+export const SCREEN_SHARE_BITRATE: Record<"720p" | "1080p", Record<30 | 60, number>> = {
+  "720p": {
+    30: 4_500_000,
+    60: 6_500_000,
+  },
+  "1080p": {
+    30: 8_000_000,
+    60: 12_000_000,
+  },
+};
+
+/** Teto do Room.publishDefaults — cobre o perfil mais alto (1080p60). */
+export const SCREEN_SHARE_ROOM_MAX_BITRATE = SCREEN_SHARE_BITRATE["1080p"][60];
+
+export const screenShareProfile = (options: ScreenShareOptions) => {
   const fps: 30 | 60 = options.fps === 30 ? 30 : 60;
   const resolution: "720p" | "1080p" = options.resolution === "720p" ? "720p" : "1080p";
   const width = resolution === "720p" ? 1280 : 1920;
   const height = resolution === "720p" ? 720 : 1080;
-  const bitrate = resolution === "720p" ? 3_500_000 : fps === 60 ? 8_000_000 : 5_000_000;
+  const bitrate = SCREEN_SHARE_BITRATE[resolution][fps];
   return { fps, resolution, width, height, bitrate };
 };
 
@@ -439,15 +470,31 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
     } catch { }
   }, []);
 
-  // Advanced noise suppression via RNNoise WASM (separate from native getUserMedia constraint)
-  const [advancedNoiseSuppression, setAdvancedNoiseSuppressionState] = useState<boolean>(() => {
+  // Noise suppression mode: none | native (browser) | rnnoise | krisp (LiveKit)
+  const [noiseSuppressionMode, setNoiseSuppressionModeState] = useState<NoiseSuppressionMode>(() => {
     try {
-      return localStorage.getItem("checkpoint_voice_advanced_ns") !== "false";
+      const saved = localStorage.getItem("checkpoint_voice_ns_mode");
+      if (saved === "none" || saved === "native" || saved === "rnnoise" || saved === "krisp") {
+        return saved;
+      }
+      // Migrate legacy flags
+      const advanced = localStorage.getItem("checkpoint_voice_advanced_ns");
+      const native = localStorage.getItem("checkpoint_voice_noise_suppression");
+      if (advanced === "false") {
+        return native === "false" ? "none" : "native";
+      }
+      // Prefer Krisp by default on fresh installs / previous "advanced" users
+      return "krisp";
     } catch {
-      return true;
+      return "krisp";
     }
   });
 
+  const noiseSuppressionModeRef = useRef(noiseSuppressionMode);
+  noiseSuppressionModeRef.current = noiseSuppressionMode;
+
+  /** @deprecated prefer noiseSuppressionMode — true when RNNoise local chain is on */
+  const advancedNoiseSuppression = noiseSuppressionMode === "rnnoise";
   const advancedNoiseSuppressionRef = useRef(advancedNoiseSuppression);
   advancedNoiseSuppressionRef.current = advancedNoiseSuppression;
 
@@ -676,7 +723,7 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
         const result = await buildProcessedAudioTrack(
           rawStream,
           micGainRef.current,
-          advancedNoiseSuppressionRef.current,
+          noiseSuppressionModeRef.current === "rnnoise",
         );
 
         audioProcCleanupRef.current = result.cleanup;
@@ -767,10 +814,14 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
           const rawVolume = Math.min(100, Math.round(rms * 850 * gainMultiplier));
 
           const sens = Math.max(1, Math.min(100, voiceSensitivityRef.current));
-          // Open threshold: level needed to START speaking (at 50% sens -> ~6, at 35% -> ~9)
-          const openThreshold = Math.max(2, Math.round(1 + 24 * Math.pow((100 - sens) / 100, 1.6)));
-          // Close threshold (hysteresis): softer level needed to STAY speaking (60% of open threshold)
-          const closeThreshold = Math.max(1, Math.round(openThreshold * 0.6));
+          // Curva: sensibilidade alta = limiar baixo (abre fácil).
+          // 100 → ~1.5 | 70 → ~4 | 50 → ~8 | 35 → ~12 | 0 → ~26
+          const openThreshold = Math.max(
+            1.5,
+            1.5 + 24.5 * Math.pow((100 - sens) / 100, 1.35),
+          );
+          // Histerese: permanece falando com ~50% do limiar de abertura
+          const closeThreshold = Math.max(1, openThreshold * 0.5);
 
           const isPtt = inputModeRef.current === "push-to-talk";
           const isPttActive = isPttPressedRef.current;
@@ -894,9 +945,13 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
       if (!processedTrack) return;
 
       const rawTrack = rawStreamRef.current?.getAudioTracks()[0] || processedTrack;
-      // LiveKit gets the raw mic for lower latency; P2P keeps the processed chain.
+      // Krisp/native/none: LiveKit uses raw (Krisp processor or browser NS on capture).
+      // RNNoise: publish the processed chain so isolation actually reaches peers.
+      const publishProcessedToLiveKit = noiseSuppressionModeRef.current === "rnnoise";
       const livekitTrack =
-        useLiveKitPrimaryRef.current && livekitConnectedRef.current ? rawTrack : processedTrack;
+        useLiveKitPrimaryRef.current && livekitConnectedRef.current && !publishProcessedToLiveKit
+          ? rawTrack
+          : processedTrack;
 
       const shouldEnable =
         !isMutedRef.current &&
@@ -972,6 +1027,46 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
     [applyAudioProcessingChain, replaceActiveMicrophoneTrack, selectedAudioInput],
   );
 
+  const browserDspFromMode = useCallback((mode: NoiseSuppressionMode) => {
+    // Krisp/RNNoise: browser NS off (avoid double filter). AEC stays independent.
+    // AGC off with Krisp/RNNoise for cleaner DSP; on with native/none if user wants.
+    const useBrowserNs = mode === "native";
+    const useBrowserAgc = autoGainControlRef.current && (mode === "native" || mode === "none");
+    return { useBrowserNs, useBrowserAgc };
+  }, []);
+
+  const syncKrispOnLiveKitMic = useCallback(async (mode: NoiseSuppressionMode) => {
+    const pub = livekitAudioPubRef.current;
+    const track = pub?.track;
+    if (!(track instanceof LiveKitLocalAudioTrack)) {
+      if (mode !== "krisp") await detachKrispFromTrack();
+      return;
+    }
+    if (mode === "krisp") {
+      const ok = await attachKrispToTrack(track, true);
+      if (!ok) {
+        notify(
+          "Krisp indisponível neste ambiente — usando Isolamento RNNoise.",
+          "info",
+        );
+        // Soft fallback to RNNoise without infinite loop: write mode then rebuild chain
+        setNoiseSuppressionModeState("rnnoise");
+        noiseSuppressionModeRef.current = "rnnoise";
+        advancedNoiseSuppressionRef.current = true;
+        try {
+          localStorage.setItem("checkpoint_voice_ns_mode", "rnnoise");
+          localStorage.setItem("checkpoint_voice_advanced_ns", "true");
+        } catch { /* ignore */ }
+        if (rawStreamRef.current) {
+          const processed = await applyAudioProcessingChain(rawStreamRef.current);
+          await replaceActiveMicrophoneTrack(processed);
+        }
+      }
+      return;
+    }
+    await detachKrispFromTrack(track);
+  }, [applyAudioProcessingChain, notify, replaceActiveMicrophoneTrack]);
+
   // Settings setters
   const setVoiceSensitivity = useCallback((val: number) => {
     const clamped = Math.max(0, Math.min(100, val));
@@ -988,21 +1083,59 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
     try {
       localStorage.setItem("checkpoint_voice_echo_cancellation", String(val));
     } catch { }
-    const browserNs = noiseSuppressionRef.current && !advancedNoiseSuppressionRef.current;
-    const browserAgc = autoGainControlRef.current && !advancedNoiseSuppressionRef.current;
-    void applyAudioProcessingConstraints(val, browserNs, browserAgc);
-  }, [applyAudioProcessingConstraints]);
+    const { useBrowserNs, useBrowserAgc } = browserDspFromMode(noiseSuppressionModeRef.current);
+    void applyAudioProcessingConstraints(val, useBrowserNs, useBrowserAgc);
+  }, [applyAudioProcessingConstraints, browserDspFromMode]);
 
-  const setNoiseSuppression = useCallback((val: boolean) => {
-    setNoiseSuppressionState(val);
-    noiseSuppressionRef.current = val;
-    try {
-      localStorage.setItem("checkpoint_voice_noise_suppression", String(val));
-    } catch { }
-    const browserNs = val && !advancedNoiseSuppressionRef.current;
-    const browserAgc = autoGainControlRef.current && !advancedNoiseSuppressionRef.current;
-    void applyAudioProcessingConstraints(echoCancellationRef.current, browserNs, browserAgc);
-  }, [applyAudioProcessingConstraints]);
+  const setNoiseSuppressionMode = useCallback(
+    async (mode: NoiseSuppressionMode) => {
+      setNoiseSuppressionModeState(mode);
+      noiseSuppressionModeRef.current = mode;
+      advancedNoiseSuppressionRef.current = mode === "rnnoise";
+      const nativeOn = mode === "native";
+      setNoiseSuppressionState(nativeOn);
+      noiseSuppressionRef.current = nativeOn;
+      try {
+        localStorage.setItem("checkpoint_voice_ns_mode", mode);
+        localStorage.setItem("checkpoint_voice_advanced_ns", String(mode === "rnnoise"));
+        localStorage.setItem("checkpoint_voice_noise_suppression", String(nativeOn));
+      } catch { /* ignore */ }
+
+      const { useBrowserNs, useBrowserAgc } = browserDspFromMode(mode);
+      void applyAudioProcessingConstraints(echoCancellationRef.current, useBrowserNs, useBrowserAgc);
+
+      if (rawStreamRef.current && callState !== "idle") {
+        try {
+          const processedStream = await applyAudioProcessingChain(rawStreamRef.current);
+          await replaceActiveMicrophoneTrack(processedStream);
+        } catch (err) {
+          console.error("[useVoiceCall] setNoiseSuppressionMode rebuild error:", err);
+        }
+      }
+
+      if (livekitConnectedRef.current) {
+        await syncKrispOnLiveKitMic(mode);
+      } else if (mode !== "krisp") {
+        await detachKrispFromTrack();
+      }
+    },
+    [
+      applyAudioProcessingChain,
+      applyAudioProcessingConstraints,
+      browserDspFromMode,
+      callState,
+      replaceActiveMicrophoneTrack,
+      syncKrispOnLiveKitMic,
+    ],
+  );
+
+  /** Legacy: maps true → rnnoise, false → native (or none if NS was off) */
+  const setNoiseSuppression = useCallback(
+    (val: boolean) => {
+      void setNoiseSuppressionMode(val ? "native" : "none");
+    },
+    [setNoiseSuppressionMode],
+  );
 
   const setAutoGainControl = useCallback((val: boolean) => {
     setAutoGainControlState(val);
@@ -1010,35 +1143,18 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
     try {
       localStorage.setItem("checkpoint_voice_auto_gain", String(val));
     } catch { }
-    const browserNs = noiseSuppressionRef.current && !advancedNoiseSuppressionRef.current;
-    const browserAgc = val && !advancedNoiseSuppressionRef.current;
-    void applyAudioProcessingConstraints(echoCancellationRef.current, browserNs, browserAgc);
-  }, [applyAudioProcessingConstraints]);
+    const { useBrowserNs } = browserDspFromMode(noiseSuppressionModeRef.current);
+    const agc =
+      val &&
+      (noiseSuppressionModeRef.current === "native" || noiseSuppressionModeRef.current === "none");
+    void applyAudioProcessingConstraints(echoCancellationRef.current, useBrowserNs, agc);
+  }, [applyAudioProcessingConstraints, browserDspFromMode]);
 
   const setAdvancedNoiseSuppression = useCallback(
     async (val: boolean) => {
-      setAdvancedNoiseSuppressionState(val);
-      advancedNoiseSuppressionRef.current = val;
-      try {
-        localStorage.setItem("checkpoint_voice_advanced_ns", String(val));
-      } catch { }
-
-      // Avoid double NS/AGC: browser DSP off when RNNoise is on
-      const browserNs = noiseSuppressionRef.current && !val;
-      const browserAgc = autoGainControlRef.current && !val;
-      void applyAudioProcessingConstraints(echoCancellationRef.current, browserNs, browserAgc);
-
-      // Rebuild the processing chain if we have an active rawStream and call is not idle
-      if (rawStreamRef.current && callState !== "idle") {
-        try {
-          const processedStream = await applyAudioProcessingChain(rawStreamRef.current);
-          await replaceActiveMicrophoneTrack(processedStream);
-        } catch (err) {
-          console.error("[useVoiceCall] setAdvancedNoiseSuppression error:", err);
-        }
-      }
+      await setNoiseSuppressionMode(val ? "rnnoise" : noiseSuppressionRef.current ? "native" : "none");
     },
-    [applyAudioProcessingChain, applyAudioProcessingConstraints, callState, replaceActiveMicrophoneTrack],
+    [setNoiseSuppressionMode],
   );
 
   // Audio acquisition helper com diagnóstico de erros específicos
@@ -1048,9 +1164,10 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
       isAcquiringMediaRef.current = true;
       const targetDeviceId = deviceId || (selectedAudioInput !== "default" ? selectedAudioInput : undefined);
 
-      // When advanced RNNoise is on, disable browser NS/AGC to avoid double processing.
-      const useBrowserNs = noiseSuppression && !advancedNoiseSuppressionRef.current;
-      const useBrowserAgc = autoGainControl && !advancedNoiseSuppressionRef.current;
+      const mode = noiseSuppressionModeRef.current;
+      const useBrowserNs = mode === "native";
+      // Keep AGC with native/none; Krisp/RNNoise prefer clean capture
+      const useBrowserAgc = autoGainControl && (mode === "native" || mode === "none");
 
       const constraints: MediaStreamConstraints = {
         audio: {
@@ -1579,6 +1696,7 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
     }
     livekitConnectedRef.current = false;
     livekitAudioPubRef.current = null;
+    void detachKrispFromTrack();
     livekitVideoPubRef.current = null;
     livekitScreenPubRef.current = null;
     livekitScreenAudioPubRef.current = null;
@@ -1664,7 +1782,7 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
           publishDefaults: {
             videoCodec: "h264",
             screenShareEncoding: {
-              maxBitrate: 8_000_000,
+              maxBitrate: SCREEN_SHARE_ROOM_MAX_BITRATE,
               maxFramerate: 60,
               priority: "high",
             },
@@ -1916,8 +2034,12 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
         // silencio, reduz jitter), RED (recuperacao contra perda de pacote
         // sem retransmissao = menos gap) e mono forcado (metade do bitrate).
         const rawMicTrack = rawStreamRef.current?.getAudioTracks()[0];
-        const fallbackMicTrack = localStreamRef.current?.getAudioTracks()[0];
-        const audioTrack = rawMicTrack || fallbackMicTrack;
+        const processedMicTrack = localStreamRef.current?.getAudioTracks()[0];
+        // RNNoise must publish the processed chain; Krisp/native use raw capture.
+        const audioTrack =
+          noiseSuppressionModeRef.current === "rnnoise"
+            ? processedMicTrack || rawMicTrack
+            : rawMicTrack || processedMicTrack;
         if (audioTrack) {
           try {
             (audioTrack as MediaStreamTrack & { contentHint?: string }).contentHint = "speech";
@@ -1932,6 +2054,33 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
             stopMicTrackOnMute: false,
           });
           livekitAudioPubRef.current = pub;
+          if (
+            noiseSuppressionModeRef.current === "krisp" &&
+            pub.track instanceof LiveKitLocalAudioTrack
+          ) {
+            const ok = await attachKrispToTrack(pub.track, true);
+            if (!ok) {
+              notify(
+                "Krisp indisponível neste ambiente — usando Isolamento RNNoise.",
+                "info",
+              );
+              setNoiseSuppressionModeState("rnnoise");
+              noiseSuppressionModeRef.current = "rnnoise";
+              advancedNoiseSuppressionRef.current = true;
+              try {
+                localStorage.setItem("checkpoint_voice_ns_mode", "rnnoise");
+                localStorage.setItem("checkpoint_voice_advanced_ns", "true");
+              } catch { /* ignore */ }
+              if (rawStreamRef.current) {
+                try {
+                  const processed = await applyAudioProcessingChain(rawStreamRef.current);
+                  await replaceActiveMicrophoneTrack(processed);
+                } catch (err) {
+                  console.warn("[LiveKit] RNNoise fallback after Krisp failure:", err);
+                }
+              }
+            }
+          }
         }
 
         return room;
@@ -1940,7 +2089,7 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
         throw err;
       }
     },
-    [selectedAudioOutput, setupVoiceAnalyzer],
+    [selectedAudioOutput, setupVoiceAnalyzer, notify, applyAudioProcessingChain, replaceActiveMicrophoneTrack],
   );
 
   // ICE Preflight Connectivity Check com cache de 10 min e timeout rápido
@@ -2819,24 +2968,7 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
         setIsMuted(true);
       }
 
-      // If incoming call was video, try to activate local camera automatically if available
-      if (hasVideo) {
-        try {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const hasVideoInput = devices.some((d) => d.kind === "videoinput");
-          if (hasVideoInput) {
-            const camStream = await navigator.mediaDevices.getUserMedia({
-              video: selectedVideoInput !== "default" ? { deviceId: { exact: selectedVideoInput } } : true,
-              audio: false,
-            });
-            cameraStreamRef.current = camStream;
-            setLocalCameraStream(camStream);
-            setIsCameraOn(true);
-          }
-        } catch {
-          // Ignore camera fallback for callee
-        }
-      }
+      // O atendimento inicia sempre com a câmera desligada por padrão, respeitando a privacidade do usuário
 
       // ICE Preflight + LiveKit SFU connection rodando em paralelo para conexão rápida
       const displayName = userProfile?.displayName || user.displayName || "Jogador";
@@ -3052,7 +3184,14 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
         await joinRoom(newRoom.id, config.password);
       } catch (err: any) {
         console.error("[useVoiceCall] createAndJoinRoom failed:", err);
-        notify(err?.message || "Erro ao criar canal de voz.", "error");
+        const message =
+          err?.name === "AuthRequiredError"
+            ? "Sessão expirada. Entre novamente para criar um canal."
+            : err?.message === "Failed to fetch" || /failed to fetch|networkerror|load failed/i.test(String(err?.message || ""))
+              ? "Não foi possível conectar ao servidor de voz. Tente novamente."
+              : err?.message || "Erro ao criar canal de voz.";
+        notify(message, "error");
+        throw (err instanceof Error ? err : new Error(message));
       }
     },
     [joinRoom, notify],
@@ -3323,32 +3462,53 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
 
       try {
         let screenStream: MediaStream;
+        tauriScreenStopRef.current = null;
 
-        // WebView2 cannot bind a custom picker source to Chromium capture.
-        // GDI→JPEG→canvas was dropping the cursor, missing the chosen FPS and stuttering.
-        // Native getDisplayMedia uses DXGI/WGC: cursor, audio loopback, and real frame pacing.
-        try {
-          screenStream = await navigator.mediaDevices.getDisplayMedia({
-            video: videoConstraints,
-            audio: includeAudio
-              ? ({
-                echoCancellation: false,
-                noiseSuppression: false,
-                autoGainControl: false,
-                restrictOwnAudio: true,
-              } as MediaTrackConstraints)
-              : false,
-          });
-        } catch (displayErr) {
-          if (includeAudio) {
-            console.warn("[useVoiceCall] getDisplayMedia with audio failed; retrying video-only:", displayErr);
+        // Hub picker já escolheu a fonte → captura Tauri direta (sem seletor nativo).
+        // Sem sourceId → fallback getDisplayMedia (botão "Selecionar pelo sistema").
+        if (options.sourceId) {
+          try {
+            const capture = await createTauriScreenCaptureStream({
+              targetId: options.sourceId,
+              width,
+              height,
+              fps,
+              withAudio: includeAudio,
+            });
+            screenStream = capture.stream;
+            tauriScreenStopRef.current = capture.stop;
+            if (includeAudio && !capture.hasAudio) {
+              notify("Áudio do sistema indisponível; compartilhando apenas o vídeo.", "info");
+            }
+          } catch (tauriErr) {
+            console.error("[useVoiceCall] Captura Tauri da fonte selecionada falhou:", tauriErr);
+            notify("Não foi possível capturar a fonte escolhida.", "error");
+            return;
+          }
+        } else {
+          try {
             screenStream = await navigator.mediaDevices.getDisplayMedia({
               video: videoConstraints,
-              audio: false,
+              audio: includeAudio
+                ? ({
+                  echoCancellation: false,
+                  noiseSuppression: false,
+                  autoGainControl: false,
+                  restrictOwnAudio: true,
+                } as MediaTrackConstraints)
+                : false,
             });
-            notify("Áudio do sistema indisponível; compartilhando apenas o vídeo.", "info");
-          } else {
-            throw displayErr;
+          } catch (displayErr) {
+            if (includeAudio) {
+              console.warn("[useVoiceCall] getDisplayMedia with audio failed; retrying video-only:", displayErr);
+              screenStream = await navigator.mediaDevices.getDisplayMedia({
+                video: videoConstraints,
+                audio: false,
+              });
+              notify("Áudio do sistema indisponível; compartilhando apenas o vídeo.", "info");
+            } else {
+              throw displayErr;
+            }
           }
         }
 
@@ -4026,6 +4186,8 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
     setEchoCancellation,
     noiseSuppression,
     setNoiseSuppression,
+    noiseSuppressionMode,
+    setNoiseSuppressionMode,
     advancedNoiseSuppression,
     setAdvancedNoiseSuppression,
     autoGainControl,

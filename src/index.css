@@ -38,20 +38,34 @@
 :root,
 html[data-launcher-theme="phelierium"],
 html[data-launcher-theme="checkpoint"] {
-  /* ======================================= */
-  /* DESIGN TOKENS DEFINITIVOS (Fase 6 CMF)  */
-  /* Estética Orbloom: #0F0F0F #161616 #D2D2D2 #6C6C6C */
-  /* ======================================= */
-  --color-bg-main: #0F0F0F;
-  /* Orbloom Page */
-  --color-surface: #161616;
-  /* Orbloom Card */
+  /* ========================================================
+     PHERIELIUM (Autoral / Carvão Fosco e Foco Concentrado)
+     ======================================================== */
+  --surface-base: #070707;
+  --surface-raised: #141414;
+  --surface-overlay: #1F1F1F;
+
+  --color-bg-main: var(--surface-base);
+  --color-surface: var(--surface-raised);
   --color-ui-detail: #2A2A2A;
-  /* Borda derivada de #6C6C6C em baixa opacidade */
-  --color-text-main: #D2D2D2;
-  /* Orbloom Texto Principal */
-  --color-text-sub: #6C6C6C;
-  /* Orbloom Texto Secundário */
+  --color-text-main: #FFFFFF;
+  --color-text-sub: #A3A3A3;
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-selected: rgba(255, 255, 255, 0.40);
+  --border-strong: rgba(255, 255, 255, 0.22);
+
+  --radius-panel: 22px;
+  --radius-card: 16px;
+  --radius-control: 12px;
+
+  --selection-bg: #242424;
+  --selection-text: #FFFFFF;
+  --selection-border: rgba(255, 255, 255, 0.16);
+
+  --focus-ring: 2px solid rgba(255, 255, 255, 0.95);
+  --focus-shadow: 0 0 0 3px rgba(255, 255, 255, 0.16);
+  --surface-chamfer: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
   /* Fallback legacy remapping */
   --background: var(--color-bg-main);
@@ -65,20 +79,12 @@ html[data-launcher-theme="checkpoint"] {
   --text-secondary: var(--color-text-sub);
   --text-tertiary: rgba(210, 210, 210, 0.4);
   --text-disabled: rgba(210, 210, 210, 0.25);
-  --border: var(--color-ui-detail);
-  --border-subtle: rgba(210, 210, 210, 0.08);
-  --border-strong: rgba(210, 210, 210, 0.2);
-
-  /* Tokens brutos Orbloom (uso direto em overrides pontuais) */
-  --orbloom-bg: #0F0F0F;
-  --orbloom-card: #161616;
-  --orbloom-text: #D2D2D2;
-  --orbloom-muted: #6C6C6C;
+  --border: var(--border-subtle);
 
   --launcher-accent: 255 255 255;
-  /* Branco RGB base for focus rings */
-  --launcher-accent-soft: rgba(255, 255, 255, 0.2);
-  --launcher-tint: rgba(255, 255, 255, 0.1);
+  --launcher-accent-soft: rgba(255, 255, 255, 0.18);
+  --launcher-tint: rgba(255, 255, 255, 0.06);
+  --theme-ambient-bg: radial-gradient(circle at 50% 25%, rgba(255, 255, 255, 0.03) 0%, transparent 65%);
   --cosmos-glow: none;
 
   /* Malha Base 4/8 */
@@ -91,88 +97,313 @@ html[data-launcher-theme="checkpoint"] {
   --space-8: 32px;
   --space-10: 40px;
   --space-12: 48px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --space-12: 48px;
-  --radius-sm: 6px;
-  --radius-md: 6px;
-  --radius-lg: 16px;
-  --radius-xl: 16px;
-  --radius-pill: 9999px;
-  --radius-control: 6px;
-  --radius-card: 16px;
-  --radius-panel: 16px;
+
   --motion-instant: 150ms;
   --motion-fast: 150ms;
-  --motion-normal: 150ms;
-  --motion-slow: 150ms;
+  --motion-normal: 250ms;
+  --motion-slow: 350ms;
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
   --dur-fast: var(--motion-fast);
   --dur-medium: var(--motion-normal);
   --ease-standard: ease-out;
   --ease-linear: linear;
 }
 
-html[data-launcher-theme="ps5"] {
-  --launcher-accent: 255 255 255;
-  --launcher-accent-soft: rgba(255, 255, 255, 0.28);
-  --launcher-tint: rgba(255, 255, 255, 0.12);
-}
-
+/* ========================================================
+   2. PS2 (Profundidade Monolítica / Azul Abissal & Contorno)
+   ======================================================== */
 html[data-launcher-theme="playstation"] {
-  --launcher-accent: 37 99 235;
-  --launcher-accent-soft: rgba(37, 99, 235, 0.34);
-  --launcher-tint: rgba(30, 64, 175, 0.32);
+  --surface-base: #03050D;
+  --surface-raised: #080D1A;
+  --surface-overlay: #0E162C;
+
+  --color-bg-main: var(--surface-base);
+  --color-surface: var(--surface-raised);
+  --color-ui-detail: #162444;
+  --color-text-main: #FFFFFF;
+  --color-text-sub: #829ABF;
+
+  --border-subtle: rgba(40, 75, 140, 0.25);
+  --border-selected: #2563EB;
+  --border-strong: rgba(59, 130, 246, 0.45);
+
+  --radius-panel: 14px;
+  --radius-card: 10px;
+  --radius-control: 8px;
+
+  --selection-bg: rgba(37, 99, 235, 0.16);
+  --selection-text: #60A5FA;
+  --selection-border: #2563EB;
+
+  --focus-ring: 2px solid #3B82F6;
+  --focus-shadow: 0 0 10px rgba(37, 99, 235, 0.45);
+  --surface-chamfer: inset 0 1px 0 rgba(96, 165, 250, 0.16);
+
+  --launcher-accent: 29 78 216;
+  --launcher-accent-soft: rgba(0, 210, 255, 0.25);
+  --launcher-tint: rgba(10, 25, 60, 0.35);
+  --theme-ambient-bg: radial-gradient(ellipse at 80% 20%, rgba(29, 78, 216, 0.20) 0%, rgba(10, 25, 60, 0.10) 45%, transparent 75%);
+
+  --motion-fast: 120ms;
+  --motion-normal: 200ms;
+  --motion-ease: cubic-bezier(0.15, 0, 0, 1);
 }
 
+/* ========================================================
+   3. PS5 (Futurismo Orgânico / Grafite Frio & Cápsula Clara)
+   ======================================================== */
+html[data-launcher-theme="ps5"] {
+  --surface-base: #0B0D12;
+  --surface-raised: #131620;
+  --surface-overlay: #1A1F2D;
+
+  --color-bg-main: var(--surface-base);
+  --color-surface: var(--surface-raised);
+  --color-ui-detail: #232838;
+  --color-text-main: #FFFFFF;
+  --color-text-sub: #9AA0B2;
+
+  --border-subtle: rgba(255, 255, 255, 0.09);
+  --border-selected: rgba(255, 255, 255, 0.75);
+  --border-strong: rgba(255, 255, 255, 0.28);
+
+  --radius-panel: 28px;
+  --radius-card: 20px;
+  --radius-control: 9999px;
+
+  --selection-bg: #F4F4F6;
+  --selection-text: #0B0D12;
+  --selection-border: rgba(255, 255, 255, 0.35);
+
+  --focus-ring: 2px solid #FFFFFF;
+  --focus-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
+  --surface-chamfer: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+
+  --launcher-accent: 244 244 246;
+  --launcher-accent-soft: rgba(41, 121, 255, 0.24);
+  --launcher-tint: rgba(41, 121, 255, 0.10);
+  --theme-ambient-bg: radial-gradient(ellipse at 50% -10%, rgba(244, 244, 246, 0.08) 0%, rgba(41, 121, 255, 0.06) 45%, transparent 70%);
+
+  --motion-fast: 180ms;
+  --motion-normal: 300ms;
+  --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ========================================================
+   4. PS4 (Azul Médio & Ondas Amplas)
+   ======================================================== */
 html[data-launcher-theme="ps4"] {
+  --surface-base: #040914;
+  --surface-raised: #0A1326;
+  --surface-overlay: #101E3D;
+
+  --color-bg-main: var(--surface-base);
+  --color-surface: var(--surface-raised);
+  --color-ui-detail: #192D5A;
+  --color-text-main: #FFFFFF;
+  --color-text-sub: #8CA3CF;
+
+  --border-subtle: rgba(0, 112, 209, 0.25);
+  --border-selected: #0070D1;
+  --border-strong: rgba(0, 112, 209, 0.45);
+
+  --radius-panel: 18px;
+  --radius-card: 14px;
+  --radius-control: 10px;
+
+  --selection-bg: rgba(0, 112, 209, 0.25);
+  --selection-text: #FFFFFF;
+  --selection-border: #0070D1;
+
+  --focus-ring: 2px solid #0070D1;
+  --focus-shadow: 0 0 12px rgba(0, 112, 209, 0.4);
+  --surface-chamfer: inset 0 1px 0 rgba(0, 112, 209, 0.2);
+
   --launcher-accent: 0 112 209;
-  --launcher-accent-soft: rgba(0, 112, 209, 0.36);
-  --launcher-tint: rgba(0, 55, 145, 0.34);
+  --launcher-accent-soft: rgba(0, 112, 209, 0.32);
+  --launcher-tint: rgba(0, 55, 145, 0.30);
+  --theme-ambient-bg: radial-gradient(ellipse at 60% 0%, rgba(0, 112, 209, 0.22) 0%, transparent 70%);
 }
 
+/* ========================================================
+   5. PSP (Vidro Fumê & Prata)
+   ======================================================== */
 html[data-launcher-theme="psp"] {
-  --launcher-accent: 6 182 212;
-  --launcher-accent-soft: rgba(6, 182, 212, 0.36);
-  --launcher-tint: rgba(14, 116, 144, 0.34);
+  --surface-base: #0B0C0E;
+  --surface-raised: #14161B;
+  --surface-overlay: #1D2027;
+
+  --color-bg-main: var(--surface-base);
+  --color-surface: var(--surface-raised);
+  --color-ui-detail: #2A2E38;
+  --color-text-main: #FFFFFF;
+  --color-text-sub: #A0A5B5;
+
+  --border-subtle: rgba(203, 213, 225, 0.16);
+  --border-selected: #CBD5E1;
+  --border-strong: rgba(203, 213, 225, 0.32);
+
+  --radius-panel: 16px;
+  --radius-card: 12px;
+  --radius-control: 8px;
+
+  --selection-bg: rgba(203, 213, 225, 0.18);
+  --selection-text: #FFFFFF;
+  --selection-border: #CBD5E1;
+
+  --focus-ring: 2px solid #CBD5E1;
+  --focus-shadow: 0 0 10px rgba(203, 213, 225, 0.3);
+  --surface-chamfer: inset 0 1px 0 rgba(203, 213, 225, 0.18);
+
+  --launcher-accent: 203 213 225;
+  --launcher-accent-soft: rgba(203, 213, 225, 0.25);
+  --launcher-tint: rgba(214, 188, 145, 0.14);
+  --theme-ambient-bg: radial-gradient(ellipse at 80% 0%, rgba(214, 188, 145, 0.14) 0%, transparent 65%);
 }
 
+/* ========================================================
+   6. CYBERPUNK (Preto, Amarelo & Ciano)
+   ======================================================== */
 html[data-launcher-theme="cyberpunk"] {
+  --surface-base: #050507;
+  --surface-raised: #0E0F14;
+  --surface-overlay: #171822;
+
+  --color-bg-main: var(--surface-base);
+  --color-surface: var(--surface-raised);
+  --color-ui-detail: #26293A;
+  --color-text-main: #FFFFFF;
+  --color-text-sub: #A5A8BD;
+
+  --border-subtle: rgba(255, 238, 0, 0.2);
+  --border-selected: #FFEE00;
+  --border-strong: rgba(255, 238, 0, 0.45);
+
+  --radius-panel: 8px;
+  --radius-card: 6px;
+  --radius-control: 4px;
+
+  --selection-bg: rgba(255, 238, 0, 0.15);
+  --selection-text: #FFEE00;
+  --selection-border: #FFEE00;
+
+  --focus-ring: 2px solid #FFEE00;
+  --focus-shadow: 0 0 12px rgba(255, 238, 0, 0.45);
+  --surface-chamfer: inset 0 1px 0 rgba(255, 238, 0, 0.25);
+
   --launcher-accent: 255 238 0;
   --launcher-accent-soft: rgba(255, 238, 0, 0.36);
   --launcher-tint: rgba(0, 240, 255, 0.34);
+  --theme-ambient-bg: radial-gradient(circle at 85% 10%, rgba(255, 238, 0, 0.10) 0%, rgba(0, 240, 255, 0.08) 40%, transparent 70%);
 }
 
+/* ========================================================
+   7. GAMECUBE (Grafite Violeta & Volumes)
+   ======================================================== */
 html[data-launcher-theme="gamecube"] {
+  --surface-base: #090610;
+  --surface-raised: #120E1E;
+  --surface-overlay: #1C1630;
+
+  --color-bg-main: var(--surface-base);
+  --color-surface: var(--surface-raised);
+  --color-ui-detail: #2C224B;
+  --color-text-main: #FFFFFF;
+  --color-text-sub: #A59BC2;
+
+  --border-subtle: rgba(124, 58, 237, 0.24);
+  --border-selected: #7C3AED;
+  --border-strong: rgba(124, 58, 237, 0.45);
+
+  --radius-panel: 16px;
+  --radius-card: 12px;
+  --radius-control: 10px;
+
+  --selection-bg: rgba(124, 58, 237, 0.22);
+  --selection-text: #A78BFA;
+  --selection-border: #7C3AED;
+
+  --focus-ring: 2px solid #7C3AED;
+  --focus-shadow: 0 0 12px rgba(124, 58, 237, 0.4);
+  --surface-chamfer: inset 0 1px 0 rgba(167, 139, 250, 0.2);
+
   --launcher-accent: 124 58 237;
   --launcher-accent-soft: rgba(124, 58, 237, 0.36);
   --launcher-tint: rgba(76, 29, 149, 0.34);
+  --theme-ambient-bg: radial-gradient(ellipse at 70% 10%, rgba(124, 58, 237, 0.16) 0%, transparent 65%);
 }
 
+/* ========================================================
+   8. XBOX 360 (Grafite & Verde Concentrado)
+   ======================================================== */
 html[data-launcher-theme="xbox360"] {
+  --surface-base: #060B04;
+  --surface-raised: #0D160A;
+  --surface-overlay: #152410;
+
+  --color-bg-main: var(--surface-base);
+  --color-surface: var(--surface-raised);
+  --color-ui-detail: #223B1A;
+  --color-text-main: #FFFFFF;
+  --color-text-sub: #9EBD94;
+
+  --border-subtle: rgba(132, 204, 22, 0.22);
+  --border-selected: #84CC16;
+  --border-strong: rgba(132, 204, 22, 0.45);
+
+  --radius-panel: 16px;
+  --radius-card: 12px;
+  --radius-control: 8px;
+
+  --selection-bg: rgba(132, 204, 22, 0.20);
+  --selection-text: #A3E635;
+  --selection-border: #84CC16;
+
+  --focus-ring: 2px solid #84CC16;
+  --focus-shadow: 0 0 12px rgba(132, 204, 22, 0.4);
+  --surface-chamfer: inset 0 1px 0 rgba(163, 230, 53, 0.2);
+
   --launcher-accent: 132 204 22;
   --launcher-accent-soft: rgba(132, 204, 22, 0.34);
   --launcher-tint: rgba(77, 124, 15, 0.34);
+  --theme-ambient-bg: radial-gradient(ellipse at 70% 15%, rgba(132, 204, 22, 0.14) 0%, transparent 65%);
 }
 
-html[data-launcher-theme="carbon"] {
-  --launcher-accent: 148 163 184;
-  --launcher-accent-soft: rgba(148, 163, 184, 0.34);
-  --launcher-tint: rgba(51, 65, 85, 0.42);
+/* ========================================================
+   Living Theme System Utilities
+   ======================================================== */
+.theme-panel {
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-panel);
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.6), var(--surface-chamfer);
 }
 
-html[data-launcher-theme="neon"] {
-  --launcher-accent: 34 211 238;
-  --launcher-accent-soft: rgba(34, 211, 238, 0.36);
-  --launcher-tint: rgba(6, 182, 212, 0.28);
+.theme-card-surface {
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--surface-chamfer);
 }
 
-html[data-launcher-theme="sunset"] {
-  --launcher-accent: 251 146 60;
-  --launcher-accent-soft: rgba(251, 146, 60, 0.38);
-  --launcher-tint: rgba(234, 88, 12, 0.3);
+.theme-tab-item {
+  border-radius: var(--radius-control);
+  transition: background-color var(--motion-fast) var(--motion-ease),
+              color var(--motion-fast) var(--motion-ease),
+              border-color var(--motion-fast) var(--motion-ease),
+              box-shadow var(--motion-fast) var(--motion-ease);
+}
+
+.theme-tab-item[data-active="true"] {
+  background-color: var(--selection-bg);
+  color: var(--selection-text);
+  border: 1px solid var(--selection-border);
+  box-shadow: var(--surface-chamfer);
+}
+
+.theme-tab-item[data-active="false"]:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-main);
 }
 
 @theme {

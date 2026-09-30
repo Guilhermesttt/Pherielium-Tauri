@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { supabase } from "../services/supabase";
-import { apiUrl, getUsableSession, refreshSupabaseSessionOnce } from "../services/api";
+import { apiFetch, getUsableSession, refreshSupabaseSessionOnce } from "../services/api";
 import { cleanupAllChannels } from "../services/voiceCall";
 import { markCheckpointOfflineSync } from "../services/checkpointFriends";
 import type { UserProfile } from "../types/domain";
@@ -78,7 +78,7 @@ const toProfile = (uid: string, data?: Record<string, any>): UserProfile => {
 
 const isJwtAuthError = (error: { code?: string; message?: string } | null | undefined) => {
   if (!error) return false;
-  return error.code === "PGRST301" || /jwt|expired|token|unauthoriz/i.test(error.message || "");
+  return error.code === "PGRST301" || /jwt|expired|token|unauthoriz|failed to fetch/i.test(error.message || "");
 };
 
 const isClientOnline = () => typeof navigator === "undefined" || navigator.onLine;
@@ -461,10 +461,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (typeof (window.electronAPI as any).pollGoogleBrowserAuth === "function") {
               data = await (window.electronAPI as any).pollGoogleBrowserAuth(state, pollSecret);
             } else {
-              const statusRes = await fetch(
-                apiUrl(
-                  `/auth/desktop/google/status?state=${encodeURIComponent(state)}&pollSecret=${encodeURIComponent(pollSecret)}`,
-                ),
+              const statusRes = await apiFetch(
+                `/auth/desktop/google/status?state=${encodeURIComponent(state)}&pollSecret=${encodeURIComponent(pollSecret)}`,
                 { signal },
               );
 
@@ -605,6 +603,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ? localStorage.getItem(`phelierium_custom_avatar_${sessionUid}`)
         : null;
 
+      const rawAvatar = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;
+      const safeMetaAvatar = typeof rawAvatar === "string" && !rawAvatar.startsWith("data:") && rawAvatar.length <= 500
+        ? rawAvatar
+        : null;
+
       return {
         uid: sessionUid,
         email: session.user.email,
@@ -619,8 +622,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           "Jogador",
         photoURL:
           localAvatar ||
-          session.user.user_metadata?.avatar_url ||
-          session.user.user_metadata?.picture ||
+          safeMetaAvatar ||
           null,
       };
     };
@@ -661,11 +663,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const expiresSoon =
           Boolean(session.expires_at) &&
           session.expires_at! * 1000 < Date.now() + 30_000;
+        const isBloatedToken = (session.access_token?.length || 0) > 3000;
+        const hasBase64Meta = Boolean(
+          session.user.user_metadata?.avatar_url?.startsWith?.("data:") ||
+          session.user.user_metadata?.picture?.startsWith?.("data:")
+        );
 
-        if (expiresSoon) {
+        if (expiresSoon || isBloatedToken || hasBase64Meta) {
           const refreshed = await refreshSupabaseSessionOnce();
           if (refreshed) {
             session = refreshed;
+            // Se ainda houver metadados base64 legados, limpa e renova novamente
+            if (
+              session.user?.user_metadata?.avatar_url?.startsWith?.("data:") ||
+              session.user?.user_metadata?.picture?.startsWith?.("data:")
+            ) {
+              try {
+                await supabase.auth.updateUser({
+                  data: { avatar_url: null, picture: null },
+                });
+                const cleanRefreshed = await refreshSupabaseSessionOnce();
+                if (cleanRefreshed) {
+                  session = cleanRefreshed;
+                }
+              } catch (cleanErr) {
+                console.warn("[Auth] Aviso ao limpar user_metadata base64 legado:", cleanErr);
+              }
+            }
           } else {
             const remainingMs = session.expires_at
               ? session.expires_at * 1000 - Date.now()

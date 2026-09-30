@@ -8,7 +8,12 @@ use tauri::command;
 
 /// Normalize a Windows path for case-insensitive comparison
 fn normalize_path(p: &str) -> String {
-    p.to_lowercase().replace('\\', "/").trim_matches('/').to_string()
+    p.trim_matches('"')
+        .trim_matches('\'')
+        .to_lowercase()
+        .replace('\\', "/")
+        .trim_matches('/')
+        .to_string()
 }
 
 /// Returns the subset of `executable_paths` that are currently running as processes.
@@ -27,9 +32,11 @@ pub async fn process_detect_running(executable_paths: Vec<String>) -> Result<Vec
     for process in sys.processes().values() {
         let exe_norm = process.exe().map(|exe| normalize_path(&exe.to_string_lossy()));
         let name_norm = normalize_path(&process.name().to_string_lossy());
+        let name_stem = name_norm.trim_end_matches(".exe");
 
         for (i, target) in normalized_targets.iter().enumerate() {
             let target_base = target.rsplit('/').next().unwrap_or(target);
+            let target_stem = target_base.trim_end_matches(".exe");
             let matched = if let Some(ref exe) = exe_norm {
                 exe.ends_with(target.as_str())
                     || exe == target
@@ -37,7 +44,8 @@ pub async fn process_detect_running(executable_paths: Vec<String>) -> Result<Vec
             } else {
                 false
             } || name_norm == target_base
-                || name_norm == *target;
+                || name_norm == *target
+                || (!target_stem.is_empty() && name_stem == target_stem);
 
             if matched {
                 running.push(executable_paths[i].clone());
@@ -169,24 +177,124 @@ fn get_scan_dirs() -> Vec<String> {
 }
 
 fn is_likely_game_exe(exe_name: &str, game_name: &str) -> bool {
-    // Skip known utility executables
+    score_game_exe(exe_name, game_name) > 0
+}
+
+fn score_game_exe(exe_name: &str, game_name: &str) -> i32 {
+    let exe_lower = exe_name.to_lowercase();
     let skip = [
         "unins", "uninstall", "setup", "install", "redist", "vcredist",
-        "directx", "crashreport", "crash_report", "dxsetup", "ue4", "ue5",
-        "dotnetfx", "dotnet", "cleanup", "launcher", "_commonredist",
+        "directx", "crashreport", "crash_report", "dxsetup", "ue4prereq",
+        "dotnetfx", "dotnet", "cleanup", "_commonredist", "vc_redist",
+        "unitycrashhandler", "crashpad", "notification_helper", "cefsharp",
+        "blender", "physx", "easyanticheat", "eac_launcher", "beclient",
+        "battleye", "pbsvc", "redistributable",
     ];
     for s in &skip {
-        if exe_name.contains(s) {
-            return false;
+        if exe_lower.contains(s) {
+            return -100;
         }
     }
 
-    // Prefer exe names that resemble the game name
-    let game_lower = game_name.to_lowercase().replace(' ', "");
-    let exe_stem = exe_name.trim_end_matches(".exe");
-    exe_stem.contains(&game_lower[..game_lower.len().min(5)])
-        || game_lower.contains(exe_stem)
-        || exe_stem.len() > 3 // any exe with a meaningful name
+    let exe_stem = exe_lower.trim_end_matches(".exe");
+    if exe_stem.len() <= 2 {
+        return -50;
+    }
+
+    let game_compact = game_name
+        .to_lowercase()
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect::<String>();
+    let exe_compact = exe_stem
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect::<String>();
+
+    let mut score = 10;
+
+    if exe_compact == game_compact {
+        score += 100;
+    } else if !game_compact.is_empty()
+        && (exe_compact.contains(&game_compact) || game_compact.contains(&exe_compact))
+    {
+        score += 60;
+    } else if game_compact.len() >= 4 {
+        let prefix = &game_compact[..game_compact.len().min(5)];
+        if exe_compact.contains(prefix) {
+            score += 35;
+        }
+    }
+
+    if exe_stem.contains("shipping") || exe_stem.contains("win64") || exe_stem.contains("win32") {
+        score += 40;
+    }
+    if exe_stem.contains("launcher") || exe_stem.contains("bootstrap") || exe_stem == "unity" {
+        score -= 40;
+    }
+    if exe_stem == "unityplayer" || exe_stem == "gamelauncher" {
+        score -= 20;
+    }
+
+    score
+}
+
+fn find_best_game_exe(game_dir: &Path, game_name: &str) -> Option<PathBuf> {
+    let mut candidates: Vec<(i32, PathBuf)> = Vec::new();
+    collect_exe_candidates(game_dir, game_name, 0, 3, &mut candidates);
+    candidates.sort_by(|a, b| b.0.cmp(&a.0).then_with(|| a.1.cmp(&b.1)));
+    candidates.into_iter().map(|(_, path)| path).next()
+}
+
+fn collect_exe_candidates(
+    dir: &Path,
+    game_name: &str,
+    depth: u32,
+    max_depth: u32,
+    out: &mut Vec<(i32, PathBuf)>,
+) {
+    let entries = match std::fs::read_dir(dir) {
+        Ok(entries) => entries,
+        Err(_) => return,
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_file() && path.extension().map_or(false, |ext| ext == "exe") {
+            let exe_name = path
+                .file_name()
+                .map(|name| name.to_string_lossy().to_lowercase())
+                .unwrap_or_default();
+            let score = score_game_exe(&exe_name, game_name);
+            if score > 0 {
+                out.push((score - (depth as i32 * 2), path));
+            }
+            continue;
+        }
+
+        if depth >= max_depth || !path.is_dir() {
+            continue;
+        }
+
+        let dir_name = path
+            .file_name()
+            .map(|name| name.to_string_lossy().to_lowercase())
+            .unwrap_or_default();
+        if matches!(
+            dir_name.as_str(),
+            "_commonredist"
+                | "directx"
+                | "redist"
+                | "redistributables"
+                | "support"
+                | "__macosx"
+                | ".git"
+        ) {
+            continue;
+        }
+
+        collect_exe_candidates(&path, game_name, depth + 1, max_depth, out);
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -325,23 +433,13 @@ pub async fn steam_scan_installed_games() -> Result<Vec<LocalSteamGame>, String>
                 .and_then(|s| s.parse::<i64>().ok())
                 .unwrap_or(0);
 
-            // Locate executable inside steamapps/common/{installdir}
+            // Locate executable inside steamapps/common/{installdir} (incl. subpastas)
             let mut executable_path: Option<String> = None;
             if !installdir.is_empty() {
                 let common_game_dir = steamapps.join("common").join(&installdir);
                 if common_game_dir.exists() {
-                    if let Ok(game_entries) = std::fs::read_dir(&common_game_dir) {
-                        for ge in game_entries.flatten() {
-                            let p = ge.path();
-                            if p.is_file() && p.extension().map_or(false, |e| e == "exe") {
-                                let exe_name = p.file_name().map(|n| n.to_string_lossy().to_lowercase()).unwrap_or_default();
-                                if is_likely_game_exe(&exe_name, &name) {
-                                    executable_path = Some(p.to_string_lossy().to_string());
-                                    break;
-                                }
-                            }
-                        }
-                    }
+                    executable_path = find_best_game_exe(&common_game_dir, &name)
+                        .map(|path| path.to_string_lossy().to_string());
                 }
             }
 

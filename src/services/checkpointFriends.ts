@@ -1,7 +1,7 @@
 
 import { supabase } from "./supabase";
 import type { Game, UserProfile } from "../types/domain";
-import { apiUrl, getUsableSession } from "./api";
+import { apiFetch, apiUrl, getUsableSession } from "./api";
 import { broadcastPresenceStatus, getPresenceAudienceUids } from "./realtimeEventBus";
 import { fetchSteamLibrary } from "./steam";
 
@@ -24,21 +24,9 @@ if (supabase?.auth) {
   });
 }
 
-const getAuthHeaders = async () => {
-  const session = await getUsableSession();
-  if (session?.access_token) {
-    cachedAccessToken = session.access_token;
-  }
-  if (!session?.access_token) throw new Error("Sessao expirada. Entre novamente.");
-  return {
-    Authorization: `Bearer ${session.access_token}`,
-    "Content-Type": "application/json",
-  };
-};
-
 export const searchCheckpointFriends = async (query: string, signal?: AbortSignal): Promise<UserProfile[]> => {
-  const response = await fetch(apiUrl(`/api/friends/search?q=${encodeURIComponent(query)}`), {
-    headers: await getAuthHeaders(),
+  const response = await apiFetch(`/api/friends/search?q=${encodeURIComponent(query)}`, {
+    authenticated: true,
     signal,
   });
   const payload = (await response.json().catch(() => ({}))) as {
@@ -52,9 +40,10 @@ export const searchCheckpointFriends = async (query: string, signal?: AbortSigna
 };
 
 export const sendCheckpointFriendRequest = async (uid: string) => {
-  const response = await fetch(apiUrl("/api/friends/request"), {
+  const response = await apiFetch("/api/friends/request", {
     method: "POST",
-    headers: await getAuthHeaders(),
+    authenticated: true,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ uid }),
   });
   const payload = (await response.json().catch(() => ({}))) as { error?: string };
@@ -64,9 +53,10 @@ export const sendCheckpointFriendRequest = async (uid: string) => {
 };
 
 export const acceptCheckpointFriendRequest = async (uid: string) => {
-  const response = await fetch(apiUrl("/api/friends/accept"), {
+  const response = await apiFetch("/api/friends/accept", {
     method: "POST",
-    headers: await getAuthHeaders(),
+    authenticated: true,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ uid }),
   });
   const payload = (await response.json().catch(() => ({}))) as {
@@ -80,9 +70,10 @@ export const acceptCheckpointFriendRequest = async (uid: string) => {
 };
 
 export const rejectCheckpointFriendRequest = async (uid: string) => {
-  const response = await fetch(apiUrl("/api/friends/reject"), {
+  const response = await apiFetch("/api/friends/reject", {
     method: "POST",
-    headers: await getAuthHeaders(),
+    authenticated: true,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ uid }),
   });
   const payload = (await response.json().catch(() => ({}))) as { error?: string };
@@ -92,9 +83,10 @@ export const rejectCheckpointFriendRequest = async (uid: string) => {
 };
 
 export const removeCheckpointFriend = async (uid: string) => {
-  const response = await fetch(apiUrl("/api/friends/unfriend"), {
+  const response = await apiFetch("/api/friends/unfriend", {
     method: "POST",
-    headers: await getAuthHeaders(),
+    authenticated: true,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ uid }),
   });
   const payload = (await response.json().catch(() => ({}))) as { error?: string };
@@ -133,9 +125,10 @@ export const updateCheckpointPresence = async (
     updatedAt: Date.now(),
   }, friendAudienceForBroadcast()).catch(() => {});
 
-  const response = await fetch(apiUrl("/api/presence"), {
+  const response = await apiFetch("/api/presence", {
     method: "POST",
-    headers: await getAuthHeaders(),
+    authenticated: true,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status, currentGameTitle }),
   });
   const payload = (await response.json().catch(() => ({}))) as { error?: string };
@@ -239,8 +232,8 @@ export const markCheckpointOfflineAsync = async (
 };
 
 export const getCheckpointFriendStatuses = async (): Promise<UserProfile[]> => {
-  const response = await fetch(apiUrl("/api/friends/status"), {
-    headers: await getAuthHeaders(),
+  const response = await apiFetch("/api/friends/status", {
+    authenticated: true,
   });
   const payload = (await response.json().catch(() => ({}))) as {
     error?: string;
@@ -417,8 +410,8 @@ export const getCheckpointFriendProfile = async (
   let games: Game[] = [];
 
   try {
-    const response = await fetch(apiUrl(`/api/friends/${encodeURIComponent(uid)}/profile`), {
-      headers: await getAuthHeaders(),
+    const response = await apiFetch(`/api/friends/${encodeURIComponent(uid)}/profile`, {
+      authenticated: true,
     });
     if (response.ok) {
       const payload = (await response.json().catch(() => ({}))) as {

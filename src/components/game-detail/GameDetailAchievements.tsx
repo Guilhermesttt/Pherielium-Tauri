@@ -24,13 +24,13 @@ export const ACHIEVEMENT_TIER_CONFIGS = [
     logo: platinaLogo,
     color: "#38bdf8",
     colorClass: "text-[#38bdf8]",
-    bg: "rgba(56,189,248,0.08)",
-    bgClass: "bg-[#38bdf8]/[0.08]",
-    border: "rgba(56,189,248,0.35)",
-    borderClass: "border-[#38bdf8]/35",
-    glow: "0 0 18px rgba(56,189,248,0.30)",
-    glowClass: "shadow-[0_0_18px_rgba(56,189,248,0.30)]",
-    badgeBg: "rgba(56,189,248,0.18)",
+    bg: "rgba(56,189,248,0.06)",
+    bgClass: "bg-[#38bdf8]/[0.06]",
+    border: "rgba(56,189,248,0.25)",
+    borderClass: "border-[#38bdf8]/25",
+    glow: "",
+    glowClass: "",
+    badgeBg: "rgba(56,189,248,0.12)",
   },
   {
     id: "gold",
@@ -38,13 +38,13 @@ export const ACHIEVEMENT_TIER_CONFIGS = [
     logo: ouroLogo,
     color: "#fbbf24",
     colorClass: "text-[#fbbf24]",
-    bg: "rgba(251,191,36,0.08)",
-    bgClass: "bg-[#fbbf24]/[0.08]",
-    border: "rgba(251,191,36,0.32)",
-    borderClass: "border-[#fbbf24]/32",
-    glow: "0 0 14px rgba(251,191,36,0.25)",
-    glowClass: "shadow-[0_0_14px_rgba(251,191,36,0.25)]",
-    badgeBg: "rgba(251,191,36,0.18)",
+    bg: "rgba(251,191,36,0.06)",
+    bgClass: "bg-[#fbbf24]/[0.06]",
+    border: "rgba(251,191,36,0.25)",
+    borderClass: "border-[#fbbf24]/25",
+    glow: "",
+    glowClass: "",
+    badgeBg: "rgba(251,191,36,0.12)",
   },
   {
     id: "silver",
@@ -52,13 +52,13 @@ export const ACHIEVEMENT_TIER_CONFIGS = [
     logo: prataLogo,
     color: "#e2e8f0",
     colorClass: "text-[#e2e8f0]",
-    bg: "rgba(226,232,240,0.07)",
-    bgClass: "bg-[#e2e8f0]/[0.07]",
-    border: "rgba(226,232,240,0.30)",
-    borderClass: "border-[#e2e8f0]/30",
-    glow: "0 0 12px rgba(226,232,240,0.18)",
-    glowClass: "shadow-[0_0_12px_rgba(226,232,240,0.18)]",
-    badgeBg: "rgba(226,232,240,0.15)",
+    bg: "rgba(226,232,240,0.04)",
+    bgClass: "bg-[#e2e8f0]/[0.04]",
+    border: "rgba(226,232,240,0.20)",
+    borderClass: "border-[#e2e8f0]/20",
+    glow: "",
+    glowClass: "",
+    badgeBg: "rgba(226,232,240,0.10)",
   },
   {
     id: "bronze",
@@ -66,13 +66,13 @@ export const ACHIEVEMENT_TIER_CONFIGS = [
     logo: bronzeLogo,
     color: "#cd7f32",
     colorClass: "text-[#cd7f32]",
-    bg: "rgba(205,127,50,0.07)",
-    bgClass: "bg-[#cd7f32]/[0.07]",
-    border: "rgba(205,127,50,0.25)",
-    borderClass: "border-[#cd7f32]/25",
+    bg: "rgba(205,127,50,0.04)",
+    bgClass: "bg-[#cd7f32]/[0.04]",
+    border: "rgba(205,127,50,0.18)",
+    borderClass: "border-[#cd7f32]/18",
     glow: "",
     glowClass: "",
-    badgeBg: "rgba(205,127,50,0.15)",
+    badgeBg: "rgba(205,127,50,0.10)",
   },
   {
     id: "iron",
@@ -80,13 +80,13 @@ export const ACHIEVEMENT_TIER_CONFIGS = [
     logo: null,
     color: "#71797E",
     colorClass: "text-[#71797E]",
-    bg: "rgba(113,121,126,0.04)",
-    bgClass: "bg-[#71797E]/[0.04]",
-    border: "rgba(113,121,126,0.15)",
-    borderClass: "border-[#71797E]/15",
+    bg: "rgba(113,121,126,0.03)",
+    bgClass: "bg-[#71797E]/[0.03]",
+    border: "rgba(113,121,126,0.12)",
+    borderClass: "border-[#71797E]/12",
     glow: "",
     glowClass: "",
-    badgeBg: "rgba(113,121,126,0.12)",
+    badgeBg: "rgba(113,121,126,0.08)",
   },
 ] as const;
 
@@ -107,8 +107,8 @@ function resolveTierIndex(
 
 // ── Componente Skeleton ───────────────────────────────────────────────────────
 const AchievementSkeleton: React.FC = () => (
-  <div className="h-[96px] flex items-center gap-4 animate-pulse p-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-ui-detail)]">
-    <div className="w-12 h-12 rounded-xl bg-white/10 flex-shrink-0" />
+  <div className="h-[88px] flex items-center gap-4 animate-pulse p-4 rounded-2xl bg-[#141414] border border-white/[0.05]">
+    <div className="w-14 h-14 rounded-xl bg-white/10 flex-shrink-0" />
     <div className="flex-1 space-y-2 min-w-0">
       <div className="h-4 w-1/3 bg-white/10 rounded" />
       <div className="h-3 w-1/2 bg-white/10 rounded" />
@@ -140,29 +140,44 @@ const TierBadge: React.FC<{ tierConfig: TierConfig; size?: "sm" | "md" }> = ({
   );
 };
 
-// ── Card do Troféu de Platina em destaque ─────────────────────────────────────
+// ── Card do Troféu de Platina / Bloco de Conclusão da Coleção ────────────────
 const PlatinumCard: React.FC<{
   isUnlocked: boolean;
   hasNative: boolean;
   name: string;
+  description?: string;
   unlockDate: string | null;
   unlockedAtLabel: string;
-}> = ({ isUnlocked, hasNative, name, unlockDate, unlockedAtLabel }) => {
-  const cfg = ACHIEVEMENT_TIER_CONFIGS[0]; // platina
+  unlockedCount: number;
+  totalCount: number;
+  locale: string;
+}> = ({
+  isUnlocked,
+  hasNative,
+  name,
+  description,
+  unlockDate,
+  unlockedAtLabel,
+  unlockedCount,
+  totalCount,
+  locale,
+}) => {
+  const completionPercent = totalCount > 0 ? Math.round((unlockedCount / totalCount) * 100) : 0;
+  const isPt = locale.startsWith("pt");
 
   return (
     <div
       onMouseMove={handleCursorGlow}
-      className="cursor-glow relative overflow-hidden rounded-2xl border p-4 transition-all duration-300"
+      className={`cursor-glow relative overflow-hidden rounded-2xl border p-4 sm:p-5 transition-all duration-300 ${
+        isUnlocked
+          ? "border-[#38bdf8]/35 bg-[#14171a]"
+          : "border-white/10 bg-[#141414]"
+      }`}
       style={{
-        background: isUnlocked
-          ? "linear-gradient(135deg, rgba(56,189,248,0.10) 0%, rgba(2,132,199,0.05) 100%)"
-          : "rgba(56,189,248,0.03)",
-        borderColor: isUnlocked ? cfg.border : "rgba(56,189,248,0.12)",
-        boxShadow: isUnlocked ? cfg.glow : "none",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
       }}
     >
-      {/* Brilho de fundo quando desbloqueado */}
+      {/* Sutil iluminação quando desbloqueado */}
       {isUnlocked && (
         <div
           className="pointer-events-none absolute inset-0 rounded-2xl"
@@ -172,80 +187,96 @@ const PlatinumCard: React.FC<{
         />
       )}
 
-      <div className="relative flex items-center gap-4">
-        {/* Ícone principal de Platina */}
+      <div className="relative flex flex-col sm:flex-row sm:items-center gap-4">
+        {/* Bloco do Emblema de Platina */}
         <div
-          className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border"
+          className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border transition-transform duration-300"
           style={{
-            background: isUnlocked
-              ? "linear-gradient(135deg, rgba(56,189,248,0.20) 0%, rgba(2,132,199,0.10) 100%)"
-              : "rgba(56,189,248,0.06)",
-            borderColor: isUnlocked ? "rgba(56,189,248,0.45)" : "rgba(56,189,248,0.15)",
+            background: isUnlocked ? "rgba(56,189,248,0.14)" : "rgba(255,255,255,0.03)",
+            borderColor: isUnlocked ? "rgba(56,189,248,0.40)" : "rgba(255,255,255,0.10)",
           }}
         >
           <img
             src={platinaLogo}
             alt="Platina"
-            className={`h-9 w-9 object-contain transition-all duration-300 ${
-              isUnlocked ? "opacity-100 drop-shadow-lg" : "opacity-30 grayscale"
+            className={`h-10 w-10 object-contain transition-all duration-300 ${
+              isUnlocked ? "opacity-100 drop-shadow-md scale-105" : "opacity-80 grayscale contrast-125"
             }`}
           />
         </div>
 
+        {/* Informações e Progresso Real da Coleção */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <h4
-              className="font-black text-sm tracking-wide"
-              style={{ color: isUnlocked ? cfg.color : "rgba(255,255,255,0.3)" }}
-            >
-              {name}
-            </h4>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#38bdf8] flex items-center gap-1">
+              <Trophy className="w-3 h-3" />
+              {isPt ? "Conclusão da Coleção" : "Collection Completion"}
+            </span>
             {!hasNative && (
-              <span className="text-[9px] font-bold text-white/30 border border-white/10 rounded px-1 py-0.5 uppercase tracking-wider">
-                Auto
+              <span className="text-[9px] font-bold text-white/40 border border-white/10 rounded px-1.5 py-0.2 uppercase tracking-wider">
+                Virtual
               </span>
             )}
           </div>
-          <p className="text-xs text-white/40">
-            {isUnlocked
-              ? "Você completou 100% das conquistas!"
-              : "Complete todas as conquistas para desbloquear"}
-          </p>
-          {isUnlocked && unlockDate && (
-            <span className="text-[10px] text-[#38bdf8]/70 font-medium block mt-1">
-              {unlockedAtLabel} {unlockDate}
-            </span>
-          )}
-        </div>
 
-        <div className="shrink-0">
-          {isUnlocked ? (
-            <div
-              className="flex items-center justify-center px-3 py-1.5 rounded-xl border transition-all duration-300"
-              style={{
-                background: "rgba(56,189,248,0.18)",
-                borderColor: "rgba(56,189,248,0.40)",
-                boxShadow: "0 0 14px rgba(56,189,248,0.30)",
-              }}
-              title="Platina"
-            >
-              <img
-                src={platinaLogo}
-                alt="Platina"
-                className="h-6 w-6 object-contain drop-shadow-md"
+          <h3 className="font-bold text-base text-white tracking-wide">
+            {name}
+          </h3>
+
+          <p className="text-xs text-white/70 leading-relaxed mt-0.5">
+            {isUnlocked
+              ? (isPt ? "Você completou 100% de todas as conquistas do jogo!" : "You have completed 100% of all achievements!")
+              : (description || (isPt ? "Complete todas as conquistas para desbloquear" : "Complete all achievements to unlock"))}
+          </p>
+
+          {/* Barra de Progresso Real da Coleção */}
+          <div className="mt-3 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-white/50 font-medium">
+                {isPt ? "Progresso geral" : "Overall progress"}
+              </span>
+              <span className="text-white font-bold tracking-tight">
+                {unlockedCount} {isPt ? "de" : "of"} {totalCount} {isPt ? "desbloqueadas" : "unlocked"} ({completionPercent}%)
+              </span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500 ease-out"
+                style={{
+                  width: `${Math.max(0, Math.min(100, completionPercent))}%`,
+                  background: isUnlocked
+                    ? "linear-gradient(90deg, #38bdf8, #0284c7)"
+                    : "linear-gradient(90deg, #38bdf8cc, #38bdf888)",
+                }}
               />
             </div>
+          </div>
+        </div>
+
+        {/* Status à direita */}
+        <div className="shrink-0 flex sm:flex-col items-end justify-between sm:justify-center gap-1.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
+          {isUnlocked ? (
+            <div className="flex flex-col items-end gap-1">
+              <span
+                className="px-3 py-1 rounded-xl text-[11px] font-bold uppercase tracking-wider text-[#38bdf8] border border-[#38bdf8]/40 bg-[#38bdf8]/15"
+              >
+                {isPt ? "Desbloqueado" : "Unlocked"}
+              </span>
+              {unlockDate && (
+                <span className="text-[10px] text-white/40">
+                  {unlockedAtLabel} {unlockDate}
+                </span>
+              )}
+            </div>
           ) : (
-            <span
-              className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider"
-              style={{
-                background: "rgba(255,255,255,0.03)",
-                color: "rgba(255,255,255,0.20)",
-                border: "1px solid rgba(255,255,255,0.05)",
-              }}
-            >
-              Bloqueado
-            </span>
+            <div className="flex flex-col items-end gap-1">
+              <span className="px-3 py-1 rounded-xl text-[11px] font-bold uppercase tracking-wider text-white/60 bg-white/[0.04] border border-white/10">
+                {isPt ? "Em Progresso" : "In Progress"}
+              </span>
+              <span className="text-[10px] text-white/40">
+                {totalCount - unlockedCount} {isPt ? "restantes" : "remaining"}
+              </span>
+            </div>
           )}
         </div>
       </div>
@@ -279,73 +310,72 @@ const AchievementCard: React.FC<{
     }
   }, [achievement.unlockTime, locale]);
 
+  const globalRarityText = React.useMemo(() => {
+    if (typeof achievement.percent !== "number" || achievement.percent <= 0) return null;
+    const formatted = achievement.percent < 0.1
+      ? achievement.percent.toFixed(2)
+      : achievement.percent.toFixed(1);
+    return locale.startsWith("pt")
+      ? `${formatted}% dos jogadores`
+      : `${formatted}% of players`;
+  }, [achievement.percent, locale]);
+
   return (
     <div
       tabIndex={0}
       role="article"
       aria-label={isAchieved ? `${unlockedLabel}: ${achievement.name}` : `${lockedLabel}: ${achievement.name}`}
       onMouseMove={handleCursorGlow}
-      className="cursor-glow group relative flex items-center gap-4 overflow-hidden rounded-2xl border p-4 transition-all duration-200 hover:translate-x-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+      className={`cursor-glow group relative flex items-center gap-4 rounded-2xl p-4 transition-all duration-200 outline-none focus-visible:ring-1 focus-visible:ring-white/40 ${
+        isAchieved
+          ? "bg-[#141414] hover:bg-[#181818] border border-white/[0.06] hover:border-white/20"
+          : "bg-[#111111] hover:bg-[#151515] border border-white/[0.04] hover:border-white/15"
+      }`}
       style={{
-        background: isAchieved ? tierCfg.bg : "rgba(255,255,255,0.01)",
-        borderColor: isAchieved ? tierCfg.border : "rgba(255,255,255,0.05)",
-        boxShadow: isAchieved ? tierCfg.glow : "none",
-        opacity: isAchieved ? 1 : 0.55,
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
       }}
     >
-      {/* Ícone da conquista + Badge de Tier */}
-      <div className="relative shrink-0">
+      {/* Detalhe sutil de superfície (accent discreto na lateral esquerda para conquistas obtidas) */}
+      {isAchieved && (
         <div
-          className="h-12 w-12 rounded-xl border overflow-hidden flex items-center justify-center"
-          style={{
-            background: "rgba(0,0,0,0.4)",
-            borderColor: isAchieved ? tierCfg.border : "rgba(255,255,255,0.08)",
-          }}
-        >
-          {achievement.icon || achievement.iconGray ? (
-            <img
-              src={isAchieved ? achievement.icon : achievement.iconGray || achievement.icon}
-              alt=""
-              className={`h-full w-full object-cover transition-transform duration-200 group-hover:scale-105 ${
-                isAchieved ? "" : "grayscale brightness-50"
-              }`}
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            isAchieved
-              ? <Trophy className="h-6 w-6" style={{ color: tierCfg.color }} />
-              : <Lock className="h-5 w-5 text-white/20" />
-          )}
-        </div>
+          className="absolute left-0 top-3.5 bottom-3.5 w-1 rounded-r-full transition-opacity duration-200"
+          style={{ backgroundColor: tierCfg.color, opacity: 0.8 }}
+        />
+      )}
 
-        {/* Badge de Tier no canto inferior direito */}
-        {isAchieved && tierCfg.logo && (
-          <div
-            className="absolute -bottom-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full border"
-            style={{
-              background: tierCfg.badgeBg,
-              borderColor: tierCfg.border,
-            }}
-          >
-            <img
-              src={tierCfg.logo}
-              alt={tierCfg.label}
-              className="h-3.5 w-3.5 object-contain"
-            />
-          </div>
+      {/* Arte da conquista: maior (h-14 w-14), isolada, sem nenhum emblema sobreposto */}
+      <div className="relative shrink-0 h-14 w-14 rounded-xl border border-white/10 overflow-hidden bg-black/50 flex items-center justify-center">
+        {achievement.icon || achievement.iconGray ? (
+          <img
+            src={isAchieved ? achievement.icon : achievement.iconGray || achievement.icon}
+            alt=""
+            className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+              isAchieved ? "opacity-100" : "grayscale brightness-75 opacity-70"
+            }`}
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          isAchieved ? (
+            <Trophy className="h-6 w-6" style={{ color: tierCfg.color }} />
+          ) : (
+            <Lock className="h-5 w-5 text-white/40" />
+          )
         )}
       </div>
 
-      {/* Info textual */}
-      <div className="flex-1 min-w-0">
+      {/* Conteúdo Central: Nome em destaque, Requisito legível, Data secundária */}
+      <div className="flex-1 min-w-0 flex flex-col justify-center">
         <div className="flex items-center gap-2 mb-0.5">
-          <h4 className="font-bold text-white text-sm truncate">{achievement.name}</h4>
+          <h4 className={`font-bold text-sm tracking-tight truncate ${isAchieved ? "text-white" : "text-white/90"}`}>
+            {achievement.name}
+          </h4>
           {isUltraRare && isAchieved && (
             <span
               className="shrink-0 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md"
               style={{
-                background: "rgba(251,191,36,0.15)",
+                background: "rgba(251,191,36,0.12)",
                 color: "#fbbf24",
                 border: "1px solid rgba(251,191,36,0.25)",
               }}
@@ -354,65 +384,58 @@ const AchievementCard: React.FC<{
             </span>
           )}
         </div>
-        <p className="text-xs text-white/45 line-clamp-2">
-          {achievement.description || lockedLabel}
+
+        {/* Requisito com alto contraste para leitura */}
+        <p className={`text-xs leading-relaxed line-clamp-2 ${isAchieved ? "text-white/70" : "text-white/65"}`}>
+          {achievement.description || (isAchieved ? unlockedLabel : lockedLabel)}
         </p>
+
+        {/* Data secundária abaixo do requisito */}
         {isAchieved && unlockDate && (
-          <span className="text-[10px] text-white/35 font-medium block mt-1">
+          <span className="text-[11px] text-white/40 font-medium block mt-1">
             {unlockedAtLabel} {unlockDate}
           </span>
         )}
-        {/* Barra de raridade global */}
-        {typeof achievement.percent === "number" && achievement.percent > 0 && (
-          <div className="mt-1.5 flex items-center gap-1.5">
-            <div className="relative h-1 flex-1 rounded-full bg-[var(--color-surface)] overflow-hidden">
-              <div
-                className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
-                style={{
-                  width: `${Math.min(100, achievement.percent)}%`,
-                  background: isAchieved
-                    ? `linear-gradient(90deg, ${tierCfg.color}99, ${tierCfg.color}55)`
-                    : "rgba(255,255,255,0.08)",
-                }}
-              />
-            </div>
-            <span className="shrink-0 text-[10px] text-white/30 font-medium w-8 text-right">
-              {achievement.percent < 0.1
-                ? `${achievement.percent.toFixed(2)}%`
-                : `${achievement.percent.toFixed(1)}%`}
-            </span>
-          </div>
-        )}
       </div>
 
-      {/* Badge de estado + tier com imagem do troféu */}
-      <div className="shrink-0 flex flex-col items-end gap-1.5">
+      {/* Lado Direito: Um único emblema de tier acompanhado de texto de raridade global */}
+      <div className="shrink-0 flex flex-col items-end justify-center gap-1.5 min-w-[96px]">
         {isAchieved && tierCfg.logo ? (
           <div
-            className="flex items-center justify-center px-2.5 py-1 rounded-xl border transition-all duration-300 group-hover:scale-105"
+            className="flex items-center justify-center h-8 w-8 rounded-xl border transition-all duration-200 group-hover:scale-105"
             style={{
               background: tierCfg.badgeBg,
               borderColor: tierCfg.border,
-              boxShadow: tierCfg.glow || undefined,
             }}
             title={tierCfg.label}
           >
             <img
               src={tierCfg.logo}
               alt={tierCfg.label}
-              className="h-6 w-6 object-contain drop-shadow-md"
+              className="h-5 w-5 object-contain drop-shadow-sm"
             />
           </div>
-        ) : (
+        ) : isAchieved ? (
           <span
-            className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider"
+            className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider"
             style={{
-              background: isAchieved ? tierCfg.badgeBg : "rgba(255,255,255,0.03)",
-              color: isAchieved ? tierCfg.color : "rgba(255,255,255,0.25)",
-              border: `1px solid ${isAchieved ? tierCfg.border : "rgba(255,255,255,0.05)"}`,
+              background: tierCfg.badgeBg,
+              color: tierCfg.color,
+              border: `1px solid ${tierCfg.border}`,
             }}
           >
-            {isAchieved ? (tierCfg.label || unlockedLabel) : lockedLabel}
+            {tierCfg.label || unlockedLabel}
+          </span>
+        ) : (
+          <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white/40 bg-white/[0.03] border border-white/10">
+            {lockedLabel}
+          </span>
+        )}
+
+        {/* Texto explícito: "2.0% dos jogadores" */}
+        {globalRarityText && (
+          <span className="text-[11px] text-white/50 font-medium whitespace-nowrap">
+            {globalRarityText}
           </span>
         )}
       </div>
@@ -618,14 +641,18 @@ export const GameDetailAchievements: React.FC<GameDetailAchievementsProps> = Rea
         </div>
       </div>
 
-      {/* Troféu de Platina em destaque (só mostra se não estiver filtrando por bloqueado) */}
-      {!isLoading && !error && achievements.length > 0 && filter !== "locked" && (
+      {/* Troféu de Platina / Bloco de Conclusão da Coleção */}
+      {!isLoading && !error && achievements.length > 0 && (filter === "all" || (filter === "unlocked" && platinumInfo.isUnlocked) || (filter === "locked" && !platinumInfo.isUnlocked)) && (
         <PlatinumCard
           isUnlocked={platinumInfo.isUnlocked}
           hasNative={platinumInfo.hasNativePlatinum}
           name={platinumInfo.platinumTrophy.name || "Troféu de Platina"}
+          description={platinumInfo.platinumTrophy.description}
           unlockDate={platinumUnlockDate}
           unlockedAtLabel={copy.achievementsUnlockedAt}
+          unlockedCount={unlockedCount}
+          totalCount={baseAchievements.length}
+          locale={locale}
         />
       )}
 

@@ -107,10 +107,10 @@ const translations = {
     confirmBeforeExitHint: "Pede confirmação antes de encerrar o aplicativo.",
     lowPerformanceMode: "Desativar Animações",
     lowPerformanceModeHint: "Desativa animações pesadas para poupar CPU/GPU.",
-    gameBootIntro: "Tela de boot (GameBoot)",
-    gameBootIntroHint: "Mostra a animação de boot após o carregamento. Desative para ir direto ao hub.",
-    gameBootIntroSound: "Som da intro GameBoot",
-    gameBootIntroSoundHint: "Toca o áudio ao iniciar o launcher após o login.",
+    gameBootIntro: "Animação de abertura",
+    gameBootIntroHint: "Exibe a sequência de abertura ao iniciar o aplicativo. Desative para entrar direto no hub.",
+    gameBootIntroSound: "Som de abertura",
+    gameBootIntroSoundHint: "Toca o áudio de abertura junto com a animação.",
     hapticsEnabled: "Vibração do controle",
     hapticsEnabledHint: "Ativa o feedback háptico ao navegar e interagir com o controle. Desative se a luz ficar bugada.",
     openAtLogin: "Iniciar com o Windows",
@@ -269,10 +269,10 @@ const translations = {
     confirmBeforeExitHint: "Asks for confirmation before quitting the application.",
     lowPerformanceMode: "Disable Animations",
     lowPerformanceModeHint: "Disables heavy animations and effects to save CPU/GPU.",
-    gameBootIntro: "Boot screen (GameBoot)",
-    gameBootIntroHint: "Shows the boot animation after loading. Disable to go straight to the hub.",
-    gameBootIntroSound: "GameBoot intro sound",
-    gameBootIntroSoundHint: "Plays audio when the launcher boot intro starts after login.",
+    gameBootIntro: "Opening animation",
+    gameBootIntroHint: "Shows the opening sequence when the app starts. Disable to go directly to the hub.",
+    gameBootIntroSound: "Opening sound",
+    gameBootIntroSoundHint: "Plays the opening sound alongside the animation.",
     hapticsEnabled: "Controller vibration",
     hapticsEnabledHint: "Enables haptic feedback when navigating with the controller. Turn off if the lightbar glitches.",
     openAtLogin: "Start with Windows",
@@ -974,14 +974,38 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
   const { user } = useAuth();
   const [language, setLanguage] = useState<LauncherLanguage>("pt-BR");
   const [effectsVolume, setEffectsVolume] = useState(30);
-  const [achievementVolume, setAchievementVolume] = useState(22);
+  const [achievementVolume, setAchievementVolume] = useState(() => {
+    try {
+      const raw = localStorage.getItem("checkpoint_achievement_volume_global");
+      const parsed = Number(raw);
+      if (Number.isFinite(parsed)) return clampVolume(parsed);
+    } catch {}
+    return 22;
+  });
   const [notificationVolume, setNotificationVolume] = useState(40);
   const [achievementNotificationsEnabled, setAchievementNotificationsEnabled] = useState(true);
   const [customAchievementNotifications, setCustomAchievementNotifications] = useState(true);
   const [achievementNotificationPosition, setAchievementNotificationPosition] =
     useState<AchievementNotificationPosition>("top-right");
   const [musicVolume, setMusicVolume] = useState(9);
-  const [soundTheme, setSoundTheme] = useState<SoundTheme>("default");
+  const [soundTheme, setSoundTheme] = useState<SoundTheme>(() => {
+    try {
+      const saved = localStorage.getItem("checkpoint_sound_theme_global");
+      if (
+        saved === "default" ||
+        saved === "ps5" ||
+        saved === "ps4" ||
+        saved === "psp" ||
+        saved === "ps2" ||
+        saved === "gamecube" ||
+        saved === "xbox360" ||
+        saved === "cyberpunk"
+      ) {
+        return saved;
+      }
+    } catch {}
+    return "default";
+  });
   const [visualTheme, setVisualTheme] = useState<VisualTheme>("phelierium");
   const [openAtLogin, setOpenAtLoginState] = useState(false);
   const [lowPerformanceMode, setLowPerformanceMode] = useState(false);

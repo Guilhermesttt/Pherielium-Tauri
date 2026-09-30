@@ -264,3 +264,164 @@ pub async fn steam_fetch_player_achievements_batch(
 
     Ok(Value::Object(map))
 }
+
+#[command]
+pub async fn steam_fetch_app_details(
+    app_id: String,
+    language: Option<String>,
+) -> Result<Value, String> {
+    let clean_id = app_id.trim();
+    if clean_id.is_empty() {
+        return Err("App ID inválido".into());
+    }
+
+    let lang = match language.as_deref().unwrap_or("pt-BR") {
+        "pt-BR" => "brazilian",
+        "es-ES" => "spanish",
+        "fr-FR" => "french",
+        "de-DE" => "german",
+        "it-IT" => "italian",
+        _ => "english",
+    };
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(8))
+        .build()
+        .map_err(|e| format!("Falha ao inicializar HTTP client: {e}"))?;
+
+    let url = format!(
+        "https://store.steampowered.com/api/appdetails?appids={clean_id}&l={lang}"
+    );
+
+    let res = client
+        .get(&url)
+        .header("User-Agent", "Pherielium/3.2.7")
+        .send()
+        .await
+        .map_err(|e| format!("Falha ao conectar à loja Steam: {e}"))?;
+
+    let json: Value = res
+        .json()
+        .await
+        .map_err(|e| format!("Falha ao processar resposta da Steam: {e}"))?;
+
+    // Trata tanto a chave sendo clean_id quanto redirecionamento de appid (ex: CS 730 -> 2678630)
+    let app_obj = json
+        .get(clean_id)
+        .or_else(|| json.as_object().and_then(|m| m.values().next()))
+        .ok_or_else(|| "Nenhum dado retornado para este app".to_string())?;
+
+    let success = app_obj
+        .get("success")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+
+    if !success {
+        return Err("Jogo não encontrado na loja Steam".into());
+    }
+
+    let data = app_obj
+        .get("data")
+        .ok_or_else(|| "Campo data ausente na resposta da Steam".to_string())?;
+
+    let title = data.get("name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let desc = data.get("short_description").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let about = data.get("detailed_description")
+        .or_else(|| data.get("about_the_game"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    let mut developers: Vec<String> = Vec::new();
+    if let Some(devs) = data.get("developers").and_then(|v| v.as_array()) {
+        for d in devs {
+            if let Some(s) = d.as_str() {
+                developers.push(s.to_string());
+            }
+        }
+    }
+
+    let mut publishers: Vec<String> = Vec::new();
+    if let Some(pubs) = data.get("publishers").and_then(|v| v.as_array()) {
+        for p in pubs {
+            if let Some(s) = p.as_str() {
+                publishers.push(s.to_string());
+            }
+        }
+    }
+
+    let release_date = data.pointer("/release_date/date")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+
+    let mut tags: Vec<String> = Vec::new();
+    if let Some(genres) = data.get("genres").and_then(|v| v.as_array()) {
+        for g in genres {
+            if let Some(desc_val) = g.get("description").and_then(|v| v.as_str()) {
+                tags.push(desc_val.to_string());
+            }
+        }
+    }
+    if let Some(cats) = data.get("categories").and_then(|v| v.as_array()) {
+        for c in cats {
+            if let Some(desc_val) = c.get("description").and_then(|v| v.as_str()) {
+                if !tags.contains(&desc_val.to_string()) {
+                    tags.push(desc_val.to_string());
+                }
+            }
+        }
+    }
+
+    let mut screenshots: Vec<String> = Vec::new();
+    if let Some(shots) = data.get("screenshots").and_then(|v| v.as_array()) {
+        for s in shots {
+            if let Some(p) = s.get("path_full").and_then(|v| v.as_str()) {
+                screenshots.push(p.to_string());
+            }
+        }
+    }
+
+    let mut trailer_url = String::new();
+    let mut trailer_thumb = String::new();
+    if let Some(movies) = data.get("movies").and_then(|v| v.as_array()) {
+        if let Some(first_movie) = movies.first() {
+            if let Some(mp4) = first_movie.pointer("/mp4/max").and_then(|v| v.as_str()) {
+                trailer_url = mp4.to_string();
+            } else if let Some(webm) = first_movie.pointer("/webm/max").and_then(|v| v.as_str()) {
+                trailer_url = webm.to_string();
+            }
+            if let Some(th) = first_movie.get("thumbnail").and_then(|v| v.as_str()) {
+                trailer_thumb = th.to_string();
+            }
+        }
+    }
+
+    let card_image = format!("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{clean_id}/library_600x900_2x.jpg");
+    let background_image = format!("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{clean_id}/library_hero.jpg");
+    let logo_image = format!("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{clean_id}/logo.png");
+    let header_image = data.get("header_image").and_then(|v| v.as_str()).unwrap_or("").to_string();
+
+    Ok(serde_json::json!({
+        "appId": clean_id,
+        "title": title,
+        "description": desc,
+        "aboutTheGame": about,
+        "developer": developers.first().cloned().unwrap_or_default(),
+        "publisher": publishers.first().cloned().unwrap_or_default(),
+        "releaseDate": release_date,
+        "cardImage": card_image,
+        "backgroundImage": background_image,
+        "logoImage": logo_image,
+        "headerImage": header_image,
+        "tags": tags,
+        "screenshots": screenshots,
+        "trailerUrl": trailer_url,
+        "trailerThumbnail": trailer_thumb,
+        "pcRequirements": data.get("pc_requirements"),
+        "supportedLanguages": data.get("supported_languages"),
+        "metacritic": data.get("metacritic"),
+        "priceOverview": data.get("price_overview"),
+    }))
+}
+

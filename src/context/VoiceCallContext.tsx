@@ -224,6 +224,7 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           message: `${voiceCall.incomingInvite.callerName} está te ligando. Clique para atender.`,
           imageUrl: voiceCall.incomingInvite.callerAvatar || undefined,
           friendId: voiceCall.incomingInvite.callerId,
+          duration: 5000,
           metadata: { notificationId },
         });
       }
@@ -359,6 +360,8 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         onChangeNoiseSuppression={voiceCall.setNoiseSuppression}
         advancedNoiseSuppression={voiceCall.advancedNoiseSuppression}
         onChangeAdvancedNoiseSuppression={voiceCall.setAdvancedNoiseSuppression}
+        noiseSuppressionMode={voiceCall.noiseSuppressionMode}
+        onChangeNoiseSuppressionMode={voiceCall.setNoiseSuppressionMode}
         autoGainControl={voiceCall.autoGainControl}
         onChangeAutoGainControl={voiceCall.setAutoGainControl}
         isMicMonitoring={voiceCall.isMicMonitoring}
@@ -471,10 +474,11 @@ const safeFallbackVoiceCallContext: Partial<VoiceCallContextType> = {
   inputMode: "voice-activity",
   pushToTalkKey: "F8",
   isPttPressed: false,
-  voiceSensitivity: -45,
+  voiceSensitivity: 35,
   echoCancellation: true,
   noiseSuppression: true,
-  advancedNoiseSuppression: true,
+  advancedNoiseSuppression: false,
+  noiseSuppressionMode: "krisp" as const,
   audioInputDevices: [],
   audioOutputDevices: [],
   videoInputDevices: [],
@@ -521,6 +525,7 @@ const safeFallbackVoiceCallContext: Partial<VoiceCallContextType> = {
   setVoiceSensitivity: () => { },
   setEchoCancellation: () => { },
   setNoiseSuppression: () => { },
+  setNoiseSuppressionMode: async () => { },
   setAdvancedNoiseSuppression: async () => { },
   changeAudioInputDevice: async () => { },
   changeAudioOutputDevice: async () => { },

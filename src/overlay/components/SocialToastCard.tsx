@@ -88,25 +88,31 @@ export const SocialToastCard: React.FC<SocialToastCardProps> = ({
 
   const spring = animated
     ? { type: "spring" as const, stiffness: 340, damping: 26, mass: 0.7 }
-    : { duration: 0.2 };
+    : { duration: 0.15 };
+
+  const durationMs = Math.max(1000, toast.durationMs ?? 5000);
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -28, scale: 0.92 }}
+      initial={animated ? { opacity: 0, x: -28, scale: 0.92 } : { opacity: 0 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: -22, scale: 0.96, transition: { duration: 0.22 } }}
+      exit={
+        animated
+          ? { opacity: 0, x: -22, scale: 0.96, transition: { duration: 0.22 } }
+          : { opacity: 0, transition: { duration: 0.15 } }
+      }
       transition={spring}
       whileHover={animated ? { scale: 1.015, y: -2 } : undefined}
       className={`overlay-card social-card${hasActions ? " has-actions" : ""}${isCall ? " is-ringing" : ""}`}
-      style={isCall ? ({ ["--card-duration" as string]: "30000ms" } as React.CSSProperties) : undefined}
+      style={{ ["--card-duration" as string]: `${durationMs}ms` }}
     >
       <div className="overlay-shell layout-left">
         <motion.div
           className="overlay-icon"
           aria-hidden
-          initial={{ scale: 0.5, opacity: 0, rotate: -8 }}
+          initial={animated ? { scale: 0.5, opacity: 0, rotate: -8 } : { opacity: 0 }}
           animate={{ scale: 1, opacity: 1, rotate: 0 }}
-          transition={animated ? { type: "spring", stiffness: 460, damping: 18, delay: 0.05 } : { duration: 0.2 }}
+          transition={animated ? { type: "spring", stiffness: 460, damping: 18, delay: 0.05 } : { duration: 0.15 }}
         >
           {animated ? <span className="icon-halo" /> : null}
           <div className={`icon-avatar${hasPhoto ? " is-photo" : " is-logo"}`}>
@@ -118,26 +124,26 @@ export const SocialToastCard: React.FC<SocialToastCardProps> = ({
           <div className="overlay-text">
             <motion.div
               className="social-badge"
-              initial={{ opacity: 0, y: -8, scale: 0.86 }}
+              initial={animated ? { opacity: 0, y: -8, scale: 0.86 } : { opacity: 0 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.34, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              transition={animated ? { duration: 0.34, delay: 0.1, ease: [0.16, 1, 0.3, 1] } : { duration: 0.15 }}
             >
               {contextLabel(toast.kind, toast.contentKind)}
             </motion.div>
             <motion.h2
               className="social-title"
-              initial={{ opacity: 0, y: 10, filter: "blur(6px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              transition={{ duration: 0.4, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+              initial={animated ? { opacity: 0, y: 10, filter: "blur(6px)" } : { opacity: 0 }}
+              animate={{ opacity: 1, y: 0, filter: "none" }}
+              transition={animated ? { duration: 0.4, delay: 0.16, ease: [0.16, 1, 0.3, 1] } : { duration: 0.15 }}
             >
               {senderName}
             </motion.h2>
             {description ? (
               <motion.p
                 className="social-description"
-                initial={{ opacity: 0, y: 8 }}
+                initial={animated ? { opacity: 0, y: 8 } : { opacity: 0 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.38, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                transition={animated ? { duration: 0.38, delay: 0.22, ease: [0.16, 1, 0.3, 1] } : { duration: 0.15 }}
               >
                 {description}
               </motion.p>
@@ -147,9 +153,9 @@ export const SocialToastCard: React.FC<SocialToastCardProps> = ({
           {hasActions ? (
             <motion.div
               className="overlay-actions"
-              initial={{ opacity: 0, y: 12 }}
+              initial={animated ? { opacity: 0, y: 12 } : { opacity: 0 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              transition={animated ? { duration: 0.4, delay: 0.28, ease: [0.16, 1, 0.3, 1] } : { duration: 0.15 }}
             >
               {isCall ? (
                 <>

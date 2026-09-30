@@ -36,33 +36,52 @@ pub struct AchievementState {
 // ─── App ID Detection ────────────────────────────────────────────────────────
 
 pub fn detect_game_app_id(game_dir: &Path) -> Option<String> {
-    let candidates = [
-        game_dir.join("steam_appid.txt"),
-        game_dir.join("steam_settings").join("steam_appid.txt"),
-        game_dir.join("steam_emu.ini"),
-        game_dir.join("tenoke.ini"),
-        game_dir.join("ALI213.ini"),
-    ];
+    let mut dirs_to_check = vec![game_dir.to_path_buf()];
+    let mut curr = game_dir.parent();
+    for _ in 0..3 {
+        if let Some(p) = curr {
+            dirs_to_check.push(p.to_path_buf());
+            curr = p.parent();
+        } else {
+            break;
+        }
+    }
 
-    for candidate in &candidates {
-        if let Ok(content) = std::fs::read_to_string(candidate) {
-            let trimmed = content.trim();
-            if candidate.extension().and_then(|e| e.to_str()) == Some("txt") {
-                if trimmed.chars().all(|c| c.is_ascii_digit()) && !trimmed.is_empty() {
-                    return Some(trimmed.to_string());
-                }
-            } else {
-                for line in trimmed.lines() {
-                    let line_trimmed = line.trim();
-                    if let Some(rest) = line_trimmed.strip_prefix("AppId")
-                        .or_else(|| line_trimmed.strip_prefix("appid"))
-                        .or_else(|| line_trimmed.strip_prefix("AppID"))
-                    {
-                        let rest = rest.trim();
-                        if let Some(val) = rest.strip_prefix('=') {
-                            let val = val.trim();
-                            if val.chars().all(|c| c.is_ascii_digit()) && !val.is_empty() {
-                                return Some(val.to_string());
+    for dir in &dirs_to_check {
+        let candidates = [
+            dir.join("steam_appid.txt"),
+            dir.join("steam_settings").join("steam_appid.txt"),
+            dir.join("steam_settings").join("settings").join("steam_appid.txt"),
+            dir.join("RUNE.ini"),
+            dir.join("rune.ini"),
+            dir.join("steam_emu.ini"),
+            dir.join("tenoke.ini"),
+            dir.join("ALI213.ini"),
+            dir.join("flt.ini"),
+            dir.join("valve.ini"),
+            dir.join("SmartSteamEmu.ini"),
+        ];
+
+        for candidate in &candidates {
+            if let Ok(content) = std::fs::read_to_string(candidate) {
+                let trimmed = content.trim();
+                if candidate.extension().and_then(|e| e.to_str()) == Some("txt") {
+                    for line in trimmed.lines() {
+                        let l = line.trim().trim_start_matches('\u{feff}');
+                        if l.chars().all(|c| c.is_ascii_digit()) && !l.is_empty() {
+                            return Some(l.to_string());
+                        }
+                    }
+                } else {
+                    for line in trimmed.lines() {
+                        let line_trimmed = line.trim().trim_start_matches('\u{feff}');
+                        if let Some((key, val)) = line_trimmed.split_once('=') {
+                            let k = key.trim().to_lowercase();
+                            if k == "appid" || k == "app_id" || k == "steamappid" {
+                                let v = val.trim();
+                                if v.chars().all(|c| c.is_ascii_digit()) && !v.is_empty() {
+                                    return Some(v.to_string());
+                                }
                             }
                         }
                     }
@@ -105,86 +124,111 @@ pub fn detect_emulator(game_dir: Option<&Path>, app_id: &str) -> Option<Detected
         return Some(scanned);
     }
 
-    // 2. Fallback: check game folder markers to anticipate new saves
+    // 2. Fallback: check game folder and parent markers to anticipate new saves
     if let Some(dir) = game_dir {
-        // RUNE check
-        if dir.join("RUNE.ini").exists() || dir.join("rune.ini").exists() {
-            let public_docs = get_public_documents();
-            let watch_dir = public_docs.join("Steam").join("RUNE").join(app_id);
-            let save_path = watch_dir.join("achievements.ini");
-            return Some(DetectedEmulator {
-                emulator_type: EmulatorType::Rune,
-                save_path,
-                watch_dir,
-                app_id: app_id.to_string(),
-                game_dir: Some(dir.to_path_buf()),
-            });
-        }
-
-        // Goldberg SocialClub check
-        if dir.join("socialclub_emu.ini").exists()
-            || dir.join("socialclub.dll").exists()
-            || dir.join("GTA5.exe").exists()
-            || dir.join("RDR2.exe").exists()
-        {
-            let watch_dir = get_appdata_roaming().join("Goldberg Socialclub Emu Saves").join(app_id);
-            let save_path = watch_dir.join("achievements.json");
-            return Some(DetectedEmulator {
-                emulator_type: EmulatorType::GoldbergSocialClub,
-                save_path,
-                watch_dir,
-                app_id: app_id.to_string(),
-                game_dir: Some(dir.to_path_buf()),
-            });
-        }
-
-        // TENOKE check
-        if dir.join("tenoke.ini").exists() {
-            let watch_dir = get_appdata_local().join("TENOKE").join(app_id);
-            let save_path = watch_dir.join("achievements.json");
-            return Some(DetectedEmulator {
-                emulator_type: EmulatorType::Tenoke,
-                save_path,
-                watch_dir,
-                app_id: app_id.to_string(),
-                game_dir: Some(dir.to_path_buf()),
-            });
-        }
-
-        // Goldberg V1 check
-        if dir.join("steam_settings").exists() {
-            let roaming = get_appdata_roaming();
-            let gse = roaming.join("GSE Saves").join(app_id);
-            let classic = roaming.join("Goldberg SteamEmu Saves").join(app_id);
-            let watch_dir = if gse.exists() { gse } else { classic };
-            let save_path = watch_dir.join("achievements.json");
-            return Some(DetectedEmulator {
-                emulator_type: EmulatorType::GoldbergV1,
-                save_path,
-                watch_dir,
-                app_id: app_id.to_string(),
-                game_dir: Some(dir.to_path_buf()),
-            });
-        }
-
-        // Generic INI check
-        if dir.join("steam_emu.ini").exists() || dir.join("ALI213.ini").exists() {
-            let public_docs = get_public_documents();
-            let codex_path = public_docs.join("Steam").join("CODEX").join(app_id).join("remote").join("achievements.ini");
-            let rune_path = public_docs.join("Steam").join("RUNE").join(app_id).join("remote").join("achievements.ini");
-            let save_path = if rune_path.exists() {
-                rune_path
+        let mut dirs = vec![dir.to_path_buf()];
+        let mut curr = dir.parent();
+        for _ in 0..3 {
+            if let Some(p) = curr {
+                dirs.push(p.to_path_buf());
+                curr = p.parent();
             } else {
-                codex_path
-            };
-            let watch_dir = save_path.parent().unwrap_or(dir).to_path_buf();
-            return Some(DetectedEmulator {
-                emulator_type: EmulatorType::GenericIni,
-                save_path,
-                watch_dir,
-                app_id: app_id.to_string(),
-                game_dir: Some(dir.to_path_buf()),
-            });
+                break;
+            }
+        }
+
+        for d in &dirs {
+            // RUNE check
+            if d.join("RUNE.ini").exists() || d.join("rune.ini").exists() {
+                let public_docs = get_public_documents();
+                let watch_dir = public_docs.join("Steam").join("RUNE").join(app_id);
+                let remote = watch_dir.join("remote").join("achievements.ini");
+                let save_path = if remote.exists() {
+                    remote
+                } else {
+                    watch_dir.join("achievements.ini")
+                };
+                return Some(DetectedEmulator {
+                    emulator_type: EmulatorType::Rune,
+                    save_path,
+                    watch_dir,
+                    app_id: app_id.to_string(),
+                    game_dir: Some(dir.to_path_buf()),
+                });
+            }
+
+            // Goldberg SocialClub check
+            if d.join("socialclub_emu.ini").exists()
+                || d.join("socialclub.dll").exists()
+                || d.join("GTA5.exe").exists()
+                || d.join("RDR2.exe").exists()
+            {
+                let watch_dir = get_appdata_roaming().join("Goldberg Socialclub Emu Saves").join(app_id);
+                let save_path = watch_dir.join("achievements.json");
+                return Some(DetectedEmulator {
+                    emulator_type: EmulatorType::GoldbergSocialClub,
+                    save_path,
+                    watch_dir,
+                    app_id: app_id.to_string(),
+                    game_dir: Some(dir.to_path_buf()),
+                });
+            }
+
+            // TENOKE check
+            if d.join("tenoke.ini").exists() {
+                let watch_dir = get_appdata_local().join("TENOKE").join(app_id);
+                let save_path = watch_dir.join("achievements.json");
+                return Some(DetectedEmulator {
+                    emulator_type: EmulatorType::Tenoke,
+                    save_path,
+                    watch_dir,
+                    app_id: app_id.to_string(),
+                    game_dir: Some(dir.to_path_buf()),
+                });
+            }
+
+            // Goldberg V1 check
+            if d.join("steam_settings").exists() {
+                let roaming = get_appdata_roaming();
+                let gse = roaming.join("GSE Saves").join(app_id);
+                let classic = roaming.join("Goldberg SteamEmu Saves").join(app_id);
+                let watch_dir = if gse.exists() { gse } else { classic };
+                let save_path = watch_dir.join("achievements.json");
+                return Some(DetectedEmulator {
+                    emulator_type: EmulatorType::GoldbergV1,
+                    save_path,
+                    watch_dir,
+                    app_id: app_id.to_string(),
+                    game_dir: Some(dir.to_path_buf()),
+                });
+            }
+
+            // Generic INI check (CODEX / RUNE / ALI213 / steam_emu.ini / flt.ini)
+            if d.join("steam_emu.ini").exists() || d.join("ALI213.ini").exists() || d.join("flt.ini").exists() {
+                let public_docs = get_public_documents();
+                let rune_remote = public_docs.join("Steam").join("RUNE").join(app_id).join("remote").join("achievements.ini");
+                let rune_classic = public_docs.join("Steam").join("RUNE").join(app_id).join("achievements.ini");
+                let codex_remote = public_docs.join("Steam").join("CODEX").join(app_id).join("remote").join("achievements.ini");
+
+                let save_path = if rune_remote.exists() {
+                    rune_remote
+                } else if rune_classic.exists() {
+                    rune_classic
+                } else if codex_remote.exists() {
+                    codex_remote
+                } else {
+                    // Default anticipated save path for modern RUNE/CODEX releases
+                    rune_remote
+                };
+                let watch_dir = save_path.parent().unwrap_or(d).to_path_buf();
+                return Some(DetectedEmulator {
+                    emulator_type: EmulatorType::GenericIni,
+                    save_path,
+                    watch_dir,
+                    app_id: app_id.to_string(),
+                    game_dir: Some(dir.to_path_buf()),
+                });
+            }
         }
     }
 
@@ -197,16 +241,24 @@ pub fn scan_existing_emulator_save(app_id: &str, game_dir: Option<&Path>) -> Opt
     let roaming = get_appdata_roaming();
     let local = get_appdata_local();
 
-    let candidates: Vec<(EmulatorType, PathBuf)> = vec![
-        // RUNE classic
+    let mut candidates: Vec<(EmulatorType, PathBuf)> = vec![
+        // RUNE classic & remote
         (
             EmulatorType::Rune,
             public_docs.join("Steam").join("RUNE").join(app_id).join("achievements.ini"),
         ),
-        // RUNE remote
         (
             EmulatorType::Rune,
             public_docs.join("Steam").join("RUNE").join(app_id).join("remote").join("achievements.ini"),
+        ),
+        // CODEX classic & remote
+        (
+            EmulatorType::GenericIni,
+            public_docs.join("Steam").join("CODEX").join(app_id).join("remote").join("achievements.ini"),
+        ),
+        (
+            EmulatorType::GenericIni,
+            public_docs.join("Steam").join("CODEX").join(app_id).join("achievements.ini"),
         ),
         // Goldberg GSE
         (
@@ -233,17 +285,62 @@ pub fn scan_existing_emulator_save(app_id: &str, game_dir: Option<&Path>) -> Opt
             EmulatorType::Tenoke,
             local.join("TENOKE").join(app_id).join("achievements.json"),
         ),
-        // CODEX
-        (
-            EmulatorType::GenericIni,
-            public_docs.join("Steam").join("CODEX").join(app_id).join("remote").join("achievements.ini"),
-        ),
         // SKIDROW AppData
         (
             EmulatorType::GoldbergV1,
             local.join("SKIDROW").join(app_id).join("achievements.json"),
         ),
+        // ALI213 Public Docs
+        (
+            EmulatorType::GenericIni,
+            public_docs.join("Steam").join("ALI213").join(app_id).join("achievements.ini"),
+        ),
     ];
+
+    // Also check game_dir and parent directories for local emulator saves
+    if let Some(dir) = game_dir {
+        let mut dirs = vec![dir.to_path_buf()];
+        let mut curr = dir.parent();
+        for _ in 0..3 {
+            if let Some(p) = curr {
+                dirs.push(p.to_path_buf());
+                curr = p.parent();
+            } else {
+                break;
+            }
+        }
+
+        for d in dirs {
+            candidates.push((
+                EmulatorType::GoldbergV1,
+                d.join("steam_settings").join("achievements.json"),
+            ));
+            candidates.push((
+                EmulatorType::GoldbergV1,
+                d.join("steam_settings").join("stats").join("achievements.json"),
+            ));
+            candidates.push((
+                EmulatorType::GenericIni,
+                d.join("saves").join("achievements.ini"),
+            ));
+            candidates.push((
+                EmulatorType::GenericIni,
+                d.join("Profile").join("achievements.ini"),
+            ));
+            candidates.push((
+                EmulatorType::GenericIni,
+                d.join("Profile").join("Stats").join("achievements.ini"),
+            ));
+            candidates.push((
+                EmulatorType::GenericIni,
+                d.join("Profile").join("ALI213").join("Stats").join("achievements.ini"),
+            ));
+            candidates.push((
+                EmulatorType::GenericIni,
+                d.join("remote").join("achievements.ini"),
+            ));
+        }
+    }
 
     for (emu_type, save_path) in candidates {
         if save_path.exists() {
@@ -254,20 +351,6 @@ pub fn scan_existing_emulator_save(app_id: &str, game_dir: Option<&Path>) -> Opt
                 watch_dir,
                 app_id: app_id.to_string(),
                 game_dir: game_dir.map(PathBuf::from),
-            });
-        }
-    }
-
-    // Check game_dir local configs if present
-    if let Some(dir) = game_dir {
-        let local_ini = dir.join("steam_emu.ini");
-        if local_ini.exists() {
-            return Some(DetectedEmulator {
-                emulator_type: EmulatorType::GenericIni,
-                save_path: local_ini.clone(),
-                watch_dir: dir.to_path_buf(),
-                app_id: app_id.to_string(),
-                game_dir: Some(dir.to_path_buf()),
             });
         }
     }
@@ -563,4 +646,15 @@ pub fn emulator_detect_for_game(
 ) -> Result<Option<DetectedEmulator>, String> {
     let dir_buf = game_dir.map(PathBuf::from);
     Ok(detect_emulator(dir_buf.as_deref(), &app_id))
+}
+
+#[tauri::command]
+pub fn detect_app_id_from_path(path: String) -> Result<Option<String>, String> {
+    let p = PathBuf::from(&path);
+    let dir = if p.is_dir() {
+        p
+    } else {
+        p.parent().map(|d| d.to_path_buf()).unwrap_or(p)
+    };
+    Ok(detect_game_app_id(&dir))
 }

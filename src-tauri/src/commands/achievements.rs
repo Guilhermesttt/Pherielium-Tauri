@@ -84,7 +84,18 @@ pub async fn achievement_get_definitions(
         return Ok(None);
     }
     let content = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    let val: serde_json::Value = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+    let mut val: serde_json::Value = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+
+    if let Some(defs) = val.get("definitions").cloned() {
+        if val.get("achievements").is_none() {
+            val["achievements"] = defs;
+        }
+    } else if let Some(achs) = val.get("achievements").cloned() {
+        if val.get("definitions").is_none() {
+            val["definitions"] = achs;
+        }
+    }
+
     Ok(Some(val))
 }
 
@@ -95,7 +106,11 @@ pub async fn achievement_save_definitions(
     steam_app_id: Option<String>,
 ) -> Result<bool, String> {
     std::fs::create_dir_all(achievement_dir()).map_err(|e| e.to_string())?;
-    let val = serde_json::json!({ "definitions": definitions, "steamAppId": steam_app_id });
+    let val = serde_json::json!({
+        "definitions": definitions.clone(),
+        "achievements": definitions,
+        "steamAppId": steam_app_id
+    });
     std::fs::write(definitions_path(&game_id), serde_json::to_string_pretty(&val).unwrap())
         .map_err(|e| e.to_string())?;
     Ok(true)
@@ -119,6 +134,12 @@ pub async fn achievement_unlock(
     app: tauri::AppHandle,
     game_id: String,
     achievement_id: String,
+    name: Option<String>,
+    description: Option<String>,
+    icon: Option<String>,
+    tier: Option<String>,
+    percent: Option<f64>,
+    game_title: Option<String>,
 ) -> Result<serde_json::Value, String> {
     let path = progress_path(&game_id);
     let mut progress: AchievementProgress = if path.exists() {
@@ -139,13 +160,18 @@ pub async fn achievement_unlock(
     let duplicate = progress.unlocked_achievements.contains_key(&achievement_id);
     if !duplicate {
         let now_str = now_iso();
+        let display_title = name.clone().unwrap_or_else(|| achievement_id.clone());
+        let desc = description.clone().unwrap_or_else(|| "Conquista desbloqueada!".to_string());
+        let icon_url = icon.clone().unwrap_or_default();
+        let resolved_tier = tier.clone().unwrap_or_else(|| "gold".to_string());
+
         progress.unlocked_achievements.insert(
             achievement_id.clone(),
             UnlockedAchievement {
                 id: achievement_id.clone(),
-                name: achievement_id.clone(),
-                description: String::new(),
-                icon: String::new(),
+                name: display_title.clone(),
+                description: desc.clone(),
+                icon: icon_url.clone(),
                 unlocked_at: now_str.clone(),
             },
         );
@@ -156,14 +182,16 @@ pub async fn achievement_unlock(
 
         let unlock_payload = serde_json::json!({
             "gameId": game_id,
+            "gameTitle": game_title,
             "achievementId": achievement_id,
-            "name": achievement_id,
-            "title": achievement_id,
-            "description": "Conquista desbloqueada!",
-            "icon": "",
-            "iconPath": "",
+            "name": display_title.clone(),
+            "title": display_title.clone(),
+            "description": desc,
+            "icon": icon_url.clone(),
+            "iconPath": icon_url.clone(),
             "unlockedAt": now_str,
-            "tier": "gold"
+            "tier": resolved_tier,
+            "percent": percent.unwrap_or(15.0),
         });
 
         use tauri::Emitter;
@@ -177,9 +205,11 @@ pub async fn achievement_unlock(
 #[command]
 pub async fn achievement_get_local_state(
     app_id: String,
+    game_dir: Option<String>,
 ) -> Result<HashMap<String, AchievementState>, String> {
     // Uses emulator_detector supporting RUNE, Goldberg V1, Goldberg SocialClub, TENOKE, CODEX/INI
-    let result = crate::commands::emulator_detector::read_retroactive_saves(&app_id, None);
+    let dir_path = game_dir.map(PathBuf::from);
+    let result = crate::commands::emulator_detector::read_retroactive_saves(&app_id, dir_path.as_deref());
     let mapped = result
         .into_iter()
         .map(|(k, s)| (k, AchievementState { earned: s.earned, earned_time: s.earned_time }))

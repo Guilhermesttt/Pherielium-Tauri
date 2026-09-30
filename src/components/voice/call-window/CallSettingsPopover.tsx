@@ -36,6 +36,8 @@ interface CallSettingsPopoverProps {
   onChangeNoiseSuppression?: (val: boolean) => void;
   advancedNoiseSuppression?: boolean;
   onChangeAdvancedNoiseSuppression?: (val: boolean) => void;
+  noiseSuppressionMode?: "none" | "native" | "rnnoise" | "krisp";
+  onChangeNoiseSuppressionMode?: (mode: "none" | "native" | "rnnoise" | "krisp") => void;
   autoGainControl?: boolean;
   onChangeAutoGainControl?: (val: boolean) => void;
   onCalibrateNoise?: () => Promise<any>;
@@ -74,6 +76,8 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
   onChangeNoiseSuppression,
   advancedNoiseSuppression = true,
   onChangeAdvancedNoiseSuppression,
+  noiseSuppressionMode,
+  onChangeNoiseSuppressionMode,
   autoGainControl = true,
   onChangeAutoGainControl,
   onCalibrateNoise,
@@ -351,12 +355,21 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-white/70">Supressão de Ruído</label>
                   <GhostSelect
-                    value={advancedNoiseSuppression ? "rnnoise" : noiseSuppression ? "native" : "none"}
+                    value={
+                      noiseSuppressionMode ??
+                      (advancedNoiseSuppression ? "rnnoise" : noiseSuppression ? "native" : "none")
+                    }
                     onChange={(val) => {
-                      onChangeAdvancedNoiseSuppression?.(val === "rnnoise");
-                      onChangeNoiseSuppression?.(val === "native");
+                      const mode = val as "none" | "native" | "rnnoise" | "krisp";
+                      if (onChangeNoiseSuppressionMode) {
+                        onChangeNoiseSuppressionMode(mode);
+                        return;
+                      }
+                      onChangeAdvancedNoiseSuppression?.(mode === "rnnoise");
+                      onChangeNoiseSuppression?.(mode === "native");
                     }}
                     options={[
+                      { value: "krisp", label: "Krisp (LiveKit IA)" },
                       { value: "rnnoise", label: "Isolamento por IA (RNNoise)" },
                       { value: "native", label: "Nativo do sistema" },
                       { value: "none", label: "Desligado (bruto)" },

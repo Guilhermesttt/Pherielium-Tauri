@@ -21,6 +21,10 @@ pub struct GameLaunchProfile {
 pub struct LaunchOptions {
     #[serde(default)]
     pub hide_launcher: bool,
+    #[serde(default)]
+    pub game_id: Option<String>,
+    #[serde(default)]
+    pub steam_app_id: Option<String>,
 }
 
 #[command]
@@ -67,11 +71,23 @@ pub async fn launcher_open_executable(
     // Automatically set game watch target and start achievement watcher for local games
     if let Some(target_name) = exe.file_name().map(|f| f.to_string_lossy().to_string()) {
         if let Some(state) = app.try_state::<crate::commands::game_watch::GameWatchState>() {
-            let _ = crate::commands::game_watch::game_watch_set_target(state, Some(target_name.clone()));
+            let _ = crate::commands::game_watch::game_watch_set_target(state, Some(path.clone()));
         }
-        let game_dir = exe.parent();
-        let app_id = game_dir.and_then(crate::commands::emulator_detector::detect_game_app_id);
-        let game_id = app_id.as_ref().map(|id| format!("steam_{id}")).unwrap_or(target_name);
+
+        let explicit_app_id = opts.as_ref()
+            .and_then(|o| o.steam_app_id.clone())
+            .filter(|id| !id.trim().is_empty());
+        let explicit_game_id = opts.as_ref()
+            .and_then(|o| o.game_id.clone())
+            .filter(|id| !id.trim().is_empty());
+
+        let detected_app_id = exe.parent().and_then(crate::commands::emulator_detector::detect_game_app_id);
+        let app_id = explicit_app_id.or(detected_app_id);
+
+        let game_id = explicit_game_id
+            .or_else(|| app_id.as_ref().map(|id| format!("steam_{id}")))
+            .unwrap_or(target_name);
+
         crate::commands::achievement_watcher::start_achievement_watcher(
             app.clone(),
             game_id,

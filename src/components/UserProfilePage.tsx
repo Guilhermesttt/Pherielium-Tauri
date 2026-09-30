@@ -319,7 +319,7 @@ const Section: React.FC<SectionProps> = ({
           {icon}
         </div>
       )}
-      <h2 className="text-xs sm:text-sm font-black text-neutral-300 tracking-wider uppercase font-mono">{title}</h2>
+      <h2 className="text-xs sm:text-sm font-display font-semibold text-white/90 tracking-wide uppercase">{title}</h2>
     </div>
     {children}
   </section>
@@ -900,7 +900,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
               {/* LADO DIREITO: KPIs Unificados + Botão de Edição */}
               <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end justify-between gap-4 shrink-0">
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  {editable && Boolean(import.meta.env.DEV) && (
+                  {editable && Boolean(import.meta.env.DEV) && typeof window !== "undefined" && window.localStorage?.getItem("checkpoint_dev_tools") === "true" && (
                     <div className="relative flex items-center">
                       <button
                         type="button"
@@ -1180,9 +1180,6 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                                       className="h-full rounded-full bg-white/30"
                                     />
                                   </div>
-                                  <span className="text-[9px] font-mono text-neutral-500 shrink-0">
-                                    {Math.round(pct)}% rel.
-                                  </span>
                                 </div>
                               </div>
                               <span className="flex items-center gap-1.5 text-xs font-mono font-bold text-neutral-300">
@@ -1280,11 +1277,13 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400/20" />
-                      <h3 className="text-xs font-black text-neutral-300 tracking-wider uppercase font-mono">{copy.favorites}</h3>
+                      <h3 className="text-xs font-display font-semibold text-white/90 tracking-wide uppercase">{copy.favorites}</h3>
                     </div>
                     {favoriteGames.length > 0 && (
-                      <span className="text-[10px] font-mono text-neutral-500 font-bold">
-                        {favoriteGames.length} {favoriteGames.length === 1 ? "jogo" : "jogos"}
+                      <span className="text-[11px] font-medium text-white/50">
+                        {stats.favorites > favoriteGames.length
+                          ? `${favoriteGames.length} de ${stats.favorites} favoritos`
+                          : `${favoriteGames.length} ${favoriteGames.length === 1 ? "favorito" : "favoritos"}`}
                       </span>
                     )}
                   </div>

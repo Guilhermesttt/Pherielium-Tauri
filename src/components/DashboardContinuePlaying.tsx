@@ -30,14 +30,13 @@ const STANDARD_SPRING = {
 };
 
 // How far the cover pops above the card's top edge, and the card's own height.
-// The article's total height (COVER_HEIGHT) already accounts for the overhang,
-// so nothing here ever exceeds the row's scroll box and gets clipped.
-const CARD_HEIGHT = 130;
-const OVERHANG = 46;
-const COVER_WIDTH = 122;
-const COVER_HEIGHT = CARD_HEIGHT + OVERHANG; // 176
-const COVER_LEFT = 18;
-const TEXT_OFFSET = COVER_LEFT + COVER_WIDTH + 18; // reserved space so text never sits under the cover
+// Compact proportions so it acts as a fast-resume strip without overpowering the hero.
+const CARD_HEIGHT = 104;
+const OVERHANG = 32;
+const COVER_WIDTH = 96;
+const COVER_HEIGHT = CARD_HEIGHT + OVERHANG; // 136
+const COVER_LEFT = 14;
+const TEXT_OFFSET = COVER_LEFT + COVER_WIDTH + 14; // reserved space so text never sits under the cover
 
 const getPlatformInfo = (launcherType?: string) => {
   const iconClass = "h-3.5 w-3.5 text-white/78";
@@ -120,26 +119,26 @@ const ContinueCard: React.FC<{
       onClick={onPlay}
       onMouseMove={handleCardGlow}
       onPointerEnter={() => playSound?.("hover")}
-      className="group relative w-[400px] shrink-0 cursor-pointer"
+      className="group relative w-[320px] shrink-0 cursor-pointer"
       style={{ height: COVER_HEIGHT }}
       aria-label={`Continuar jogando ${game.title}`}
     >
       {/* Card background — cor do jogo + spotlight segue o cursor */}
       <motion.div
-        className="absolute inset-x-0 bottom-0 overflow-hidden border shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+        className="absolute inset-x-0 bottom-0 overflow-hidden border shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
         style={{
           height: CARD_HEIGHT,
           background: cardBackground,
-          borderRadius: 32, /* Squircle */
+          borderRadius: 22, /* Squircle */
           borderColor: cardBorderColor,
         }}
       >
         <motion.div
-          className="pointer-events-none absolute -inset-px rounded-[32px] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          className="pointer-events-none absolute -inset-px rounded-[22px] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
           style={{
             background: useMotionTemplate`
               radial-gradient(
-                400px circle at ${mouseX}px ${mouseY}px,
+                320px circle at ${mouseX}px ${mouseY}px,
                 rgba(255,255,255,0.1),
                 transparent 80%
               )
@@ -150,13 +149,13 @@ const ContinueCard: React.FC<{
 
       {/* Text — reserved offset guarantees it never sits under the cover and never truncates */}
       <div
-        className="absolute bottom-0 right-4 flex flex-col justify-center gap-1.5"
+        className="absolute bottom-0 right-4 flex flex-col justify-center gap-1"
         style={{ height: CARD_HEIGHT, left: TEXT_OFFSET }}
       >
-        <h3 className="truncate text-[22px] font-bold leading-tight tracking-tight text-white/90 drop-shadow-sm transition-colors group-hover:text-white">
+        <h3 className="truncate text-[16px] font-semibold leading-tight tracking-tight text-white/90 drop-shadow-sm transition-colors group-hover:text-white">
           {game.title}
         </h3>
-        <p className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[12px] font-medium text-white/50">
+        <p className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[11px] font-medium text-white/50">
           <span className="shrink-0">{hours > 0 ? `${formatPlayedHours(hours)}h` : "Recente"}</span>
           <span className="h-1 w-1 shrink-0 rounded-full bg-white/20" />
           <span className="flex shrink-0 items-center gap-1">{platform.label}</span>
@@ -170,17 +169,16 @@ const ContinueCard: React.FC<{
         </p>
       </div>
 
-      {/* Cover — pops above the card, but stays inside the article's own box,
-          so the scroll container's overflow-x never clips it */}
+      {/* Cover — pops above the card, but stays inside the article's own box */}
       <motion.div
-        className="absolute top-0 z-10 overflow-hidden rounded-[16px] border border-white/10 bg-[#0f1115] shadow-[0_16px_32px_rgba(0,0,0,0.6)]"
-        style={{ left: COVER_LEFT, width: COVER_WIDTH, height: COVER_HEIGHT - 12 }}
+        className="absolute top-0 z-10 overflow-hidden rounded-[13px] border border-white/10 bg-[#0f1115] shadow-[0_12px_24px_rgba(0,0,0,0.55)]"
+        style={{ left: COVER_LEFT, width: COVER_WIDTH, height: COVER_HEIGHT - 10 }}
       >
         {coverArt ? (
           <img src={coverArt} alt="" className="h-full w-full object-cover" draggable={false} />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <Gamepad2 className="h-8 w-8 text-white/20" />
+            <Gamepad2 className="h-7 w-7 text-white/20" />
           </div>
         )}
       </motion.div>
@@ -207,8 +205,8 @@ export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> =
   };
 
   return (
-    <section aria-label="Continuar jogando" className="px-10 pb-6 mb-16 relative group/section">
-      <div className="mb-4 flex flex-col">
+    <section aria-label="Continuar jogando" className="px-10 pb-4 mb-8 relative group/section">
+      <div className="mb-3 flex flex-col">
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/34">
           Retomar
         </p>

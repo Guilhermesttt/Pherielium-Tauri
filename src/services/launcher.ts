@@ -25,6 +25,34 @@ export const getMonitorableExecutablePath = (game: Game): string | null => {
   return isWindowsExecutablePath(executablePath) ? executablePath : null;
 };
 
+/** Resolve o .exe real de um jogo Steam instalado (AppID -> caminho local). */
+export const resolveSteamInstalledExecutable = async (
+  steamAppId?: string | null,
+): Promise<string | null> => {
+  const appId = String(steamAppId || "").trim();
+  if (!appId || !window.electronAPI?.scanInstalledSteamGames) return null;
+  try {
+    const localSteam = await window.electronAPI.scanInstalledSteamGames();
+    if (!Array.isArray(localSteam)) return null;
+    const match = localSteam.find((item) => String(item.appid) === appId && item.executablePath);
+    return match?.executablePath?.trim() || null;
+  } catch {
+    return null;
+  }
+};
+
+/** Melhor caminho monitoravel disponivel agora (biblioteca + scan Steam). */
+export const resolveMonitorableExecutablePath = async (game: Game): Promise<string | null> => {
+  const direct = getMonitorableExecutablePath(game);
+  if (direct) return direct;
+  if (game.steamAppId) {
+    const steamExe = await resolveSteamInstalledExecutable(game.steamAppId);
+    if (steamExe) return steamExe;
+  }
+  const fallback = String(game.executablePath || "").trim();
+  return /\.exe$/i.test(fallback) ? fallback : null;
+};
+
 const buildEpicLaunchUri = (game: Game): string | null => {
   const explicitLaunchId = String(game.epicLaunchId || "").trim();
   const rawLaunchId = isWindowsExecutablePath(game.executablePath || "")
@@ -60,9 +88,13 @@ const launchLocalExecutable = async (
   executablePath: string,
   launchProfile?: GameLaunchProfile,
   hideLauncher = true,
+  gameId?: string,
+  steamAppId?: string,
 ) => {
   await window.electronAPI?.launchExecutable(executablePath, launchProfile, {
     hideLauncher,
+    gameId,
+    steamAppId,
   });
 };
 
@@ -126,6 +158,8 @@ export const launchGame = async (
         String(game.executablePath).trim(),
         game.launchProfile,
         hideLauncher,
+        game.id,
+        game.steamAppId,
       );
       return;
     }
@@ -161,6 +195,8 @@ export const launchGame = async (
       String(game.executablePath).trim(),
       game.launchProfile,
       hideLauncher,
+      game.id,
+      game.steamAppId,
     );
     return;
   }

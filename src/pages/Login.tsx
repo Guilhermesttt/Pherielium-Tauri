@@ -1,6 +1,23 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { AlertCircle, Eye, EyeOff, Check } from "lucide-react";
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useReducedMotion, useAnimationControls } from "framer-motion";
+import { AlertCircle, Eye, EyeOff, Check, Monitor } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSteam } from "@fortawesome/free-brands-svg-icons";
+import battleNetLogo from "../assets/brands/battle-net.png";
+import eaLogo from "../assets/brands/ea.png";
+import epicLogo from "../assets/brands/epic-games.png";
+import gogLogo from "../assets/brands/gog.png";
+import riotLogo from "../assets/brands/riot.png";
+import rockstarLogo from "../assets/brands/rockstar.png";
+import ubisoftLogo from "../assets/brands/ubisoft.png";
+import pherieliumLogo from "../assets/Pherielium_logo.png";
+import { useNavigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "../auth/AuthProvider";
+import { NotificationProvider } from "../components/NotificationCenter";
+import { LoadingState } from "../components/ui/loading-state";
+import PlasmaHeroBackground from "../components/PlasmaHeroBackground";
+import LightSpeedTunnel from "../components/LightSpeedTunnel";
+import BlackHoleHeroSection from "../components/BlackHoleHeroSection";
 
 // Variantes de entrada escalonada para os campos do formulário
 const formContainerVariants = {
@@ -18,213 +35,6 @@ const formItemVariants = {
     transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const },
   },
 };
-import pherieliumLogo from "../assets/Pherielium_logo.png";
-import { useNavigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "../auth/AuthProvider";
-import { NotificationProvider } from "../components/NotificationCenter";
-import { LoadingState } from "../components/ui/loading-state";
-
-// Vertex shader source code
-const vertexSmokeySource = `
-  attribute vec4 a_position;
-  void main() {
-    gl_Position = a_position;
-  }
-`;
-
-// Fragment shader source code for the smokey background effect
-const fragmentSmokeySource = `
-precision mediump float;
-
-uniform vec2 iResolution;
-uniform float iTime;
-uniform vec2 iMouse;
-uniform vec3 u_color;
-
-void mainImage(out vec4 fragColor, in vec2 fragCoord){
-    vec2 uv = fragCoord / iResolution;
-    vec2 centeredUV = (2.0 * fragCoord - iResolution.xy) / min(iResolution.x, iResolution.y);
-
-    float time = iTime * 0.35;
-
-    vec2 mouse = iMouse / iResolution;
-    vec2 rippleCenter = 2.0 * mouse - 1.0;
-
-    vec2 distortion = centeredUV;
-    for (float i = 1.0; i < 7.0; i++) {
-        distortion.x += 0.35 / i * cos(i * 2.0 * distortion.y + time + rippleCenter.x * 3.1415);
-        distortion.y += 0.35 / i * cos(i * 2.0 * distortion.x + time + rippleCenter.y * 3.1415);
-    }
-
-    float wave = abs(sin(distortion.x + distortion.y + time));
-    float glow = smoothstep(0.9, 0.1, wave);
-
-    fragColor = vec4(u_color * glow, 1.0);
-}
-
-void main() {
-    mainImage(gl_FragColor, gl_FragCoord.xy);
-}
-`;
-
-type BlurSize = "none" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
-
-interface SmokeyBackgroundProps {
-  backdropBlurAmount?: BlurSize;
-  color?: string;
-  className?: string;
-}
-
-const blurClassMap: Record<BlurSize, string> = {
-  none: "backdrop-blur-none",
-  sm: "backdrop-blur-sm",
-  md: "backdrop-blur-md",
-  lg: "backdrop-blur-lg",
-  xl: "backdrop-blur-xl",
-  "2xl": "backdrop-blur-2xl",
-  "3xl": "backdrop-blur-3xl",
-};
-
-export function SmokeyBackground({
-  backdropBlurAmount = "lg",
-  color = "#282828",
-  className = "",
-}: SmokeyBackgroundProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mousePositionRef = useRef({ x: 0, y: 0 });
-  const isHoveringRef = useRef(false);
-
-  const hexToRgb = (hex: string): [number, number, number] => {
-    const r = parseInt(hex.substring(1, 3), 16) / 255;
-    const g = parseInt(hex.substring(3, 5), 16) / 255;
-    const b = parseInt(hex.substring(5, 7), 16) / 255;
-    return [r, g, b];
-  };
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const gl = canvas.getContext("webgl");
-    if (!gl) return;
-
-    const compileShader = (type: number, source: string): WebGLShader | null => {
-      const shader = gl.createShader(type);
-      if (!shader) return null;
-      gl.shaderSource(shader, source);
-      gl.compileShader(shader);
-      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        gl.deleteShader(shader);
-        return null;
-      }
-      return shader;
-    };
-
-    const vertexShader = compileShader(gl.VERTEX_SHADER, vertexSmokeySource);
-    const fragmentShader = compileShader(gl.FRAGMENT_SHADER, fragmentSmokeySource);
-    if (!vertexShader || !fragmentShader) return;
-
-    const program = gl.createProgram();
-    if (!program) return;
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return;
-
-    gl.useProgram(program);
-
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
-      gl.STATIC_DRAW,
-    );
-
-    const positionLocation = gl.getAttribLocation(program, "a_position");
-    gl.enableVertexAttribArray(positionLocation);
-    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-    const iResolutionLocation = gl.getUniformLocation(program, "iResolution");
-    const iTimeLocation = gl.getUniformLocation(program, "iTime");
-    const iMouseLocation = gl.getUniformLocation(program, "iMouse");
-    const uColorLocation = gl.getUniformLocation(program, "u_color");
-
-    const startTime = Date.now();
-    const [r, g, b] = hexToRgb(color);
-    gl.uniform3f(uColorLocation, r, g, b);
-
-    let animationFrameId: number;
-
-    const render = () => {
-      const width = canvas.clientWidth;
-      const height = canvas.clientHeight;
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width;
-        canvas.height = height;
-        gl.viewport(0, 0, width, height);
-      }
-
-      const currentTime = (Date.now() - startTime) / 1000;
-      gl.uniform2f(iResolutionLocation, width, height);
-      gl.uniform1f(iTimeLocation, currentTime);
-
-      const isHovering = isHoveringRef.current;
-      const mouseX = mousePositionRef.current.x;
-      const mouseY = mousePositionRef.current.y;
-
-      gl.uniform2f(
-        iMouseLocation,
-        isHovering ? mouseX : width / 2,
-        isHovering ? height - mouseY : height / 2,
-      );
-
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-      animationFrameId = requestAnimationFrame(render);
-    };
-
-    const handleMouseMove = (event: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      mousePositionRef.current = {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top,
-      };
-    };
-    const handleMouseEnter = () => {
-      isHoveringRef.current = true;
-    };
-    const handleMouseLeave = () => {
-      isHoveringRef.current = false;
-    };
-
-    canvas.addEventListener("mousemove", handleMouseMove);
-    canvas.addEventListener("mouseenter", handleMouseEnter);
-    canvas.addEventListener("mouseleave", handleMouseLeave);
-
-    render();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      canvas.removeEventListener("mousemove", handleMouseMove);
-      canvas.removeEventListener("mouseenter", handleMouseEnter);
-      canvas.removeEventListener("mouseleave", handleMouseLeave);
-      gl.deleteProgram(program);
-      gl.deleteShader(vertexShader);
-      gl.deleteShader(fragmentShader);
-      gl.deleteBuffer(positionBuffer);
-    };
-  }, [color]);
-
-  const finalBlurClass = blurClassMap[backdropBlurAmount] || blurClassMap["lg"];
-
-  return (
-    <div className={`absolute inset-0 w-full h-full overflow-hidden pointer-events-none ${className}`}>
-      <canvas ref={canvasRef} className="w-full h-full" />
-      <div className={`absolute inset-0 ${finalBlurClass}`} />
-    </div>
-  );
-}
 
 const GoogleIcon = () => (
   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -308,8 +118,182 @@ const SuccessOverlay = ({ message }: { message: string }) => {
   );
 };
 
-// AAA Minimalist Floating Logo with Celestial Orbital Nodes — sem moldura, ao vivo no espaço
-const AnimatedPherieliumLogo = () => {
+// ─── Orbital Platform Icons — Keplerian physics ──────────────────────────────
+// Each icon orbits on a circular ring. Speed varies within the orbit: the icon
+// accelerates near the "perihelion" (bottom — closest visual point) and slows
+// near the "aphelion" (top), simulating Kepler's Second Law.
+// The icon container rotates; each icon counter-rotates so it stays upright.
+//
+// Perihelion flare: when the icon passes the bottom of its orbit, a brief
+// glow/scale flare fires — like a body catching solar light at closest approach.
+
+const KEPLER_TIMES = [0, 0.15, 0.30, 0.65, 1.0] as const;
+
+interface OrbitIconProps {
+  /** angle in degrees where this icon sits on its ring at t=0 */
+  startAngle: number;
+  /** orbit radius in px */
+  radius: number;
+  /** full rotation duration in seconds (positive = CW, negative = CCW) */
+  duration: number;
+  /** 0-based index for entrance stagger */
+  index: number;
+  label?: string;
+  children: React.ReactNode;
+}
+
+const OrbitIcon: React.FC<OrbitIconProps> = ({
+  startAngle,
+  radius,
+  duration,
+  index,
+  label,
+  children,
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const prefersReduced = useReducedMotion();
+  const glowControls = useAnimationControls();
+
+  const orbitDir = duration > 0 ? 360 : -360;
+  const counterDir = duration > 0 ? -360 : 360;
+  const absDuration = Math.abs(duration);
+
+  // Perihelion moment: icon reaches bottom of orbit
+  const linearFraction = ((180 - startAngle + 360) % 360) / 360;
+  const perihelionDelay = linearFraction * absDuration * 0.6;
+
+  useEffect(() => {
+    if (prefersReduced) return;
+
+    const triggerFlare = () => {
+      glowControls.start({
+        scale: [1, 1.28, 1],
+        filter: [
+          "brightness(1) drop-shadow(0 0 0px rgba(255,255,255,0))",
+          "brightness(1.8) drop-shadow(0 0 12px rgba(255,255,255,0.9))",
+          "brightness(1) drop-shadow(0 0 0px rgba(255,255,255,0))",
+        ],
+        transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] },
+      });
+    };
+
+    const firstTimer = setTimeout(triggerFlare, perihelionDelay * 1000);
+    const interval = setInterval(triggerFlare, absDuration * 1000);
+    return () => {
+      clearTimeout(firstTimer);
+      clearInterval(interval);
+    };
+  }, [absDuration, perihelionDelay, prefersReduced, glowControls]);
+
+  // Keyframe arrays for Keplerian rotation (5 evenly spaced angle keyframes)
+  const orbitKeyframes = [
+    startAngle,
+    startAngle + orbitDir * 0.25,
+    startAngle + orbitDir * 0.5,
+    startAngle + orbitDir * 0.75,
+    startAngle + orbitDir,
+  ];
+  const counterKeyframes = [
+    -startAngle,
+    -startAngle + counterDir * 0.25,
+    -startAngle + counterDir * 0.5,
+    -startAngle + counterDir * 0.75,
+    -startAngle + counterDir,
+  ];
+
+  if (prefersReduced) {
+    // Accessibility: static icons, no motion
+    return (
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div
+          className="absolute pointer-events-auto"
+          style={{
+            transform: `rotate(${startAngle}deg) translateY(-${radius}px) rotate(${-startAngle}deg)`,
+          }}
+        >
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+      style={{ rotate: startAngle }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1, rotate: orbitKeyframes }}
+      transition={{
+        opacity: { duration: 0.5, delay: 0.6 + index * 0.09 },
+        rotate: {
+          duration: absDuration,
+          times: [...KEPLER_TIMES],
+          repeat: Infinity,
+          ease: "linear",
+        },
+      }}
+    >
+      {/* Radial translation wrapper */}
+      <div className="absolute" style={{ transform: `translateY(-${radius}px)` }}>
+        {/* Counter-rotate / upright wrapper */}
+        <motion.div
+          initial={{ rotate: -startAngle }}
+          animate={{ rotate: counterKeyframes }}
+          transition={{
+            rotate: {
+              duration: absDuration,
+              times: [...KEPLER_TIMES],
+              repeat: Infinity,
+              ease: "linear",
+            },
+          }}
+        >
+          {/* Perihelion flare & interactive platform hover wrapper */}
+          <motion.div
+            animate={glowControls}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            whileHover={{ scale: 1.25 }}
+            transition={{ type: "spring", bounce: 0.3, duration: 0.25 }}
+            className="relative pointer-events-auto cursor-pointer"
+          >
+            {children}
+
+            {/* Platform name tooltip badge */}
+            <AnimatePresence>
+              {isHovered && label && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.8 }}
+                  animate={{ opacity: 1, y: -26, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.8 }}
+                  transition={{ type: "spring", bounce: 0.25, duration: 0.2 }}
+                  className="absolute left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-[#121216]/95 backdrop-blur-md border border-white/20 text-white text-[11px] font-medium font-body shadow-[0_8px_24px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.15)] whitespace-nowrap pointer-events-none flex items-center gap-1.5 z-50 select-none"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+                  <span>{label}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+};
+
+// AAA Minimalist Floating Logo with Celestial Orbital Platform Icons
+interface AnimatedPherieliumLogoProps {
+  onLogoClick?: () => void;
+  onHoverChange?: (isHovered: boolean) => void;
+  isBlackHoleActive?: boolean;
+}
+
+const AnimatedPherieliumLogo: React.FC<AnimatedPherieliumLogoProps> = ({
+  onLogoClick,
+  onHoverChange,
+  isBlackHoleActive = false,
+}) => {
+  const logoContainerRef = useRef<HTMLDivElement>(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const springConfig = { damping: 25, stiffness: 120 };
@@ -329,80 +313,218 @@ const AnimatedPherieliumLogo = () => {
     mouseY.set(0);
   };
 
+  // Outer ring icons: 5 platforms, CW 44s
+  const outerIcons: Array<{ src?: string; node?: React.ReactNode; alt: string; startAngle: number }> = [
+    {
+      node: <FontAwesomeIcon icon={faSteam} className="w-5 h-5 text-white" />,
+      alt: "Steam",
+      startAngle: 0,
+    },
+    { src: epicLogo, alt: "Epic Games", startAngle: 72 },
+    { src: battleNetLogo, alt: "Battle.net", startAngle: 144 },
+    { src: ubisoftLogo, alt: "Ubisoft Connect", startAngle: 216 },
+    { src: rockstarLogo, alt: "Rockstar Games", startAngle: 288 },
+  ];
+
+  // Inner ring icons: 4 platforms, CCW 28s
+  const innerIcons: Array<{ src?: string; node?: React.ReactNode; alt: string; startAngle: number }> = [
+    { src: riotLogo, alt: "Riot Games", startAngle: 45 },
+    { src: eaLogo, alt: "EA App", startAngle: 135 },
+    { src: gogLogo, alt: "GOG Galaxy", startAngle: 225 },
+    { node: <Monitor size={22} color="white" strokeWidth={1.5} />, alt: "Jogos Locais", startAngle: 315 },
+  ];
+
+  const outerRadius = 185;
+  const innerRadius = 125;
+
   return (
     <div
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="relative flex items-center justify-center p-8 select-none perspective-1000"
+      className="relative flex items-center justify-center select-none"
+      style={{ width: 440, height: 440 }}
     >
-      {/* Outer Orbit Rings — entram em fade/scale e depois giram continuamente */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.7 }}
-        animate={{ opacity: 1, scale: 1, rotate: 360 }}
-        transition={{
-          opacity: { duration: 0.8, delay: 0.3 },
-          scale: { duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] },
-          rotate: { duration: 48, repeat: Infinity, ease: "linear", delay: 0 },
-        }}
-        className="absolute w-96 h-96 md:w-[30rem] md:h-[30rem] rounded-full border border-white/[0.07]"
-      />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.7 }}
-        animate={{ opacity: 1, scale: 1, rotate: -360 }}
-        transition={{
-          opacity: { duration: 0.8, delay: 0.4 },
-          scale: { duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] },
-          rotate: { duration: 32, repeat: Infinity, ease: "linear" },
-        }}
-        className="absolute w-80 h-80 md:w-96 md:h-96 rounded-full border border-white/[0.09] border-dashed"
-      />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.7 }}
-        animate={{ opacity: 1, scale: 1, rotate: 360 }}
-        transition={{
-          opacity: { duration: 0.8, delay: 0.5 },
-          scale: { duration: 0.8, delay: 0.5, ease: [0.16, 1, 0.3, 1] },
-          rotate: { duration: 22, repeat: Infinity, ease: "linear" },
-        }}
-        className="absolute w-64 h-64 md:w-80 md:h-80 rounded-full border border-white/[0.06]"
-      />
+      {/* Celestial Orbits & Platform Icons — hidden smoothly when black hole singularity is active */}
+      <AnimatePresence>
+        {!isBlackHoleActive && (
+          <motion.div
+            key="celestial-orbits"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.75, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          >
+            {/* Decorative orbit ring lines */}
+            <div
+              className="absolute rounded-full border border-white/[0.08]"
+              style={{ width: outerRadius * 2, height: outerRadius * 2 }}
+            />
+            <div
+              className="absolute rounded-full border border-white/[0.07] border-dashed"
+              style={{ width: innerRadius * 2, height: innerRadius * 2 }}
+            />
 
-      {/* Radiant Pulsing Core Glow — entra crescendo e depois pulsa continuamente */}
-      <motion.div
-        initial={{ scale: 0.3, opacity: 0 }}
-        animate={{ scale: [1, 1.28, 1], opacity: [0.2, 0.45, 0.2] }}
-        transition={{
-          scale: { duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.9 },
-          opacity: { duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.9 },
-        }}
-        className="absolute w-64 h-64 md:w-[22rem] md:h-[22rem] rounded-full bg-white blur-[80px] pointer-events-none"
-      />
+            {/* Outer orbit icons */}
+            {outerIcons.map((item, i) => (
+              <OrbitIcon
+                key={item.alt}
+                startAngle={item.startAngle}
+                radius={outerRadius}
+                duration={44}
+                index={i}
+                label={item.alt}
+              >
+                <div
+                  className="flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 hover:border-white/35 backdrop-blur-sm border border-white/15 shadow-lg transition-all"
+                  style={{ width: 40, height: 40 }}
+                >
+                  {item.node ? (
+                    item.node
+                  ) : (
+                    <img
+                      src={item.src}
+                      alt={item.alt}
+                      draggable={false}
+                      className="w-5 h-5 object-contain"
+                      style={{ filter: "brightness(0) invert(1)" }}
+                    />
+                  )}
+                </div>
+              </OrbitIcon>
+            ))}
 
-      {/* Logo flutuante direto no espaço, sem cartão/moldura ao redor */}
-      <motion.div
-        style={{ rotateX, rotateY }}
-        initial={{ opacity: 0, scale: 0.4, rotate: -15 }}
-        animate={{
-          opacity: 1,
-          scale: 1,
-          rotate: 0,
-          y: [-8, 8, -8],
-        }}
-        transition={{
-          opacity: { duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] },
-          scale: { duration: 0.9, delay: 0.15, type: "spring", stiffness: 90, damping: 11 },
-          rotate: { duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] },
-          y: { duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.1 },
-        }}
-        className="relative z-10 cursor-pointer"
+            {/* Inner orbit icons */}
+            {innerIcons.map((item, i) => (
+              <OrbitIcon
+                key={item.alt}
+                startAngle={item.startAngle}
+                radius={innerRadius}
+                duration={-24}
+                index={i + outerIcons.length}
+                label={item.alt}
+              >
+                <div
+                  className="flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 hover:border-white/35 backdrop-blur-sm border border-white/15 shadow-lg transition-all"
+                  style={{ width: 36, height: 36 }}
+                >
+                  {item.node ? (
+                    item.node
+                  ) : (
+                    <img
+                      src={item.src}
+                      alt={item.alt}
+                      draggable={false}
+                      className="w-5 h-5 object-contain"
+                      style={{ filter: "brightness(0) invert(1)" }}
+                    />
+                  )}
+                </div>
+              </OrbitIcon>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Central floating logo — click to activate black hole */}
+      <AnimatePresence>
+        {!isBlackHoleActive && (
+          <motion.div
+            key="central-logo"
+            ref={logoContainerRef}
+            style={{ rotateX, rotateY }}
+            initial={{ opacity: 0, scale: 0.4, rotate: -15 }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              scaleX: 1,
+              scaleY: 1,
+              rotate: 0,
+              y: [-8, 8, -8],
+              filter: "brightness(1) blur(0px)",
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0.2,
+              filter: "blur(8px)",
+              transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] },
+            }}
+            transition={{
+              opacity: { duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] },
+              scale: { duration: 0.9, delay: 0.15, type: "spring", stiffness: 90, damping: 11 },
+              rotate: { duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] },
+              y: { duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1.1 },
+            }}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
+            onMouseEnter={() => onHoverChange?.(true)}
+            onMouseLeave={() => onHoverChange?.(false)}
+            onClick={() => onLogoClick?.()}
+            className="relative z-10 cursor-pointer group"
+            title="Ativar horizonte de eventos"
+          >
+            <img
+              src={pherieliumLogo}
+              alt="Pherielium"
+              className="object-contain transition-all duration-500 group-hover:scale-105 drop-shadow-[0_0_24px_rgba(255,255,255,0.2)]"
+              style={{ width: 192, height: 192 }}
+              draggable={false}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// Floating-label input wrapper
+interface FloatInputProps {
+  id: string;
+  type: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  required?: boolean;
+  rightSlot?: React.ReactNode;
+  placeholder?: string;
+}
+
+const FloatInput: React.FC<FloatInputProps> = ({ id, type, label, value, onChange, required, rightSlot, placeholder }) => {
+  const [focused, setFocused] = useState(false);
+  const lifted = focused || value.length > 0;
+  return (
+    <div className="relative">
+      <input
+        id={id}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        required={required}
+        placeholder={lifted ? (placeholder ?? "") : ""}
+        className={`w-full bg-white/[0.05] border rounded-2xl px-4 pt-5 pb-2.5 ${
+          rightSlot ? "pr-11" : ""
+        } text-sm font-body text-white placeholder:text-white/25 outline-none transition-[border-color,box-shadow] duration-200 ${
+          focused
+            ? "border-white/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.25)]"
+            : "border-white/[0.18] hover:border-white/35"
+        }`}
+      />
+      <motion.label
+        htmlFor={id}
+        animate={lifted ? { y: -10, scale: 0.78, color: focused ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.45)" } : { y: 0, scale: 1, color: "rgba(255,255,255,0.4)" }}
+        transition={{ type: "spring", bounce: 0, duration: 0.28 }}
+        style={{ originX: 0 }}
+        className="absolute left-4 top-[50%] -translate-y-1/2 text-sm font-body pointer-events-none"
       >
-        <img
-          src={pherieliumLogo}
-          alt="Pherielium"
-          className="w-52 h-52 md:w-72 md:h-72 object-contain drop-shadow-[0_0_60px_rgba(255,255,255,0.65)] transition-transform duration-500 hover:scale-105"
-          draggable={false}
-        />
-      </motion.div>
+        {label}
+      </motion.label>
+      {rightSlot && (
+        <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+          {rightSlot}
+        </div>
+      )}
     </div>
   );
 };
@@ -418,9 +540,15 @@ const LoginContent: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loginSuccess, setLoginSuccess] = useState(false);
+  const [isWarping, setIsWarping] = useState(false);
+  const [isBlackHoleActive, setIsBlackHoleActive] = useState(false);
+  const shakeControls = useAnimationControls();
+
+  const handleLogoClick = useCallback(() => {
+    setIsBlackHoleActive((prev) => !prev);
+  }, []);
 
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-
   const isGoogleCancelledRef = useRef(false);
 
   const handleCancelGoogleLogin = useCallback(() => {
@@ -472,7 +600,7 @@ const LoginContent: React.FC = () => {
   if (authLoading && !user) {
     return (
       <div className="min-h-screen w-full bg-[#030405] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
-        <SmokeyBackground backdropBlurAmount="lg" color="#333333" className="opacity-95" />
+        <PlasmaHeroBackground opacity={0.45} />
         <div className="relative z-10 flex flex-col items-center gap-6 p-8 md:p-10 rounded-[32px] border border-white/[0.08] bg-[#08090C]/80 backdrop-blur-2xl shadow-2xl">
           <img src={pherieliumLogo} alt="Pherielium" className="w-16 h-16 object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.4)] animate-pulse" />
           <LoadingState label="Verificando sessão..." variant="breathing" />
@@ -520,6 +648,11 @@ const LoginContent: React.FC = () => {
       } else {
         setError("Ocorreu um erro. Tente novamente.");
       }
+      // Trigger form shake on error
+      shakeControls.start({
+        x: [0, -9, 9, -6, 6, -3, 3, 0],
+        transition: { duration: 0.48, ease: "easeInOut" },
+      });
     } finally {
       setIsLoading(false);
     }
@@ -551,7 +684,7 @@ const LoginContent: React.FC = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.7, ease: "easeOut" }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
       className="min-h-screen w-full bg-[#030405] text-white flex flex-col md:flex-row items-center justify-between p-6 md:p-14 lg:p-20 relative overflow-hidden font-sans selection:bg-white selection:text-black"
     >
       {/* Overlay de sucesso — some assim que o login/cadastro é confirmado */}
@@ -563,18 +696,93 @@ const LoginContent: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Background WebGL Dynamic Smoke Effect — mais presente */}
-      <SmokeyBackground backdropBlurAmount="lg" color="#333333" className="opacity-95" />
+      {/* Background WebGL Plasma Shader with Film Grain (21st.dev hero by @silvestrefrigeriopro) */}
+      {!isBlackHoleActive && <PlasmaHeroBackground opacity={0.45} />}
+
+      {/* Black Hole Singularity WebGL Shader Hero (activated on logo click) */}
+      <AnimatePresence>
+        {isBlackHoleActive && (
+          <motion.div
+            key="black-hole-bg"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className="absolute inset-0 z-0 pointer-events-none"
+          >
+            <BlackHoleHeroSection
+              distance={22}
+              elevation={-6}
+              azimuth={0}
+              orbitSpeed={0}
+              roll={-18}
+              fov={42}
+              diskInner={3}
+              diskOuter={14}
+              diskThickness={0.24}
+              diskDensity={1.05}
+              brightness={1.1}
+              spinSpeed={0.06}
+              grain={0.5}
+              doppler={0.4}
+              hotColor="#FFF3DE"
+              midColor="#FF9838"
+              coolColor="#8E3A0B"
+              starBrightness={0.4}
+              glow={1.2}
+              exposure={0.95}
+              vignette={0.32}
+              steps={260}
+              resolution={0.8}
+              maxDpr={1.5}
+              focus={typeof window !== "undefined" && window.innerWidth >= 768 ? [0.26, 0.5] : [0.5, 0.35]}
+              scrim="right"
+              scrimStrength={0.65}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Light-Speed Warp Drive Starfield (21st.dev by @rahil1202) */}
+      <LightSpeedTunnel
+        isWarping={isWarping}
+        originX={typeof window !== "undefined" ? (window.innerWidth >= 768 ? window.innerWidth * 0.25 : window.innerWidth * 0.5) : undefined}
+        originY={typeof window !== "undefined" ? window.innerHeight * 0.5 : undefined}
+      />
 
       {/* Ambient Vignette */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0)_0%,rgba(3,4,5,0.8)_100%)] pointer-events-none" />
+
+      {/* Singularity Indicator Pill */}
+      <AnimatePresence>
+        {isBlackHoleActive && (
+          <motion.div
+            initial={{ opacity: 0, y: -16, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -16, scale: 0.95 }}
+            transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
+            className="absolute top-6 md:top-8 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#121216]/90 backdrop-blur-xl border border-white/15 text-white shadow-[0_10px_30px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.12)] text-xs select-none"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#FF9838] shadow-[0_0_8px_#FF9838] animate-pulse" />
+            <span className="font-ui text-white/90 font-medium">Singularidade Ativa</span>
+            <button
+              type="button"
+              onClick={() => setIsBlackHoleActive(false)}
+              className="text-[11px] text-white/50 hover:text-white underline ml-1 cursor-pointer transition-colors"
+            >
+              Desativar
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* TOP LEFT BRAND NAME (Space Grotesk) */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="absolute top-8 left-8 md:top-12 md:left-14 z-20 flex items-center gap-1.5"
+        className="absolute top-8 left-8 md:top-12 md:left-14 z-20 flex items-center gap-1.5 select-none"
+        title="Pherielium Hub"
       >
         <span className="font-display font-semibold text-xl md:text-xl tracking-tight bg-gradient-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent">
           Pherielium
@@ -592,39 +800,58 @@ const LoginContent: React.FC = () => {
         © Pherielium 2026. Todos os direitos reservados.
       </motion.div>
 
-      {/* LEFT COLUMN: Large Animated Celestial Logo */}
-      <div className="w-full md:w-1/2 h-full flex items-center justify-center z-10 py-12 md:py-0">
-        <AnimatedPherieliumLogo />
+      {/* LEFT COLUMN: Large Animated Celestial Logo (or click anywhere to restore) */}
+      <div
+        onClick={() => {
+          if (isBlackHoleActive) {
+            handleLogoClick();
+          }
+        }}
+        className={`w-full md:w-1/2 h-full flex items-center justify-center z-10 py-12 md:py-0 ${
+          isBlackHoleActive ? "cursor-pointer" : ""
+        }`}
+        title={isBlackHoleActive ? "Clique para restaurar a logo e as órbitas" : undefined}
+      >
+        <AnimatedPherieliumLogo
+          onLogoClick={handleLogoClick}
+          onHoverChange={setIsWarping}
+          isBlackHoleActive={isBlackHoleActive}
+        />
       </div>
 
       {/* RIGHT COLUMN: Opaque Blur Card with Space Grotesk Titles & Inter Body */}
       <div className="w-full md:w-1/2 flex items-center justify-center md:justify-end z-10">
         <motion.div
           initial={{ opacity: 0, x: 25, scale: 0.98 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
+          animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
           transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-md backdrop-blur-2xl border border-white/[0.08] rounded-[36px] p-8 md:p-12 shadow-[0_30px_90px_rgba(0,0,0,0.9)] relative flex flex-col justify-between"
+          className="w-full max-w-md bg-[#0A0B0F]/90 backdrop-blur-3xl border border-white/20 rounded-[36px] p-8 md:p-12 shadow-[0_30px_90px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.18),0_0_0_1px_rgba(255,255,255,0.06)] relative flex flex-col justify-between"
         >
-          {/* Header */}
-          <div className="space-y-2 mb-8">
-            <motion.div
-              key={mode}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <h1 className="text-3xl md:text-4xl font-display font-semibold tracking-tight bg-gradient-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent">
-                {mode === "login" ? "Entrar" : "Criar conta"}
-              </h1>
-              <p className="mt-1.5 text-xs md:text-sm font-body text-white/45 leading-relaxed">
-                {mode === "login"
-                  ? "Acesse seu hub universal de jogos e mods."
-                  : "Crie sua conta Pherielium e sincronize sua biblioteca."}
-              </p>
-            </motion.div>
+          {/* Header — AnimatePresence for smooth mode switch */}
+          <div className="space-y-2 mb-8 overflow-hidden">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={mode}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ type: "spring", bounce: 0, duration: 0.32 }}
+              >
+                <h1 className="text-3xl md:text-4xl font-display font-semibold tracking-tight bg-gradient-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent">
+                  {mode === "login" ? "Entrar" : "Criar conta"}
+                </h1>
+                <p className="mt-1.5 text-xs md:text-sm font-body text-white/45 leading-relaxed">
+                  {mode === "login"
+                    ? "Acesse seu hub universal de jogos e mods."
+                    : "Crie sua conta Pherielium e sincronize sua biblioteca."}
+                </p>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
-          {/* Form */}
+          {/* Form — shake wrapper: outer motion.div drives the horizontal shake
+              imperatively via shakeControls; the form itself is never remounted */}
+          <motion.div animate={shakeControls}>
           <motion.form
             onSubmit={handleSubmit}
             className="space-y-4"
@@ -632,46 +859,51 @@ const LoginContent: React.FC = () => {
             initial="hidden"
             animate="show"
           >
-            {/* Email Field */}
+            {/* Email Field — floating label */}
             <motion.div variants={formItemVariants} className="space-y-1.5">
-              <label htmlFor="login-email" className="block text-xs font-body font-medium text-white/60">
-                E-mail
-              </label>
-              <input
+              <FloatInput
                 id="login-email"
                 type="email"
+                label="E-mail"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Digite seu e-mail"
+                onChange={setEmail}
                 required
-                className="w-full bg-white/[0.04] border border-white/[0.08] hover:border-white/15 focus:border-white/30 focus:bg-white/[0.06] rounded-2xl px-4 py-3.5 text-sm font-body text-white placeholder:text-white/25 outline-none transition-all duration-200"
               />
             </motion.div>
 
-            {/* Password Field */}
+            {/* Password Field — floating label + show/hide toggle */}
             <motion.div variants={formItemVariants} className="space-y-1.5">
-              <label htmlFor="login-password" className="block text-xs font-body font-medium text-white/60">
-                Senha
-              </label>
-              <div className="relative">
-                <input
-                  id="login-password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={mode === "login" ? "Digite sua senha" : "Crie uma senha"}
-                  required
-                  className="w-full bg-white/[0.04] border border-white/[0.08] hover:border-white/15 focus:border-white/30 focus:bg-white/[0.06] rounded-2xl px-4 py-3.5 pr-11 text-sm font-body text-white placeholder:text-white/25 outline-none transition-all duration-200"
-                />
-                <button
-                  type="button"
-                  aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors p-1"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
+              <FloatInput
+                id="login-password"
+                type={showPassword ? "text" : "password"}
+                label="Senha"
+                value={password}
+                onChange={setPassword}
+                required
+                rightSlot={
+                  <motion.button
+                    type="button"
+                    aria-label={showPassword ? "Ocultar senha" : "Exibir senha"}
+                    onClick={() => setShowPassword(!showPassword)}
+                    whileTap={{ scale: 0.85 }}
+                    transition={{ type: "spring", bounce: 0.3, duration: 0.25 }}
+                    className="text-white/40 hover:text-white transition-colors p-1"
+                  >
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.span
+                        key={showPassword ? "hide" : "show"}
+                        initial={{ opacity: 0, rotate: -15, scale: 0.7 }}
+                        animate={{ opacity: 1, rotate: 0, scale: 1 }}
+                        exit={{ opacity: 0, rotate: 15, scale: 0.7 }}
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
+                        className="flex"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </motion.span>
+                    </AnimatePresence>
+                  </motion.button>
+                }
+              />
             </motion.div>
 
             {/* Options Row */}
@@ -708,12 +940,20 @@ const LoginContent: React.FC = () => {
             <AnimatePresence mode="wait">
               {error && (
                 <motion.div
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  className="flex items-center gap-2 text-red-400 text-xs py-1 font-body"
+                  key={error}
+                  initial={{ opacity: 0, y: -4, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: "auto" }}
+                  exit={{ opacity: 0, y: -4, height: 0 }}
+                  transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+                  className="flex items-center gap-2 text-red-400 text-xs py-1 font-body overflow-hidden"
                 >
-                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <motion.span
+                    initial={{ rotate: -15, scale: 0.5 }}
+                    animate={{ rotate: 0, scale: 1 }}
+                    transition={{ type: "spring", bounce: 0.35, duration: 0.4 }}
+                  >
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                  </motion.span>
                   <span>{error}</span>
                 </motion.div>
               )}
@@ -722,98 +962,133 @@ const LoginContent: React.FC = () => {
             {/* Main Action Button */}
             <motion.div variants={formItemVariants} className="pt-2">
               <motion.button
-                whileHover={{ scale: 1.01, boxShadow: "0 0 25px rgba(255,255,255,0.2)" }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{
+                  scale: 1.012,
+                  boxShadow: "0 0 30px rgba(255,255,255,0.22), 0 10px 30px rgba(255,255,255,0.15)",
+                }}
+                whileTap={{ scale: 0.965 }}
+                transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
                 type="submit"
                 disabled={isLoading || isGoogleLoading || authLoading}
-                className="w-full bg-white text-black font-body font-semibold text-sm rounded-2xl py-3.5 flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(255,255,255,0.15)] hover:bg-white/95 transition-all cursor-pointer disabled:opacity-50"
+                className="w-full bg-white text-black font-body font-semibold text-sm rounded-2xl py-3.5 flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(255,255,255,0.15)] hover:bg-white/95 cursor-pointer disabled:opacity-50"
               >
-                {isLoading ? (
-                  <LoadingState
-                    label={mode === "login" ? "Entrando..." : "Criando conta..."}
-                    variant="connecting"
-                    dark
-                    size="sm"
-                  />
-                ) : (
-                  <span>{mode === "login" ? "Entrar" : "Criar conta"}</span>
-                )}
+                <AnimatePresence mode="wait" initial={false}>
+                  {isLoading ? (
+                    <motion.span
+                      key="loading"
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ type: "spring", bounce: 0, duration: 0.25 }}
+                    >
+                      <LoadingState
+                        label={mode === "login" ? "Entrando..." : "Criando conta..."}
+                        variant="connecting"
+                        dark
+                        size="sm"
+                      />
+                    </motion.span>
+                  ) : (
+                    <motion.span
+                      key={mode + "-label"}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ type: "spring", bounce: 0, duration: 0.25 }}
+                    >
+                      {mode === "login" ? "Entrar" : "Criar conta"}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </motion.button>
             </motion.div>
 
             {/* Divider */}
             <motion.div variants={formItemVariants} className="relative flex py-2 items-center">
-              <div className="flex-grow border-t border-white/[0.08]" />
-              <span className="flex-shrink mx-3 text-white/30 text-[11px] font-body">
+              <div className="flex-grow border-t border-white/[0.14]" />
+              <span className="flex-shrink mx-3 text-white/35 text-[11px] font-body">
                 {mode === "login" ? "ou entre com" : "ou cadastre-se com"}
               </span>
-              <div className="flex-grow border-t border-white/[0.08]" />
+              <div className="flex-grow border-t border-white/[0.14]" />
             </motion.div>
 
             {/* Social Login Button */}
             <motion.div variants={formItemVariants}>
               {isGoogleLoading ? (
                 <div className="w-full flex items-center gap-2">
-                  <div className="flex-1 flex items-center justify-center gap-2.5 py-3 px-4 bg-white/[0.04] border border-white/[0.08] text-white/85 rounded-2xl text-xs font-body font-medium">
+                  <div className="flex-1 flex items-center justify-center gap-2.5 py-3 px-4 bg-white/[0.05] border border-white/[0.18] text-white/85 rounded-2xl text-xs font-body font-medium">
                     <LoadingState label="Aguardando no navegador..." variant="connecting" size="sm" />
                   </div>
                   <button
                     type="button"
                     onClick={handleCancelGoogleLogin}
-                    className="py-3 px-4 bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 text-white/80 hover:text-white rounded-2xl text-xs font-medium transition-all active:scale-95 cursor-pointer shrink-0"
+                    className="py-3 px-4 bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.22] hover:border-white/40 text-white/85 hover:text-white rounded-2xl text-xs font-medium transition-all active:scale-95 cursor-pointer shrink-0"
                     title="Cancelar tentativa de login (Esc)"
                   >
                     Cancelar
                   </button>
                 </div>
               ) : (
-                <button
+                <motion.button
                   type="button"
                   onClick={handleGoogleLogin}
                   disabled={isLoading || authLoading}
-                  className="w-full flex items-center justify-center gap-2.5 py-3 px-4 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-white/20 text-white/85 hover:text-white rounded-2xl text-xs font-body font-medium transition-all duration-200 disabled:opacity-50 cursor-pointer shadow-sm hover:scale-[1.01] active:scale-[0.99]"
+                  whileHover={{ scale: 1.012, borderColor: "rgba(255,255,255,0.35)" }}
+                  whileTap={{ scale: 0.965 }}
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
+                  className="w-full flex items-center justify-center gap-2.5 py-3 px-4 bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.18] text-white/85 hover:text-white rounded-2xl text-xs font-body font-medium disabled:opacity-50 cursor-pointer shadow-sm"
                 >
                   <GoogleIcon />
                   <span>Google</span>
-                </button>
+                </motion.button>
               )}
             </motion.div>
 
-            {/* Bottom Toggle Text */}
-            <motion.div variants={formItemVariants} className="text-center pt-3">
-              <p className="text-xs font-body text-white/45">
-                {mode === "login" ? (
-                  <>
-                    Não tem uma conta?{" "}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode("signup");
-                        setError(null);
-                      }}
-                      className="text-white hover:underline font-medium cursor-pointer"
-                    >
-                      Cadastre-se
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Já tem uma conta?{" "}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode("login");
-                        setError(null);
-                      }}
-                      className="text-white hover:underline font-medium cursor-pointer"
-                    >
-                      Entrar
-                    </button>
-                  </>
-                )}
-              </p>
+            {/* Bottom Toggle Text — AnimatePresence for smooth swap */}
+            <motion.div variants={formItemVariants} className="text-center pt-3 overflow-hidden">
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.p
+                  key={mode + "-toggle"}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ type: "spring", bounce: 0, duration: 0.28 }}
+                  className="text-xs font-body text-white/45"
+                >
+                  {mode === "login" ? (
+                    <>
+                      Não tem uma conta?{" "}
+                      <motion.button
+                        type="button"
+                        onClick={() => { setMode("signup"); setError(null); }}
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.94 }}
+                        transition={{ type: "spring", bounce: 0.3, duration: 0.22 }}
+                        className="text-white font-medium cursor-pointer underline-offset-2 hover:underline"
+                      >
+                        Cadastre-se
+                      </motion.button>
+                    </>
+                  ) : (
+                    <>
+                      Já tem uma conta?{" "}
+                      <motion.button
+                        type="button"
+                        onClick={() => { setMode("login"); setError(null); }}
+                        whileHover={{ scale: 1.04 }}
+                        whileTap={{ scale: 0.94 }}
+                        transition={{ type: "spring", bounce: 0.3, duration: 0.22 }}
+                        className="text-white font-medium cursor-pointer underline-offset-2 hover:underline"
+                      >
+                        Entrar
+                      </motion.button>
+                    </>
+                  )}
+                </motion.p>
+              </AnimatePresence>
             </motion.div>
           </motion.form>
+          </motion.div>{/* end shake wrapper */}
         </motion.div>
       </div>
     </motion.div>

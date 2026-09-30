@@ -209,26 +209,25 @@ function getCheckpointTheme(participantId?: string | null, customColor?: string 
     id: themeId,
     seed,
     colors: {
-      base: "#161616",
-      interior: "#0F0F0F",
+      base: "#121212",
+      interior: "#0A0A0A",
       accents,
     },
     appearance: {
-      intensity: 1.25,
-      detail: 0.75,
-      glass: 0.45,
-      glow: 1.1,
+      intensity: 0.88,
+      detail: 0.7,
+      glass: 0.32,
+      glow: 0.6,
     },
     motion: {
-      speed: 0.7,
-      drift: 0.6,
+      speed: 0.45,
+      drift: 0.35,
     },
-    // Resposta de voz no máximo: brightness 2 = brilho forte ao falar,
-    // motion 2 = órbita interna acelera/gira com a voz, pulse 1.8 = aurora reativa.
+    // Resposta de voz fluida e equilibrada: reflexo suave no contorno e órbita sutil
     audioResponse: {
-      brightness: 2,
-      motion: 2,
-      pulse: 1.8,
+      brightness: 1.2,
+      motion: 1.2,
+      pulse: 1.15,
     },
   });
 }

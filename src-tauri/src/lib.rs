@@ -113,6 +113,7 @@ pub fn run() {
             steam_fetch_public_library,
             steam_fetch_player_achievements_batch,
             steam_search_store,
+            steam_fetch_app_details,
             // Launcher
             launcher_open_executable,
             launcher_select_executable,
@@ -130,6 +131,7 @@ pub fn run() {
             achievement_get_library_summary,
             achievement_get_diagnostics,
             emulator_detect_for_game,
+            detect_app_id_from_path,
             // Epic
             epic_get_status,
             epic_list_library,
@@ -203,6 +205,7 @@ pub fn run() {
             open_captures_folder,
             get_captures_dir,
             capture_screen,
+            get_capture_full_image,
             delete_capture,
             // Game Watch
             game_watch_set_target,

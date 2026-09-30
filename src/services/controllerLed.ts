@@ -10,10 +10,10 @@ export interface RgbColor {
 export const THEME_ACCENT_COLORS: Record<VisualTheme, RgbColor> = {
   phelierium: { r: 255, g: 255, b: 255 },
   checkpoint: { r: 255, g: 255, b: 255 },
-  ps5: { r: 255, g: 255, b: 255 },
-  playstation: { r: 37, g: 99, b: 235 },
+  ps5: { r: 244, g: 244, b: 246 },
+  playstation: { r: 29, g: 78, b: 216 },
   ps4: { r: 0, g: 112, b: 209 },
-  psp: { r: 6, g: 182, b: 212 },
+  psp: { r: 203, g: 213, b: 225 },
   gamecube: { r: 124, g: 58, b: 237 },
   xbox360: { r: 132, g: 204, b: 22 },
   cyberpunk: { r: 255, g: 238, b: 0 },
@@ -36,10 +36,10 @@ export const CONTROLLER_LED_COLORS: Record<LedDeviceKind, RgbColor> = {
 export const THEME_LED_COLORS: Record<VisualTheme, RgbColor> = {
   phelierium:  { r: 255, g: 255, b: 255 }, // branco
   checkpoint:  { r: 255, g: 255, b: 255 }, // branco
-  ps5:         { r: 255, g: 255, b: 255 }, // #FFFFFF — branco (tema PS5)
+  ps5:         { r: 41,  g: 121, b: 255 }, // #2979FF — Azul elétrico DualSense
   playstation: { r: 0,   g: 41,  b: 255 }, // #0029FF — azul PlayStation
-  ps4:         { r: 0,   g: 41,  b: 255 }, // #0029FF — azul PS4 clássico
-  psp:         { r: 6,   g: 182, b: 212 }, // ciano
+  ps4:         { r: 0,   g: 112, b: 209 }, // #0070D1 — azul PS4
+  psp:         { r: 203, g: 213, b: 225 }, // #CBD5E1 — prata refinada
   gamecube:    { r: 167, g: 0,   b: 255 }, // #A700FF
   xbox360:     { r: 33,  g: 255, b: 0   }, // #21FF00
   cyberpunk:   { r: 255, g: 238, b: 0   }, // amarelo

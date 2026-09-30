@@ -95,30 +95,30 @@ export interface AppThemeOption {
 }
 
 const CONTROLLER_COPY = {
-  "pt-BR": ["Controle", "Controle conectado", "Nenhum controle conectado", "Conecte via USB ou Bluetooth para navegar pelo launcher.", "Testar LED", "Autorizar"],
-  "en-US": ["Controller", "Controller connected", "No controller connected", "Connect through USB or Bluetooth to navigate the launcher.", "Test LED", "Authorize"],
-  "es-ES": ["Mando", "Mando conectado", "Ningún mando conectado", "Conecta por USB o Bluetooth para navegar por el launcher.", "Probar LED", "Autorizar"],
-  "fr-FR": ["Manette", "Manette connectée", "Aucune manette connectée", "Connectez-la en USB ou Bluetooth pour naviguer.", "Tester la LED", "Autoriser"],
-  "de-DE": ["Controller", "Controller verbunden", "Kein Controller verbunden", "Über USB oder Bluetooth verbinden, um den Launcher zu steuern.", "LED testen", "Autorisieren"],
-  "it-IT": ["Controller", "Controller collegato", "Nessun controller collegato", "Collega tramite USB o Bluetooth per navigare.", "Prova LED", "Autorizza"],
+  "pt-BR": ["Controles e dispositivos", "Controle conectado", "Nenhum controle conectado", "Conecte via USB ou Bluetooth para navegar pelo launcher.", "Testar iluminação", "Autorizar acesso ao LED"],
+  "en-US": ["Controllers & Devices", "Controller connected", "No controller connected", "Connect through USB or Bluetooth to navigate the launcher.", "Test LED", "Authorize LED access"],
+  "es-ES": ["Mandos y dispositivos", "Mando conectado", "Ningún mando conectado", "Conecta por USB o Bluetooth para navegar por el launcher.", "Probar LED", "Autorizar acceso al LED"],
+  "fr-FR": ["Manettes et périphériques", "Manette connectée", "Aucune manette connectée", "Connectez-la en USB ou Bluetooth pour naviguer.", "Tester la LED", "Autoriser l'accès LED"],
+  "de-DE": ["Controller und Geräte", "Controller verbunden", "Kein Controller verbunden", "Über USB oder Bluetooth verbinden, um den Launcher zu steuern.", "LED testen", "LED-Zugriff autorisieren"],
+  "it-IT": ["Controller e dispositivi", "Controller collegato", "Nessun controller collegato", "Collega tramite USB o Bluetooth per navigare.", "Prova LED", "Autorizza accesso LED"],
 } as const;
 
 const DIAGNOSTICS_COPY = {
-  "pt-BR": { title: "Diagnóstico do Controle", connection: "Conexão", battery: "Bateria", family: "Família", close: "Fechar", unknown: "Desconhecida" },
-  "en-US": { title: "Controller Diagnostics", connection: "Connection", battery: "Battery", family: "Family", close: "Close", unknown: "Unknown" },
-  "es-ES": { title: "Diagnóstico del Mando", connection: "Conexión", battery: "Batería", family: "Familia", close: "Cerrar", unknown: "Desconocida" },
-  "fr-FR": { title: "Diagnostic de la Manette", connection: "Connexion", battery: "Batterie", family: "Famille", close: "Fermer", unknown: "Inconnue" },
-  "de-DE": { title: "Controller-Diagnose", connection: "Verbindung", battery: "Batterie", family: "Familie", close: "Schließen", unknown: "Unbekannt" },
-  "it-IT": { title: "Diagnostica Controller", connection: "Connessione", battery: "Batteria", family: "Famiglia", close: "Chiudi", unknown: "Sconosciuta" },
+  "pt-BR": { title: "Diagnóstico do Controle", connection: "Conexão", battery: "Bateria", family: "Família", close: "Fechar", unknown: "Bateria não informada pelo dispositivo" },
+  "en-US": { title: "Controller Diagnostics", connection: "Connection", battery: "Battery", family: "Family", close: "Close", unknown: "Battery not reported by device" },
+  "es-ES": { title: "Diagnóstico del Mando", connection: "Conexión", battery: "Batería", family: "Familia", close: "Cerrar", unknown: "Batería no informada por el dispositivo" },
+  "fr-FR": { title: "Diagnostic de la Manette", connection: "Connexion", battery: "Batterie", family: "Famille", close: "Fermer", unknown: "Batterie non signalée par l'appareil" },
+  "de-DE": { title: "Controller-Diagnose", connection: "Verbindung", battery: "Batterie", family: "Familie", close: "Schließen", unknown: "Batterie nicht vom Gerät gemeldet" },
+  "it-IT": { title: "Diagnostica Controller", connection: "Connessione", battery: "Batteria", family: "Famiglia", close: "Chiudi", unknown: "Batteria non segnalata dal dispositivo" },
 } as const;
 
 const SETTINGS_SHELL_COPY = {
-  "pt-BR": { preferences: "Preferências do Launcher", general: "Geral", personalization: "Personalização", performance: "Desempenho", account: "Conta & Segurança", connections: "Contas & Privacidade", controller: "Controle & Hardware", voice: "Voz & Vídeo", notifications: "Notificações & Overlay", quit: "Sair do Aplicativo", encrypted: "Sessão Encriptada", encryptedHint: "Conexão protegida com token Supabase JWT de alta segurança.", privacy: "Privacidade do Perfil", privacyHint: "Escolha o que outros jogadores podem ver ao encontrar seu perfil.", public: "Perfil Público", publicHint: "Todos podem abrir seus detalhes, jogos e atividade.", private: "Perfil Privado", privateHint: "Somente você e amigos aceitos veem os detalhes.", saving: "Salvando privacidade...", saved: "Privacidade atualizada.", controllerHint: "Status da navegação e iluminação do controle conectado." },
-  "en-US": { preferences: "Launcher preferences", general: "General", personalization: "Personalization", performance: "Performance", account: "Account & Security", connections: "Accounts & Privacy", controller: "Controller & Hardware", voice: "Voice & Video", notifications: "Notifications & Overlay", quit: "Quit Application", encrypted: "Encrypted session", encryptedHint: "Connection protected with a secure Supabase JWT.", privacy: "Profile Privacy", privacyHint: "Choose what other players can see when they find your profile.", public: "Public Profile", publicHint: "Anyone can open your details, games, and activity.", private: "Private Profile", privateHint: "Only you and accepted friends can see the details.", saving: "Saving privacy...", saved: "Privacy updated.", controllerHint: "Navigation and lighting status for the connected controller." },
-  "es-ES": { preferences: "Preferencias del launcher", general: "General", personalization: "Personalización", performance: "Rendimiento", account: "Cuenta y seguridad", connections: "Cuentas y privacidad", controller: "Mando y hardware", voice: "Voz y vídeo", notifications: "Notificaciones y overlay", quit: "Salir de la aplicación", encrypted: "Sesión cifrada", encryptedHint: "Conexión protegida con un JWT seguro de Supabase.", privacy: "Privacidad del perfil", privacyHint: "Elige qué pueden ver otros jugadores al encontrar tu perfil.", public: "Perfil público", publicHint: "Todos pueden abrir tus detalles, juegos y actividad.", private: "Perfil privado", privateHint: "Solo tú y tus amigos aceptados pueden ver los detalles.", saving: "Guardando privacidad...", saved: "Privacidad actualizada.", controllerHint: "Estado de navegación e iluminación del mando conectado." },
-  "fr-FR": { preferences: "Préférences du launcher", general: "Général", personalization: "Personnalisation", performance: "Performances", account: "Compte et sécurité", connections: "Comptes et confidentialité", controller: "Manette et matériel", voice: "Voix & vidéo", notifications: "Notifications et overlay", quit: "Quitter l'application", encrypted: "Session chiffrée", encryptedHint: "Connexion protégée par un JWT Supabase sécurisé.", privacy: "Confidentialité du profil", privacyHint: "Choisissez ce que les autres joueurs voient en trouvant votre profil.", public: "Profil public", publicHint: "Tout le monde peut ouvrir vos détails, jeux et activité.", private: "Profil privé", privateHint: "Seuls vous et vos amis acceptés voyez les détails.", saving: "Enregistrement...", saved: "Confidentialité mise à jour.", controllerHint: "État de navigation et d'éclairage de la manette connectée." },
-  "de-DE": { preferences: "Launcher-Einstellungen", general: "Allgemein", personalization: "Personnalierung", performance: "Leistung", account: "Konto und Sicherheit", connections: "Konten und Datenschutz", controller: "Controller und Hardware", voice: "Sprache & Video", notifications: "Benachrichtigungen und Overlay", quit: "Anwendung beenden", encrypted: "Verschlüsselte Sitzung", encryptedHint: "Verbindung durch ein sicheres Supabase-JWT geschützt.", privacy: "Profil-Datenschutz", privacyHint: "Lege fest, was andere Spieler in deinem Profil sehen.", public: "Öffentliches Profil", publicHint: "Alle können Details, Spiele und Aktivitäten öffnen.", private: "Privates Profil", privateHint: "Nur du und bestätigte Freunde sehen die Details.", saving: "Datenschutz wird gespeichert...", saved: "Datenschutz aktualisiert.", controllerHint: "Navigations- und Beleuchtungsstatus des verbundenen Controllers." },
-  "it-IT": { preferences: "Preferenze del launcher", general: "Generale", personalization: "Personalizzazione", performance: "Prestazioni", account: "Account e sicurezza", connections: "Account e privacy", controller: "Controller e hardware", voice: "Voce & Video", notifications: "Notifiche e overlay", quit: "Esci dall'applicazione", encrypted: "Sessione crittografata", encryptedHint: "Connessione protetta da un JWT Supabase sicuro.", privacy: "Privacy del profilo", privacyHint: "Scegli cosa possono vedere gli altri giocatori nel tuo profilo.", public: "Profilo pubblico", publicHint: "Tutti possono aprire dettagli, giochi e attività.", private: "Profilo privato", privateHint: "Solo tu e gli amici accettati vedete i dettagli.", saving: "Salvataggio privacy...", saved: "Privacy aggiornata.", controllerHint: "Stato di navigazione e illuminazione del controller collegato." },
+  "pt-BR": { preferences: "Preferências do Launcher", general: "Geral", personalization: "Personalização", performance: "Desempenho", account: "Sua conta", connections: "Conexões e privacidade", controller: "Controles e dispositivos", voice: "Voz e vídeo", notifications: "Notificações & Overlay", quit: "Sair do Aplicativo", encrypted: "Autenticação da sessão", encryptedHint: "Credenciais e token de sessão autenticados com segurança neste dispositivo.", privacy: "Privacidade do Perfil", privacyHint: "Escolha o que outros jogadores podem ver ao encontrar seu perfil.", public: "Perfil Público", publicHint: "Todos podem abrir seus detalhes, jogos e atividade.", private: "Perfil Privado", privateHint: "Somente você e amigos aceitos veem os detalhes.", saving: "Salvando privacidade...", saved: "Privacidade atualizada.", controllerHint: "Status da navegação e iluminação do controle conectado." },
+  "en-US": { preferences: "Launcher preferences", general: "General", personalization: "Personalization", performance: "Performance", account: "Your account", connections: "Connections & Privacy", controller: "Controllers & Devices", voice: "Voice & Video", notifications: "Notifications & Overlay", quit: "Quit Application", encrypted: "Session Authentication", encryptedHint: "Session credentials and token securely authenticated on this device.", privacy: "Profile Privacy", privacyHint: "Choose what other players can see when they find your profile.", public: "Public Profile", publicHint: "Anyone can open your details, games, and activity.", private: "Private Profile", privateHint: "Only you and accepted friends can see the details.", saving: "Saving privacy...", saved: "Privacy updated.", controllerHint: "Navigation and lighting status for the connected controller." },
+  "es-ES": { preferences: "Preferencias del launcher", general: "General", personalization: "Personalización", performance: "Rendimiento", account: "Tu cuenta", connections: "Conexiones y privacidad", controller: "Mandos y dispositivos", voice: "Voz y vídeo", notifications: "Notificaciones y overlay", quit: "Salir de la aplicación", encrypted: "Autenticación de sesión", encryptedHint: "Credenciales y token de sesión autenticados de forma segura en este dispositivo.", privacy: "Privacidad del perfil", privacyHint: "Elige qué pueden ver otros jugadores al encontrar tu perfil.", public: "Perfil público", publicHint: "Todos pueden abrir tus detalles, juegos y actividad.", private: "Perfil privado", privateHint: "Solo tú y tus amigos aceptados pueden ver los detalles.", saving: "Guardando privacidad...", saved: "Privacidad actualizada.", controllerHint: "Estado de navegación e iluminación del mando conectado." },
+  "fr-FR": { preferences: "Préférences du launcher", general: "Général", personalization: "Personnalisation", performance: "Performances", account: "Votre compte", connections: "Connexions et confidentialité", controller: "Manettes et périphériques", voice: "Voix et vidéo", notifications: "Notifications et overlay", quit: "Quitter l'application", encrypted: "Authentification de session", encryptedHint: "Identifiants et jeton de session authentifiés en toute sécurité sur cet appareil.", privacy: "Confidentialité du profil", privacyHint: "Choisissez ce que les autres joueurs voient en trouvant votre profil.", public: "Profil public", publicHint: "Tout le monde peut ouvrir vos détails, jeux et activité.", private: "Profil privé", privateHint: "Seuls vous et vos amis acceptés voyez les détails.", saving: "Enregistrement...", saved: "Confidentialité mise à jour.", controllerHint: "État de navigation et d'éclairage de la manette connectée." },
+  "de-DE": { preferences: "Launcher-Einstellungen", general: "Allgemein", personalization: "Personnalierung", performance: "Leistung", account: "Dein Konto", connections: "Verbindungen und Datenschutz", controller: "Controller und Geräte", voice: "Sprache und Video", notifications: "Benachrichtigungen und Overlay", quit: "Anwendung beenden", encrypted: "Sitzungsauthentifizierung", encryptedHint: "Sitzungsanmeldedaten und Token auf diesem Gerät sicher authentifiziert.", privacy: "Profil-Datenschutz", privacyHint: "Lege fest, was andere Spieler in deinem Profil sehen.", public: "Öffentliches Profil", publicHint: "Alle können Details, Spiele und Aktivitäten öffnen.", private: "Privates Profil", privateHint: "Nur du und bestätigte Freunde sehen die Details.", saving: "Datenschutz wird gespeichert...", saved: "Datenschutz aktualisiert.", controllerHint: "Navigations- und Beleuchtungsstatus des verbundenen Controllers." },
+  "it-IT": { preferences: "Preferenze del launcher", general: "Generale", personalization: "Personalizzazione", performance: "Prestazioni", account: "Il tuo account", connections: "Connessioni e privacy", controller: "Controller e dispositivi", voice: "Voce e video", notifications: "Notifiche e overlay", quit: "Esci dall'applicazione", encrypted: "Autenticazione della sessione", encryptedHint: "Credenziali e token di sessione autenticati in modo sicuro su questo dispositivo.", privacy: "Privacy del profilo", privacyHint: "Scegli cosa possono vedere gli altri giocatori nel tuo profilo.", public: "Profilo pubblico", publicHint: "Tutti possono aprire dettagli, giochi e attività.", private: "Profilo privato", privateHint: "Solo tu e gli amici accettati vedete i dettagli.", saving: "Salvataggio privacy...", saved: "Privacy aggiornata.", controllerHint: "Stato di navigazione e illuminazione del controller collegato." },
 } as const;
 
 const PERF_SETTINGS_COPY = {
@@ -451,7 +451,7 @@ const VOICE_COPY = {
     stop: "Parar",
     audioOutput: "Alto-falante (Saída)",
     camera: "Câmera de Vídeo",
-    preview: "Preview",
+    preview: "Visualizar câmera",
     micMonitor: "Ouvir o próprio microfone (Retorno)",
     processingTitle: "Processamento e Calibração",
     noiseSuppression: "Supressão de Ruído",
@@ -717,18 +717,35 @@ SettingsSelect.displayName = "SettingsSelect";
 // ============================================================================
 const SettingsRow: React.FC<{
   icon?: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+  children?: React.ReactNode;
   hasBorder?: boolean;
-}> = ({ icon, title, children, hasBorder = true }) => (
-  <div className={`py-4 ${hasBorder ? 'border-b border-[var(--color-ui-detail)]' : ''}`}>
-    <div className="flex items-center gap-2.5 mb-3.5">
-      {icon && <div className="text-white/70">{icon}</div>}
-      <span className="text-[13px] font-medium text-white/90 tracking-wide">{title}</span>
+  className?: string;
+}> = ({ icon, title, description, action, children, hasBorder = true, className = "" }) => (
+  <div className={`py-3.5 ${hasBorder ? 'border-b border-[var(--border-subtle)]' : ''} ${className}`}>
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-h-[38px]">
+      <div className="flex items-start gap-2.5 min-w-0 flex-1">
+        {icon && <div className="text-white/60 mt-0.5 shrink-0">{icon}</div>}
+        <div className="min-w-0 flex-1">
+          <div className="text-[13px] font-medium text-white/90 tracking-wide">{title}</div>
+          {description && (
+            <p className="text-[11.5px] leading-relaxed text-white/45 mt-0.5">{description}</p>
+          )}
+        </div>
+      </div>
+      {action && (
+        <div className="shrink-0 flex items-center justify-start sm:justify-end gap-2.5">
+          {action}
+        </div>
+      )}
     </div>
-    <div className="pl-0">
-      {children}
-    </div>
+    {children && (
+      <div className="mt-2.5 pl-0">
+        {children}
+      </div>
+    )}
   </div>
 );
 
@@ -746,54 +763,54 @@ export const COMPLETE_THEME_OPTIONS: ThemeOptionItem[] = [
   {
     id: "default",
     label: "Phelierium",
-    hint: "Visual limpo e sons originais",
+    hint: "Preto carvão + branco neutro, superfícies foscas",
     accentColor: "#ffffff",
-    glowColor: "rgba(255, 255, 255, 0.35)",
+    glowColor: "rgba(255, 255, 255, 0.25)",
     soundTheme: "default",
     visualTheme: "phelierium",
   },
   {
     id: "ps5",
     label: "PlayStation 5",
-    hint: "Branco futurista + sons PS5",
-    accentColor: "#38bdf8",
-    glowColor: "rgba(56, 189, 248, 0.4)",
+    hint: "Branco porcelana + azul elétrico DualSense pontual",
+    accentColor: "#F4F4F6",
+    glowColor: "rgba(41, 121, 255, 0.25)",
     soundTheme: "ps5",
     visualTheme: "ps5",
   },
   {
+    id: "psp",
+    label: "PSP",
+    hint: "Grafite + prata, vidro fumê e ondas horizontais",
+    accentColor: "#CBD5E1",
+    glowColor: "rgba(203, 213, 225, 0.22)",
+    soundTheme: "psp",
+    visualTheme: "psp",
+  },
+  {
     id: "ps4",
     label: "PlayStation 4",
-    hint: "Azul cobalto + sons PS4",
-    accentColor: "#2563eb",
-    glowColor: "rgba(37, 99, 235, 0.4)",
+    hint: "Azul médio intenso com gradientes amplos",
+    accentColor: "#0070D1",
+    glowColor: "rgba(0, 112, 209, 0.35)",
     soundTheme: "ps4",
     visualTheme: "ps4",
   },
   {
     id: "playstation",
     label: "PlayStation 2",
-    hint: "Azul clássico + sons PS2",
+    hint: "Azul profundo com detalhes ciano e profundidade",
     accentColor: "#1d4ed8",
-    glowColor: "rgba(29, 78, 216, 0.4)",
+    glowColor: "rgba(29, 78, 216, 0.35)",
     soundTheme: "ps2",
     visualTheme: "playstation",
-  },
-  {
-    id: "psp",
-    label: "PSP",
-    hint: "Cyan Waves + sons PSP",
-    accentColor: "#06b6d4",
-    glowColor: "rgba(6, 182, 212, 0.4)",
-    soundTheme: "psp",
-    visualTheme: "psp",
   },
   {
     id: "gamecube",
     label: "GameCube",
     hint: "Roxo Nintendo + sons GameCube",
     accentColor: "#8b5cf6",
-    glowColor: "rgba(139, 92, 246, 0.4)",
+    glowColor: "rgba(139, 92, 246, 0.35)",
     soundTheme: "gamecube",
     visualTheme: "gamecube",
   },
@@ -802,7 +819,7 @@ export const COMPLETE_THEME_OPTIONS: ThemeOptionItem[] = [
     label: "Xbox",
     hint: "Verde Xbox + sons Metro UI",
     accentColor: "#22c55e",
-    glowColor: "rgba(34, 197, 94, 0.4)",
+    glowColor: "rgba(34, 197, 94, 0.35)",
     soundTheme: "xbox360",
     visualTheme: "xbox360",
   },
@@ -811,85 +828,270 @@ export const COMPLETE_THEME_OPTIONS: ThemeOptionItem[] = [
     label: "Cyberpunk 2077",
     hint: "Amarelo Neon + sons Cyberpunk 2077",
     accentColor: "#fcee0a",
-    glowColor: "rgba(252, 238, 10, 0.45)",
+    glowColor: "rgba(252, 238, 10, 0.4)",
     soundTheme: "cyberpunk",
     visualTheme: "cyberpunk",
   },
 ];
 
-export const ThemePreviewCard: React.FC<{
-  active: boolean;
-  label: string;
-  accentColor: string;
-  glowColor?: string;
-  onClick: () => void;
-}> = ({ active, label, accentColor, glowColor = "rgba(255,255,255,0.3)", onClick }) => {
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <button
-        type="button"
-        onClick={onClick}
-        className={`relative p-1 rounded-2xl transition-[transform,opacity,box-shadow,background-color,border-color] duration-200 ease-out transform-gpu will-change-transform cursor-pointer ${active
-          ? "scale-[1.03]"
-          : "hover:scale-[1.015] opacity-75 hover:opacity-100"
-          }`}
-        style={{
-          border: active ? `2px solid ${accentColor}` : "1px solid rgba(255, 255, 255, 0.1)",
-          boxShadow: active ? `0 0 20px ${glowColor}, inset 0 0 10px ${glowColor}` : "none",
-          backgroundColor: active ? "rgba(255, 255, 255, 0.08)" : "rgba(255, 255, 255, 0.02)",
-        }}
-      >
-        <div className="w-[122px] h-[78px] rounded-xl overflow-hidden flex flex-col border border-[var(--color-ui-detail)] bg-black/40  shadow-inner relative">
-          <div
-            className="absolute inset-0 opacity-25 pointer-events-none"
-            style={{
-              background: `radial-gradient(circle at 80% 20%, ${accentColor} 0%, transparent 70%)`,
-            }}
-          />
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-[var(--color-ui-detail)] bg-[var(--color-surface)] shrink-0">
-            <div className="h-1 w-6 rounded-full bg-white/25" />
-            <div
-              className="h-1.5 w-1.5 rounded-full transition-all"
-              style={{
-                backgroundColor: accentColor,
-                boxShadow: active ? `0 0 6px ${accentColor}` : "none",
-              }}
-            />
+export const renderThemeMiniatureContent = (
+  themeId: string,
+  active: boolean,
+  accentColor: string,
+  containerClassName = "w-[122px] h-[78px]"
+) => {
+  switch (themeId) {
+    case "default":
+      // Pherielium: Preto carvão + branco neutro, superfícies foscas, luz localizada no elemento em foco
+      return (
+        <div className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-white/10 bg-[#0E0E0E] shadow-inner relative`}>
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-white/10 bg-[#161616] shrink-0">
+            <div className="h-1 w-5 rounded-full bg-white/30" />
+            <div className="h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_4px_rgba(255,255,255,0.8)]" />
           </div>
           <div className="flex flex-1 min-h-0">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-[var(--color-ui-detail)] bg-[var(--color-surface)]">
-              <div className="h-1 w-full rounded-full bg-white/25" />
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-white/10 bg-[#141414]">
+              <div className="h-1 w-full rounded-full bg-white/40" />
+              <div className="h-1 w-3/4 rounded-full bg-white/20" />
+              <div className="h-1 w-4/5 rounded-full bg-white/20" />
+            </div>
+            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center bg-[#0A0A0A]">
+              <div className="w-1/2 h-8 rounded-lg border border-white/50 bg-[#1F1F1F] shadow-[0_0_12px_rgba(255,255,255,0.15),inset_0_1px_0_rgba(255,255,255,0.25)] flex flex-col items-center justify-center gap-1">
+                <div className="h-1 w-4 rounded-full bg-white" />
+                <div className="h-0.5 w-2.5 rounded-full bg-white/40" />
+              </div>
+              <div className="w-1/2 h-7 rounded-md border border-white/5 bg-white/[0.03] opacity-40 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-white/20" />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+    case "ps5":
+      // PS5: Branco porcelana + azul elétrico pontual, contornos suaves e iluminação fria nas bordas
+      return (
+        <div className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-white/12 bg-[#0B0E14] shadow-inner relative`}>
+          <div className="absolute top-0 inset-x-0 h-[1.5px] bg-[#2979FF] opacity-90 shadow-[0_0_8px_#2979FF]" />
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-white/10 bg-[#121620] shrink-0">
+            <div className="h-1 w-6 rounded-full bg-white/30" />
+            <div className="h-1.5 w-1.5 rounded-full bg-[#2979FF] shadow-[0_0_6px_#2979FF]" />
+          </div>
+          <div className="flex flex-1 min-h-0">
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-white/10 bg-[#0F131C]">
+              <div className="h-1 w-full rounded-full bg-white/35" />
               <div className="h-1 w-3/4 rounded-full bg-white/15" />
               <div className="h-1 w-4/5 rounded-full bg-white/15" />
             </div>
-            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
-              <div
-                className="w-1/2 h-7 rounded-md border border-white/10 transition-all flex items-center justify-center"
-                style={{
-                  backgroundColor: `${accentColor}20`,
-                  borderColor: `${accentColor}40`,
-                }}
-              >
-                <div className="h-1 w-3 rounded-full bg-white/30" />
+            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center bg-[#07090E]">
+              {/* Botão/Card Branco Porcelana com linha azul discreta no estado selecionado */}
+              <div className="w-1/2 h-8 rounded-lg bg-[#F5F6F8] shadow-[0_4px_12px_rgba(0,0,0,0.6)] flex flex-col items-center justify-between p-1 relative overflow-hidden">
+                <div className="h-1 w-4 rounded-full bg-[#111] mt-0.5" />
+                <div className="h-[2px] w-full bg-[#2979FF] rounded-full shadow-[0_0_5px_#2979FF]" />
               </div>
-              <div
-                className="w-1/2 h-7 rounded-md border border-white/10 transition-all flex items-center justify-center"
-                style={{
-                  backgroundColor: `${accentColor}20`,
-                  borderColor: `${accentColor}40`,
-                }}
-              >
+              <div className="w-1/2 h-7 rounded-md border border-white/10 bg-white/[0.04] opacity-40 flex items-center justify-center">
                 <div className="h-1 w-3 rounded-full bg-white/30" />
               </div>
             </div>
           </div>
         </div>
+      );
+
+    case "psp":
+      // PSP: Grafite + prata com champagne discreto, reflexos de vidro fumê e ondas horizontais suaves
+      return (
+        <div className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-white/10 bg-[#121417] shadow-inner relative`}>
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_0%,rgba(214,188,145,0.18)_0%,transparent_65%)] pointer-events-none" />
+          <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-25" viewBox="0 0 122 78" fill="none">
+            <path d="M-10 45 C 30 25, 70 60, 135 35" stroke="rgba(226, 232, 240, 0.8)" strokeWidth="1.5" />
+            <path d="M-10 52 C 35 32, 75 66, 135 42" stroke="rgba(214, 188, 145, 0.6)" strokeWidth="1" />
+          </svg>
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-white/10 bg-white/[0.04] backdrop-blur-xs shrink-0 z-10">
+            <div className="h-1 w-6 rounded-full bg-[#CBD5E1]/40" />
+            <div className="h-1.5 w-1.5 rounded-full bg-[#E2E8F0] shadow-[0_0_4px_rgba(226,232,240,0.6)]" />
+          </div>
+          <div className="flex flex-1 min-h-0 z-10">
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-white/10 bg-black/30 backdrop-blur-xs">
+              <div className="h-1 w-full rounded-full bg-[#CBD5E1]/50" />
+              <div className="h-1 w-3/4 rounded-full bg-[#CBD5E1]/25" />
+              <div className="h-1 w-4/5 rounded-full bg-[#CBD5E1]/25" />
+            </div>
+            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
+              <div className="w-1/2 h-8 rounded-lg border border-[#CBD5E1]/60 bg-[#CBD5E1]/20 backdrop-blur-sm shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.4)] flex flex-col items-center justify-center gap-1">
+                <div className="h-1 w-4 rounded-full bg-[#E2E8F0]" />
+                <div className="h-0.5 w-2.5 rounded-full bg-[#D4AF37]/80" />
+              </div>
+              <div className="w-1/2 h-7 rounded-md border border-white/10 bg-white/[0.03] opacity-40 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-white/20" />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+    case "ps4":
+      // PS4: Azul médio intenso com gradientes amplos e sensação de ondas
+      return (
+        <div className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-blue-500/20 bg-gradient-to-b from-[#002466] to-[#001033] shadow-inner relative`}>
+          <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-30" viewBox="0 0 122 78" fill="none">
+            <path d="M-10 38 Q 40 18 135 50" stroke="#0070D1" strokeWidth="2" />
+            <path d="M-10 50 Q 50 25 135 60" stroke="#38BDF8" strokeWidth="1" />
+          </svg>
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-blue-400/15 bg-blue-950/40 shrink-0 z-10">
+            <div className="h-1 w-6 rounded-full bg-blue-200/40" />
+            <div className="h-1.5 w-1.5 rounded-full bg-[#0070D1] shadow-[0_0_6px_#0070D1]" />
+          </div>
+          <div className="flex flex-1 min-h-0 z-10">
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-blue-400/15 bg-blue-950/30">
+              <div className="h-1 w-full rounded-full bg-blue-200/50" />
+              <div className="h-1 w-3/4 rounded-full bg-blue-200/25" />
+            </div>
+            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
+              <div className="w-1/2 h-8 rounded-lg border border-blue-400/50 bg-blue-600/35 shadow-[0_0_12px_rgba(0,112,209,0.35)] flex items-center justify-center">
+                <div className="h-1 w-4 rounded-full bg-white" />
+              </div>
+              <div className="w-1/2 h-7 rounded-md border border-blue-400/20 bg-blue-900/20 opacity-50 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-blue-200/30" />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+    case "playstation":
+      // PS2: Azul profundo + ciano em pequenos detalhes, profundidade escura e formas geométricas
+      return (
+        <div className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-indigo-500/20 bg-[#00081C] shadow-inner relative`}>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_100%,rgba(0,210,255,0.08)_0%,transparent_60%)] pointer-events-none" />
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-indigo-900/40 bg-[#000D2B] shrink-0">
+            <div className="h-1 w-6 rounded-full bg-indigo-300/30" />
+            <div className="h-1.5 w-1.5 rounded-full bg-[#00D2FF] shadow-[0_0_6px_#00D2FF]" />
+          </div>
+          <div className="flex flex-1 min-h-0">
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-indigo-900/40 bg-[#000A24]">
+              <div className="h-1 w-full rounded-full bg-indigo-300/40" />
+              <div className="h-1 w-3/4 rounded-full bg-indigo-300/20" />
+            </div>
+            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
+              <div className="w-1/2 h-8 rounded-lg border border-[#1D4ED8] bg-[#1D4ED8]/30 shadow-[0_0_10px_rgba(29,78,216,0.3)] flex flex-col items-center justify-center gap-1">
+                <div className="h-1 w-4 rounded-full bg-white/90" />
+                <div className="h-0.5 w-1.5 rounded-full bg-[#00D2FF]" />
+              </div>
+              <div className="w-1/2 h-7 rounded-md border border-indigo-900/30 bg-indigo-950/20 opacity-40 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-indigo-300/20" />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+    case "gamecube":
+      return (
+        <div className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-purple-500/20 bg-[#10081C] shadow-inner relative`}>
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-purple-900/40 bg-[#1A0D30] shrink-0">
+            <div className="h-1 w-6 rounded-full bg-purple-300/30" />
+            <div className="h-1.5 w-1.5 rounded-full bg-[#8B5CF6] shadow-[0_0_6px_#8B5CF6]" />
+          </div>
+          <div className="flex flex-1 min-h-0">
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-purple-900/40 bg-[#160B28]">
+              <div className="h-1 w-full rounded-full bg-purple-300/40" />
+              <div className="h-1 w-3/4 rounded-full bg-purple-300/20" />
+            </div>
+            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
+              <div className="w-1/2 h-8 rounded-lg border border-purple-500/50 bg-purple-600/30 shadow-[0_0_10px_rgba(139,92,246,0.3)] flex items-center justify-center">
+                <div className="h-1 w-4 rounded-full bg-white" />
+              </div>
+              <div className="w-1/2 h-7 rounded-md border border-purple-900/30 bg-purple-950/20 opacity-40 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-purple-300/20" />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+    case "xbox360":
+      return (
+        <div className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-green-500/20 bg-[#0A120B] shadow-inner relative`}>
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-green-900/40 bg-[#101C12] shrink-0">
+            <div className="h-1 w-6 rounded-full bg-green-300/30" />
+            <div className="h-1.5 w-1.5 rounded-full bg-[#22C55E] shadow-[0_0_6px_#22C55E]" />
+          </div>
+          <div className="flex flex-1 min-h-0">
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-green-900/40 bg-[#0D170E]">
+              <div className="h-1 w-full rounded-full bg-green-300/40" />
+              <div className="h-1 w-3/4 rounded-full bg-green-300/20" />
+            </div>
+            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
+              <div className="w-1/2 h-8 rounded-lg border border-green-500/50 bg-green-600/30 shadow-[0_0_10px_rgba(34,197,94,0.3)] flex items-center justify-center">
+                <div className="h-1 w-4 rounded-full bg-white" />
+              </div>
+              <div className="w-1/2 h-7 rounded-md border border-green-900/30 bg-green-950/20 opacity-40 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-green-300/20" />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+    case "cyberpunk":
+      return (
+        <div className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-yellow-500/25 bg-[#0C0C0C] shadow-inner relative`}>
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-yellow-500/20 bg-[#141414] shrink-0">
+            <div className="h-1 w-6 rounded-full bg-yellow-400/40" />
+            <div className="h-1.5 w-1.5 rounded-full bg-[#FCEE0A] shadow-[0_0_6px_#FCEE0A]" />
+          </div>
+          <div className="flex flex-1 min-h-0">
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-yellow-500/20 bg-[#101010]">
+              <div className="h-1 w-full rounded-full bg-yellow-400/40" />
+              <div className="h-1 w-3/4 rounded-full bg-yellow-400/20" />
+            </div>
+            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
+              <div className="w-1/2 h-8 rounded-lg border border-[#FCEE0A] bg-[#FCEE0A]/25 shadow-[0_0_12px_rgba(252,238,10,0.35)] flex items-center justify-center">
+                <div className="h-1 w-4 rounded-full bg-[#FCEE0A]" />
+              </div>
+              <div className="w-1/2 h-7 rounded-md border border-cyan-400/30 bg-cyan-950/20 opacity-40 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-cyan-300/30" />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+    default:
+      return null;
+  }
+};
+
+export const ThemePreviewCard: React.FC<{
+  id: string;
+  active: boolean;
+  label: string;
+  accentColor: string;
+  glowColor?: string;
+  onClick: () => void;
+}> = ({ id, active, label, accentColor, onClick }) => {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <button
+        type="button"
+        onClick={onClick}
+        className={`relative p-1 rounded-2xl transition-[transform,opacity,box-shadow,background-color,border-color] duration-200 ease-out transform-gpu will-change-transform cursor-pointer ${
+          active
+            ? "scale-[1.02] border border-white/60 bg-white/[0.08] shadow-[0_0_16px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.22)]"
+            : "border border-white/10 bg-white/[0.02] opacity-75 hover:opacity-100 hover:border-white/25 hover:scale-[1.01]"
+        }`}
+      >
+        {active && (
+          <div className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full flex items-center justify-center bg-white text-black shadow-[0_2px_8px_rgba(0,0,0,0.6)] z-20">
+            <Check className="h-2.5 w-2.5 text-black stroke-[3]" />
+          </div>
+        )}
+        {renderThemeMiniatureContent(id, active, accentColor)}
       </button>
       <span
-        className={`text-[11.5px] font-semibold tracking-tight transition-colors text-center ${active
-          ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
-          : "text-white/60 hover:text-white/90"
-          }`}
+        className={`text-[11.5px] font-semibold tracking-tight transition-colors text-center ${
+          active ? "text-white" : "text-white/60 hover:text-white/90"
+        }`}
       >
         {label}
       </span>
@@ -1046,6 +1248,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
   const voiceCallContext = useVoiceCallContext();
   const [isRecordingPttKey, setIsRecordingPttKey] = React.useState(false);
   const [isTestingMic, setIsTestingMic] = React.useState(false);
+  const [micPermissionError, setMicPermissionError] = React.useState(false);
   const [testMicVolume, setTestMicVolume] = React.useState(0);
   const [isVideoPreviewOn, setIsVideoPreviewOn] = React.useState(false);
   const videoPreviewRef = React.useRef<HTMLVideoElement | null>(null);
@@ -1073,6 +1276,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
     let animId: number | null = null;
 
     const startTest = async () => {
+      setMicPermissionError(false);
       try {
         const targetId = voiceCallContext?.selectedAudioInput;
         stream = await navigator.mediaDevices.getUserMedia({
@@ -1122,6 +1326,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
         animId = requestAnimationFrame(tick);
       } catch (err) {
         console.warn("[SettingsPage] Mic test failed:", err);
+        setMicPermissionError(true);
         setIsTestingMic(false);
       }
     };
@@ -1293,6 +1498,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
   const diagnosticsCopy = DIAGNOSTICS_COPY[language] || DIAGNOSTICS_COPY["pt-BR"];
   const perfCopy = PERF_SETTINGS_COPY[language] || PERF_SETTINGS_COPY["pt-BR"];
   const led = useControllerLedStatus();
+  const isPt = language === "pt-BR";
 
   const selectTab = React.useCallback((tab: SettingsTab) => {
     setActiveTab(tab);
@@ -1447,12 +1653,12 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
       data-system-page="settings"
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center p-4 sm:p-6 md:p-8  animate-in fade-in duration-300 pointer-events-auto select-none"
     >
-      {/* Wrapper Principal - Split Layout estilo macOS[cite: 1] */}
-      <div className="flex w-full max-w-[960px] h-[75vh] min-h-[600px] max-h-[820px] gap-2">
+      {/* Wrapper Principal - Split Layout estilo macOS */}
+      <div className="flex w-full max-w-[1040px] h-[78vh] min-h-[620px] max-h-[860px] gap-3">
 
-        {/* SIDEBAR ESQUERDA - Ghost Style */}
+        {/* SIDEBAR ESQUERDA - Theme Surface Style */}
         <aside
-          className="w-[240px] border border-[var(--color-border)] bg-[#0B0B0B] rounded-3xl flex flex-col py-6 px-4 shrink-0 shadow-[0_32px_64px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] transform-gpu"
+          className="w-[240px] border border-[var(--border-subtle)] bg-[var(--surface-raised)] rounded-[var(--radius-panel)] flex flex-col py-6 px-4 shrink-0 shadow-[0_32px_64px_rgba(0,0,0,0.6)] [box-shadow:var(--surface-chamfer)] transform-gpu transition-colors duration-300"
         >
           <div
             className="flex items-center justify-between px-3 mb-5 group cursor-default"
@@ -1472,9 +1678,9 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
             )}
           </div>
 
-          <div className="h-px w-full bg-white/10 mb-4" />
+          <div className="h-px w-full bg-[var(--border-subtle)] mb-4" />
 
-          <nav className="space-y-1 flex-1 overflow-y-auto no-scrollbar">
+          <nav className="space-y-1.5 flex-1 overflow-y-auto no-scrollbar">
             {[
               { id: "general" as const, icon: AnimatedSlidersHorizontal, label: shellCopy.general },
               { id: "personalization" as const, icon: AnimatedPalette, label: shellCopy.personalization },
@@ -1494,16 +1700,16 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                   onClick={() => selectTab(id)}
                   onMouseEnter={() => setHoveredTab(id)}
                   onMouseLeave={() => setHoveredTab(null)}
-                  className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[12.5px] font-medium transition-colors cursor-pointer ${isActive
-                    ? "bg-[var(--color-surface)] text-white shadow-sm"
-                    : "text-white/60 hover:bg-[#222222] hover:text-white/90"
+                  className={`group flex w-full items-center gap-3 rounded-[var(--radius-control)] px-3.5 py-2.5 text-[12.5px] font-medium transition-all duration-200 cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)] ${isActive
+                    ? "bg-[var(--selection-bg)] text-[var(--selection-text)] border-[var(--selection-border)] shadow-sm font-semibold"
+                    : "text-white/60 border-transparent hover:bg-white/[0.05] hover:text-white"
                     }`}
                 >
                   <IconComponent
                     size={16}
                     animate={isHovered}
                     animateOnHover={true}
-                    className={`shrink-0 transition-colors ${isActive ? "text-white" : "text-white/50 group-hover:text-white/80"}`}
+                    className={`shrink-0 transition-colors ${isActive ? "text-current" : "text-white/50 group-hover:text-white/80"}`}
                   />
                   <span className="truncate">{label}</span>
                 </button>
@@ -1511,13 +1717,13 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
             })}
           </nav>
 
-          <div className="pt-3 mt-3 border-t border-[var(--color-ui-detail)]">
+          <div className="pt-3 mt-3 border-t border-[var(--border-subtle)]">
             <button
               type="button"
               onClick={handleQuitApp}
               onMouseEnter={() => setIsQuitHovered(true)}
               onMouseLeave={() => setIsQuitHovered(false)}
-              className="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[12.5px] font-medium text-white/50 hover:bg-[#222222] hover:text-white transition-colors cursor-pointer"
+              className="group flex w-full items-center gap-3 rounded-[var(--radius-control)] px-3.5 py-2.5 text-[12.5px] font-medium text-white/50 hover:bg-white/[0.05] hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)]"
             >
               <AnimatedLogOut size={16} animate={isQuitHovered} animateOnHover={true} className="shrink-0 text-white/40 group-hover:text-white transition-colors" />
               <span>{shellCopy.quit}</span>
@@ -1525,13 +1731,13 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
           </div>
         </aside>
 
-        {/* PAINEL DIREITO - Ghost Style */}
+        {/* PAINEL DIREITO - Theme Surface Style */}
         <main
           ref={mainScrollRef}
-          className="flex-1 rounded-3xl border border-[var(--color-border)] bg-[#0B0B0B] overflow-y-auto no-scrollbar relative shadow-[0_32px_64px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] transform-gpu"
+          className="flex-1 rounded-[var(--radius-panel)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] overflow-y-auto no-scrollbar relative shadow-[0_32px_64px_rgba(0,0,0,0.6)] [box-shadow:var(--surface-chamfer)] transform-gpu transition-colors duration-300"
           style={{ contain: "layout paint" }}
         >
-          <div className="p-8 md:p-10 space-y-8 max-w-[680px]">
+          <div className="p-7 sm:p-8 md:p-9 space-y-7 w-full max-w-[760px]">
 
             {/* ABA GERAL */}
             {activeTab === "general" && (
@@ -1541,49 +1747,53 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                     <SlidersHorizontal className="h-4 w-4 text-white/70 shrink-0" />
                     <h2 className="text-[17px] font-semibold text-white tracking-wide">{shellCopy.general}</h2>
                   </div>
-                  <SettingsRow icon={<Languages className="h-4 w-4" />} title={t("language")}>
-                    <SettingsSelect
-                      value={language}
-                      onChange={(v) => onLanguageChange(v as LauncherLanguage)}
-                      options={languageOptions.map((opt) => ({ value: opt.id, label: opt.label }))}
-                      className="w-[180px]"
-                    />
-                  </SettingsRow>
+                  <SettingsRow
+                    icon={<Languages className="h-4 w-4" />}
+                    title={t("language")}
+                    description="Idioma utilizado em todos os menus, textos e notificações do hub."
+                    action={
+                      <SettingsSelect
+                        value={language}
+                        onChange={(v) => onLanguageChange(v as LauncherLanguage)}
+                        options={languageOptions.map((opt) => ({ value: opt.id, label: opt.label }))}
+                        className="w-full sm:w-[190px]"
+                      />
+                    }
+                  />
 
-                  {behaviorOptions.map((option, idx) => (
+                  {behaviorOptions.map((option) => (
                     <SettingsRow
                       key={option.label}
                       title={option.label}
-                      hasBorder={true}
-                    >
-                      <p className="mb-3 text-[11px] leading-relaxed text-white/40">{option.hint}</p>
-                      <div className="flex items-center gap-3">
-                        <Switch checked={option.checked} onCheckedChange={option.onChange} />
-                        <span className="text-[12px] text-white/50 w-16">{option.checked ? t("enabled") : t("disabled")}</span>
-                      </div>
-                    </SettingsRow>
+                      description={option.hint}
+                      action={
+                        <div className="flex items-center gap-2.5">
+                          <Switch checked={option.checked} onCheckedChange={option.onChange} />
+                          <span className="text-[11.5px] text-white/50 w-16 select-none">{option.checked ? t("enabled") : t("disabled")}</span>
+                        </div>
+                      }
+                    />
                   ))}
 
                   <SettingsRow
                     icon={<Sparkles className="h-4 w-4" />}
                     title="Guia do Ecossistema Pherielium"
+                    description="Veja novamente o tour interativo explicando como adicionar jogos, conectar plataformas e usar o overlay."
+                    action={
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playSound?.("select");
+                          window.dispatchEvent(new CustomEvent("phelierium:open-welcome-modal"));
+                        }}
+                        className="inline-flex h-8 items-center justify-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 px-3.5 text-xs font-semibold text-white transition-colors cursor-pointer active:scale-95"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>Abrir Guia</span>
+                      </button>
+                    }
                     hasBorder={false}
-                  >
-                    <p className="mb-3 text-[11px] leading-relaxed text-white/40">
-                      Veja novamente o tour interativo explicando como adicionar jogos, conectar plataformas e usar o overlay.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        playSound?.("select");
-                        window.dispatchEvent(new CustomEvent("phelierium:open-welcome-modal"));
-                      }}
-                      className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-white/10 px-4 text-xs font-semibold text-white transition-colors hover:bg-white/20 active:scale-[0.98] cursor-pointer"
-                    >
-                      <Sparkles className="h-3.5 w-3.5" />
-                      <span>Abrir Guia de Boas-Vindas</span>
-                    </button>
-                  </SettingsRow>
+                  />
                 </section>
 
                 <div className="h-px w-full bg-[var(--color-surface)]" />
@@ -1604,12 +1814,13 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                     </div>
                     <p className="text-[12.5px] text-white/40 mt-1">{t("themesHint")}</p>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-8">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                     {COMPLETE_THEME_OPTIONS.map((opt) => {
                       const isSelected = isThemeSelected(opt);
                       return (
                         <ThemePreviewCard
                           key={opt.id}
+                          id={opt.id}
                           active={isSelected}
                           label={opt.label}
                           accentColor={opt.accentColor}
@@ -1624,30 +1835,99 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                     })}
                   </div>
 
-                  <SettingsRow title={t("gameBootIntro")}>
-                    <p className="text-[11px] text-white/40 mb-3">{t("gameBootIntroHint")}</p>
-                    <div className="flex items-center gap-3">
-                      <Switch
-                        checked={gameBootIntroEnabled}
-                        onCheckedChange={setGameBootIntroEnabled}
-                      />
-                      <span className="text-[12px] text-white/50 w-16">
-                        {gameBootIntroEnabled ? t("enabled") : t("disabled")}
-                      </span>
-                    </div>
-                  </SettingsRow>
-                  <SettingsRow title={t("gameBootIntroSound")}>
-                    <p className="text-[11px] text-white/40 mb-3">{t("gameBootIntroSoundHint")}</p>
-                    <div className="flex items-center gap-3">
-                      <Switch
-                        checked={gameBootIntroSoundEnabled}
-                        onCheckedChange={setGameBootIntroSoundEnabled}
-                      />
-                      <span className="text-[12px] text-white/50 w-16">
-                        {gameBootIntroSoundEnabled ? t("enabled") : t("disabled")}
-                      </span>
-                    </div>
-                  </SettingsRow>
+                  {/* Prévia Expandida da Cena com Amostra de Som Explícita */}
+                  {(() => {
+                    const activeTheme = COMPLETE_THEME_OPTIONS.find((opt) => isThemeSelected(opt)) || COMPLETE_THEME_OPTIONS[0];
+                    return (
+                      <div className="mb-7 p-4 sm:p-5 rounded-2xl border border-white/[0.08] bg-[#0E1012] relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-5 shadow-inner">
+                        <div
+                          className="absolute -top-12 -left-12 w-48 h-48 rounded-full blur-3xl pointer-events-none opacity-20"
+                          style={{ backgroundColor: activeTheme.accentColor }}
+                        />
+
+                        <div className="flex items-center gap-4 min-w-0 flex-1 relative z-10">
+                          {/* Miniatura ampliada da cena representativa */}
+                          <div className="shrink-0 shadow-md">
+                            {renderThemeMiniatureContent(activeTheme.id, true, activeTheme.accentColor, "w-28 h-20")}
+                          </div>
+
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-white tracking-wide">
+                                {activeTheme.label}
+                              </span>
+                              <span
+                                className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md border"
+                                style={{
+                                  color: activeTheme.accentColor,
+                                  borderColor: `${activeTheme.accentColor}40`,
+                                  backgroundColor: `${activeTheme.accentColor}15`,
+                                }}
+                              >
+                                Tema ativo
+                              </span>
+                            </div>
+                            <p className="text-[11.5px] text-white/50 leading-relaxed">
+                              {activeTheme.hint}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0 relative z-10 w-full sm:w-auto">
+                          <button
+                            type="button"
+                            onClick={onPreviewSound}
+                            onMouseEnter={() => playSound("hover")}
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 border border-white/10 text-white text-xs font-semibold transition-all cursor-pointer shadow-sm"
+                          >
+                            <Volume2 className="h-3.5 w-3.5 text-white/70" />
+                            <span>Ouvir amostra de som</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <SettingsRow
+                    title={t("gameBootIntro")}
+                    description={t("gameBootIntroHint")}
+                    action={
+                      <div className="flex items-center gap-2.5">
+                        <Switch
+                          checked={gameBootIntroEnabled}
+                          onCheckedChange={(val) => {
+                            setGameBootIntroEnabled(val);
+                            if (!val) setGameBootIntroSoundEnabled(false);
+                          }}
+                        />
+                        <span className="text-[11.5px] text-white/50 w-16 select-none">
+                          {gameBootIntroEnabled ? t("enabled") : t("disabled")}
+                        </span>
+                      </div>
+                    }
+                  />
+
+                  <SettingsRow
+                    title={t("gameBootIntroSound")}
+                    description={
+                      gameBootIntroEnabled
+                        ? t("gameBootIntroSoundHint")
+                        : "Requer a animação de abertura ativada para reprodução."
+                    }
+                    className={!gameBootIntroEnabled ? "opacity-50" : ""}
+                    action={
+                      <div className="flex items-center gap-2.5">
+                        <Switch
+                          checked={gameBootIntroEnabled && gameBootIntroSoundEnabled}
+                          disabled={!gameBootIntroEnabled}
+                          onCheckedChange={setGameBootIntroSoundEnabled}
+                        />
+                        <span className="text-[11.5px] text-white/50 w-16 select-none">
+                          {gameBootIntroEnabled && gameBootIntroSoundEnabled ? t("enabled") : t("disabled")}
+                        </span>
+                      </div>
+                    }
+                  />
                 </section>
 
                 <div className="h-px w-full bg-[var(--color-surface)]" />
@@ -1657,52 +1937,86 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                     <Volume2 className="h-4 w-4 text-white/70 shrink-0" />
                     <h2 className="text-[17px] font-semibold text-white tracking-wide">{detailCopy.audioTitle}</h2>
                   </div>
-                  <SettingsRow title={t("soundEffects")}>
-                    <div className="flex items-center gap-4">
-                      <button onClick={onPreviewSound} className="text-[10px] bg-white/10 px-2.5 py-1 rounded-xl hover:bg-white/20 text-white font-medium transition-colors cursor-pointer shrink-0">{t("test")}</button>
-                      <ElasticSlider
-                        value={effectsVolume}
-                        onChange={onEffectsVolumeChange}
-                        startingValue={0}
-                        maxValue={100}
-                        className="ml-6"
-                      />
-                    </div>
+
+                  <SettingsRow
+                    title={t("soundEffects")}
+                    description="Efeitos de clique e navegação nos menus"
+                    action={
+                      <button
+                        type="button"
+                        onClick={onPreviewSound}
+                        className="text-[11px] bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-xl text-white font-medium transition-colors cursor-pointer"
+                      >
+                        {t("test")}
+                      </button>
+                    }
+                  >
+                    <ElasticSlider
+                      value={effectsVolume}
+                      onChange={onEffectsVolumeChange}
+                      startingValue={0}
+                      maxValue={100}
+                      className="w-full max-w-[340px]"
+                    />
                   </SettingsRow>
-                  <SettingsRow title={t("achievementSound")}>
-                    <div className="flex items-center gap-4">
-                      <button onClick={() => onTestOverlayAchievement()} onMouseEnter={() => playSound("hover")} className="text-[10px] bg-white/10 px-2.5 py-1 rounded-xl hover:bg-white/20 text-white font-medium transition-colors cursor-pointer shrink-0">{t("test")}</button>
-                      <ElasticSlider
-                        value={achievementVolume}
-                        onChange={onAchievementVolumeChange}
-                        startingValue={0}
-                        maxValue={100}
-                        className="ml-6"
-                      />
-                    </div>
+
+                  <SettingsRow
+                    title={t("achievementSound")}
+                    description="Notificação sonora ao desbloquear um marco ou conquista"
+                    action={
+                      <button
+                        type="button"
+                        onClick={() => onTestOverlayAchievement()}
+                        onMouseEnter={() => playSound("hover")}
+                        className="text-[11px] bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-xl text-white font-medium transition-colors cursor-pointer"
+                      >
+                        {t("test")}
+                      </button>
+                    }
+                  >
+                    <ElasticSlider
+                      value={achievementVolume}
+                      onChange={onAchievementVolumeChange}
+                      startingValue={0}
+                      maxValue={100}
+                      className="w-full max-w-[340px]"
+                    />
                   </SettingsRow>
-                  <SettingsRow title={t("notificationSound")}>
-                    <div className="flex items-center gap-4">
-                      <button onClick={onTestNotificationSound} className="text-[10px] bg-white/10 px-2.5 py-1 rounded hover:bg-white/20 text-white rounded-xl font-medium transition-colors cursor-pointer shrink-0">{t("test")}</button>
-                      <ElasticSlider
-                        value={notificationVolume}
-                        onChange={onNotificationVolumeChange}
-                        startingValue={0}
-                        maxValue={100}
-                        className="ml-6"
-                      />
-                    </div>
+
+                  <SettingsRow
+                    title={t("notificationSound")}
+                    description="Sons para alertas gerais e mensagens recebidas"
+                    action={
+                      <button
+                        type="button"
+                        onClick={onTestNotificationSound}
+                        className="text-[11px] bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-xl text-white font-medium transition-colors cursor-pointer"
+                      >
+                        {t("test")}
+                      </button>
+                    }
+                  >
+                    <ElasticSlider
+                      value={notificationVolume}
+                      onChange={onNotificationVolumeChange}
+                      startingValue={0}
+                      maxValue={100}
+                      className="w-full max-w-[340px]"
+                    />
                   </SettingsRow>
-                  <SettingsRow title={t("music")} hasBorder={false}>
-                    <div className="flex items-center gap-4">
-                      <ElasticSlider
-                        value={musicVolume}
-                        onChange={onMusicVolumeChange}
-                        startingValue={0}
-                        maxValue={35}
-                        className="ml-2"
-                      />
-                    </div>
+
+                  <SettingsRow
+                    title={t("music")}
+                    description="Música de fundo ambiente nas páginas do launcher"
+                    hasBorder={false}
+                  >
+                    <ElasticSlider
+                      value={musicVolume}
+                      onChange={onMusicVolumeChange}
+                      startingValue={0}
+                      maxValue={35}
+                      className="w-full max-w-[340px]"
+                    />
                   </SettingsRow>
                 </section>
               </div>
@@ -1730,10 +2044,10 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                             setPerfSubTab(tab.id);
                             playSound("hover");
                           }}
-                          className={`rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition-colors ${
+                          className={`rounded-[var(--radius-control)] px-3.5 py-1.5 text-[12px] font-semibold transition-colors cursor-pointer border ${
                             isActive
-                              ? "bg-white text-black"
-                              : "bg-white/5 text-white/55 hover:bg-white/10 hover:text-white"
+                              ? "bg-[var(--selection-bg)] text-[var(--selection-text)] border-[var(--selection-border)] shadow-sm"
+                              : "bg-transparent text-white/55 border-transparent hover:bg-white/[0.06] hover:text-white"
                           }`}
                         >
                           {tab.label}
@@ -1798,68 +2112,97 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
 
             {/* ABA CONTA */}
             {activeTab === "account" && (
-              <div className="space-y-8 animate-in fade-in duration-300">
+              <div className="space-y-6 animate-in fade-in duration-300">
+                <section>
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <User className="h-4 w-4 text-white/70 shrink-0" />
+                    <h2 className="text-[17px] font-semibold text-white tracking-wide">{shellCopy.account}</h2>
+                  </div>
+
+                  {/* Bloco alinhado unificado: avatar, nome e e-mail */}
+                  <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.025] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="relative flex h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-white/15 bg-black/40 shadow-md">
+                        {userProfile?.photoURL || user?.photoURL ? (
+                          <img
+                            src={userProfile?.photoURL || user?.photoURL || ""}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center bg-white/10 text-white/60 font-bold text-base">
+                            {(userProfile?.displayName || user?.displayName || "P")[0].toUpperCase()}
+                          </div>
+                        )}
+                        <span className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-black" title="Sessão ativa" />
+                      </div>
+                      <div className="min-w-0 space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[15px] font-semibold text-white tracking-tight truncate">
+                            {userProfile?.displayName || user?.displayName || detailCopy.playerFallback}
+                          </span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-white/80 border border-white/10">
+                            Phelierium ID
+                          </span>
+                        </div>
+                        <p className="text-[12px] text-white/50 truncate">
+                          {user?.email || detailCopy.noEmail}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setIsLogoutModalOpen(true)}
+                        className="px-3.5 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[12px] font-medium transition-colors cursor-pointer active:scale-95 flex items-center gap-1.5"
+                      >
+                        <LogOut className="h-3.5 w-3.5" />
+                        <span>Sair da conta</span>
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
+                <div className="h-px w-full bg-white/[0.06]" />
+
                 <section>
                   <div className="flex items-center gap-2.5 mb-4">
                     <ShieldCheck className="h-4 w-4 text-white/70 shrink-0" />
-                    <h2 className="text-[17px] font-semibold text-white tracking-wide">{shellCopy.account}</h2>
-                  </div>
-                  <SettingsRow icon={<User className="w-4 h-4" />} title={userProfile?.displayName || user?.displayName || detailCopy.playerFallback} hasBorder={false}>
-                    <div className="flex items-center gap-4">
-                      <span className="text-[12px] text-white/50">{user?.email || detailCopy.noEmail}</span>
-                      <div className="flex h-10 w-10 overflow-hidden rounded-full border border-white/10 shadow-sm">
-                        {userProfile?.photoURL ? (
-                          <img src={userProfile.photoURL} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="bg-white/10 h-full w-full flex items-center justify-center"><User className="h-5 w-5 text-white/50" /></div>
-                        )}
-                      </div>
-                    </div>
-                  </SettingsRow>
-                </section>
-
-                <div className="h-px w-full bg-[var(--color-surface)]" />
-
-                <section>
-                  <div className="flex items-center gap-2.5 mb-4">
-                    <Lock className="h-4 w-4 text-white/70 shrink-0" />
                     <h2 className="text-[17px] font-semibold text-white tracking-wide">{detailCopy.security}</h2>
                   </div>
-                  <SettingsRow title={detailCopy.resetPassword}>
-                    <button
-                      type="button"
-                      onClick={handlePasswordReset}
-                      disabled={isResettingPassword || !user?.email || passwordResetSent}
-                      className="px-4 py-1.5 bg-[var(--color-surface)] hover:bg-[#222222] rounded-md text-[12.5px] font-medium text-white transition-all disabled:opacity-50"
-                    >
-                      {passwordResetSent ? detailCopy.emailSent : isResettingPassword ? detailCopy.sending : detailCopy.sendEmail}
-                    </button>
-                  </SettingsRow>
-                  <SettingsRow title={shellCopy.encrypted} hasBorder={false}>
-                    <div className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg text-[11.5px] font-semibold">
-                      <ShieldCheck className="h-4 w-4" />
-                      <span>{t("protected")}</span>
-                    </div>
-                  </SettingsRow>
-                </section>
 
-                <div className="h-px w-full bg-[var(--color-surface)]" />
+                  <SettingsRow
+                    title={detailCopy.resetPassword}
+                    description="Enviaremos um link de recuperação e segurança para seu e-mail cadastrado"
+                    action={
+                      <button
+                        type="button"
+                        onClick={handlePasswordReset}
+                        disabled={isResettingPassword || !user?.email || passwordResetSent}
+                        className="px-3.5 py-1.5 bg-[var(--color-surface)] hover:bg-[#222222] border border-white/10 rounded-xl text-[12px] font-medium text-white transition-all disabled:opacity-50 active:scale-95 cursor-pointer"
+                      >
+                        {passwordResetSent ? detailCopy.emailSent : isResettingPassword ? detailCopy.sending : detailCopy.sendEmail}
+                      </button>
+                    }
+                  />
 
-                <section>
-                  <SettingsRow title="Sair da Conta" hasBorder={false}>
-                    <button
-                      type="button"
-                      onClick={() => setIsLogoutModalOpen(true)}
-                      className="px-4 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-md text-[12.5px] font-medium transition-colors cursor-pointer"
-                    >
-                      Desconectar
-                    </button>
-                  </SettingsRow>
+                  <SettingsRow
+                    title={shellCopy.encrypted}
+                    description="Token de acesso assinado e verificado localmente com criptografia de transporte TLS 1.3"
+                    hasBorder={false}
+                    action={
+                      <div className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-xl text-[11.5px] font-medium">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        <span>Token ativo</span>
+                      </div>
+                    }
+                  />
                 </section>
               </div>
             )}
 
-            {/* ABA CONEXÕES (CONTAS & PRIVACIDADE) */}
+            {/* ABA CONEXÕES (CONEXÕES E PRIVACIDADE) */}
             {activeTab === "connections" && (
               <div className="space-y-8 animate-in fade-in duration-300">
                 <section>
@@ -1868,138 +2211,230 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                     <h2 className="text-[17px] font-semibold text-white tracking-wide">{t("connectedAccounts")}</h2>
                   </div>
 
-                  <SettingsRow icon={<SteamIcon className="h-5 w-5" />} title="Steam">
-                    <div className="flex items-center gap-3">
-                      <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-xl border transition-colors ${steamDisconnecting
-                        ? "bg-yellow-500/15 text-yellow-300 border-yellow-500/30"
-                        : steamConnected
-                          ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                          : "bg-[var(--color-surface)] text-white/40 border-white/10"
+                  {/* Steam: Plataforma -> Identidade Vinculada -> Estado -> Ação */}
+                  <SettingsRow
+                    icon={<SteamIcon className="h-5 w-5" />}
+                    title="Steam"
+                    description={
+                      steamConnected
+                        ? (userProfile?.steamUsername
+                            ? `@${userProfile.steamUsername}`
+                            : userProfile?.steamId
+                            ? `Steam ID: ${userProfile.steamId}`
+                            : "Conta vinculada e sincronizada")
+                        : "Nenhuma conta vinculada"
+                    }
+                    action={
+                      <div className="flex items-center gap-3">
+                        <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                          steamDisconnecting
+                            ? "bg-yellow-500/15 text-yellow-300 border-yellow-500/30"
+                            : steamConnected
+                            ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                            : "bg-white/5 text-white/40 border-white/10"
                         }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${steamDisconnecting ? "bg-yellow-400 animate-pulse" : steamConnected ? "bg-emerald-400" : "bg-white/30"}`} />
-                        {steamDisconnecting ? <span className="t-shimmer" data-text="Desconectando...">Desconectando...</span> : steamConnected ? t("connected") : t("notConnected")}
-                      </span>
-                      {steamConnected ? (
-                        <button onClick={onDisconnectSteam} disabled={steamDisconnecting} className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[11.5px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer">
-                          {steamDisconnecting ? "Desconectando..." : t("unlink")}
-                        </button>
-                      ) : steamConnecting ? (
-                        <div className="flex items-center gap-2">
-                          <span className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[12px] text-white/70">
-                            <ThinkingOrbLoader size={20} preset="connecting" />
-                            <span className="t-shimmer" data-text={t("connecting")}>{t("connecting")}</span>
-                          </span>
-                          {onCancelSteamConnect && (
-                            <button
-                              type="button"
-                              onClick={onCancelSteamConnect}
-                              className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white/80 hover:text-white rounded-xl text-[11.5px] font-medium transition-colors active:scale-95 cursor-pointer"
-                              title="Cancelar tentativa de conexão"
-                            >
-                              Cancelar
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <button onClick={onConnectSteam} className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-[12px] font-medium transition-colors active:scale-95 cursor-pointer">
-                          {t("connectSteam")}
-                        </button>
-                      )}
-                    </div>
-                  </SettingsRow>
+                          <span className={`h-1.5 w-1.5 rounded-full ${
+                            steamDisconnecting ? "bg-yellow-400 animate-pulse" : steamConnected ? "bg-emerald-400" : "bg-white/30"
+                          }`} />
+                          {steamDisconnecting ? "Desconectando..." : steamConnected ? t("connected") : t("notConnected")}
+                        </span>
 
-                  <SettingsRow icon={<DiscordIcon className="h-5 w-5" />} title="Discord">
-                    <div className="flex items-center gap-3">
-                      <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-xl border transition-colors ${discordDisconnecting
-                        ? "bg-yellow-500/15 text-yellow-300 border-yellow-500/30"
-                        : discordConnected
-                          ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                          : "bg-[var(--color-surface)] text-white/40 border-white/10"
-                        }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${discordDisconnecting ? "bg-yellow-400 animate-pulse" : discordConnected ? "bg-emerald-400" : "bg-white/30"}`} />
-                        {discordDisconnecting ? <span className="t-shimmer" data-text="Desconectando...">Desconectando...</span> : discordConnected ? (discordUsername || t("connected")) : t("notConnected")}
-                      </span>
-                      {discordConnected ? (
-                        <button onClick={onDisconnectDiscord} disabled={discordDisconnecting} className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[11.5px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer">
-                          {discordDisconnecting ? "Desconectando..." : t("unlink")}
-                        </button>
-                      ) : discordConnecting ? (
-                        <div className="flex items-center gap-2">
-                          <span className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[12px] text-white/70">
-                            <LinearProgress className="w-12" label={t("connecting")} />
-                            <span className="t-shimmer" data-text={t("connecting")}>{t("connecting")}</span>
-                          </span>
-                          {onCancelDiscordConnect && (
-                            <button
-                              type="button"
-                              onClick={onCancelDiscordConnect}
-                              className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white/80 hover:text-white rounded-xl text-[11.5px] font-medium transition-colors active:scale-95 cursor-pointer"
-                              title="Cancelar tentativa de conexão"
-                            >
-                              Cancelar
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <button onClick={onConnectDiscord} className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-[12px] font-medium transition-colors active:scale-95 cursor-pointer">
-                          {t("connectDiscord")}
-                        </button>
-                      )}
-                    </div>
-                  </SettingsRow>
-
-                  <SettingsRow icon={<EpicIcon className="h-5 w-5" />} title="Epic Games" hasBorder={false}>
-                    <div className="flex items-center gap-3">
-                      <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-xl border transition-colors ${epicDisconnecting
-                        ? "bg-yellow-500/15 text-yellow-300 border-yellow-500/30"
-                        : epicConnected
-                          ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                          : "bg-[var(--color-surface)] text-white/40 border-white/10"
-                        }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${epicDisconnecting ? "bg-yellow-400 animate-pulse" : epicConnected ? "bg-emerald-400" : "bg-white/30"}`} />
-                        {epicDisconnecting ? <span className="t-shimmer" data-text="Desconectando...">Desconectando...</span> : epicConnected ? (epicDisplayName || t("connected")) : t("notConnected")}
-                      </span>
-                      {epicConnected ? (
-                        <button onClick={onDisconnectEpic} disabled={epicDisconnecting} className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[11.5px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer">
-                          {epicDisconnecting ? "Desconectando..." : t("unlink")}
-                        </button>
-                      ) : (
-                        <button onClick={onConnectEpic} disabled={epicConnecting} className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-[12px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer">
-                          {epicConnecting ? (
-                            <span className="flex items-center gap-2">
+                        {steamConnected ? (
+                          <button
+                            onClick={onDisconnectSteam}
+                            disabled={steamDisconnecting}
+                            className="px-3 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[11.5px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer"
+                          >
+                            {steamDisconnecting ? "Desconectando..." : t("unlink")}
+                          </button>
+                        ) : steamConnecting ? (
+                          <div className="flex items-center gap-2">
+                            <span className="flex items-center gap-2 px-2.5 py-1 bg-white/5 border border-white/10 rounded-xl text-[11.5px] text-white/70">
                               <ThinkingOrbLoader size={20} preset="connecting" />
                               <span className="t-shimmer" data-text={t("connecting")}>{t("connecting")}</span>
                             </span>
-                          ) : t("connectEpic")}
-                        </button>
-                      )}
-                    </div>
-                  </SettingsRow>
+                            {onCancelSteamConnect && (
+                              <button
+                                type="button"
+                                onClick={onCancelSteamConnect}
+                                className="px-2 py-1 bg-white/10 hover:bg-white/20 border border-white/15 text-white/80 rounded-xl text-[11px] font-medium transition-colors active:scale-95 cursor-pointer"
+                                title="Cancelar tentativa de conexão"
+                              >
+                                Cancelar
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <button
+                            onClick={onConnectSteam}
+                            className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-[12px] font-medium transition-colors active:scale-95 cursor-pointer"
+                          >
+                            {t("connectSteam")}
+                          </button>
+                        )}
+                      </div>
+                    }
+                  />
+
+                  {/* Discord: Plataforma -> Identidade Vinculada -> Estado -> Ação */}
+                  <SettingsRow
+                    icon={<DiscordIcon className="h-5 w-5" />}
+                    title="Discord"
+                    description={
+                      discordConnected
+                        ? (discordUsername || userProfile?.discordUsername
+                            ? `@${discordUsername || userProfile?.discordUsername}`
+                            : "Conta vinculada e sincronizada")
+                        : "Nenhuma conta vinculada"
+                    }
+                    action={
+                      <div className="flex items-center gap-3">
+                        <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                          discordDisconnecting
+                            ? "bg-yellow-500/15 text-yellow-300 border-yellow-500/30"
+                            : discordConnected
+                            ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                            : "bg-white/5 text-white/40 border-white/10"
+                        }`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${
+                            discordDisconnecting ? "bg-yellow-400 animate-pulse" : discordConnected ? "bg-emerald-400" : "bg-white/30"
+                          }`} />
+                          {discordDisconnecting ? "Desconectando..." : discordConnected ? t("connected") : t("notConnected")}
+                        </span>
+
+                        {discordConnected ? (
+                          <button
+                            onClick={onDisconnectDiscord}
+                            disabled={discordDisconnecting}
+                            className="px-3 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[11.5px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer"
+                          >
+                            {discordDisconnecting ? "Desconectando..." : t("unlink")}
+                          </button>
+                        ) : discordConnecting ? (
+                          <div className="flex items-center gap-2">
+                            <span className="flex items-center gap-2 px-2.5 py-1 bg-white/5 border border-white/10 rounded-xl text-[11.5px] text-white/70">
+                              <LinearProgress className="w-10" label={t("connecting")} />
+                              <span className="t-shimmer" data-text={t("connecting")}>{t("connecting")}</span>
+                            </span>
+                            {onCancelDiscordConnect && (
+                              <button
+                                type="button"
+                                onClick={onCancelDiscordConnect}
+                                className="px-2 py-1 bg-white/10 hover:bg-white/20 border border-white/15 text-white/80 rounded-xl text-[11px] font-medium transition-colors active:scale-95 cursor-pointer"
+                                title="Cancelar tentativa de conexão"
+                              >
+                                Cancelar
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <button
+                            onClick={onConnectDiscord}
+                            className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-[12px] font-medium transition-colors active:scale-95 cursor-pointer"
+                          >
+                            {t("connectDiscord")}
+                          </button>
+                        )}
+                      </div>
+                    }
+                  />
+
+                  {/* Epic Games: Plataforma -> Identidade Vinculada -> Estado -> Ação */}
+                  <SettingsRow
+                    icon={<EpicIcon className="h-5 w-5" />}
+                    title="Epic Games"
+                    description={
+                      epicConnected
+                        ? (epicDisplayName
+                            ? `@${epicDisplayName}`
+                            : "Conta vinculada e sincronizada")
+                        : "Nenhuma conta vinculada"
+                    }
+                    hasBorder={false}
+                    action={
+                      <div className="flex items-center gap-3">
+                        <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                          epicDisconnecting
+                            ? "bg-yellow-500/15 text-yellow-300 border-yellow-500/30"
+                            : epicConnected
+                            ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                            : "bg-white/5 text-white/40 border-white/10"
+                        }`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${
+                            epicDisconnecting ? "bg-yellow-400 animate-pulse" : epicConnected ? "bg-emerald-400" : "bg-white/30"
+                          }`} />
+                          {epicDisconnecting ? "Desconectando..." : epicConnected ? t("connected") : t("notConnected")}
+                        </span>
+
+                        {epicConnected ? (
+                          <button
+                            onClick={onDisconnectEpic}
+                            disabled={epicDisconnecting}
+                            className="px-3 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-[11.5px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer"
+                          >
+                            {epicDisconnecting ? "Desconectando..." : t("unlink")}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={onConnectEpic}
+                            disabled={epicConnecting}
+                            className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-[12px] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer"
+                          >
+                            {epicConnecting ? (
+                              <span className="flex items-center gap-2">
+                                <ThinkingOrbLoader size={20} preset="connecting" />
+                                <span className="t-shimmer" data-text={t("connecting")}>{t("connecting")}</span>
+                              </span>
+                            ) : t("connectEpic")}
+                          </button>
+                        )}
+                      </div>
+                    }
+                  />
                 </section>
 
-                <div className="h-px w-full bg-[var(--color-surface)]" />
+                <div className="h-px w-full bg-white/[0.06]" />
 
                 <section>
                   <div className="flex items-center gap-2.5 mb-4">
                     <ShieldCheck className="h-4 w-4 text-white/70 shrink-0" />
                     <h2 className="text-[17px] font-semibold text-white tracking-wide">{shellCopy.privacy}</h2>
                   </div>
-                  <SettingsRow title={t("profileVisibility")} hasBorder={false}>
-                    <SettingsSelect
-                      value={profileVisibility}
-                      onChange={(v) => handleProfileVisibilityChange(v as ProfileVisibility)}
-                      options={[
-                        { value: "public", label: shellCopy.public },
-                        { value: "private", label: shellCopy.private },
-                      ]}
-                      className="w-[180px]"
-                    />
+                  <SettingsRow
+                    title={t("profileVisibility")}
+                    description={
+                      profileVisibility === "public"
+                        ? "Qualquer jogador na comunidade pode visualizar seu avatar, biografia, jogos recentes, tempo de jogo e conquistas desbloqueadas. E-mail e credenciais permanecem sempre privados."
+                        : "Seus jogos, horas de jogo, histórico recente e conquistas ficam visíveis apenas para você e seus amigos aprovados. Usuários desconhecidos só verão seu nome de exibição e avatar."
+                    }
+                    hasBorder={false}
+                    action={
+                      <SettingsSelect
+                        value={profileVisibility}
+                        onChange={(v) => handleProfileVisibilityChange(v as ProfileVisibility)}
+                        options={[
+                          { value: "public", label: shellCopy.public },
+                          { value: "private", label: shellCopy.private },
+                        ]}
+                        className="w-[180px]"
+                      />
+                    }
+                  >
+                    {privacyStatus === "saving" && (
+                      <span className="text-[11px] text-white/50">{shellCopy.saving}</span>
+                    )}
+                    {privacyStatus === "saved" && (
+                      <span className="text-[11px] text-emerald-400 font-medium">{shellCopy.saved}</span>
+                    )}
+                    {privacyStatus === "error" && (
+                      <span className="text-[11px] text-red-400">{privacyError}</span>
+                    )}
                   </SettingsRow>
                 </section>
               </div>
             )}
 
-            {/* ABA CONTROLE */}
+            {/* ABA CONTROLE (CONTROLES E DISPOSITIVOS) */}
             {activeTab === "controller" && (
               <div className="space-y-8 animate-in fade-in duration-300">
                 <section>
@@ -2007,41 +2442,119 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                     <Gamepad2 className="h-4 w-4 text-white/70 shrink-0" />
                     <h2 className="text-[17px] font-semibold text-white tracking-wide">{controllerCopy[0]}</h2>
                   </div>
-                  <SettingsRow title={t("controllerStatus")}>
-                    <span className={`inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1 rounded-xl border transition-colors ${isGamepadConnected
-                      ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
-                      : "bg-[var(--color-surface)] text-white/50 border-white/10"
+
+                  {/* Status do controle */}
+                  <SettingsRow
+                    title={t("controllerStatus")}
+                    description={
+                      isGamepadConnected
+                        ? (connectedGamepadId
+                            ? `Dispositivo ativo: ${connectedGamepadId}`
+                            : "Controle detectado e mapeado para navegação fluida no launcher")
+                        : "Nenhum controle detectado via USB ou Bluetooth"
+                    }
+                    action={
+                      <span className={`inline-flex items-center gap-1.5 text-[11.5px] font-semibold px-2.5 py-1 rounded-xl border transition-colors ${
+                        isGamepadConnected
+                          ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
+                          : "bg-[var(--color-surface)] text-white/50 border-white/10"
                       }`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${isGamepadConnected ? "bg-emerald-400 animate-pulse" : "bg-white/30"}`} />
-                      {isGamepadConnected ? controllerCopy[1] : t("disconnected")}
-                    </span>
-                  </SettingsRow>
-                  <SettingsRow title={t("batteryLevel")}>
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[12px] font-semibold text-white/70 tabular-nums">{isGamepadConnected ? `${batteryLevel !== null ? batteryLevel : '--'}%` : "N/A"}</span>
-                      {batteryCharging && <span className="inline-flex items-center gap-1 text-[10.5px] uppercase font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-lg shadow-[0_0_10px_rgba(16,185,129,0.2)]">{t("charging")}</span>}
-                      {batteryLevel !== null && batteryLevel <= 20 && !batteryCharging && isGamepadConnected && <span className="inline-flex items-center gap-1 text-[10.5px] uppercase font-bold text-red-300 bg-red-500/15 border border-red-500/30 px-2 py-0.5 rounded-lg shadow-[0_0_10px_rgba(239,68,68,0.2)]">{t("lowBattery")}</span>}
-                      <button onClick={() => setShowControllerStatusModal(true)} className="px-2.5 py-1 bg-[var(--color-surface)] hover:bg-[#222222] border border-white/10 text-white rounded-lg text-[11.5px] font-medium transition-colors ml-1 active:scale-95 cursor-pointer">{t("details")}</button>
-                    </div>
-                  </SettingsRow>
-                  <SettingsRow title={t("playstationLed")}>
-                    {led.status !== "unsupported" && (
-                      <button
-                        onClick={led.status === "connected" ? led.testLed : led.requestAccess}
-                        disabled={led.status === "connecting"}
-                        className="px-4 py-1.5 bg-white/10 text-white rounded-md text-[12.5px] font-medium hover:bg-white/20 transition-colors disabled:opacity-50 cursor-pointer"
-                      >
-                        {led.status === "connected" ? controllerCopy[4] : led.status === "connecting" ? "..." : controllerCopy[5]}
-                      </button>
-                    )}
-                  </SettingsRow>
-                  <SettingsRow title={t("hapticsEnabled")} hasBorder={false}>
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => { try { playHapticPattern("action"); } catch { } }} className="text-white/50 hover:text-white transition-colors cursor-pointer"><Vibrate className="h-4 w-4" /></button>
-                      <Switch checked={hapticsEnabled} onCheckedChange={(v) => { setHapticsEnabled(v); if (v) try { playHapticPattern("action"); } catch { } }} />
-                      <span className="text-[12px] text-white/50 w-16">{hapticsEnabled ? t("enabled") : t("disabled")}</span>
-                    </div>
-                  </SettingsRow>
+                        <span className={`h-1.5 w-1.5 rounded-full ${isGamepadConnected ? "bg-emerald-400 animate-pulse" : "bg-white/30"}`} />
+                        {isGamepadConnected ? controllerCopy[1] : t("disconnected")}
+                      </span>
+                    }
+                  />
+
+                  {/* Nível de bateria */}
+                  <SettingsRow
+                    title={t("batteryLevel")}
+                    description={
+                      !isGamepadConnected
+                        ? "Conecte um controle para monitorar a autonomia e status de carregamento"
+                        : batteryLevel === null
+                        ? "Bateria não informada pelo dispositivo ou driver conectado"
+                        : batteryCharging
+                        ? "Controle conectado via cabo e em processo de carregamento"
+                        : "Nível de bateria reportado pelo driver em tempo real"
+                    }
+                    action={
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[12px] font-medium text-white/70 tabular-nums">
+                          {!isGamepadConnected ? (
+                            <span className="text-white/45 italic">Conecte um controle</span>
+                          ) : batteryLevel !== null ? (
+                            `${batteryLevel}%`
+                          ) : (
+                            <span className="text-white/50">Não informada</span>
+                          )}
+                        </span>
+                        {batteryCharging && (
+                          <span className="inline-flex items-center gap-1 text-[10.5px] uppercase font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-lg shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                            {t("charging")}
+                          </span>
+                        )}
+                        {batteryLevel !== null && batteryLevel <= 20 && !batteryCharging && isGamepadConnected && (
+                          <span className="inline-flex items-center gap-1 text-[10.5px] uppercase font-bold text-red-300 bg-red-500/15 border border-red-500/30 px-2 py-0.5 rounded-lg shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                            {t("lowBattery")}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setShowControllerStatusModal(true)}
+                          className="px-2.5 py-1 bg-[var(--color-surface)] hover:bg-[#222222] border border-white/10 text-white rounded-lg text-[11.5px] font-medium transition-colors ml-1 active:scale-95 cursor-pointer"
+                        >
+                          {t("details")}
+                        </button>
+                      </div>
+                    }
+                  />
+
+                  {/* Barra de LED */}
+                  <SettingsRow
+                    title={t("playstationLed")}
+                    description="Compatível com controles DualSense (PS5) e DualShock 4 (PS4) via cabo USB. A autorização via WebHID permite ao launcher sincronizar a barra de luz com os temas ativos e alertas de conquistas."
+                    action={
+                      led.status === "unsupported" ? (
+                        <span className="text-[11.5px] text-white/40">WebHID não suportado</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={led.status === "connected" ? led.testLed : led.requestAccess}
+                          disabled={led.status === "connecting"}
+                          className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white rounded-xl text-[12px] font-medium transition-colors disabled:opacity-50 cursor-pointer active:scale-95"
+                        >
+                          {led.status === "connected" ? controllerCopy[4] : led.status === "connecting" ? "..." : controllerCopy[5]}
+                        </button>
+                      )
+                    }
+                  />
+
+                  {/* Resposta tátil / Vibração */}
+                  <SettingsRow
+                    title={t("hapticsEnabled")}
+                    description="Vibração tátil em navegação e ações no hub. A preferência será aplicada automaticamente quando um controle compatível estiver conectado."
+                    hasBorder={false}
+                    action={
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => { try { playHapticPattern("action"); } catch { } }}
+                          className="text-white/50 hover:text-white p-1 transition-colors cursor-pointer"
+                          title="Testar pulso de vibração"
+                        >
+                          <Vibrate className="h-4 w-4" />
+                        </button>
+                        <Switch
+                          checked={hapticsEnabled}
+                          onCheckedChange={(v) => {
+                            setHapticsEnabled(v);
+                            if (v) try { playHapticPattern("action"); } catch { }
+                          }}
+                        />
+                        <span className="text-[12px] text-white/50 w-16">{hapticsEnabled ? t("enabled") : t("disabled")}</span>
+                      </div>
+                    }
+                  />
                 </section>
               </div>
             )}
@@ -2055,79 +2568,176 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                     <h2 className="text-[17px] font-semibold text-white tracking-wide">{voiceCopy.ioTitle}</h2>
                   </div>
 
-                  <SettingsRow title={voiceCopy.audioInput}>
-                    <SettingsSelect
-                      value={voiceCallContext?.selectedAudioInput || "default"}
-                      onChange={(v) => voiceCallContext?.changeAudioInputDevice(v)}
-                      options={[
-                        { value: "default", label: voiceCopy.defaultSystem },
-                        ...(voiceCallContext?.audioInputDevices.map((d) => ({
-                          value: d.deviceId,
-                          label: d.label || `Mic (${d.deviceId.slice(0, 8)}...)`,
-                        })) || []),
-                      ]}
-                      className="w-[220px]"
-                    />
-                  </SettingsRow>
+                  <SettingsRow
+                    title={voiceCopy.audioInput}
+                    description="Dispositivo principal de captura para canais de voz e chamadas em grupo"
+                    action={
+                      <SettingsSelect
+                        value={voiceCallContext?.selectedAudioInput || "default"}
+                        onChange={(v) => voiceCallContext?.changeAudioInputDevice(v)}
+                        options={[
+                          { value: "default", label: voiceCopy.defaultSystem },
+                          ...(voiceCallContext?.audioInputDevices.map((d) => ({
+                            value: d.deviceId,
+                            label: d.label || `Microfone (${d.deviceId.slice(0, 8)}...)`,
+                          })) || []),
+                        ]}
+                        className="w-full sm:w-[280px] md:w-[320px]"
+                      />
+                    }
+                  />
 
-                  <SettingsRow title={voiceCopy.micMonitor}>
-                    <div className="flex items-center gap-3">
-                      <Switch checked={Boolean(voiceCallContext?.isMicMonitoring)} onCheckedChange={(v) => voiceCallContext?.setIsMicMonitoring(v)} />
-                      <span className="text-[12px] text-white/50 w-16">{voiceCallContext?.isMicMonitoring ? t("enabled") : t("disabled")}</span>
-                    </div>
-                  </SettingsRow>
+                  <SettingsRow
+                    title={voiceCopy.micMonitor}
+                    description="Retorno imediato da própria voz nos fones para calibrar volume e ruído ambiente"
+                    action={
+                      <div className="flex items-center gap-3">
+                        <Switch
+                          checked={Boolean(voiceCallContext?.isMicMonitoring)}
+                          onCheckedChange={(v) => voiceCallContext?.setIsMicMonitoring(v)}
+                        />
+                        <span className="text-[12px] text-white/50 w-16">{voiceCallContext?.isMicMonitoring ? t("enabled") : t("disabled")}</span>
+                      </div>
+                    }
+                  />
 
-                  <SettingsRow title={voiceCopy.micTesting}>
-                    <div className="flex items-center gap-3 w-[220px]">
-                      <button onClick={() => setIsTestingMic(!isTestingMic)} className={`px-2 py-1 text-[11px] rounded font-medium transition-colors cursor-pointer ${isTestingMic ? 'bg-red-500/80' : 'bg-white/10 hover:bg-white/20'}`}>
+                  {/* Teste de microfone com VU Meter proeminente e estados explícitos */}
+                  <SettingsRow
+                    title={voiceCopy.micTesting}
+                    description="Fale no microfone para testar o nível de captação e verificar a resposta sonora em tempo real"
+                    action={
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsTestingMic(!isTestingMic);
+                          playSound("hover");
+                        }}
+                        className={`px-3.5 py-1.5 text-[12px] rounded-xl font-medium transition-all cursor-pointer active:scale-95 flex items-center gap-2 ${
+                          isTestingMic
+                            ? "bg-red-500/15 text-red-300 border border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.2)]"
+                            : "bg-white/10 hover:bg-white/20 text-white border border-white/15"
+                        }`}
+                      >
+                        <span className={`h-2 w-2 rounded-full ${isTestingMic ? "bg-red-400 animate-pulse" : "bg-white/40"}`} />
                         {isTestingMic ? voiceCopy.stop : voiceCopy.test}
                       </button>
-                      <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                        <div className="h-full bg-emerald-400 transition-all duration-75" style={{ width: `${testMicVolume}%` }} />
+                    }
+                  >
+                    <div className="p-3.5 rounded-xl border border-white/[0.08] bg-black/40 space-y-2.5">
+                      <div className="flex items-center justify-between text-[11.5px]">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white/50">Estado do sinal:</span>
+                          {micPermissionError ? (
+                            <span className="inline-flex items-center gap-1.5 text-red-400 font-semibold">
+                              <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                              Permissão necessária no sistema operacional
+                            </span>
+                          ) : !isTestingMic ? (
+                            <span className="inline-flex items-center gap-1.5 text-white/40">
+                              <span className="h-1.5 w-1.5 rounded-full bg-white/30" />
+                              Inativo
+                            </span>
+                          ) : testMicVolume > 4 ? (
+                            <span className="inline-flex items-center gap-1.5 text-emerald-300 font-semibold">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              Sinal detectado ({testMicVolume}%)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-amber-300 font-medium">
+                              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                              Aguardando sinal sonoro...
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-white/40 font-mono text-[11px] tabular-nums">
+                          {isTestingMic ? `${testMicVolume}%` : "--"}
+                        </span>
+                      </div>
+
+                      {/* Barra visual do medidor VU com gradiente dinâmico */}
+                      <div className="relative h-2.5 w-full rounded-full bg-white/5 border border-white/10 overflow-hidden p-0.5">
+                        <div
+                          className="h-full rounded-full transition-all duration-75 ease-out"
+                          style={{
+                            width: `${testMicVolume}%`,
+                            background: "linear-gradient(90deg, #10b981 0%, #34d399 60%, #eab308 85%, #ef4444 100%)",
+                            boxShadow: testMicVolume > 0 ? "0 0 10px rgba(16,185,129,0.35)" : "none",
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex justify-between text-[10px] text-white/30 font-medium px-0.5">
+                        <span>Silêncio</span>
+                        <span>Nível ideal</span>
+                        <span>Pico</span>
                       </div>
                     </div>
                   </SettingsRow>
 
-                  <SettingsRow title={voiceCopy.audioOutput}>
-                    <SettingsSelect
-                      value={voiceCallContext?.selectedAudioOutput || "default"}
-                      onChange={(v) => voiceCallContext?.changeAudioOutputDevice(v)}
-                      options={[
-                        { value: "default", label: voiceCopy.defaultSystem },
-                        ...(voiceCallContext?.audioOutputDevices.map((d) => ({
-                          value: d.deviceId,
-                          label: d.label || `Speaker (${d.deviceId.slice(0, 8)}...)`,
-                        })) || []),
-                      ]}
-                      className="w-[220px]"
-                    />
-                  </SettingsRow>
-
-                  <SettingsRow title={voiceCopy.camera} hasBorder={false}>
-                    <div className="flex gap-2">
-                      <button onClick={() => setIsVideoPreviewOn(!isVideoPreviewOn)} className="px-3 py-1.5 bg-[var(--color-surface)] hover:bg-[#222222] border border-white/10 text-white rounded-xl text-[12px] font-medium transition-colors cursor-pointer active:scale-95">{voiceCopy.preview}</button>
+                  <SettingsRow
+                    title={voiceCopy.audioOutput}
+                    description="Dispositivo para reprodução do áudio de chamadas e notificações do launcher"
+                    action={
                       <SettingsSelect
-                        value={voiceCallContext?.selectedVideoInput || "default"}
-                        onChange={(v) => voiceCallContext?.changeVideoInputDevice(v)}
+                        value={voiceCallContext?.selectedAudioOutput || "default"}
+                        onChange={(v) => voiceCallContext?.changeAudioOutputDevice(v)}
                         options={[
                           { value: "default", label: voiceCopy.defaultSystem },
-                          ...(voiceCallContext?.videoInputDevices.map((d) => ({
+                          ...(voiceCallContext?.audioOutputDevices.map((d) => ({
                             value: d.deviceId,
-                            label: d.label || `Cam (${d.deviceId.slice(0, 8)}...)`,
+                            label: d.label || `Alto-falante (${d.deviceId.slice(0, 8)}...)`,
                           })) || []),
                         ]}
-                        className="w-[150px]"
+                        className="w-full sm:w-[280px] md:w-[320px]"
                       />
-                    </div>
+                    }
+                  />
+
+                  <SettingsRow
+                    title={voiceCopy.camera}
+                    description="Dispositivo de vídeo utilizado nas chamadas de canal do Phelierium"
+                    hasBorder={false}
+                    action={
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsVideoPreviewOn(!isVideoPreviewOn)}
+                          className={`px-3 py-1.5 border rounded-xl text-[12px] font-medium transition-all cursor-pointer active:scale-95 ${
+                            isVideoPreviewOn
+                              ? "bg-white text-black border-white shadow-sm"
+                              : "bg-[var(--color-surface)] hover:bg-[#222222] border-white/10 text-white"
+                          }`}
+                        >
+                          {isVideoPreviewOn ? "Ocultar câmera" : voiceCopy.preview}
+                        </button>
+                        <SettingsSelect
+                          value={voiceCallContext?.selectedVideoInput || "default"}
+                          onChange={(v) => voiceCallContext?.changeVideoInputDevice(v)}
+                          options={[
+                            { value: "default", label: voiceCopy.defaultSystem },
+                            ...(voiceCallContext?.videoInputDevices.map((d) => ({
+                              value: d.deviceId,
+                              label: d.label || `Câmera (${d.deviceId.slice(0, 8)}...)`,
+                            })) || []),
+                          ]}
+                          className="w-full sm:w-[200px] md:w-[240px]"
+                        />
+                      </div>
+                    }
+                  >
+                    {isVideoPreviewOn && (
+                      <div className="relative w-full aspect-video rounded-2xl bg-black overflow-hidden border border-white/15 shadow-xl mt-3">
+                        <video ref={videoPreviewRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-medium text-white">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          <span>Pré-visualização ativa</span>
+                        </div>
+                      </div>
+                    )}
                   </SettingsRow>
-                  {isVideoPreviewOn && (
-                    <div className="w-full aspect-video rounded-xl bg-black overflow-hidden border border-white/10 mt-2 mb-4">
-                      <video ref={videoPreviewRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-                    </div>
-                  )}
                 </section>
 
-                <div className="h-px w-full bg-[var(--color-surface)]" />
+                <div className="h-px w-full bg-white/[0.06]" />
 
                 <section>
                   <div className="flex items-center gap-2.5 mb-4">
@@ -2135,73 +2745,102 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                     <h2 className="text-[17px] font-semibold text-white tracking-wide">{voiceCopy.processingTitle}</h2>
                   </div>
 
-                  <SettingsRow title={voiceCopy.noiseSuppression}>
-                    <SettingsSelect
-                      value={voiceCallContext?.advancedNoiseSuppression ? 'rnnoise' : voiceCallContext?.noiseSuppression ? 'native' : 'none'}
-                      onChange={(val) => {
-                        voiceCallContext?.setAdvancedNoiseSuppression?.(val === 'rnnoise');
-                        voiceCallContext?.setNoiseSuppression(val === 'native');
-                      }}
-                      options={[
-                        { value: "rnnoise", label: voiceCopy.aiIsolation },
-                        { value: "native", label: voiceCopy.standardNative },
-                        { value: "none", label: voiceCopy.raw },
-                      ]}
-                      className="w-[180px]"
-                    />
-                  </SettingsRow>
-
-                  <SettingsRow title={voiceCopy.voiceSensitivity}>
-                    <div className="flex items-center gap-4">
-                      <ElasticSlider
-                        value={voiceCallContext?.voiceSensitivity ?? 35}
-                        onChange={(val) => voiceCallContext?.setVoiceSensitivity(val)}
-                        startingValue={0}
-                        maxValue={100}
-                        leftIcon={<MicOff className="h-3.5 w-3.5" />}
-                        rightIcon={<Mic className="h-3.5 w-3.5" />}
-                        className="ml-2"
+                  <SettingsRow
+                    title={voiceCopy.noiseSuppression}
+                    description="Krisp (LiveKit) isola a voz com IA. RNNoise e nativo são alternativas locais."
+                    action={
+                      <SettingsSelect
+                        value={voiceCallContext?.noiseSuppressionMode ?? (voiceCallContext?.advancedNoiseSuppression ? "rnnoise" : voiceCallContext?.noiseSuppression ? "native" : "none")}
+                        onChange={(val) => {
+                          const mode = val as "none" | "native" | "rnnoise" | "krisp";
+                          void voiceCallContext?.setNoiseSuppressionMode?.(mode);
+                        }}
+                        options={[
+                          { value: "krisp", label: "Krisp (LiveKit IA)" },
+                          { value: "rnnoise", label: voiceCopy.aiIsolation },
+                          { value: "native", label: voiceCopy.standardNative },
+                          { value: "none", label: voiceCopy.raw },
+                        ]}
+                        className="w-full sm:w-[260px] md:w-[300px]"
                       />
-                    </div>
-                  </SettingsRow>
+                    }
+                  />
 
-                  <SettingsRow title={voiceCopy.echoCancellation}>
-                    <div className="flex items-center gap-3">
-                      <Switch checked={voiceCallContext?.echoCancellation ?? true} onCheckedChange={(checked) => voiceCallContext?.setEchoCancellation(checked)} />
-                      <span className="text-[12px] text-white/50 w-16">{(voiceCallContext?.echoCancellation ?? true) ? t("enabled") : t("disabled")}</span>
-                    </div>
-                  </SettingsRow>
-
-                  <SettingsRow title={voiceCopy.inputMode} hasBorder={false}>
-                    <SettingsSelect
-                      value={voiceCallContext?.inputMode || 'voice-activity'}
-                      onChange={(v) => voiceCallContext?.setInputMode(v as "voice-activity" | "push-to-talk")}
-                      options={[
-                        { value: "voice-activity", label: voiceCopy.voiceActivity },
-                        { value: "push-to-talk", label: voiceCopy.pushToTalk },
-                      ]}
-                      className="w-[180px]"
+                  <SettingsRow
+                    title={voiceCopy.voiceSensitivity}
+                    description="Limiar de volume para abertura automática da captação de voz"
+                    action={
+                      <span className="text-[12px] text-white/50 tabular-nums font-semibold">
+                        {voiceCallContext?.voiceSensitivity ?? 35}%
+                      </span>
+                    }
+                  >
+                    <ElasticSlider
+                      value={voiceCallContext?.voiceSensitivity ?? 35}
+                      onChange={(val) => voiceCallContext?.setVoiceSensitivity(val)}
+                      startingValue={0}
+                      maxValue={100}
+                      leftIcon={<MicOff className="h-3.5 w-3.5" />}
+                      rightIcon={<Mic className="h-3.5 w-3.5" />}
+                      className="w-full max-w-[340px]"
                     />
                   </SettingsRow>
+
+                  <SettingsRow
+                    title={voiceCopy.echoCancellation}
+                    description="Elimina retorno acústico em caixas de som e fones de ouvido vazados"
+                    action={
+                      <div className="flex items-center gap-3">
+                        <Switch
+                          checked={voiceCallContext?.echoCancellation ?? true}
+                          onCheckedChange={(checked) => voiceCallContext?.setEchoCancellation(checked)}
+                        />
+                        <span className="text-[12px] text-white/50 w-16">{(voiceCallContext?.echoCancellation ?? true) ? t("enabled") : t("disabled")}</span>
+                      </div>
+                    }
+                  />
+
+                  <SettingsRow
+                    title={voiceCopy.inputMode}
+                    description="Escolha entre transmissão contínua com detecção de voz ou atalho manual"
+                    hasBorder={false}
+                    action={
+                      <SettingsSelect
+                        value={voiceCallContext?.inputMode || 'voice-activity'}
+                        onChange={(v) => voiceCallContext?.setInputMode(v as "voice-activity" | "push-to-talk")}
+                        options={[
+                          { value: "voice-activity", label: voiceCopy.voiceActivity },
+                          { value: "push-to-talk", label: voiceCopy.pushToTalk },
+                        ]}
+                        className="w-full sm:w-[200px] md:w-[240px]"
+                      />
+                    }
+                  />
 
                   {voiceCallContext?.inputMode === "push-to-talk" && (
-                    <SettingsRow title={voiceCopy.pttKeybind} hasBorder={false}>
-                      <button
-                        onClick={() => {
-                          setIsRecordingPttKey(true);
-                          const onKey = (e: KeyboardEvent) => {
-                            e.preventDefault(); e.stopPropagation();
-                            voiceCallContext?.setPushToTalkKey(e.key === " " ? "Space" : e.key.length === 1 ? e.key.toUpperCase() : e.key);
-                            setIsRecordingPttKey(false);
-                            window.removeEventListener("keydown", onKey, true);
-                          };
-                          window.addEventListener("keydown", onKey, true);
-                        }}
-                        className={`min-w-[80px] px-3 py-1.5 rounded-md border text-[12px] font-mono font-medium transition-colors ${isRecordingPttKey ? "bg-amber-500/20 text-amber-300 border-amber-500" : "bg-white/10 text-white border-white/15"}`}
-                      >
-                        {isRecordingPttKey ? "..." : voiceCallContext?.pushToTalkKey || "F8"}
-                      </button>
-                    </SettingsRow>
+                    <SettingsRow
+                      title={voiceCopy.pttKeybind}
+                      description="Pressione para configurar o atalho de ativação da voz"
+                      hasBorder={false}
+                      action={
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsRecordingPttKey(true);
+                            const onKey = (e: KeyboardEvent) => {
+                              e.preventDefault(); e.stopPropagation();
+                              voiceCallContext?.setPushToTalkKey(e.key === " " ? "Space" : e.key.length === 1 ? e.key.toUpperCase() : e.key);
+                              setIsRecordingPttKey(false);
+                              window.removeEventListener("keydown", onKey, true);
+                            };
+                            window.addEventListener("keydown", onKey, true);
+                          }}
+                          className={`min-w-[80px] px-3 py-1.5 rounded-xl border text-[12px] font-mono font-medium transition-colors ${isRecordingPttKey ? "bg-amber-500/20 text-amber-300 border-amber-500" : "bg-white/10 text-white border-white/15"}`}
+                        >
+                          {isRecordingPttKey ? "Pressione..." : voiceCallContext?.pushToTalkKey || "F8"}
+                        </button>
+                      }
+                    />
                   )}
                 </section>
               </div>
@@ -2216,35 +2855,48 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                     <h2 className="text-[17px] font-semibold text-white tracking-wide">{achievementNotificationCopy.title}</h2>
                   </div>
 
-                  <SettingsRow title={achievementNotificationCopy.enabled}>
-                    <div className="flex items-center gap-3">
-                      <Switch checked={achievementNotificationsEnabled} onCheckedChange={setAchievementNotificationsEnabled} />
-                      <span className="text-[12px] text-white/50 w-16">{achievementNotificationsEnabled ? t("enabled") : t("disabled")}</span>
-                    </div>
-                  </SettingsRow>
+                  <SettingsRow
+                    title={achievementNotificationCopy.enabled}
+                    description="Exibe notificações visuais no canto da tela ao desbloquear conquistas em jogos"
+                    action={
+                      <div className="flex items-center gap-3">
+                        <Switch checked={achievementNotificationsEnabled} onCheckedChange={setAchievementNotificationsEnabled} />
+                        <span className="text-[12px] text-white/50 w-16">{achievementNotificationsEnabled ? t("enabled") : t("disabled")}</span>
+                      </div>
+                    }
+                  />
 
-                  <SettingsRow title={achievementNotificationCopy.custom}>
-                    <div className="flex items-center gap-3">
-                      <Switch checked={customAchievementNotifications} disabled={!achievementNotificationsEnabled} onCheckedChange={setCustomAchievementNotifications} />
-                      <span className="text-[12px] text-white/50 w-16">{customAchievementNotifications ? t("enabled") : t("disabled")}</span>
-                    </div>
-                  </SettingsRow>
+                  <SettingsRow
+                    title={achievementNotificationCopy.custom}
+                    description="Utiliza o card com design e efeitos sonoros customizados do Phelierium"
+                    action={
+                      <div className="flex items-center gap-3">
+                        <Switch checked={customAchievementNotifications} disabled={!achievementNotificationsEnabled} onCheckedChange={setCustomAchievementNotifications} />
+                        <span className="text-[12px] text-white/50 w-16">{customAchievementNotifications ? t("enabled") : t("disabled")}</span>
+                      </div>
+                    }
+                  />
 
-                  <SettingsRow title={t("position")} hasBorder={false}>
-                    <SettingsSelect
-                      value={achievementNotificationPosition}
-                      disabled={!achievementNotificationsEnabled || !customAchievementNotifications}
-                      onChange={(pos) => setAchievementNotificationPosition(pos as any)}
-                      options={ACHIEVEMENT_POSITIONS.map((pos, idx) => ({
-                        value: pos,
-                        label: achievementNotificationCopy.positions[idx] || pos,
-                      }))}
-                      className="w-[180px]"
-                    />
-                  </SettingsRow>
+                  <SettingsRow
+                    title={t("position")}
+                    description="Posicionamento do card de conquista sobreposto à tela do jogo"
+                    hasBorder={false}
+                    action={
+                      <SettingsSelect
+                        value={achievementNotificationPosition}
+                        disabled={!achievementNotificationsEnabled || !customAchievementNotifications}
+                        onChange={(pos) => setAchievementNotificationPosition(pos as any)}
+                        options={ACHIEVEMENT_POSITIONS.map((pos, idx) => ({
+                          value: pos,
+                          label: achievementNotificationCopy.positions[idx] || pos,
+                        }))}
+                        className="w-[180px]"
+                      />
+                    }
+                  />
                 </section>
 
-                <div className="h-px w-full bg-[var(--color-surface)]" />
+                <div className="h-px w-full bg-white/[0.06]" />
 
                 <section>
                   <div className="flex items-center gap-2.5 mb-4">
@@ -2252,20 +2904,45 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                     <h2 className="text-[17px] font-semibold text-white tracking-wide">{detailCopy.overlayLab}</h2>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <button onClick={onTestOverlayWelcome} onMouseEnter={() => playSound("hover")} className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-left">
+                    <button
+                      onClick={onTestOverlayWelcome}
+                      onMouseEnter={() => playSound("hover")}
+                      className="p-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-left transition-all active:scale-[0.98] cursor-pointer"
+                    >
                       <span className="block text-[13px] font-medium text-white">{detailCopy.testWelcome}</span>
+                      <span className="block text-[11px] text-white/40 mt-0.5">{detailCopy.testWelcomeHint}</span>
                     </button>
-                    <button onClick={() => onTestOverlayAchievement("bronze")} onMouseEnter={() => playSound("hover")} className="p-3 bg-amber-700/10 hover:bg-amber-700/20 border border-amber-600/30 rounded-xl text-left">
+                    <button
+                      onClick={() => onTestOverlayAchievement("bronze")}
+                      onMouseEnter={() => playSound("hover")}
+                      className="p-3.5 bg-amber-700/10 hover:bg-amber-700/20 border border-amber-600/30 rounded-xl text-left transition-all active:scale-[0.98] cursor-pointer"
+                    >
                       <span className="block text-[13px] font-medium text-amber-500">{detailCopy.testBronze}</span>
+                      <span className="block text-[11px] text-amber-500/50 mt-0.5">{detailCopy.testBronzeHint}</span>
                     </button>
-                    <button onClick={() => onTestOverlayAchievement("silver")} onMouseEnter={() => playSound("hover")} className="p-3 bg-slate-300/10 hover:bg-slate-300/20 border border-slate-300/25 rounded-xl text-left">
+                    <button
+                      onClick={() => onTestOverlayAchievement("silver")}
+                      onMouseEnter={() => playSound("hover")}
+                      className="p-3.5 bg-slate-300/10 hover:bg-slate-300/20 border border-slate-300/25 rounded-xl text-left transition-all active:scale-[0.98] cursor-pointer"
+                    >
                       <span className="block text-[13px] font-medium text-slate-300">{detailCopy.testSilver}</span>
+                      <span className="block text-[11px] text-slate-300/50 mt-0.5">{detailCopy.testSilverHint}</span>
                     </button>
-                    <button onClick={() => onTestOverlayAchievement("gold")} onMouseEnter={() => playSound("hover")} className="p-3 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-400/35 rounded-xl text-left">
+                    <button
+                      onClick={() => onTestOverlayAchievement("gold")}
+                      onMouseEnter={() => playSound("hover")}
+                      className="p-3.5 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-400/35 rounded-xl text-left transition-all active:scale-[0.98] cursor-pointer"
+                    >
                       <span className="block text-[13px] font-medium text-yellow-400">{detailCopy.testGold}</span>
+                      <span className="block text-[11px] text-yellow-400/50 mt-0.5">{detailCopy.testGoldHint}</span>
                     </button>
-                    <button onClick={() => onTestOverlayAchievement("platinum")} onMouseEnter={() => playSound("hover")} className="p-3 col-span-2 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/40 rounded-xl text-left">
+                    <button
+                      onClick={() => onTestOverlayAchievement("platinum")}
+                      onMouseEnter={() => playSound("hover")}
+                      className="p-3.5 col-span-2 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/40 rounded-xl text-left transition-all active:scale-[0.98] cursor-pointer"
+                    >
                       <span className="block text-[13px] font-medium text-sky-300">{detailCopy.testPlatinum}</span>
+                      <span className="block text-[11px] text-sky-300/50 mt-0.5">{detailCopy.testPlatinumHint}</span>
                     </button>
                   </div>
                 </section>

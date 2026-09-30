@@ -1,11 +1,14 @@
-import { apiUrl, getAuthHeaders as getApiAuthHeaders } from "./api";
+import { apiFetch } from "./api";
 import { supabase } from "./supabase";
 import type { PublicVoiceRoom, VoiceRoom, RoomCategory, VoiceRoomParticipant } from "../types/voice-governance";
 
 let roomsChannel: any = null;
 let currentTrackedRoom: PublicVoiceRoom | null = null;
 
-const getAuthHeaders = (): Promise<Record<string, string>> => getApiAuthHeaders(true);
+const parseErrorPayload = async (res: Response, fallback: string) => {
+  const data = (await res.json().catch(() => ({}))) as { error?: string };
+  return data.error || fallback;
+};
 
 /**
  * Cria uma nova sala persistente no backend
@@ -22,10 +25,10 @@ export const createVoiceRoom = async (config: {
   maxParticipants?: number;
 }): Promise<VoiceRoom> => {
   const finalName = (config.name || config.roomName || "").trim();
-  const headers = await getAuthHeaders();
-  const res = await fetch(apiUrl("/api/voice/rooms"), {
+  const res = await apiFetch("/api/voice/rooms", {
     method: "POST",
-    headers,
+    authenticated: true,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       name: finalName,
       category: config.category || "resenha_games",
@@ -38,12 +41,15 @@ export const createVoiceRoom = async (config: {
     }),
   });
 
-  const data = await res.json();
+  const data = (await res.json().catch(() => ({}))) as { error?: string; room?: VoiceRoom };
   if (!res.ok) {
     throw new Error(data.error || "Não foi possível criar a sala de voz.");
   }
+  if (!data.room) {
+    throw new Error("Resposta inválida do servidor ao criar a sala.");
+  }
 
-  return data.room as VoiceRoom;
+  return data.room;
 };
 
 /**
@@ -64,10 +70,10 @@ export const updateVoiceRoom = async (
 ): Promise<VoiceRoom | null> => {
   try {
     const finalName = (config.name || config.roomName || "").trim();
-    const headers = await getAuthHeaders();
-    const res = await fetch(apiUrl(`/api/voice/rooms/${roomId}`), {
+    const res = await apiFetch(`/api/voice/rooms/${roomId}`, {
       method: "PATCH",
-      headers,
+      authenticated: true,
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: finalName,
         category: config.category,
@@ -80,7 +86,7 @@ export const updateVoiceRoom = async (
     });
 
     if (res.ok) {
-      const data = await res.json();
+      const data = (await res.json()) as { room?: VoiceRoom };
       return (data.room || null) as VoiceRoom | null;
     }
   } catch (err) {
@@ -97,7 +103,6 @@ export const listPublicVoiceRooms = async (filters?: {
   search?: string;
 }): Promise<VoiceRoom[]> => {
   try {
-    const headers = await getAuthHeaders();
     const params = new URLSearchParams();
     if (filters?.category && filters.category !== "all") {
       params.set("category", filters.category);
@@ -107,16 +112,16 @@ export const listPublicVoiceRooms = async (filters?: {
     }
 
     const query = params.toString() ? `?${params.toString()}` : "";
-    const res = await fetch(apiUrl(`/api/voice/rooms/public${query}`), {
+    const res = await apiFetch(`/api/voice/rooms/public${query}`, {
       method: "GET",
-      headers,
+      authenticated: true,
     });
 
     if (!res.ok) {
       throw new Error(`Erro ao listar salas públicas (Status ${res.status})`);
     }
 
-    const data = await res.json();
+    const data = (await res.json()) as { rooms?: VoiceRoom[] };
     return (data.rooms || []) as VoiceRoom[];
   } catch (err) {
     console.warn("[voiceRooms] listPublicVoiceRooms failed:", err);
@@ -129,17 +134,16 @@ export const listPublicVoiceRooms = async (filters?: {
  */
 export const getMyVoiceRooms = async (): Promise<VoiceRoom[]> => {
   try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(apiUrl("/api/voice/rooms/my"), {
+    const res = await apiFetch("/api/voice/rooms/my", {
       method: "GET",
-      headers,
+      authenticated: true,
     });
 
     if (!res.ok) {
       throw new Error(`Erro ao buscar minhas salas (Status ${res.status})`);
     }
 
-    const data = await res.json();
+    const data = (await res.json()) as { rooms?: VoiceRoom[] };
     return (data.rooms || []) as VoiceRoom[];
   } catch (err) {
     console.warn("[voiceRooms] getMyVoiceRooms failed:", err);
@@ -152,17 +156,16 @@ export const getMyVoiceRooms = async (): Promise<VoiceRoom[]> => {
  */
 export const getVoiceRoomById = async (roomId: string): Promise<VoiceRoom | null> => {
   try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(apiUrl(`/api/voice/rooms/${roomId}`), {
+    const res = await apiFetch(`/api/voice/rooms/${roomId}`, {
       method: "GET",
-      headers,
+      authenticated: true,
     });
 
     if (!res.ok) {
       return null;
     }
 
-    const data = await res.json();
+    const data = (await res.json()) as { room?: VoiceRoom };
     return (data.room || null) as VoiceRoom | null;
   } catch (err) {
     console.warn("[voiceRooms] getVoiceRoomById failed:", err);
@@ -171,7 +174,7 @@ export const getVoiceRoomById = async (roomId: string): Promise<VoiceRoom | null
 };
 
 /**
- * Ingressa em uma sala com validação server-side de senha e limite de 4 participantes
+ * Ingressa em uma sala com validação server-side de senha e limite de participantes
  */
 export const joinVoiceRoom = async (
   roomId: string,
@@ -181,10 +184,10 @@ export const joinVoiceRoom = async (
     avatarUrl?: string;
   },
 ): Promise<{ success: boolean; room: VoiceRoom; participants: VoiceRoomParticipant[] }> => {
-  const headers = await getAuthHeaders();
-  const res = await fetch(apiUrl(`/api/voice/rooms/${roomId}/join`), {
+  const res = await apiFetch(`/api/voice/rooms/${roomId}/join`, {
     method: "POST",
-    headers,
+    authenticated: true,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       password: options?.password || "",
       displayName: options?.displayName,
@@ -192,14 +195,18 @@ export const joinVoiceRoom = async (
     }),
   });
 
-  const data = await res.json();
+  const data = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    room?: VoiceRoom;
+    participants?: VoiceRoomParticipant[];
+  };
   if (!res.ok) {
     throw new Error(data.error || "Não foi possível entrar na sala de voz.");
   }
 
   return {
     success: true,
-    room: data.room,
+    room: data.room as VoiceRoom,
     participants: data.participants || [],
   };
 };
@@ -209,10 +216,9 @@ export const joinVoiceRoom = async (
  */
 export const leaveVoiceRoom = async (roomId: string): Promise<void> => {
   try {
-    const headers = await getAuthHeaders();
-    await fetch(apiUrl(`/api/voice/rooms/${roomId}/leave`), {
+    await apiFetch(`/api/voice/rooms/${roomId}/leave`, {
       method: "POST",
-      headers,
+      authenticated: true,
     });
   } catch (err) {
     console.warn("[voiceRooms] leaveVoiceRoom failed:", err);
@@ -223,15 +229,13 @@ export const leaveVoiceRoom = async (roomId: string): Promise<void> => {
  * Encerra e deleta a sala de voz (Apenas Host)
  */
 export const closeVoiceRoom = async (roomId: string): Promise<void> => {
-  const headers = await getAuthHeaders();
-  const res = await fetch(apiUrl(`/api/voice/rooms/${roomId}`), {
+  const res = await apiFetch(`/api/voice/rooms/${roomId}`, {
     method: "DELETE",
-    headers,
+    authenticated: true,
   });
 
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || "Não foi possível encerrar a sala.");
+    throw new Error(await parseErrorPayload(res, "Não foi possível encerrar a sala."));
   }
 };
 

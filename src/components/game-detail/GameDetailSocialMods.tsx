@@ -298,6 +298,37 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
   if (activeTab === copy.tabManage) {
     return (
       <div className="w-full flex flex-col gap-8">
+        {/* Metadados de Integração do Hub */}
+        <div className="flex flex-col gap-3 p-5 rounded-2xl bg-[var(--color-surface)] border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+          <h3 className="text-xs font-semibold text-white/70 uppercase tracking-wider">
+            Metadados de Integração
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            {game.launcherType === "steam" && (
+              <div className="flex flex-col gap-1">
+                <span className="text-white/40">{copy.appId}</span>
+                <span className="font-mono text-white/90">{game.steamAppId || "---"}</span>
+              </div>
+            )}
+            <div className="flex flex-col gap-1">
+              <span className="text-white/40">{copy.source}</span>
+              <span className="text-white/90">
+                {game.source === "steam"
+                  ? copy.sourceSteamSync
+                  : game.source === "epic"
+                    ? copy.sourceEpicCatalog
+                    : copy.sourceManual}
+              </span>
+            </div>
+            {game.executablePath && (
+              <div className="flex flex-col gap-1 sm:col-span-2">
+                <span className="text-white/40">Executável</span>
+                <span className="font-mono text-[11px] text-white/70 truncate">{game.executablePath}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
         <AdvancedLaunchSettings
           monitorIndex={launchProfile.monitorId ?? 0}
           onMonitorChange={(index) => onLaunchProfileChange({ ...launchProfile, monitorId: index })}

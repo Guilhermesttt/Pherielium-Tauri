@@ -45,7 +45,7 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
     info: { enabled: true, duration: 4200 },
     warning: { enabled: true, duration: 5000, sound: true },
     achievement: { enabled: true, duration: 8000, sound: true },
-    "incoming-call": { enabled: true, duration: 0, sound: true },
+    "incoming-call": { enabled: true, duration: 5000, sound: true },
     "friend-request": { enabled: true, duration: 10000, sound: true },
     "friend-accepted": { enabled: true, duration: 5000 },
     message: { enabled: true, duration: 6000, sound: true },

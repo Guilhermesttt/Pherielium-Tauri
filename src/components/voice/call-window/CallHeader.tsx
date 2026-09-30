@@ -9,6 +9,7 @@ import {
   Palette,
   Loader2,
   Phone,
+  PictureInPicture2,
 } from "lucide-react";
 import type { VoiceCallSession, CallState } from "../../../types/domain";
 import type { CallRoomConfig } from "../../../types/voice-governance";
@@ -20,7 +21,9 @@ interface CallHeaderProps {
   participantsCount: number;
   isReconnecting?: boolean;
   isFullscreen: boolean;
+  isCompactMode?: boolean;
   onToggleFullscreen: () => void;
+  onToggleCompactMode?: () => void;
   onClose: () => void;
   onOpenInvite?: () => void;
   onOpenPrivacy?: () => void;
@@ -45,7 +48,9 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
   participantsCount,
   isReconnecting = false,
   isFullscreen,
+  isCompactMode = false,
   onToggleFullscreen,
+  onToggleCompactMode,
   onClose,
   onOpenInvite,
   onOpenPrivacy,
@@ -194,6 +199,24 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
           </button>
         )}
 
+        {/* Modo Compacto (ideal para multitarefas e jogos) */}
+        {onToggleCompactMode && (
+          <button
+            type="button"
+            onClick={onToggleCompactMode}
+            style={{ cornerShape: "squircle" } as React.CSSProperties}
+            className={`h-8 w-8 flex items-center justify-center rounded-[10px] transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
+              isCompactMode
+                ? "bg-white text-black font-semibold shadow-sm"
+                : "text-white/60 hover:text-white hover:bg-white/[0.08]"
+            }`}
+            title={isCompactMode ? "Restaurar tamanho padrão" : "Modo compacto (útil ao jogar)"}
+            aria-label={isCompactMode ? "Restaurar tamanho padrão" : "Ativar modo compacto"}
+          >
+            <PictureInPicture2 className="h-4 w-4" aria-hidden="true" />
+          </button>
+        )}
+
         {/* Fullscreen da Janela */}
         <button
           type="button"
@@ -210,14 +233,14 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
           )}
         </button>
 
-        {/* Minimizar / Fechar Janela */}
+        {/* Ocultar / Minimizar Janela (Mantém chamada ativa no hub) */}
         <button
           type="button"
           onClick={onClose}
           style={{ cornerShape: "squircle" } as React.CSSProperties}
           className="h-8 w-8 flex items-center justify-center rounded-[10px] text-white/60 hover:text-white hover:bg-white/[0.08] transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-          title="Fechar janela (a chamada continua na barra inferior)"
-          aria-label="Fechar janela de chamada"
+          title="Ocultar janela (a chamada continuará ativa no hub)"
+          aria-label="Ocultar janela de chamada"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>

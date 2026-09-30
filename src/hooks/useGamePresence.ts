@@ -3,6 +3,7 @@ import { useInterval } from "./useInterval";
 import type { Game, UserProfile } from "../types/domain";
 import { getMonitorableExecutablePath } from "../services/launcher";
 import { fetchSteamAchievementDetails, fetchSteamCurrentGame } from "../services/steam";
+import { fetchEpicAchievements } from "../services/epic";
 import {
   recordLibrarySession,
   updateLibraryGame,
@@ -18,6 +19,43 @@ interface UseGamePresenceProps {
 export const UNVERIFIED_URI_PRESENCE_TTL_MS = 12 * 60 * 60 * 1000;
 export type PresenceVerificationMode = "none" | "provisional" | "process" | "steam";
 
+async function ensureSteamInstalledMap(
+  mapRef: React.MutableRefObject<Map<string, string>>,
+): Promise<Map<string, string>> {
+  if (mapRef.current.size > 0 || !window.electronAPI?.scanInstalledSteamGames) {
+    return mapRef.current;
+  }
+  try {
+    const localSteam = await window.electronAPI.scanInstalledSteamGames();
+    if (Array.isArray(localSteam)) {
+      for (const item of localSteam) {
+        if (item.appid && item.executablePath) {
+          mapRef.current.set(String(item.appid), item.executablePath);
+        }
+      }
+    }
+  } catch {
+    // scan falhou ou nao suportado
+  }
+  return mapRef.current;
+}
+
+function resolveMonitorablePathForGame(
+  game: Game | null | undefined,
+  steamMap: Map<string, string>,
+): string | null {
+  if (!game) return null;
+  const direct = getMonitorableExecutablePath(game);
+  if (direct) return direct;
+  if (game.steamAppId && steamMap.has(String(game.steamAppId))) {
+    return steamMap.get(String(game.steamAppId)) || null;
+  }
+  if (game.executablePath && /\.exe$/i.test(game.executablePath)) {
+    return game.executablePath;
+  }
+  return null;
+}
+
 export function useGamePresence({
   userUid,
   userProfile,
@@ -31,8 +69,10 @@ export function useGamePresence({
   const [provisionalPresenceExpiresAt, setProvisionalPresenceExpiresAt] = useState<string | null>(null);
   const provisionalPresenceDeadlineRef = useRef<number | null>(null);
   const presenceRevisionRef = useRef(0);
+  const processMissesRef = useRef(0);
   const steamPresenceMissesRef = useRef(0);
   const steamPresenceLastConfirmedAtRef = useRef<number | null>(null);
+  const steamInstalledMapRef = useRef<Map<string, string>>(new Map());
   const activeSessionRef = useRef<{
     title: string;
     startedAt: number;
@@ -77,6 +117,7 @@ export function useGamePresence({
     });
     presenceRevisionRef.current += 1;
     provisionalPresenceDeadlineRef.current = null;
+    processMissesRef.current = 0;
     steamPresenceMissesRef.current = 0;
     steamPresenceLastConfirmedAtRef.current = null;
     setCurrentPresenceGame(null);
@@ -94,6 +135,7 @@ export function useGamePresence({
 
     presenceRevisionRef.current += 1;
     provisionalPresenceDeadlineRef.current = provisionalDeadline;
+    processMissesRef.current = 0;
     steamPresenceMissesRef.current = 0;
     steamPresenceLastConfirmedAtRef.current = null;
     if (title !== currentPresenceGame) {
@@ -108,7 +150,37 @@ export function useGamePresence({
     setProvisionalPresenceExpiresAt(
       provisionalDeadline == null ? null : new Date(provisionalDeadline).toISOString(),
     );
-  }, [currentPresenceGame, finalizeActiveSession]);
+
+    // Sem .exe monitoravel (ex: steam://run), a presença fica provisional.
+    // Assim que o mapa Steam tiver o caminho, promove para watch por processo.
+    if (!normalizedExecutablePath) {
+      const revision = presenceRevisionRef.current;
+      void (async () => {
+        const steamMap = await ensureSteamInstalledMap(steamInstalledMapRef);
+        if (presenceRevisionRef.current !== revision) return;
+        const matchedGame = games.find((candidate) => {
+          const candidateTitle = candidate.title.trim().toLowerCase();
+          const presenceTitle = title.trim().toLowerCase();
+          return (
+            candidateTitle === presenceTitle
+            || candidateTitle.includes(presenceTitle)
+            || presenceTitle.includes(candidateTitle)
+          );
+        });
+        const resolved = resolveMonitorablePathForGame(matchedGame, steamMap);
+        if (!resolved || presenceRevisionRef.current !== revision) return;
+        if (window.electronAPI?.setGameWatchTarget) {
+          void window.electronAPI.setGameWatchTarget(resolved).catch(() => undefined);
+        }
+        setCurrentPresenceExecutablePath(resolved);
+        provisionalPresenceDeadlineRef.current = null;
+        setPresenceVerification("process");
+        setProvisionalPresenceExpiresAt(null);
+      })();
+    } else if (window.electronAPI?.setGameWatchTarget) {
+      void window.electronAPI.setGameWatchTarget(normalizedExecutablePath).catch(() => undefined);
+    }
+  }, [currentPresenceGame, finalizeActiveSession, games]);
 
   const syncDetectedRunningGame = useCallback(async () => {
     if (!window.electronAPI?.detectRunningGames || games.length === 0) {
@@ -116,13 +188,15 @@ export function useGamePresence({
     }
 
     const requestRevision = presenceRevisionRef.current;
+    await ensureSteamInstalledMap(steamInstalledMapRef);
 
-    const monitorableGames = games
-      .map((game) => ({
-        game,
-        executablePath: getMonitorableExecutablePath(game),
-      }))
-      .filter((entry): entry is { game: Game; executablePath: string } => Boolean(entry.executablePath));
+    const monitorableGames: Array<{ game: Game; executablePath: string }> = [];
+    for (const game of games) {
+      const exe = resolveMonitorablePathForGame(game, steamInstalledMapRef.current);
+      if (exe) {
+        monitorableGames.push({ game, executablePath: exe });
+      }
+    }
 
     if (monitorableGames.length === 0) return false;
 
@@ -147,32 +221,63 @@ export function useGamePresence({
         monitorableGames.find((entry) => normalizedRunning.has(entry.executablePath.trim().toLowerCase()));
 
       if (!matchedGame) {
+        // Se temos um executável monitorado, apenas finaliza se já esgotou as chances e o período de carência
         if (currentPresenceExecutablePath) {
-          clearCurrentPresence();
+          const startedAt = activeSessionRef.current?.startedAt || 0;
+          const elapsed = Date.now() - startedAt;
+          if (elapsed >= 45_000 && processMissesRef.current >= 3) {
+            clearCurrentPresence();
+          }
         }
         return false;
       }
 
+      processMissesRef.current = 0;
       if (
         currentPresenceGame !== matchedGame.game.title ||
         currentPresenceExecutablePath !== matchedGame.executablePath
       ) {
         markCurrentPresence(matchedGame.game.title, matchedGame.executablePath);
+      } else if (presenceVerification !== "process") {
+        setPresenceVerification("process");
       }
       return true;
     } catch {
       // Presence auto-detection is best-effort.
       return false;
     }
-  }, [clearCurrentPresence, currentPresenceExecutablePath, currentPresenceGame, games, markCurrentPresence]);
+  }, [clearCurrentPresence, currentPresenceExecutablePath, currentPresenceGame, games, markCurrentPresence, presenceVerification]);
 
   const verifyRunningState = useCallback(async () => {
     const requestRevision = presenceRevisionRef.current;
     if (currentPresenceExecutablePath && window.electronAPI?.isExecutableRunning) {
       try {
         const isRunning = await window.electronAPI.isExecutableRunning(currentPresenceExecutablePath);
-        if (!isRunning && presenceRevisionRef.current === requestRevision) {
-          clearCurrentPresence();
+        if (presenceRevisionRef.current !== requestRevision) return;
+
+        if (isRunning) {
+          processMissesRef.current = 0;
+          if (presenceVerification !== "process") {
+            setPresenceVerification("process");
+          }
+          return;
+        }
+
+        // Processo não respondeu neste tick. Verifica período de carência de inicialização (45s)
+        const startedAt = activeSessionRef.current?.startedAt || 0;
+        const elapsed = Date.now() - startedAt;
+        if (elapsed < 45_000) {
+          // Jogo ainda está carregando/iniciando
+          return;
+        }
+
+        processMissesRef.current += 1;
+        // Requer 3 falhas consecutivas (~30s) para evitar fechar presença por falso positivo
+        if (processMissesRef.current >= 3) {
+          const matchedDetectedGame = await syncDetectedRunningGame();
+          if (!matchedDetectedGame && presenceRevisionRef.current === requestRevision) {
+            clearCurrentPresence();
+          }
         }
       } catch {
         // best-effort
@@ -282,7 +387,7 @@ export function useGamePresence({
         }
       }
 
-      clearCurrentPresence();
+      downgradeToProvisional();
     } catch {
       const lastConfirmedAt = steamPresenceLastConfirmedAtRef.current;
       if (
@@ -313,47 +418,140 @@ export function useGamePresence({
   );
 
   const pollAchievements = useCallback(async (unlockedSet: Set<string>, state: { firstLoadDone: boolean }) => {
-    if (!currentPresenceGame || !steamId) return;
+    if (!currentPresenceGame) return;
 
     const runningGame = games.find(
       (g) =>
         g.title.toLowerCase().includes(currentPresenceGame.toLowerCase()) ||
-        currentPresenceGame.toLowerCase().includes(g.title.toLowerCase())
+        currentPresenceGame.toLowerCase().includes(g.title.toLowerCase()),
     );
+    if (!runningGame) return;
 
-    const appId = runningGame?.steamAppId;
-    if (!appId) return;
+    // ── 1. Steam Achievements Polling ──────────────────────────────────────────
+    if ((runningGame.launcherType === "steam" || runningGame.steamAppId) && steamId && runningGame.steamAppId) {
+      try {
+        const details = await fetchSteamAchievementDetails(steamId, runningGame.steamAppId);
 
-    try {
-      const details = await fetchSteamAchievementDetails(steamId, appId);
-
-      if (!state.firstLoadDone) {
-        details.achievements.forEach((ach) => {
-          if (ach.achieved) {
-            unlockedSet.add(ach.apiName);
-          }
-        });
-        state.firstLoadDone = true;
-        return;
-      }
-
-      for (const ach of details.achievements) {
-        if (ach.achieved && !unlockedSet.has(ach.apiName)) {
-          unlockedSet.add(ach.apiName);
-
-          void window.electronAPI?.unlockAchievement(`steam_${appId}`, ach.apiName);
+        if (!state.firstLoadDone) {
+          details.achievements.forEach((ach) => {
+            if (ach.achieved) {
+              unlockedSet.add(ach.apiName);
+            }
+          });
+          state.firstLoadDone = true;
+          return;
         }
+
+        for (const ach of details.achievements) {
+          if (ach.achieved && !unlockedSet.has(ach.apiName)) {
+            unlockedSet.add(ach.apiName);
+
+            const percent = typeof ach.percent === "number" ? ach.percent : 15;
+            const tier: "platinum" | "gold" | "silver" | "bronze" =
+              percent <= 5 ? "platinum" : percent <= 20 ? "gold" : percent <= 50 ? "silver" : "bronze";
+            const xpMap = { platinum: 90, gold: 60, silver: 30, bronze: 15 };
+            const xp = xpMap[tier] ?? 30;
+            const iconUrl = ach.icon || ach.iconGray || "";
+
+            // Lança o overlay de conquista com a conquista exata, foto e descrição
+            void window.electronAPI?.notifyTrophyUnlock?.({
+              trophyTitle: ach.name || ach.apiName,
+              trophyDescription: ach.description || "",
+              gameTitle: runningGame.title,
+              iconUrl,
+              icon: iconUrl,
+              tier,
+              percent,
+              xp,
+            });
+
+            void window.electronAPI?.unlockAchievement?.(`steam_${runningGame.steamAppId}`, ach.apiName, {
+              name: ach.name || ach.apiName,
+              title: ach.name || ach.apiName,
+              description: ach.description || "",
+              icon: iconUrl,
+              tier,
+              percent,
+              gameTitle: runningGame.title,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Erro no polling de conquistas Steam:", error);
       }
-    } catch (error) {
-      console.error("Erro no polling de conquistas Steam:", error);
+      return;
+    }
+
+    // ── 2. Epic Games Achievements Polling ────────────────────────────────────
+    if (runningGame.launcherType === "epic" || runningGame.epicCatalogId || runningGame.epicLaunchId) {
+      try {
+        const appName = runningGame.epicLaunchId ||
+          (runningGame.epicCatalogId?.includes(":") ? runningGame.epicCatalogId.split(":")[1] : runningGame.epicCatalogId) ||
+          runningGame.title;
+        const sandboxId = runningGame.epicNamespace ||
+          (runningGame.epicCatalogId?.includes(":") ? runningGame.epicCatalogId.split(":")[0] : undefined);
+
+        const epicRes = await fetchEpicAchievements(sandboxId, appName);
+        if (epicRes && Array.isArray(epicRes.list) && epicRes.list.length > 0) {
+          if (!state.firstLoadDone) {
+            epicRes.list.forEach((ach: any) => {
+              if (ach.achieved || ach.unlocked) {
+                unlockedSet.add(ach.apiName || ach.name);
+              }
+            });
+            state.firstLoadDone = true;
+            return;
+          }
+
+          for (const ach of epicRes.list) {
+            const isAchieved = Boolean(ach.achieved || ach.unlocked);
+            const achId = ach.apiName || ach.name;
+            if (isAchieved && achId && !unlockedSet.has(achId)) {
+              unlockedSet.add(achId);
+
+              const percent = typeof ach.percent === "number" ? ach.percent : (ach.rarity?.percent ?? 15);
+              const tier: "platinum" | "gold" | "silver" | "bronze" =
+                percent <= 5 ? "platinum" : percent <= 20 ? "gold" : percent <= 50 ? "silver" : "bronze";
+              const xpMap = { platinum: 90, gold: 60, silver: 30, bronze: 15 };
+              const xp = typeof ach.xp === "number" && ach.xp > 0 ? ach.xp : (xpMap[tier] ?? 30);
+              const iconUrl = ach.icon || ach.icon_link || ach.iconLink || ach.unlockedIconLink || "";
+              const title = ach.name || ach.display_name || "Conquista Desbloqueada";
+              const description = ach.description || ach.unlockedDescription || "";
+
+              // Lança o overlay de conquista com a conquista exata, foto e descrição
+              void window.electronAPI?.notifyTrophyUnlock?.({
+                trophyTitle: title,
+                trophyDescription: description,
+                gameTitle: runningGame.title,
+                iconUrl,
+                icon: iconUrl,
+                tier,
+                percent,
+                xp,
+              });
+
+              void window.electronAPI?.unlockAchievement?.(runningGame.id, achId, {
+                name: title,
+                title,
+                description,
+                icon: iconUrl,
+                tier,
+                percent,
+                gameTitle: runningGame.title,
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Erro no polling de conquistas Epic:", error);
+      }
     }
   }, [currentPresenceGame, games, steamId]);
 
   const achievementsState = useRef({
     unlockedSet: new Set<string>(),
-    state: { firstLoadDone: false }
+    state: { firstLoadDone: false },
   });
-
 
   useEffect(() => {
     achievementsState.current.unlockedSet.clear();
@@ -367,9 +565,62 @@ export function useGamePresence({
         achievementsState.current.state,
       );
     },
-    currentPresenceGame && steamId ? 15000 : null,
-    { pauseWhenHidden: false }
+    currentPresenceGame ? 8000 : null,
+    { pauseWhenHidden: false },
   );
+
+  useEffect(() => {
+    const api = window.electronAPI;
+    if (!api?.onGameWatchStarted || !api?.onGameWatchEnded) return;
+
+    const unlistenStarted = api.onGameWatchStarted((payload) => {
+      const exe = payload?.executable;
+      if (!exe) return;
+      processMissesRef.current = 0;
+      setPresenceVerification("process");
+
+      const exeBase = exe.split(/[\\/]/).pop()?.toLowerCase();
+      const exeStem = exeBase?.replace(/\.exe$/i, "");
+
+      const matchByExeName = (candidatePath: string | null | undefined) => {
+        const gExe = (candidatePath || "").split(/[\\/]/).pop()?.toLowerCase();
+        const gStem = gExe?.replace(/\.exe$/i, "");
+        return Boolean(
+          (gExe && exeBase && (gExe === exeBase || exeBase.includes(gExe) || gExe.includes(exeBase)))
+          || (gStem && exeStem && (gStem === exeStem || exeStem.includes(gStem) || gStem.includes(exeStem))),
+        );
+      };
+
+      let matched = games.find((g) => matchByExeName(g.executablePath));
+      let matchedExe = matched ? (getMonitorableExecutablePath(matched) || matched.executablePath || exe) : null;
+
+      if (!matched) {
+        for (const [appId, installedPath] of steamInstalledMapRef.current.entries()) {
+          if (!matchByExeName(installedPath)) continue;
+          matched = games.find((g) => String(g.steamAppId || "") === String(appId));
+          if (matched) {
+            matchedExe = installedPath;
+            break;
+          }
+        }
+      }
+
+      if (matched && matched.title !== currentPresenceGame) {
+        markCurrentPresence(matched.title, matchedExe);
+      } else if (matched && matchedExe && matchedExe !== currentPresenceExecutablePath) {
+        setCurrentPresenceExecutablePath(matchedExe);
+      }
+    });
+
+    const unlistenEnded = api.onGameWatchEnded(() => {
+      clearCurrentPresence();
+    });
+
+    return () => {
+      unlistenStarted?.();
+      unlistenEnded?.();
+    };
+  }, [games, currentPresenceGame, currentPresenceExecutablePath, markCurrentPresence, clearCurrentPresence]);
 
   return {
     currentPresenceGame,

@@ -59,15 +59,10 @@ declare global {
   }
 }
 
-const isElectronContext = (): boolean =>
-  typeof window !== "undefined" && Boolean(window.checkpoint?.notifyTrophyUnlock);
-
 const fireSystemPush = (unlock: TrophyUnlock): void => {
-  if (!isElectronContext()) return;
-  const api = window.checkpoint?.notifyTrophyUnlock;
+  if (typeof window === "undefined") return;
+  const api = window.electronAPI?.notifyTrophyUnlock || window.checkpoint?.notifyTrophyUnlock;
   if (!api) return;
-  // Fire-and-forget; the main process decides whether to show a system
-  // notification based on window visibility and the in-page toast.
   Promise.resolve(
     api({
       trophyTitle: unlock.trophyTitle,

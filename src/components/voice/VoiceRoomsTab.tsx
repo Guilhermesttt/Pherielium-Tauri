@@ -524,8 +524,13 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
         onClose={() => setIsCreateModalOpen(false)}
         userProfile={userProfile}
         onCreateChannel={async (config) => {
-          await onCreateRoom(config);
-          void fetchRooms();
+          try {
+            await onCreateRoom(config);
+            void fetchRooms();
+          } catch (err) {
+            // createAndJoinRoom já notifica; rethrow deixa o modal mostrar o erro
+            throw err;
+          }
         }}
       />
 

@@ -128,7 +128,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(
         onClose={handleCloseAction}
         maxWidthClassName="max-w-[400px]"
         zIndexClassName="z-[170]"
-        className="relative overflow-hidden rounded-[22px] border border-white/8 bg-[#0A0A0A] px-7 pb-7 pt-8 shadow-[0_28px_70px_rgba(0,0,0,0.75)]"
+        className="relative overflow-hidden rounded-[var(--radius-panel)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-7 pb-7 pt-8 shadow-[0_28px_70px_rgba(0,0,0,0.75)] [box-shadow:var(--surface-chamfer)] transition-colors duration-300"
         ariaLabel={title}
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/20 to-transparent" />
@@ -139,7 +139,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(
             initial={{ opacity: 0, scale: 0.7, y: 6 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ type: "spring", bounce: 0.35, duration: 0.45 }}
-            className={`mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border ${iconWrapClass}`}
+            className={`mb-5 flex h-16 w-16 items-center justify-center rounded-[var(--radius-card)] border ${iconWrapClass}`}
           >
             <Icon
               key={iconKey}
@@ -163,7 +163,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(
             type="button"
             onClick={handleCloseAction}
             onMouseEnter={() => playSound("hover")}
-            className="h-11 cursor-pointer rounded-full border border-white/8 bg-[#161616] px-4 text-[11px] font-bold uppercase tracking-[0.06em] text-white transition-all hover:bg-[#1E1E1E] active:scale-[0.97]"
+            className="h-11 cursor-pointer rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface-overlay)] px-4 text-[11px] font-bold uppercase tracking-[0.06em] text-white transition-all hover:bg-white/[0.08] active:scale-[0.97]"
           >
             {resolvedCancel}
           </button>
@@ -171,7 +171,7 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(
             type="button"
             onClick={handleConfirmAction}
             onMouseEnter={() => playSound("hover")}
-            className={`h-11 cursor-pointer rounded-full px-4 text-[11px] font-bold uppercase tracking-[0.06em] transition-all active:scale-[0.97] ${confirmClass}`}
+            className={`h-11 cursor-pointer rounded-[var(--radius-control)] px-4 text-[11px] font-bold uppercase tracking-[0.06em] transition-all active:scale-[0.97] ${confirmClass}`}
           >
             {confirmLabel}
           </button>

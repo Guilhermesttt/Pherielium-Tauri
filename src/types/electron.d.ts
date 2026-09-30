@@ -6,9 +6,10 @@ declare global {
       launchExecutable: (
         executablePath: string,
         launchProfile?: import("./domain").GameLaunchProfile,
-        launchOptions?: { hideLauncher?: boolean },
+        launchOptions?: { hideLauncher?: boolean; gameId?: string; steamAppId?: string },
       ) => Promise<void>;
       selectExecutable: () => Promise<string | null>;
+      detectAppIdFromPath?: (path: string) => Promise<string | null>;
       minimizeWindow?: () => Promise<void>;
       maximizeWindow?: () => Promise<boolean>;
       isMaximized?: () => Promise<boolean>;
@@ -286,6 +287,10 @@ declare global {
         tiny_image: string;
         type?: string;
       }>>;
+      fetchSteamAppDetails?: (
+        appId: string,
+        language?: import("../context/PreferencesContext").LauncherLanguage,
+      ) => Promise<import("../services/steam").SteamAppDetails | null>;
       fetchEpicStoreDetails: (request: {
         catalogId?: string;
         namespace?: string;
@@ -475,7 +480,8 @@ declare global {
         updatedAt: string;
       } | null>;
       getLocalAchievementState: (
-        appId: string
+        appId: string,
+        gameDir?: string,
       ) => Promise<{ [id: string]: { earned: boolean; earnedTime: number } }>;
       setOpenAtLogin?: (open: boolean) => Promise<{
         openAtLogin: boolean;
@@ -539,14 +545,28 @@ declare global {
       ) => Promise<boolean>;
       unlockAchievement: (
         gameId: string,
-        achievementId: string
+        achievementId: string,
+        metadata?: {
+          name?: string;
+          title?: string;
+          description?: string;
+          icon?: string;
+          tier?: string;
+          percent?: number;
+          gameTitle?: string;
+        }
       ) => Promise<{ duplicate: boolean }>;
       notifyTrophyUnlock: (payload: {
         trophyTitle: string;
         trophyDescription?: string;
-        tier: "platinum" | "gold" | "silver" | "bronze";
+        title?: string;
+        description?: string;
+        gameTitle?: string;
+        tier?: "platinum" | "gold" | "silver" | "bronze";
         xp?: number;
         iconUrl?: string;
+        icon?: string;
+        percent?: number;
       }) => Promise<{ shown: boolean; reason?: string }>;
       showFriendMessageOverlay: (payload: {
         senderName: string;
@@ -622,6 +642,16 @@ declare global {
           participantsCount?: number;
           speakingUserNames?: string[];
         } | null;
+        activeCall?: {
+          active: boolean;
+          friendId?: string;
+          friendName?: string;
+          friendAvatar?: string;
+          muted?: boolean;
+          deafened?: boolean;
+          connectionState?: "connected" | "calling";
+          durationSeconds?: number;
+        } | null;
         playerLevel?: {
           level: number;
           xp: number;
@@ -644,6 +674,8 @@ declare global {
         | { kind: "voice-hangup" }
         | { kind: "voice-mute" }
         | { kind: "voice-deafen" }
+        | { kind: "retry-message"; messageId?: string; text: string }
+        | { kind: "close" }
       ) => void) => () => void;
 
       /**
@@ -736,6 +768,10 @@ declare global {
         platform: import("./platformOperations").Platform,
         operationId: string
       ) => Promise<void>;
+      setGameWatchTarget?: (executable: string | null) => Promise<void>;
+      clearGameWatchTarget?: () => Promise<void>;
+      onGameWatchStarted?: (callback: (payload: { executable?: string | null }) => void) => () => void;
+      onGameWatchEnded?: (callback: (payload: { executable?: string | null }) => void) => () => void;
     };
   }
 
@@ -787,10 +823,20 @@ declare global {
     name: string;
     description: string;
     achieved: boolean;
-    unlockTime: number;
+    unlockTime?: number;
     icon: string;
-    iconGray: string;
-    hidden: boolean;
+    iconGray?: string;
+    hidden?: boolean;
+    percent?: number;
+    xp?: number;
+    unlockDate?: string;
+    display_name?: string;
+    unlocked?: boolean;
+    icon_link?: string;
+    iconLink?: string;
+    unlockedIconLink?: string;
+    unlockedDescription?: string;
+    rarity?: { percent?: number };
   }
 
   interface EpicAchievementsResult {

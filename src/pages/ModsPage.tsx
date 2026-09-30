@@ -76,6 +76,7 @@ interface ModGameCardProps {
   index: number;
   gameModsCount: number;
   activeModsCount: number;
+  hasFolder: boolean;
   artwork: string;
   totalGames: number;
   onSelectGame: (game: Game) => void;
@@ -88,6 +89,7 @@ const ModGameCard = React.memo<ModGameCardProps>(
     index,
     gameModsCount,
     activeModsCount,
+    hasFolder,
     artwork,
     totalGames,
     onSelectGame,
@@ -123,11 +125,11 @@ const ModGameCard = React.memo<ModGameCardProps>(
         aria-label={`Gerenciar mods de ${game.title}`}
         onClick={handleCardClick}
         onKeyDown={handleKeyDown}
-        className="group relative rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.10] hover:border-white/20 p-3.5 transition-[transform,background-color,border-color] duration-200 hover:-translate-y-0.5 shadow-[0_8px_24px_rgba(0,0,0,0.28)] backdrop-blur-xl flex flex-col justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 data-[gamepad-focused=true]:ring-2 data-[gamepad-focused=true]:ring-white/60 data-[gamepad-focused=true]:border-white/30 cursor-pointer transform-gpu text-left"
+        className="group relative rounded-2xl bg-[#0C0D10] hover:bg-[#101217] border border-white/10 hover:border-white/20 p-3.5 transition-all duration-200 hover:-translate-y-0.5 shadow-[0_8px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.06)] flex flex-col justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 cursor-pointer text-left"
       >
         <div>
           {/* Game Artwork Thumbnail */}
-          <div className="relative h-28 w-full rounded-2xl overflow-hidden bg-white/[0.05] mb-3 border border-white/10">
+          <div className="relative h-28 w-full rounded-xl overflow-hidden bg-white/[0.04] mb-3 border border-white/10">
             {artwork ? (
               <img
                 src={artwork}
@@ -144,44 +146,55 @@ const ModGameCard = React.memo<ModGameCardProps>(
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
             <div
               aria-hidden="true"
-              className="absolute top-2 right-2 h-8 w-8 rounded-lg bg-black/60 text-white/70 flex items-center justify-center backdrop-blur-md pointer-events-none"
+              className="absolute top-2 right-2 h-7 w-7 rounded-lg bg-black/60 text-white/70 flex items-center justify-center backdrop-blur-md pointer-events-none"
             >
               <MoreVertical className="w-3.5 h-3.5" />
             </div>
           </div>
 
-          {/* Title & Mod Count */}
-          <h3 className="text-sm font-display font-semibold text-white truncate">
+          {/* Title */}
+          <h3 className="text-sm font-display font-semibold text-white/95 truncate group-hover:text-white">
             {game.title}
           </h3>
-          <p className="text-xs font-body text-white/70 font-medium flex items-center gap-1.5 mt-1">
-            {activeModsCount > 0 ? (
-              <CheckCircle2 className="w-3.5 h-3.5 text-white/90 shrink-0" />
+
+          {/* Status do Jogo / Mods */}
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap text-xs">
+            {hasFolder ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-semibold text-emerald-400">
+                <CheckCircle2 className="w-3 h-3 shrink-0" />
+                Pasta vinculada
+              </span>
             ) : (
-              <PackageOpen className="w-3.5 h-3.5 text-white/50 shrink-0" />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/10 text-[10px] font-medium text-white/40">
+                Sem pasta vinculada
+              </span>
             )}
-            <span>
-              {activeModsCount
-                ? `${activeModsCount}${gameModsCount > activeModsCount ? ` de ${gameModsCount}` : ""} mods ativos`
-                : gameModsCount
-                  ? `${gameModsCount} mods instalados`
-                  : "Sem mods ativos"}
-            </span>
-          </p>
+
+            {gameModsCount > 0 && (
+              <span className="text-[11px] font-medium text-white/60">
+                {activeModsCount > 0 ? `${activeModsCount}/${gameModsCount} ativos` : `${gameModsCount} mods`}
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Manage Action Indicator */}
-        <div className="mt-4 pt-2 border-t border-white/[0.06]">
+        {/* Manage Action Button */}
+        <div className="mt-4 pt-2.5 border-t border-white/[0.06]">
           <div
-            className="w-full h-10 rounded-lg border border-white/15 bg-white/[0.08] group-hover:bg-white/[0.15] active:scale-98 text-white text-xs font-semibold transition-all duration-160 flex items-center justify-center gap-1.5 shadow-sm pointer-events-none"
+            className="w-full h-9 rounded-xl border border-white/10 bg-white/[0.05] group-hover:bg-white/[0.12] active:scale-98 text-white text-xs font-semibold transition-all duration-150 flex items-center justify-center gap-1.5 shadow-sm pointer-events-none"
           >
-            {gameModsCount === 0 ? (
+            {!hasFolder ? (
               <>
-                <FolderPlus className="w-3.5 h-3.5 text-white/70" />
+                <FolderPlus className="w-3.5 h-3.5 text-white/60" />
                 <span>Vincular pasta</span>
               </>
+            ) : gameModsCount === 0 ? (
+              <>
+                <PackageOpen className="w-3.5 h-3.5 text-white/60" />
+                <span>Explorar mods</span>
+              </>
             ) : (
-              <span>Gerenciar</span>
+              <span>Gerenciar ({gameModsCount})</span>
             )}
           </div>
         </div>
@@ -193,6 +206,7 @@ const ModGameCard = React.memo<ModGameCardProps>(
     prev.index === next.index &&
     prev.gameModsCount === next.gameModsCount &&
     prev.activeModsCount === next.activeModsCount &&
+    prev.hasFolder === next.hasFolder &&
     prev.artwork === next.artwork &&
     prev.totalGames === next.totalGames &&
     prev.onSelectGame === next.onSelectGame &&
@@ -353,14 +367,16 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
       const gameMods = installedByGame[game.id] || [];
       const activeMods = gameMods.filter((m) => m.enabled).length;
       const artwork = getGameArtwork(game);
+      const hasFolder = Boolean(gameFolders[game.id]);
       return {
         game,
         gameModsCount: gameMods.length,
         activeModsCount: activeMods,
+        hasFolder,
         artwork,
       };
     });
-  }, [games, installedByGame]);
+  }, [games, installedByGame, gameFolders]);
 
   const filteredGames = useMemo(() => {
     let list = [...enrichedGames];
@@ -375,6 +391,8 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
     }
     if (statusFilter === "WITH_MODS") {
       list = list.filter((item) => item.gameModsCount > 0);
+    } else if (statusFilter === "WITH_FOLDER") {
+      list = list.filter((item) => item.hasFolder);
     }
     if (sortOrder === "AZ") {
       list.sort((a, b) => a.game.title.localeCompare(b.game.title));
@@ -430,66 +448,34 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
       style={{ padding: "32px 40px 64px", contain: "layout paint", transform: "translate3d(0,0,0)", willChange: "transform" }}
     >
       <div className="mx-auto w-full max-w-7xl space-y-6">
-        <div className="mb-8 w-full">
-          <h1
-            className="font-display font-black bg-gradient-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent leading-[1.08]"
-            style={{ fontSize: "clamp(28px, 4vw, 40px)", letterSpacing: "-0.02em" }}
-          >
-            Mods
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm font-body leading-relaxed text-white/50">
-            Instale, ative e configure modificações para seus jogos instalados.
-          </p>
-        </div>
-
-        {/* Hero Section Banner */}
-        <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0B0B0B] p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.4)]">
-          <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/[0.03] blur-3xl pointer-events-none" />
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-white/[0.06] border border-white/10 flex items-center justify-center text-white">
-                  <PackageOpen className="w-5 h-5" />
-                </div>
-                <h1 className="text-2xl sm:text-3xl font-display font-black bg-gradient-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent tracking-wide">
-                  Gerenciador de Mods
-                </h1>
-              </div>
-              <p className="text-xs sm:text-sm font-body text-white/50 max-w-2xl leading-relaxed">
-                Instale, ative e configure modificações para seus jogos instalados.
-                Integração nativa com Nexus Mods e controle completo de diretórios.
-              </p>
+        {/* Single Focused Editorial Header */}
+        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-white/[0.06]">
+          <div>
+            <div className="inline-flex items-center gap-2 text-xs font-medium text-white/50 mb-1.5">
+              <PackageOpen className="h-3.5 w-3.5 text-white/70" />
+              <span>Gerenciador de Mods</span>
             </div>
-
-            {/* Quick Metrics Bar */}
-            <div className="flex items-center gap-3 self-start md:self-auto flex-wrap">
-              <div className="px-4 py-2.5 rounded-2xl bg-white/[0.04] border border-white/[0.08]">
-                <span className="block text-[10px] font-body font-semibold uppercase tracking-wider text-white/40">
-                  Jogos Suportados
-                </span>
-                <span className="text-lg font-display font-bold text-white">
-                  {games.length}
-                </span>
-              </div>
-              <div className="px-4 py-2.5 rounded-2xl bg-white/[0.04] border border-white/[0.08]">
-                <span className="block text-[10px] font-body font-semibold uppercase tracking-wider text-white/40">
-                  Diretórios Vinculados
-                </span>
-                <span className="text-lg font-display font-bold text-white/90">
-                  {configuredGames}
-                </span>
-              </div>
-              <div className="px-4 py-2.5 rounded-2xl bg-white/[0.04] border border-white/[0.08]">
-                <span className="block text-[10px] font-body font-semibold uppercase tracking-wider text-white/40">
-                  Mods Ativos
-                </span>
-                <span className="text-lg font-display font-bold text-white">
-                  {activeInstalledMods} / {totalInstalledMods}
-                </span>
-              </div>
-            </div>
+            <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight text-white">
+              Mods
+            </h1>
+            <p className="mt-1 text-xs sm:text-sm font-normal text-white/60 max-w-xl">
+              Gerencie arquivos, vincule diretórios e ative modificações da comunidade para seus jogos instalados.
+            </p>
           </div>
-        </div>
+
+          {/* Discreet Metrics Line */}
+          <div className="flex items-center gap-2.5 text-xs text-white/50 flex-wrap self-start sm:self-auto">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-white/70 font-medium">
+              <span className="font-semibold text-white">{games.length}</span> na biblioteca
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-white/70 font-medium">
+              <span className="font-semibold text-emerald-400">{configuredGames}</span> pastas vinculadas
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-white/70 font-medium">
+              <span className="font-semibold text-white">{activeInstalledMods}</span> de {totalInstalledMods} mods ativos
+            </span>
+          </div>
+        </header>
 
         {/* Content Tabs / Main Layout */}
         <div>
@@ -527,10 +513,11 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
                     value={statusFilter}
                     onChange={(val) => setStatusFilter(val)}
                     options={[
-                      { value: "ALL", label: "Status" },
+                      { value: "ALL", label: "Todos os Jogos" },
+                      { value: "WITH_FOLDER", label: "Com Pasta Vinculada" },
                       { value: "WITH_MODS", label: "Com Mods" },
                     ]}
-                    className="w-36"
+                    className="w-40"
                   />
                 </div>
 
@@ -567,13 +554,14 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
             </div>
             {/* Games Grid Memoizado */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              {filteredGames.map(({ game, gameModsCount, activeModsCount, artwork }, index) => (
+              {filteredGames.map(({ game, gameModsCount, activeModsCount, hasFolder, artwork }, index) => (
                 <ModGameCard
                   key={game.id}
                   game={game}
                   index={index}
                   gameModsCount={gameModsCount}
                   activeModsCount={activeModsCount}
+                  hasFolder={hasFolder}
                   artwork={artwork}
                   totalGames={filteredGames.length}
                   onSelectGame={handleSelectGame}

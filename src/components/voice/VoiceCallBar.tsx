@@ -293,12 +293,13 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
             <Maximize2 className="h-4 w-4" />
           </button>
 
-          {/* Disconnect */}
+          {/* Sair da chamada */}
           <button
             type="button"
             onClick={onHangUp}
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-[#030405] hover:bg-white/80 active:scale-95 transition-all duration-160 shadow-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-            title="Desconectar"
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E02424] hover:bg-[#C81E1E] text-white active:scale-95 transition-all duration-160 shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+            title="Sair da chamada"
+            aria-label="Sair da chamada"
           >
             <PhoneOff className="h-4 w-4" />
           </button>

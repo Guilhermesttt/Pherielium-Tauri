@@ -1,4 +1,4 @@
-import { apiUrl } from "./api";
+import { apiFetch } from "./api";
 import type { RetroGame } from "../types/domain";
 
 export interface TheGamesDbGameMatch {
@@ -36,7 +36,7 @@ function isMissingIpcHandlerError(error: unknown): boolean {
 }
 
 async function searchTheGamesDbViaHttp(name: string): Promise<TheGamesDbGameMatch[]> {
-  const response = await fetch(apiUrl(`/api/thegamesdb/search?name=${encodeURIComponent(name)}`));
+  const response = await apiFetch(`/api/thegamesdb/search?name=${encodeURIComponent(name)}`);
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
     throw new Error(String(payload.error || `TheGamesDB respondeu com erro ${response.status}.`));
@@ -46,7 +46,7 @@ async function searchTheGamesDbViaHttp(name: string): Promise<TheGamesDbGameMatc
 }
 
 async function getTheGamesDbScreenshotsViaHttp(gameId: number): Promise<string[]> {
-  const response = await fetch(apiUrl(`/api/thegamesdb/games/${gameId}/screenshots`));
+  const response = await apiFetch(`/api/thegamesdb/games/${gameId}/screenshots`);
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
     throw new Error(String(payload.error || `TheGamesDB respondeu com erro ${response.status}.`));

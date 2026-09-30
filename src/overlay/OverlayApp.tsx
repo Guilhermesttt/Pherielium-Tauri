@@ -76,7 +76,7 @@ type ShortcutRecording = null | "capture" | "overlay";
 export type OverlayMode = "passive" | "quick" | "full";
 export type OverlayView = "home" | "friends" | "chat" | "achievements" | "call" | "media" | "settings";
 export type InteractionSource = "keyboard" | "gamepad" | "mouse";
-export type CallConnectionState = "connected" | "degraded" | "reconnecting" | "failed";
+export type CallConnectionState = "calling" | "connected" | "degraded" | "reconnecting" | "failed";
 
 export interface AchievementToast {
   id: string;
@@ -121,6 +121,8 @@ export interface SocialToast {
   callerUid?: string;
   friendId?: string;
   messageCount?: number;
+  /** Duração do toast (ms) — deve bater com a barra de progresso. */
+  durationMs?: number;
 }
 
 export type AnyOverlayToast = AchievementToast | SocialToast;
@@ -133,6 +135,7 @@ export interface OverlayChatMessage {
   createdAt: string;
   mine: boolean;
   pending?: boolean;
+  failed?: boolean;
 }
 
 export interface OverlayChatSession {
@@ -217,8 +220,9 @@ function getInitialStoredProfile(): { userDisplay: string; userAvatar: string } 
 }
 
 function normalizeSoundTheme(theme: string): string {
+  if (!theme) return "default";
   if (theme === "playstation") return "ps2";
-  if (theme === "phelierium") return "default";
+  if (theme === "phelierium" || theme === "checkpoint") return "default";
   return theme;
 }
 
@@ -256,12 +260,22 @@ const playOverlaySound = (
   theme = "default",
   volume = 0.35,
 ) => {
-  const normalizedTheme = normalizeSoundTheme(theme);
-  const themeSounds = (soundThemes as Record<string, Record<string, string>>)[normalizedTheme] || soundThemes.default;
+  const effectiveTheme =
+    theme && theme !== "default"
+      ? theme
+      : (typeof window !== "undefined"
+          ? localStorage.getItem("checkpoint_sound_theme_global")
+          : null) ||
+        theme ||
+        "default";
+  const normalizedTheme = normalizeSoundTheme(effectiveTheme);
+  const themeSounds =
+    (soundThemes as Record<string, Record<string, string>>)[normalizedTheme] ||
+    soundThemes.default;
 
   const src =
     type === "unlockPlatinum"
-      ? (themeSounds.overlayAchievementPlatinum || achievementUnlockPlatinum)
+      ? (themeSounds.overlayAchievementPlatinum || themeSounds.overlayAchievement || achievementUnlockPlatinum)
       : type === "unlockGold"
         ? (themeSounds.overlayAchievementGold || themeSounds.overlayAchievement || achievementUnlockGold)
         : type === "unlock"
@@ -294,11 +308,16 @@ const OverlayApp: React.FC = () => {
   const [interactionSource, setInteractionSource] = useState<InteractionSource>("mouse");
   const [panelData, setPanelData] = useState<CommandPanelState>(() => {
     let achievementVolume = 22;
+    let achievementSoundTheme = "default";
     try {
       const raw = localStorage.getItem("checkpoint_achievement_volume_global");
       const parsed = Number(raw);
       if (Number.isFinite(parsed)) {
         achievementVolume = Math.min(100, Math.max(0, Math.round(parsed)));
+      }
+      const savedTheme = localStorage.getItem("checkpoint_sound_theme_global");
+      if (savedTheme) {
+        achievementSoundTheme = savedTheme;
       }
     } catch {
       /* ignore */
@@ -307,7 +326,7 @@ const OverlayApp: React.FC = () => {
     return {
       userDisplay: stored.userDisplay || undefined,
       userAvatar: stored.userAvatar || undefined,
-      settings: { achievementVolume },
+      settings: { achievementVolume, achievementSoundTheme },
     };
   });
   const [toasts, setToasts] = useState<AnyOverlayToast[]>([]);
@@ -317,6 +336,9 @@ const OverlayApp: React.FC = () => {
   const [activeCall, setActiveCall] = useState<ActiveCallState | null>(null);
   const [captures, setCaptures] = useState<OverlayCapture[]>([]);
   const [capturesLoading, setCapturesLoading] = useState(false);
+  const [fullResImageUrl, setFullResImageUrl] = useState<string | null>(null);
+  const [fullResLoading, setFullResLoading] = useState(false);
+  const [expandedAchId, setExpandedAchId] = useState<string | null>(null);
   const perfHud = usePerfMonitor();
 
   const [autoContrast, setAutoContrast] = useState(false);
@@ -353,18 +375,60 @@ const OverlayApp: React.FC = () => {
     };
   }, [applyOverlayPrefs]);
 
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "checkpoint_sound_theme_global" && e.newValue) {
+        const newTheme = e.newValue;
+        setPanelData((prev) => ({
+          ...prev,
+          settings: {
+            ...prev.settings,
+            achievementSoundTheme: newTheme,
+          },
+        }));
+      } else if (e.key === "checkpoint_achievement_volume_global" && e.newValue) {
+        const vol = Number(e.newValue);
+        if (Number.isFinite(vol)) {
+          setPanelData((prev) => ({
+            ...prev,
+            settings: {
+              ...prev.settings,
+              achievementVolume: Math.min(100, Math.max(0, Math.round(vol))),
+            },
+          }));
+        }
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
   const panelDataRef = useRef<CommandPanelState>(panelData);
   useEffect(() => {
     panelDataRef.current = panelData;
   }, [panelData]);
 
   const overlayTheme = useCallback(() => {
-    return panelDataRef.current?.settings?.achievementSoundTheme || "default";
+    return (
+      panelDataRef.current?.settings?.achievementSoundTheme ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("checkpoint_sound_theme_global")
+        : null) ||
+      "default"
+    );
   }, []);
 
   const overlayVol = useCallback(() => {
     const raw = panelDataRef.current?.settings?.achievementVolume;
-    return typeof raw === "number" ? raw / 100 : 0.35;
+    if (typeof raw === "number") return raw / 100;
+    try {
+      const stored = localStorage.getItem("checkpoint_achievement_volume_global");
+      if (stored) {
+        const parsed = Number(stored);
+        if (Number.isFinite(parsed)) return Math.min(1, Math.max(0, parsed / 100));
+      }
+    } catch {}
+    return 0.35;
   }, []);
 
   const overlaySfx = useCallback(
@@ -375,6 +439,10 @@ const OverlayApp: React.FC = () => {
   );
 
   const toastTimersRef = useRef<Map<string, number>>(new Map());
+  const toastsRef = useRef<AnyOverlayToast[]>(toasts);
+  useEffect(() => {
+    toastsRef.current = toasts;
+  }, [toasts]);
   const chatMessagesEndRef = useRef<HTMLDivElement | null>(null);
 
   // ─── Toast Manager Centralizado ──────────────────────────────────────────────
@@ -410,40 +478,47 @@ const OverlayApp: React.FC = () => {
         && toast.kind !== "achievement"
         && toast.kind !== "game-start"
         && toast.kind !== "hint"
-        && toast.kind !== "incoming-call"
-        && toast.kind !== "call"
         && toast.kind !== "capture"
         && toast.kind !== "capture-saved"
       ) {
         return;
       }
 
+      let toastIdToSchedule = toast.id;
+
       // Agrupamento inteligente para mensagens repetidas do mesmo amigo
       if (toast.kind === "message" && "friendId" in toast && toast.friendId) {
-        setToasts((prev) => {
-          const existing = prev.find((t) => t.kind === "message" && (t as SocialToast).friendId === toast.friendId) as
-            | SocialToast
-            | undefined;
-          if (existing) {
-            const count = (existing.messageCount || 1) + 1;
-            const updated: SocialToast = {
-              ...existing,
-              title: `${toast.title} (${count})`,
-              message: (toast as SocialToast).message,
-              messageCount: count,
-            };
-            return prev.map((t) => (t.id === existing.id ? updated : t));
+        const existing = toastsRef.current.find(
+          (t) => t.kind === "message" && (t as SocialToast).friendId === toast.friendId
+        ) as SocialToast | undefined;
+
+        if (existing) {
+          toastIdToSchedule = existing.id;
+          // Cancela o temporizador antigo da notificação para que ela não suma antes da hora
+          const prevTimer = toastTimersRef.current.get(existing.id);
+          if (prevTimer) {
+            window.clearTimeout(prevTimer);
+            toastTimersRef.current.delete(existing.id);
           }
-          return [...prev, toast];
-        });
+          const count = (existing.messageCount || 1) + 1;
+          const updated: SocialToast = {
+            ...existing,
+            title: `${toast.title} (${count})`,
+            message: (toast as SocialToast).message,
+            messageCount: count,
+          };
+          setToasts((prev) => prev.map((t) => (t.id === existing.id ? updated : t)));
+        } else {
+          setToasts((prev) => [...prev, toast]);
+        }
       } else {
         setToasts((prev) => [...prev, toast]);
       }
 
       const timerId = window.setTimeout(() => {
-        removeToast(toast.id);
+        removeToast(toastIdToSchedule);
       }, durationMs);
-      toastTimersRef.current.set(toast.id, timerId);
+      toastTimersRef.current.set(toastIdToSchedule, timerId);
     },
     [muteAllToasts, muteSocial, achievementToastsEnabled, removeToast]
   );
@@ -567,19 +642,43 @@ const OverlayApp: React.FC = () => {
         currentLevel: payload.currentLevel,
         currentXP: payload.currentXP,
       };
-      playOverlaySound(
-        tier === "platinum" ? "unlockPlatinum" : tier === "gold" ? "unlockGold" : "unlock",
-        panelDataRef.current?.settings?.achievementSoundTheme || "default",
+      const activeSoundTheme =
+        payload.soundTheme ||
+        payload.theme ||
+        panelDataRef.current?.settings?.achievementSoundTheme ||
+        (typeof window !== "undefined"
+          ? localStorage.getItem("checkpoint_sound_theme_global")
+          : null) ||
+        "default";
+      const activeSoundVolume =
         typeof panelDataRef.current?.settings?.achievementVolume === "number"
           ? panelDataRef.current.settings.achievementVolume / 100
-          : 0.5,
+          : (typeof window !== "undefined" &&
+              Number(localStorage.getItem("checkpoint_achievement_volume_global")) / 100) ||
+            0.5;
+
+      playOverlaySound(
+        tier === "platinum" ? "unlockPlatinum" : tier === "gold" ? "unlockGold" : "unlock",
+        activeSoundTheme,
+        activeSoundVolume,
       );
       addToast(toast, 6500);
     });
 
     const unbindPlaySound = api.onPlaySound?.(({ sound, volume, theme }: any) => {
-      const vol = typeof volume === "number" ? volume / 100 : 0.35;
-      const t = theme || panelDataRef.current?.settings?.achievementSoundTheme || "default";
+      const vol =
+        typeof volume === "number"
+          ? volume / 100
+          : typeof panelDataRef.current?.settings?.achievementVolume === "number"
+            ? panelDataRef.current.settings.achievementVolume / 100
+            : 0.35;
+      const t =
+        theme ||
+        panelDataRef.current?.settings?.achievementSoundTheme ||
+        (typeof window !== "undefined"
+          ? localStorage.getItem("checkpoint_sound_theme_global")
+          : null) ||
+        "default";
       if (sound === "achievement-unlock-platinum") {
         playOverlaySound("unlockPlatinum", t, vol);
       } else if (sound === "achievement-unlock-gold") {
@@ -601,7 +700,17 @@ const OverlayApp: React.FC = () => {
           : "O overlay está ativo enquanto você joga.",
         avatar: payload.userAvatar,
       };
-      playOverlaySound("welcome", panelDataRef.current?.settings?.achievementSoundTheme || "default", typeof panelDataRef.current?.settings?.achievementVolume === "number" ? panelDataRef.current.settings.achievementVolume / 100 : 0.35);
+      const activeSoundTheme =
+        panelDataRef.current?.settings?.achievementSoundTheme ||
+        (typeof window !== "undefined"
+          ? localStorage.getItem("checkpoint_sound_theme_global")
+          : null) ||
+        "default";
+      const activeSoundVolume =
+        typeof panelDataRef.current?.settings?.achievementVolume === "number"
+          ? panelDataRef.current.settings.achievementVolume / 100
+          : 0.35;
+      playOverlaySound("welcome", activeSoundTheme, activeSoundVolume);
       addToast(toast, 6000);
     });
 
@@ -638,6 +747,18 @@ const OverlayApp: React.FC = () => {
       const normalized = normalizeSocialToast(payload, panelDataRef.current.friends || []);
       const kind = normalized.kind;
       const isGameStart = kind === "game-start";
+      const startTitle = payload.gameTitle || (payload.description?.startsWith("Jogando ") ? payload.description.slice(8).trim() : "");
+      if (isGameStart && startTitle) {
+        setPanelData((prev) => ({
+          ...prev,
+          gameTitle: prev.gameTitle || startTitle,
+          playingGame: prev.playingGame || {
+            id: "active-game",
+            title: startTitle,
+            sessionStartedAt: prev.playingGame?.sessionStartedAt || new Date().toISOString(),
+          },
+        }));
+      }
       const toast: SocialToast = {
         id: String(payload?.notificationId || payload?.id || Date.now() + Math.random()),
         ...normalized,
@@ -647,28 +768,39 @@ const OverlayApp: React.FC = () => {
           : normalized.description,
       };
       if (!isGameStart) {
+        const activeSoundTheme =
+          panelDataRef.current?.settings?.achievementSoundTheme ||
+          (typeof window !== "undefined"
+            ? localStorage.getItem("checkpoint_sound_theme_global")
+            : null) ||
+          "default";
+        const activeSoundVolume =
+          typeof panelDataRef.current?.settings?.achievementVolume === "number"
+            ? panelDataRef.current.settings.achievementVolume / 100
+            : 0.35;
         playOverlaySound(
           kind === "incoming-call" || kind === "call"
             ? "call"
             : kind === "capture" || kind === "capture-saved"
               ? "screenshot"
               : "toast",
-          panelDataRef.current?.settings?.achievementSoundTheme || "default",
-          typeof panelDataRef.current?.settings?.achievementVolume === "number"
-            ? panelDataRef.current.settings.achievementVolume / 100
-            : 0.35,
+          activeSoundTheme,
+          activeSoundVolume,
         );
       }
-      addToast(
-        toast,
-        kind === "incoming-call" || kind === "call"
-          ? 30000
-          : kind === "friend-request"
-            ? 12000
-            : isGameStart
-              ? 6000
-              : 7000,
-      );
+      const payloadDuration = Number(payload?.duration);
+      const toastDurationMs =
+        Number.isFinite(payloadDuration) && payloadDuration > 0
+          ? payloadDuration
+          : kind === "incoming-call" || kind === "call"
+            ? 5000
+            : kind === "friend-request"
+              ? 12000
+              : isGameStart
+                ? 6000
+                : 7000;
+      toast.durationMs = toastDurationMs;
+      addToast(toast, toastDurationMs);
     });
 
     const mergePanelState = (prev: CommandPanelState, payload: any): CommandPanelState => {
@@ -925,13 +1057,10 @@ const OverlayApp: React.FC = () => {
   // ─── Ações do Overlay ────────────────────────────────────────────────────────
   const closeOverlay = useCallback(() => {
     uiSound();
-    if (activeCall?.active) {
-      setActiveCall(null);
-      (window as any).achievementOverlay?.panelAction?.({ kind: "voice-hangup" });
-    }
+    // NÃO encerrar chamada aqui! A chamada deve continuar quando o jogador fecha o overlay e retorna ao jogo.
     setOverlayMode("passive");
     (window as any).achievementOverlay?.panelAction?.({ kind: "close" });
-  }, [activeCall?.active, uiSound]);
+  }, [uiSound]);
 
   const handleStepBack = useCallback(() => {
     if (viewingCapture) {
@@ -1019,7 +1148,7 @@ const OverlayApp: React.FC = () => {
       friendAvatar,
       muted: false,
       deafened: false,
-      connectionState: "connected",
+      connectionState: "calling",
     });
     (window as any).achievementOverlay?.panelAction?.({
       kind: "voice-call",
@@ -1239,10 +1368,22 @@ const OverlayApp: React.FC = () => {
           >
             <div className="flex items-center gap-2">
               <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                <span
+                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                    activeCall.connectionState === "calling" ? "bg-amber-400" : "bg-emerald-400"
+                  }`}
+                />
+                <span
+                  className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                    activeCall.connectionState === "calling" ? "bg-amber-500" : "bg-emerald-500"
+                  }`}
+                />
               </span>
-              <span className="text-xs font-black text-white">{activeCall.friendName || "Em Chamada"}</span>
+              <span className="text-xs font-black text-white">
+                {activeCall.connectionState === "calling"
+                  ? `Chamando ${activeCall.friendName || "..."}`
+                  : activeCall.friendName || "Em Chamada"}
+              </span>
             </div>
 
             <div className="h-3.5 w-px bg-white/20" />
@@ -1368,7 +1509,9 @@ const OverlayApp: React.FC = () => {
                   <div className="flex items-center gap-2.5">
                     <Trophy className="h-4 w-4" style={{ color: accentColor }} /> Conquistas
                   </div>
-                  <span className="text-[10px] font-black text-white/40">{unlockedCount}/{totalCount}</span>
+                  <span className="text-[10px] font-black text-white/40">
+                    {hasCurrentGame && totalCount > 0 ? `${unlockedCount}/${totalCount}` : "—"}
+                  </span>
                 </button>
                 <button
                   type="button"
@@ -1404,7 +1547,7 @@ const OverlayApp: React.FC = () => {
                   className="flex min-h-10 items-center justify-between rounded-xl border border-white/6 bg-white/3 px-3 py-2.5 text-xs font-bold text-white/80 transition-all hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
                 >
                   <div className="flex items-center gap-2.5">
-                    <Camera className="h-4 w-4" style={{ color: accentColor }} /> Tirar foto
+                    <Camera className="h-4 w-4" style={{ color: accentColor }} /> Capturar tela
                   </div>
                   <span className="text-[10px] font-black text-white/40">{formatShortcutLabel(captureShortcut)}</span>
                 </button>
@@ -1419,7 +1562,7 @@ const OverlayApp: React.FC = () => {
                 className="mt-3 min-h-10 w-full rounded-xl bg-white text-xs font-black text-black hover:bg-white/90"
               >
                 <Maximize2 className="h-3.5 w-3.5 mr-1.5" />
-                Expandir Assistente
+                Expandir overlay
               </Button>
               <div className="flex items-center justify-between px-1 text-[10px] text-white/40">
                 <span>{formatShortcutLabel(overlayShortcut)} ou Esc para sair</span>
@@ -1603,11 +1746,15 @@ const OverlayApp: React.FC = () => {
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                       <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4">
                         <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Sessão atual</span>
-                        <p className="mt-2 text-base font-semibold tabular-nums text-white">{sessionClock}</p>
+                        <p className="mt-2 text-base font-semibold tabular-nums text-white">
+                          {hasCurrentGame ? sessionClock : "—"}
+                        </p>
                       </div>
                       <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4">
                         <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Conquistas</span>
-                        <p className="mt-2 text-base font-semibold text-white">{unlockedCount} / {totalCount}</p>
+                        <p className="mt-2 text-base font-semibold text-white">
+                          {hasCurrentGame && totalCount > 0 ? `${unlockedCount} / ${totalCount}` : "—"}
+                        </p>
                       </div>
                       <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4">
                         <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Amigos online</span>
@@ -1619,7 +1766,7 @@ const OverlayApp: React.FC = () => {
                       onClick={() => { void takeCapture(); }}
                       className="min-h-10 w-fit rounded-xl bg-white px-4 text-xs font-black text-black hover:bg-white/90"
                     >
-                      <Camera className="mr-1.5 h-3.5 w-3.5" /> Tirar foto ({formatShortcutLabel(captureShortcut)})
+                      <Camera className="mr-1.5 h-3.5 w-3.5" /> Capturar tela ({formatShortcutLabel(captureShortcut)})
                     </Button>
                   </div>
                 )}
@@ -1648,33 +1795,40 @@ const OverlayApp: React.FC = () => {
                       </div>
                     ) : (
                       <div className="grid gap-2.5">
-                        {achievementList.map((ach: any, idx: number) => (
-                          <div
-                            key={ach.apiName || ach.id || idx}
-                            className="flex items-center gap-3.5 rounded-2xl border border-white/6 bg-white/[0.035] p-3.5"
-                          >
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 overflow-hidden border border-white/10">
-                              {ach.icon ? (
-                                <img src={ach.icon} alt="" className="h-full w-full object-cover" />
-                              ) : (
-                                <Trophy className="h-5 w-5 text-white/70" />
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <h4 className="text-xs font-bold text-white truncate">{ach.name || ach.displayName || "Conquista"}</h4>
-                              <p className="text-[11px] text-white/50 mt-0.5 line-clamp-1">{ach.description || "Sem descrição"}</p>
-                            </div>
-                            <span
-                              className={`rounded-lg px-2.5 py-1 text-[9px] font-black uppercase tracking-wider shrink-0 ${
-                                ach.achieved
-                                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
-                                  : "bg-white/5 text-white/40 border border-white/10"
-                              }`}
+                        {achievementList.map((ach: any, idx: number) => {
+                          const achKey = ach.apiName || ach.id || `ach-${idx}`;
+                          const isExpanded = expandedAchId === achKey;
+                          return (
+                            <div
+                              key={achKey}
+                              onClick={() => setExpandedAchId((prev) => (prev === achKey ? null : achKey))}
+                              className="flex items-start gap-3.5 rounded-2xl border border-white/6 bg-white/[0.035] p-3.5 cursor-pointer hover:bg-white/[0.06] transition-colors"
                             >
-                              {ach.achieved ? "Desbloqueada" : "Bloqueada"}
-                            </span>
-                          </div>
-                        ))}
+                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 overflow-hidden border border-white/10 mt-0.5">
+                                {ach.icon ? (
+                                  <img src={ach.icon} alt="" className="h-full w-full object-cover" />
+                                ) : (
+                                  <Trophy className="h-5 w-5 text-white/70" />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h4 className="text-xs font-bold text-white">{ach.name || ach.displayName || "Conquista"}</h4>
+                                <p className={`text-[11px] text-white/50 mt-0.5 leading-relaxed ${isExpanded ? "" : "line-clamp-1"}`}>
+                                  {ach.description || "Sem descrição"}
+                                </p>
+                              </div>
+                              <span
+                                className={`rounded-lg px-2.5 py-1 text-[9px] font-black uppercase tracking-wider shrink-0 mt-0.5 ${
+                                  ach.achieved
+                                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
+                                    : "bg-white/5 text-white/40 border border-white/10"
+                                }`}
+                              >
+                                {ach.achieved ? "Desbloqueada" : "Bloqueada"}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -1688,9 +1842,9 @@ const OverlayApp: React.FC = () => {
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-white/40 mb-3">
                           <Users className="h-6 w-6" aria-hidden="true" />
                         </div>
-                        <h4 className="text-sm font-bold text-white">Nenhum amigo está jogando agora</h4>
+                        <h4 className="text-sm font-bold text-white">Nenhum amigo na lista</h4>
                         <p className="mt-1 max-w-xs text-xs text-white/50">
-                          Você pode abrir um chat ou adicionar novos amigos para jogar junto.
+                          Adicione amigos pelo launcher para conversar e jogar junto.
                         </p>
                         <Button
                           type="button"
@@ -1843,9 +1997,37 @@ const OverlayApp: React.FC = () => {
                                     </div>
                                   )}
                                   {msg.text && <p className="break-words leading-relaxed">{msg.text}</p>}
-                                  <span className={`mt-1 block text-right text-[9px] font-bold ${msg.mine ? "text-black/50" : "text-white/40"}`}>
-                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                                  </span>
+                                  {msg.failed ? (
+                                    <div className="mt-1.5 flex items-center justify-between gap-2 pt-1 border-t border-rose-500/20 text-[9px]">
+                                      <span className="font-bold text-rose-400">Falha ao enviar</span>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            (window as any).achievementOverlay?.panelAction?.({
+                                              kind: "retry-message",
+                                              messageId: msg.id,
+                                              text: msg.text,
+                                            });
+                                          }}
+                                          className="font-bold text-amber-300 hover:text-amber-200 underline cursor-pointer"
+                                        >
+                                          Tentar de novo
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setInputText(msg.text)}
+                                          className="text-white/60 hover:text-white underline cursor-pointer"
+                                        >
+                                          Restaurar texto
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <span className={`mt-1 block text-right text-[9px] font-bold ${msg.mine ? "text-black/50" : "text-white/40"}`}>
+                                      {msg.pending ? "Enviando…" : new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             ))
@@ -2205,7 +2387,19 @@ const OverlayApp: React.FC = () => {
                   </button>
                 )
               ) : null}
-              <img src={viewingCapture.url} alt="Captura ampliada" className="max-h-[80vh] max-w-full rounded-xl object-contain" />
+              <div className="relative">
+                <img
+                  src={fullResImageUrl || viewingCapture.url}
+                  alt="Captura ampliada"
+                  className="max-h-[80vh] max-w-full rounded-xl object-contain transition-opacity duration-300"
+                />
+                {fullResLoading && (
+                  <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-black/70 px-2.5 py-1 text-[10px] font-bold text-white/70 backdrop-blur-md">
+                    <Loader2 className="h-3 w-3 animate-spin text-white" />
+                    Carregando alta resolução…
+                  </div>
+                )}
+              </div>
             </div>
           </motion.div>
         )}

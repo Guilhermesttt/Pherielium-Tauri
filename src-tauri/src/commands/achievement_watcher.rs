@@ -166,6 +166,7 @@ pub fn start_achievement_watcher(
 
     let app_clone = app.clone();
     let game_id_clone = game_id.clone();
+    let watcher_key_clone = watcher_key.clone();
 
     tauri::async_runtime::spawn(async move {
         let game_dir: Option<PathBuf> = executable_path
@@ -179,33 +180,46 @@ pub fn start_achievement_watcher(
 
         let Some(app_id) = app_id else {
             eprintln!("[AchievementWatcher] Não foi possível identificar appId para {game_id_clone}");
+            if let Some(state) = app_clone.try_state::<AchievementWatcherState>() {
+                state.active_watchers.lock().remove(&watcher_key_clone);
+            }
             return;
         };
 
-        // 1. Re-scan loop: check up to 30 seconds (15 attempts x 2000ms)
+        // 1. Continuous discovery loop: checks while game session is active
+        eprintln!("[AchievementWatcher] Iniciando busca contínua de save para {game_id_clone} (appId: {app_id})");
         let mut detected: Option<DetectedEmulator> = None;
-        for _ in 1..=15 {
-            if cancel_flag.load(Ordering::Relaxed) {
-                return;
-            }
+        let mut attempt: u32 = 0;
 
+        while !cancel_flag.load(Ordering::Relaxed) {
             if let Some(emu) = detect_emulator(game_dir.as_deref(), &app_id) {
                 if emu.save_path.exists() {
+                    eprintln!(
+                        "[AchievementWatcher] Save detectado com sucesso: {:?} em {:?}",
+                        emu.emulator_type, emu.save_path
+                    );
                     detected = Some(emu);
                     break;
                 }
             }
 
-            tokio::time::sleep(Duration::from_millis(2000)).await;
+            attempt += 1;
+            // Primeiras 15 tentativas (~30 segundos): verifica a cada 2s
+            // Depois disso: mantém busca ativa a cada 5s enquanto o jogo estiver aberto
+            let sleep_ms = if attempt <= 15 { 2000 } else { 5000 };
+            tokio::time::sleep(Duration::from_millis(sleep_ms)).await;
         }
 
         let Some(emulator) = detected else {
-            eprintln!("[AchievementWatcher] Nenhum save de emulador detectado para appId {app_id} (game {game_id_clone})");
+            eprintln!("[AchievementWatcher] Sessão encerrada sem detectar save para appId {app_id} (game {game_id_clone})");
+            if let Some(state) = app_clone.try_state::<AchievementWatcherState>() {
+                state.active_watchers.lock().remove(&watcher_key_clone);
+            }
             return;
         };
 
         eprintln!(
-            "[AchievementWatcher] Monitorando conquistas: {:?} em {:?}",
+            "[AchievementWatcher] Monitorando conquistas ativamente: {:?} em {:?}",
             emulator.emulator_type, emulator.save_path
         );
 
@@ -214,6 +228,11 @@ pub fn start_achievement_watcher(
         let mut last_mtime = std::fs::metadata(&emulator.save_path)
             .and_then(|m| m.modified())
             .unwrap_or(SystemTime::UNIX_EPOCH);
+
+        eprintln!(
+            "[AchievementWatcher] Estado inicial carregado: {} conquistas desbloqueadas para {game_id_clone}",
+            last_state.values().filter(|s| s.earned).count()
+        );
 
         // 3. Polling loop: check modification time every 1000ms
         while !cancel_flag.load(Ordering::Relaxed) {
@@ -248,6 +267,10 @@ pub fn start_achievement_watcher(
             }
 
             if !newly_unlocked.is_empty() {
+                eprintln!(
+                    "[AchievementWatcher] {} nova(s) conquista(s) detectada(s) para {game_id_clone}!",
+                    newly_unlocked.len()
+                );
                 let definitions = load_definitions_for_game(&game_id_clone, game_dir.as_deref());
 
                 for (ach_id, _earned_time) in newly_unlocked {
@@ -291,7 +314,11 @@ pub fn start_achievement_watcher(
             last_state = new_state;
         }
 
-        eprintln!("[AchievementWatcher] Watcher finalizado para {game_id_clone}");
+        // Cleanup watcher entry on exit
+        if let Some(state) = app_clone.try_state::<AchievementWatcherState>() {
+            state.active_watchers.lock().remove(&watcher_key_clone);
+        }
+        eprintln!("[AchievementWatcher] Watcher finalizado e removido para {game_id_clone}");
     });
 }
 

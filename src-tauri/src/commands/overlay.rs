@@ -84,15 +84,44 @@ fn set_overlay_interactive(app: &AppHandle, interactive: bool) -> Result<(), Str
     Ok(())
 }
 
+pub fn get_game_or_primary_monitor(app: &AppHandle, game_title: Option<&str>) -> Option<tauri::Monitor> {
+    let mon_idx = super::screen_capture::find_game_or_active_monitor_index(game_title) as usize;
+    if let Ok(monitors) = app.available_monitors() {
+        if let Some(mon) = monitors.get(mon_idx) {
+            return Some(mon.clone());
+        }
+    }
+    app.primary_monitor().ok().flatten()
+}
+
+pub fn update_overlay_geometry_to_game(app: &AppHandle, game_title: Option<&str>) {
+    if let Some(target_mon) = get_game_or_primary_monitor(app, game_title) {
+        if let Some(win) = app.get_webview_window(OVERLAY_LABEL) {
+            let pos = target_mon.position();
+            let size = target_mon.size();
+            let _ = win.set_position(tauri::Position::Physical(*pos));
+            let _ = win.set_size(tauri::Size::Physical(*size));
+        }
+    }
+}
+
 pub fn ensure_overlay(app: &AppHandle) -> Result<tauri::WebviewWindow, String> {
+    let game_title = app.try_state::<Mutex<OverlayRuntime>>().and_then(|state| {
+        state
+            .lock()
+            .panel_state
+            .get("gameTitle")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+    });
+
     if let Some(existing) = app.get_webview_window(OVERLAY_LABEL) {
+        update_overlay_geometry_to_game(app, game_title.as_deref());
         return Ok(existing);
     }
 
-    let monitor = app
-        .primary_monitor()
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| "Monitor primario nao encontrado.".to_string())?;
+    let monitor = get_game_or_primary_monitor(app, game_title.as_deref())
+        .ok_or_else(|| "Nenhum monitor encontrado.".to_string())?;
     let size = monitor.size();
     let pos = monitor.position();
 
@@ -216,11 +245,16 @@ pub fn overlay_show_game_start(app: AppHandle, payload: Value) -> Result<(), Str
         .and_then(|v| v.as_str())
         .unwrap_or("")
         .trim();
+    if !game_title.is_empty() {
+        merge_panel_state(&app, json!({ "gameTitle": game_title }));
+        update_overlay_geometry_to_game(&app, Some(game_title));
+    }
     send_overlay_event(
         &app,
         "overlay:social",
         json!({
             "kind": "game-start",
+            "gameTitle": game_title,
             "title": "Divirta-se",
             "description": if game_title.is_empty() {
                 "O overlay está ativo enquanto você joga.".to_string()
@@ -257,6 +291,9 @@ pub fn overlay_dismiss_notification(app: AppHandle, payload: Option<Value>) -> R
 #[tauri::command]
 pub fn overlay_update_panel(app: AppHandle, payload: Value) -> Result<(), String> {
     let patch = payload.get("payload").cloned().unwrap_or(payload);
+    if let Some(game_title) = patch.get("gameTitle").and_then(|v| v.as_str()) {
+        update_overlay_geometry_to_game(&app, Some(game_title));
+    }
     let merged = merge_panel_state(&app, patch);
     send_overlay_event(&app, "overlay:panel-state", merged);
     Ok(())
@@ -352,6 +389,8 @@ pub fn overlay_toggle_panel(app: AppHandle) -> Result<Value, String> {
     };
 
     if open {
+        let game_title = panel_state.get("gameTitle").and_then(|v| v.as_str());
+        update_overlay_geometry_to_game(&app, game_title);
         if let Some(window) = app.get_webview_window(OVERLAY_LABEL) {
             let _ = window.show();
         }
@@ -431,6 +470,16 @@ pub fn overlay_test_achievement(app: AppHandle, tier: Option<String>) -> Result<
         ),
     };
 
+    let sound_theme = app
+        .try_state::<Mutex<OverlayRuntime>>()
+        .and_then(|state| {
+            let rt = state.lock();
+            rt.panel_state
+                .get("settings")
+                .and_then(|s| s.get("achievementSoundTheme"))
+                .and_then(|t| t.as_str().map(|s| s.to_string()))
+        });
+
     send_overlay_event(
         &app,
         "achievement:unlock",
@@ -447,6 +496,7 @@ pub fn overlay_test_achievement(app: AppHandle, tier: Option<String>) -> Result<
                 "bronze" => 15,
                 _ => 50,
             },
+            "soundTheme": sound_theme,
             "isTest": true,
         }),
     );
@@ -554,7 +604,7 @@ pub fn register_capture_shortcut(app: &AppHandle) {
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string())
         });
-        match super::captures::capture_screen(game_title) {
+        match super::captures::capture_screen(app_handle.clone(), game_title, None) {
             Ok(item) => {
                 send_overlay_event(
                     &app_handle,

@@ -31,6 +31,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
   onLibraryChanged,
   onGameHydrated,
   onOpenMods,
+  currentPresenceGame,
 }) => {
   const { user, userProfile } = useAuth();
   const { language, closeOnLaunch } = usePreferences();
@@ -70,6 +71,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
     userProfile,
     onGameHydrated,
     onLibraryChanged,
+    currentPresenceGame,
   });
 
   // Hook de Ações
@@ -236,7 +238,9 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
   }, [game?.hoursPlayed]);
 
   const lastSession = React.useMemo(() => {
-    if (!game?.lastPlayedAt) return copy.neverStarted;
+    if (!game?.lastPlayedAt) {
+      return (game?.hoursPlayed || 0) > 0 ? copy.noHubSession : copy.neverStarted;
+    }
     try {
       return new Date(game.lastPlayedAt).toLocaleDateString(language, {
         day: "2-digit",
@@ -244,9 +248,9 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
         year: "numeric",
       });
     } catch {
-      return copy.neverStarted;
+      return (game?.hoursPlayed || 0) > 0 ? copy.noHubSession : copy.neverStarted;
     }
-  }, [game?.lastPlayedAt, language, copy.neverStarted]);
+  }, [game?.lastPlayedAt, game?.hoursPlayed, language, copy.neverStarted, copy.noHubSession]);
 
   const sanitizedAboutHtml = React.useMemo(() => {
     const raw =
@@ -327,31 +331,31 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
 
           {/* Fundo Hero fixo */}
           <div
-            className="fixed top-0 left-0 h-[65vh] pointer-events-none z-0"
+            className="fixed top-0 left-0 h-[58vh] pointer-events-none z-0"
             style={{ right: "var(--scrollbar-w, 10px)" }}
           >
             <motion.img
               initial={{ scale: 1.05, opacity: 0 }}
-              animate={{ scale: 1, opacity: 0.65 }}
+              animate={{ scale: 1, opacity: 0.8 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 1.5, ease: "easeOut" }}
+              transition={{ duration: 1.2, ease: "easeOut" }}
               src={heroImage || undefined}
               alt=""
               className="w-full h-full object-cover"
               loading="eager"
               decoding="async"
             />
-            <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent" />
-            <div className="absolute inset-0 bg-linear-to-b from-black/80 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#070707] via-[#070707]/35 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#070707]/70 via-transparent to-transparent" />
           </div>
 
           {/* Container de Conteúdo */}
-          <div className="relative z-10 w-full min-h-screen flex flex-col pt-[45vh]">
+          <div className="relative z-10 w-full min-h-screen flex flex-col pt-[26vh]">
             <motion.div
-              initial={{ y: 100, opacity: 0 }}
+              initial={{ y: 60, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="flex-1 w-full pb-24 rounded-t-[40px] border-t border-[#161616] shadow-[0_-10px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] bg-[#0F0F0F]"
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              className="flex-1 w-full pb-24 rounded-t-[36px] border-t border-white/10 shadow-[0_-16px_60px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.12)] bg-[#0C0D10]"
             >
               <div className="max-w-5xl w-full mx-auto px-4 sm:px-8 md:px-12 py-10">
                 {/* Header (Capa + Título + Badges + Botão Jogar na direita) */}

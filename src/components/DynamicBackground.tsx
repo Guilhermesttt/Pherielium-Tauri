@@ -64,6 +64,12 @@ const DynamicBackground: React.FC<DynamicBackgroundProps> = ({ backgroundImage, 
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-transparent" />
 
+      {/* Camada atmosférica do console ativo (transição suave sem loop ou custo de render) */}
+      <div
+        className="absolute inset-0 pointer-events-none transition-all duration-700 ease-out"
+        style={{ background: "var(--theme-ambient-bg, none)" }}
+      />
+
       {/* Vinheta lateral para leitura do conteudo */}
       <div className="absolute inset-0 opacity-45" style={{ background: "linear-gradient(to right, color-mix(in srgb, var(--color-bg-main, #0F0F0F) 45%, transparent) 0%, transparent 55%)" }} />
 

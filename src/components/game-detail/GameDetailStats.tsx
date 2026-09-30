@@ -14,12 +14,10 @@ interface GameDetailStatsProps {
 }
 
 export const GameDetailStats: React.FC<GameDetailStatsProps> = React.memo(({
-  game,
   achievementsUnlocked,
   achievementsTotal,
   formattedHours,
   lastSession,
-  hasEpicLaunchShortcut,
   copy,
 }) => {
   const percent = achievementsTotal > 0
@@ -32,34 +30,32 @@ export const GameDetailStats: React.FC<GameDetailStatsProps> = React.memo(({
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-4 sm:gap-8">
           <div className="flex items-baseline gap-2">
-            <span
-              className="text-3xl sm:text-5xl font-black text-white tracking-tighter"
-            >
+            <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
               {achievementsUnlocked}
             </span>
-            <span className="text-sm font-bold text-white/35 uppercase tracking-widest">
+            <span className="text-xs font-semibold text-white/40 uppercase tracking-wider">
               / {achievementsTotal} {copy.achievements}
             </span>
           </div>
 
-          <div className="w-px h-12 bg-[var(--color-surface)] shrink-0 hidden sm:block" />
+          <div className="w-px h-10 bg-white/10 shrink-0 hidden sm:block" />
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-black text-white/35 uppercase tracking-[0.28em]">
+            <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">
               {copy.timePlayed}
             </span>
-            <span className="text-xl font-black text-white/90 tracking-tight">
+            <span className="text-lg sm:text-xl font-semibold text-white/95 tracking-tight">
               {formattedHours}
             </span>
           </div>
 
-          <div className="w-px h-12 bg-[var(--color-surface)] shrink-0 hidden sm:block" />
+          <div className="w-px h-10 bg-white/10 shrink-0 hidden sm:block" />
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-black text-white/35 uppercase tracking-[0.28em]">
+            <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">
               {copy.lastSession}
             </span>
-            <span className="text-xl font-black text-white/90 tracking-tight">
+            <span className="text-lg sm:text-xl font-semibold text-white/95 tracking-tight">
               {lastSession}
             </span>
           </div>
@@ -67,50 +63,15 @@ export const GameDetailStats: React.FC<GameDetailStatsProps> = React.memo(({
 
         {/* Barra de Progresso Suave */}
         {achievementsTotal > 0 && (
-          <div className="w-full h-[3px] rounded-full bg-[var(--color-surface)] overflow-hidden">
+          <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden">
             <motion.div
-              className="h-full rounded-full bg-white/60"
+              className="h-full rounded-full bg-white/80"
               initial={{ width: 0 }}
               animate={{ width: `${percent}%` }}
               transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
             />
           </div>
         )}
-      </div>
-
-      {/* Tags de Metadados / Fonte */}
-      <div className="inline-flex flex-wrap items-center gap-3 px-4 py-2.5 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-ui-detail)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] self-start"
-        style={{
-          backdropFilter: "blur(20px) saturate(180%)",
-          WebkitBackdropFilter: "blur(20px) saturate(180%)",
-        }}>
-        {game.launcherType === "steam" && (
-          <span className="text-[10px] font-black text-white/35 uppercase tracking-[0.22em]">
-            {copy.appId}{" "}
-            <span className="text-white/80 ml-1.5">{game.steamAppId || "---"}</span>
-          </span>
-        )}
-        {game.launcherType === "epic" && (
-          <span className="text-[10px] font-black text-white/35 uppercase tracking-[0.22em]">
-            {copy.epicShortcutLabel}{" "}
-            <span className="text-white/80 ml-1.5">
-              {hasEpicLaunchShortcut ? copy.epicShortcut : copy.epicStore}
-            </span>
-          </span>
-        )}
-        {(game.launcherType === "steam" || game.launcherType === "epic") && (
-          <span className="h-3 w-px bg-white/10" />
-        )}
-        <span className="text-[10px] font-black text-white/35 uppercase tracking-[0.22em]">
-          {copy.source}{" "}
-          <span className="text-white/80 ml-1.5">
-            {game.source === "steam"
-              ? copy.sourceSteamSync
-              : game.source === "epic"
-                ? copy.sourceEpicCatalog
-                : copy.sourceManual}
-          </span>
-        </span>
       </div>
     </div>
   );

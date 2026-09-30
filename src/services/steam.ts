@@ -3,8 +3,6 @@ import {
   AUTH_TIMEOUT_MS,
   AuthRequiredError,
   apiFetch,
-  apiUrl,
-  getAuthHeaders,
   getUsableSession,
 } from "./api";
 import type { Game, SteamOwnedGame } from "../types/domain";
@@ -139,9 +137,7 @@ export const disconnectSteamAccount = async () => {
 
 export const fetchSteamAppSizeGB = async (appId: string) => {
   if (!/^\d+$/.test(appId)) return undefined;
-  const response = await fetch(
-    apiUrl(`/api/steam/app-size?appId=${encodeURIComponent(appId)}`),
-  );
+  const response = await apiFetch(`/api/steam/app-size?appId=${encodeURIComponent(appId)}`);
   if (!response.ok) return undefined;
   const payload = (await response.json()) as { sizeGB?: number | null };
   return typeof payload.sizeGB === "number" ? payload.sizeGB : undefined;
@@ -207,53 +203,117 @@ export const fetchSteamAppDetailsResult = async (
   appId: string,
   language: LauncherLanguage = "pt-BR",
 ): Promise<SteamAppDetailsFetchResult> => {
-  if (!/^\d+$/.test(appId)) {
+  const cleanId = String(appId || "").trim();
+  if (!/^\d+$/.test(cleanId)) {
     return { ok: false, message: "App ID deve conter só dígitos." };
   }
-  const url = apiUrl(
-    `/api/steam/app-details?appId=${encodeURIComponent(appId)}&language=${encodeURIComponent(language)}`,
-  );
+
+  // 1. Rust Tauri invoke nativo (sem proxy, sem CORS, sem bloqueio de IP de datacenter)
+  if (typeof window !== "undefined" && window.electronAPI?.fetchSteamAppDetails) {
+    try {
+      const data = await window.electronAPI.fetchSteamAppDetails(cleanId, language);
+      if (data && (data.title || data.cardImage || data.description)) {
+        return { ok: true, data };
+      }
+    } catch (e) {
+      console.warn("[fetchSteamAppDetailsResult] Tauri native fetch error:", e);
+    }
+  }
+
+  // 2. Direct fetch to Steam Store API (funciona na WebView ou browser)
   try {
-    const response = await fetch(url);
+    const steamLang =
+      language === "pt-BR"
+        ? "brazilian"
+        : language === "es-ES"
+          ? "spanish"
+          : language === "fr-FR"
+            ? "french"
+            : language === "de-DE"
+              ? "german"
+              : language === "it-IT"
+                ? "italian"
+                : "english";
+    const directRes = await fetch(
+      `https://store.steampowered.com/api/appdetails?appids=${encodeURIComponent(cleanId)}&l=${steamLang}`,
+    );
+    if (directRes.ok) {
+      const json = await directRes.json();
+      const appObj = json[cleanId] || (typeof json === "object" && json ? Object.values(json)[0] : null);
+      if (appObj?.success && appObj.data) {
+        const d = appObj.data;
+        const cardImg = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${cleanId}/library_600x900_2x.jpg`;
+        const bgImg = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${cleanId}/library_hero.jpg`;
+        const logoImg = `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${cleanId}/logo.png`;
+        return {
+          ok: true,
+          data: {
+            appId: cleanId,
+            title: d.name || "",
+            description: d.short_description || "",
+            aboutTheGame: d.detailed_description || d.about_the_game || "",
+            cardImage: cardImg,
+            backgroundImage: bgImg,
+            logoImage: logoImg,
+            developer: d.developers?.[0] || "",
+            publisher: d.publishers?.[0] || "",
+            releaseDate: d.release_date?.date || "",
+            tags: [
+              ...(d.genres?.map((g: any) => g.description) || []),
+              ...(d.categories?.map((c: any) => c.description) || []),
+            ],
+            screenshots: d.screenshots?.map((s: any) => s.path_full) || [],
+            trailerUrl: d.movies?.[0]?.mp4?.max || d.movies?.[0]?.webm?.max || "",
+            trailerThumbnail: d.movies?.[0]?.thumbnail || "",
+            sizeGB: null,
+            pcRequirements: d.pc_requirements || null,
+            supportedLanguages: d.supported_languages || null,
+            metacritic: d.metacritic || null,
+            priceOverview: d.price_overview || null,
+          },
+        };
+      }
+    }
+  } catch (directErr) {
+    console.warn("[fetchSteamAppDetailsResult] direct fetch error:", directErr);
+  }
+
+  // 3. Fallback backend URL
+  try {
+    const response = await apiFetch(
+      `/api/steam/app-details?appId=${encodeURIComponent(cleanId)}&language=${encodeURIComponent(language)}`,
+    );
     const body = (await response
       .json()
       .catch(() => ({}))) as SteamAppDetails & { error?: string };
-    if (!response.ok || body.error) {
-      const fromApi = typeof body.error === "string" ? body.error : null;
-      const message =
-        fromApi ||
-        (response.status === 502
-          ? "O backend não conseguiu obter dados na Steam (502)."
-          : `O backend respondeu com erro HTTP ${response.status}.`);
-      return { ok: false, message };
+    if (response.ok && !body.error && (body.title || body.cardImage || body.appId)) {
+      return { ok: true, data: body as SteamAppDetails };
     }
-    return { ok: true, data: body as SteamAppDetails };
   } catch (e) {
-    const msg = String(e instanceof Error ? e.message : e).toLowerCase();
-    const looksLikeNetwork =
-      e instanceof TypeError ||
-      msg.includes("failed to fetch") ||
-      msg.includes("network");
-    return {
-      ok: false,
-      message: looksLikeNetwork
-        ? "Backend inacessível (porta 8787). Em outro terminal: npm run server. Ou: npm run dev:full. Teste no browser: http://localhost:8787/health"
-        : e instanceof Error
-          ? e.message
-          : "Falha de rede ao buscar dados da loja Steam.",
-    };
+    console.warn("[fetchSteamAppDetailsResult] backend fetch error:", e);
   }
+
+  // 4. Último fallback garantido: gera metadados a partir das URLs estáticas do CDN da Steam
+  return {
+    ok: true,
+    data: {
+      appId: cleanId,
+      cardImage: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${cleanId}/library_600x900_2x.jpg`,
+      backgroundImage: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${cleanId}/library_hero.jpg`,
+      logoImage: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${cleanId}/logo.png`,
+    },
+  };
 };
 
 export const fetchSteamAchievements = async (
   steamId: string,
   appId: string,
 ) => {
-  const url = apiUrl(
-    `/api/steam/achievements?steamId=${encodeURIComponent(steamId)}&appId=${encodeURIComponent(appId)}`,
-  );
   try {
-    const response = await fetch(url, { headers: await getAuthHeaders() });
+    const response = await apiFetch(
+      `/api/steam/achievements?steamId=${encodeURIComponent(steamId)}&appId=${encodeURIComponent(appId)}`,
+      { authenticated: true },
+    );
     if (!response.ok) return { total: 0, unlocked: 0 };
     const data = await response.json();
     return {
@@ -316,12 +376,11 @@ export const fetchSteamAchievementDetails = async (
     return cached;
   }
 
-  const url = apiUrl(
-    `/api/steam/achievements?steamId=${encodeURIComponent(steamId)}&appId=${encodeURIComponent(appId)}&language=${encodeURIComponent(language)}`,
-  );
-
   try {
-    const response = await fetch(url, { headers: await getAuthHeaders() });
+    const response = await apiFetch(
+      `/api/steam/achievements?steamId=${encodeURIComponent(steamId)}&appId=${encodeURIComponent(appId)}&language=${encodeURIComponent(language)}`,
+      { authenticated: true },
+    );
     if (!response.ok) {
       return cached || { achievements: [], total: 0, unlocked: 0 };
     }
@@ -365,12 +424,10 @@ export const fetchSteamAchievementSchema = async (
     return cached;
   }
 
-  const url = apiUrl(
-    `/api/steam/achievement-schema?appId=${encodeURIComponent(appId)}&language=${encodeURIComponent(language)}`,
-  );
-
   try {
-    const response = await fetch(url);
+    const response = await apiFetch(
+      `/api/steam/achievement-schema?appId=${encodeURIComponent(appId)}&language=${encodeURIComponent(language)}`,
+    );
     if (!response.ok) {
       return cached || { achievements: [], total: 0, unlocked: 0 };
     }
@@ -427,9 +484,7 @@ export const searchSteamGames = async (query: string): Promise<any[]> => {
 
   // 2. Tentar endpoint do backend Pherielium
   try {
-    const response = await fetch(
-      apiUrl(`/api/steam/search?query=${encodeURIComponent(q)}`),
-    );
+    const response = await apiFetch(`/api/steam/search?query=${encodeURIComponent(q)}`);
     if (response.ok) {
       const payload = (await response.json()) as { items?: Array<any> };
       if (Array.isArray(payload.items) && payload.items.length > 0) {
@@ -489,10 +544,9 @@ export const fetchSteamAppDetails = async (
 export const fetchSteamLibrary = async (
   steamId: string,
 ): Promise<SteamLibraryResponse> => {
-  const response = await fetch(
-    apiUrl(`/api/steam/library?steamId=${encodeURIComponent(steamId)}`),
-    { headers: await getAuthHeaders() },
-  );
+  const response = await apiFetch(`/api/steam/library?steamId=${encodeURIComponent(steamId)}`, {
+    authenticated: true,
+  });
   if (!response.ok) {
     let message = "Falha ao buscar biblioteca da Steam.";
     try {
@@ -507,8 +561,8 @@ export const fetchSteamLibrary = async (
 };
 
 export const fetchSteamCurrentGame = async (): Promise<SteamCurrentGameResult> => {
-  const response = await fetch(apiUrl("/api/steam/current-game"), {
-    headers: await getAuthHeaders(),
+  const response = await apiFetch("/api/steam/current-game", {
+    authenticated: true,
   });
   if (!response.ok) {
     throw new Error("Não foi possível verificar o jogo atual na Steam.");
@@ -534,26 +588,15 @@ export const fetchSteamAchievementSummary = async (
 
   const stats: SteamAchievementSummary = {};
   const failedAppIds = new Set<string>();
-  const authHeaders = await getAuthHeaders().catch(() => null);
-  if (!authHeaders) {
-    return {
-      stats,
-      requested: normalizedAppIds.length,
-      resolved: 0,
-      failedAppIds: normalizedAppIds,
-    };
-  }
 
   const CHUNK_SIZE = 50;
   for (let index = 0; index < normalizedAppIds.length; index += CHUNK_SIZE) {
     const chunk = normalizedAppIds.slice(index, index + CHUNK_SIZE);
     try {
-      const response = await fetch(apiUrl("/api/steam/achievement-summary"), {
+      const response = await apiFetch("/api/steam/achievement-summary", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...authHeaders,
-        },
+        authenticated: true,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ appIds: chunk }),
       });
       if (!response.ok) {

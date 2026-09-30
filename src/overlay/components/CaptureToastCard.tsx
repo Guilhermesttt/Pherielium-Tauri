@@ -16,19 +16,19 @@ export const CaptureToastCard: React.FC<CaptureToastCardProps> = ({
   animated = true,
 }) => (
   <motion.div
-    initial={{ opacity: 0, y: 18, scale: 0.9 }}
+    initial={animated ? { opacity: 0, y: 18, scale: 0.9 } : { opacity: 0 }}
     animate={{ opacity: 1, y: 0, scale: 1 }}
-    exit={{ opacity: 0, y: 10, scale: 0.96 }}
-    transition={{ type: "spring", stiffness: 340, damping: 24 }}
+    exit={animated ? { opacity: 0, y: 10, scale: 0.96 } : { opacity: 0, transition: { duration: 0.15 } }}
+    transition={animated ? { type: "spring", stiffness: 340, damping: 24 } : { duration: 0.15 }}
     className="overlay-card welcome-card social-card capture-card"
   >
     <div className="overlay-shell layout-left">
       <motion.div
         className="overlay-icon capture-shutter"
         aria-hidden
-        initial={{ scale: 0.4, opacity: 0 }}
+        initial={animated ? { scale: 0.4, opacity: 0 } : { opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 480, damping: 16, delay: 0.04 }}
+        transition={animated ? { type: "spring", stiffness: 480, damping: 16, delay: 0.04 } : { duration: 0.15 }}
       >
         {animated ? <span className="icon-halo capture-halo" /> : null}
         <div className={`icon-avatar${previewUrl ? " is-photo" : " is-logo"}`}>
@@ -44,26 +44,26 @@ export const CaptureToastCard: React.FC<CaptureToastCardProps> = ({
         <div className="overlay-text">
           <motion.div
             className="social-badge"
-            initial={{ opacity: 0, y: -8, scale: 0.88 }}
+            initial={animated ? { opacity: 0, y: -8, scale: 0.88 } : { opacity: 0 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
+            transition={animated ? { duration: 0.3, delay: 0.1 } : { duration: 0.15 }}
           >
             CAPTURA
           </motion.div>
           <motion.h2
             className="social-title"
-            initial={{ opacity: 0, y: 10 }}
+            initial={animated ? { opacity: 0, y: 10 } : { opacity: 0 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.36, delay: 0.16 }}
+            transition={animated ? { duration: 0.36, delay: 0.16 } : { duration: 0.15 }}
           >
             {title}
           </motion.h2>
           {subtitle ? (
             <motion.p
               className="social-description"
-              initial={{ opacity: 0, y: 8 }}
+              initial={animated ? { opacity: 0, y: 8 } : { opacity: 0 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.32, delay: 0.22 }}
+              transition={animated ? { duration: 0.32, delay: 0.22 } : { duration: 0.15 }}
             >
               {subtitle}
             </motion.p>

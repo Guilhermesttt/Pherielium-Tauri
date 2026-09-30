@@ -1,6 +1,16 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MicOff, VolumeX, UserPlus, MonitorUp, Monitor, MoreHorizontal, X, Radio } from "lucide-react";
+import {
+  MicOff,
+  VolumeX,
+  UserPlus,
+  MonitorUp,
+  Monitor,
+  MoreHorizontal,
+  X,
+  Radio,
+  Loader2,
+} from "lucide-react";
 import type { CallFeed } from "../VoiceCallWindow";
 import type { CallState } from "../../../types/domain";
 import { OrbloomOrb, mapCallToOrbState } from "../OrbloomOrb";
@@ -25,20 +35,18 @@ interface VoiceOnlyStageProps {
 }
 
 /**
- * Scales every visual sub-element of a participant card continuously from the
- * measured tile width, instead of snapping between fixed size buckets. This is
- * what makes the grid feel like Discord's: cards grow/shrink smoothly as people
- * join or leave, rather than jumping between a handful of breakpoints.
+ * Escala harmoniosa dos elementos do card de participante.
+ * O avatar ocupa ~62% do diâmetro da esfera para máxima clareza e presença,
+ * preservando a moldura vítrea e refrativa do Orbloom ao redor.
  */
 function getScaledLayout(tileWidth: number) {
-  const clampedWidth = Math.max(120, Math.min(340, tileWidth));
-  const t = (clampedWidth - 120) / (340 - 120); // 0..1 progress across the size range
+  const clampedWidth = Math.max(140, Math.min(260, tileWidth));
+  const t = (clampedWidth - 140) / (260 - 140); // 0..1
 
-  const orbSize = Math.round(64 + t * 108); // 64 -> 172
-  const avatarRatio = 0.34;
-  const avatarSize = Math.round(orbSize * avatarRatio * 1.6);
-  const nameSize = 11 + t * 4; // 11px -> 15px
-  const showSubtitle = clampedWidth > 190;
+  const orbSize = Math.round(96 + t * 48); // 96px -> 144px
+  const avatarSize = Math.round(orbSize * 0.62); // Presença evidente do avatar
+  const nameSize = Math.round(12 + t * 2.5); // 12px -> 14.5px
+  const showSubtitle = clampedWidth > 150;
 
   return { orbSize, avatarSize, nameSize, showSubtitle };
 }
@@ -71,13 +79,15 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
   const orbQuality: "low" | "balanced" | "high" =
     tileCount > HEAVY_GRID_THRESHOLD ? "low" : tileCount > 1 ? "balanced" : "high";
 
+  // Em chamadas só de áudio, dimensões compactas com menos moldura e proporção 0.98.
+  // Em chamadas com vídeo ou tela, expande para 1.5 e largura de destaque.
   const { containerRef, tileWidth, tileHeight } = useAdaptiveGrid({
     count: Math.max(tileCount, 1),
-    aspectRatio: hasVideoContent ? 1.5 : 0.88,
+    aspectRatio: hasVideoContent ? 1.5 : 0.98,
     gap: hasVideoContent ? 14 : 18,
-    minTileWidth: hasVideoContent ? 190 : 150,
-    maxTileWidth: hasVideoContent ? 460 : 320,
-    padding: 8,
+    minTileWidth: hasVideoContent ? 190 : 160,
+    maxTileWidth: hasVideoContent ? 480 : 230,
+    padding: 12,
   });
 
   if (isAlone) {
@@ -114,10 +124,10 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
               onContextMenu?.(e as any, single);
             }
           }}
-          className={`relative group flex flex-col items-center justify-center rounded-[28px] bg-[#0F0F0F]/80 backdrop-blur-md border transition-all duration-300 w-72 sm:w-80 h-[340px] sm:h-[380px] p-7 text-center shadow-[0_20px_60px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 overflow-hidden ${
+          className={`relative group flex flex-col items-center justify-center rounded-[24px] bg-[#121212] border transition-all duration-300 w-64 sm:w-72 h-[290px] sm:h-[310px] p-5 text-center shadow-[0_16px_50px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 overflow-hidden ${
             isSpeaking
-              ? "border-emerald-400/60 shadow-[0_0_35px_rgba(52,211,153,0.2),inset_0_1px_0_rgba(255,255,255,0.1)] -translate-y-1"
-              : "border-[#161616] hover:border-white/20 hover:bg-[#141414]/90"
+              ? "border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.08)]"
+              : "border-white/[0.06] hover:border-white/15 hover:bg-[#151515]"
           }`}
         >
           {single?.cameraStream ? (
@@ -129,22 +139,57 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                 className="absolute inset-0"
                 onVideoElement={onVideoElement}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
               <div className="relative z-10 mt-auto space-y-1">
-                <h3 className="text-base font-bold text-white tracking-tight truncate max-w-[220px] flex items-center justify-center gap-1.5">
-                  {isSpeaking && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />}
-                  {single?.title || "Você"}
+                <h3 className="text-sm font-bold text-white tracking-tight truncate max-w-[200px] flex items-center justify-center gap-1.5">
+                  {isSpeaking && (
+                    <span className="inline-flex items-center gap-0.5 h-3 shrink-0" aria-label="Falando">
+                      <motion.span
+                        animate={{ height: ["4px", "12px", "4px"] }}
+                        transition={{ repeat: Infinity, duration: 0.55, ease: "easeInOut" }}
+                        className="w-0.5 rounded-full bg-white/90"
+                      />
+                      <motion.span
+                        animate={{ height: ["8px", "14px", "6px"] }}
+                        transition={{ repeat: Infinity, duration: 0.45, delay: 0.12, ease: "easeInOut" }}
+                        className="w-0.5 rounded-full bg-white/90"
+                      />
+                      <motion.span
+                        animate={{ height: ["4px", "10px", "4px"] }}
+                        transition={{ repeat: Infinity, duration: 0.65, delay: 0.06, ease: "easeInOut" }}
+                        className="w-0.5 rounded-full bg-white/90"
+                      />
+                    </span>
+                  )}
+                  <span>{single?.title || "Você"}</span>
                 </h3>
-                <p className="text-xs text-white/60 font-medium">Câmera ativa</p>
+                <p className="text-[11px] text-white/50 font-medium">Câmera ativa</p>
               </div>
             </>
           ) : (
             <>
-              {/* Orbloom Orb de fundo + Avatar Central */}
-              <div className="relative flex items-center justify-center h-44 w-44 sm:h-48 sm:w-48 mb-3">
+              {/* Esfera Orbloom + Halo de Presença */}
+              <div className="relative flex items-center justify-center h-40 w-40 mb-2">
+                {/* Halo suave no contorno ao falar */}
+                {isSpeaking && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.92 }}
+                    animate={{
+                      opacity: [0.4, 0.85, 0.4],
+                      scale: [1, 1.05, 1],
+                    }}
+                    transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+                    className="absolute -inset-2.5 rounded-full pointer-events-none"
+                    style={{
+                      border: "1.5px solid rgba(255, 255, 255, 0.45)",
+                      boxShadow: "0 0 20px rgba(255, 255, 255, 0.22), inset 0 0 10px rgba(255, 255, 255, 0.12)",
+                    }}
+                  />
+                )}
+
                 {single && (
                   <OrbloomOrb
-                    size={168}
+                    size={148}
                     quality="high"
                     orbState={mapCallToOrbState({
                       isRinging: single.isRinging,
@@ -163,21 +208,25 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                   />
                 )}
 
+                {/* Avatar Central (Mais presente, integrado sem quadrado escuro por trás) */}
                 <div
-                  className={`absolute h-20 w-20 sm:h-22 sm:w-22 rounded-full overflow-hidden border-2 transition-all duration-200 z-10 ${
+                  className={`absolute h-[92px] w-[92px] rounded-full overflow-hidden border transition-all duration-200 z-10 bg-[#0E0E0E] flex items-center justify-center ${
                     isSpeaking
-                      ? "border-white/80 shadow-[0_0_20px_rgba(255,255,255,0.35)] scale-105"
-                      : "border-white/15"
+                      ? "border-white/70 shadow-[0_0_14px_rgba(255,255,255,0.28)]"
+                      : "border-white/12"
                   }`}
+                  style={{
+                    boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.7)",
+                  }}
                 >
                   {single?.avatar ? (
                     <img
                       src={single.avatar}
                       alt={single.title}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-cover rounded-full"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-black/70 font-black text-white text-2xl backdrop-blur-sm">
+                    <div className="flex h-full w-full items-center justify-center font-bold text-white text-2xl tracking-tight select-none">
                       {single?.title?.slice(0, 2).toUpperCase() || "VC"}
                     </div>
                   )}
@@ -186,19 +235,46 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                 {single?.isMuted && (
                   <div
                     title="Microfone desativado"
-                    className="absolute bottom-2 right-2 p-2 rounded-full bg-rose-600 text-white shadow-lg ring-2 ring-[#0F0F0F] z-20"
+                    className="absolute bottom-1 right-1 p-1.5 rounded-full bg-[#181818] border border-white/20 text-white/70 shadow-md ring-2 ring-[#0F0F0F] z-20"
                   >
-                    <MicOff className="h-3.5 w-3.5" aria-hidden="true" />
+                    <MicOff className="h-3 w-3 text-white/70" aria-hidden="true" />
                   </div>
                 )}
               </div>
 
-              <div className="space-y-1 mb-4">
-                <h3 className="text-base font-bold text-white tracking-tight truncate max-w-[220px]">
-                  {single?.title || "Você"}
-                </h3>
-                <p className="text-xs text-white/60 font-medium">
-                  Você é o único na chamada no momento
+              {/* Nome + Indicador não dependente só de cor */}
+              <div className="space-y-0.5 mb-3 text-center">
+                <div className="flex items-center justify-center gap-1.5 max-w-[220px]">
+                  {isSpeaking && (
+                    <span className="inline-flex items-center gap-0.5 h-3 shrink-0" aria-label="Falando">
+                      <motion.span
+                        animate={{ height: ["4px", "12px", "4px"] }}
+                        transition={{ repeat: Infinity, duration: 0.55, ease: "easeInOut" }}
+                        className="w-0.5 rounded-full bg-white/90"
+                      />
+                      <motion.span
+                        animate={{ height: ["8px", "14px", "6px"] }}
+                        transition={{ repeat: Infinity, duration: 0.45, delay: 0.12, ease: "easeInOut" }}
+                        className="w-0.5 rounded-full bg-white/90"
+                      />
+                      <motion.span
+                        animate={{ height: ["4px", "10px", "4px"] }}
+                        transition={{ repeat: Infinity, duration: 0.65, delay: 0.06, ease: "easeInOut" }}
+                        className="w-0.5 rounded-full bg-white/90"
+                      />
+                    </span>
+                  )}
+                  <h3 className="text-sm font-semibold text-white tracking-tight truncate">
+                    {single?.title || "Você"}
+                  </h3>
+                  {single?.isMuted && (
+                    <span title="Microfone silenciado" className="inline-flex items-center text-white/50 shrink-0">
+                      <MicOff className="h-3 w-3" aria-hidden="true" />
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-white/50 font-medium">
+                  {single?.isMuted ? "Microfone silenciado" : "Você está sozinho na chamada"}
                 </p>
               </div>
 
@@ -210,7 +286,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                     onOpenInvite();
                   }}
                   style={{ cornerShape: "squircle" } as React.CSSProperties}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-[14px] bg-white/[0.06] hover:bg-white/[0.12] text-white border border-[#161616] text-xs font-semibold shadow-md transition-all active:scale-95 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[12px] bg-white/[0.06] hover:bg-white/[0.12] text-white border border-white/[0.08] text-xs font-semibold shadow-sm transition-all active:scale-96 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                 >
                   <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Convidar Amigos</span>
@@ -345,17 +421,15 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                     onContextMenu?.(e as any, feed);
                   }
                 }}
-                className={`group relative flex flex-col items-center justify-center rounded-[24px] bg-[#0F0F0F]/80 backdrop-blur-md border transition-colors duration-300 text-center shadow-[0_10px_30px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)] outline-none focus-visible:ring-2 focus-visible:ring-white/40 overflow-hidden ${
+                className={`group relative flex flex-col items-center justify-center rounded-[24px] bg-[#121212] border transition-all duration-300 text-center shadow-[0_12px_36px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.05)] outline-none focus-visible:ring-2 focus-visible:ring-white/40 overflow-hidden ${
                   isPresenting
-                    ? "border-sky-400/60 shadow-[0_0_30px_rgba(56,189,248,0.2),inset_0_1px_0_rgba(255,255,255,0.1)] cursor-pointer"
+                    ? "border-sky-400/60 shadow-[0_0_24px_rgba(56,189,248,0.2),inset_0_1px_0_rgba(255,255,255,0.08)] cursor-pointer"
                     : isSpeaking
-                      ? "border-emerald-400/60 shadow-[0_0_30px_rgba(52,211,153,0.22),inset_0_1px_0_rgba(255,255,255,0.1)]"
-                      : "border-[#161616] hover:border-white/20 hover:bg-[#141414]/90 cursor-default"
+                      ? "border-white/20 shadow-[0_16px_44px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.08)]"
+                      : "border-white/[0.06] hover:border-white/15 hover:bg-[#151515] cursor-default"
                 }`}
               >
-                {/* Botão de 3 pontos — morph plus-to-menu (transitions.dev): o ícone
-                    gira e a superfície "acorda" com uma leve escala assim que o
-                    menu associado abre, em vez de só aparecer/desaparecer. */}
+                {/* Botão de 3 pontos — morph plus-to-menu */}
                 <button
                   type="button"
                   aria-label={`Opções e volume de ${feed.title}`}
@@ -368,7 +442,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                   className={`absolute top-2 right-2 p-1.5 rounded-full border text-white/60 hover:text-white z-30 cursor-pointer shadow-sm transition-[background-color,border-color,transform] duration-200 ${
                     activeMenuFeedId === feed.id
                       ? "opacity-100 bg-white/20 border-white/25 scale-105"
-                      : "opacity-0 group-hover:opacity-100 bg-white/[0.06] hover:bg-white/[0.14] border-[#161616]"
+                      : "opacity-0 group-hover:opacity-100 bg-white/[0.06] hover:bg-white/[0.14] border-white/[0.08]"
                   }`}
                   style={{ transitionTimingFunction: "cubic-bezier(0.34,1.25,0.64,1)" }}
                   title="Ajustar volume / Opções"
@@ -386,7 +460,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                   </motion.span>
                 </button>
 
-                {/* Badge de transmissão de tela ativa (padrão Discord: destaque + nome) */}
+                {/* Badge de transmissão de tela ativa */}
                 {isPresenting && (
                   <div
                     style={{ cornerShape: "squircle" } as React.CSSProperties}
@@ -407,34 +481,75 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                       className="absolute inset-0"
                       onVideoElement={peopleFeeds.length === 1 ? onVideoElement : undefined}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
 
-                    <div className="relative z-10 mt-auto flex items-center gap-1.5 max-w-full justify-center px-2 pb-2">
-                      {isSpeaking && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" aria-label="Falando" />
-                      )}
-                      <span
-                        className={`tracking-tight truncate font-semibold drop-shadow-md ${
-                          isPresenting ? "text-sky-300" : "text-white"
-                        }`}
-                        style={{ fontSize: layout.nameSize, maxWidth: tileWidth - 32 }}
-                      >
-                        {feed.title}
-                      </span>
-                      {feed.isDeafened ? (
-                        <VolumeX className="h-3 w-3 text-rose-400 shrink-0" aria-hidden="true" />
-                      ) : feed.isMuted ? (
-                        <MicOff className="h-3 w-3 text-rose-400 shrink-0" aria-hidden="true" />
-                      ) : null}
+                    <div className="relative z-10 mt-auto flex flex-col items-center justify-center gap-0.5 px-2 pb-2.5 w-full">
+                      <div className="flex items-center gap-1.5 max-w-full justify-center">
+                        {isSpeaking && (
+                          <span className="inline-flex items-center gap-0.5 h-3 shrink-0" aria-label="Falando">
+                            <motion.span
+                              animate={{ height: ["4px", "12px", "4px"] }}
+                              transition={{ repeat: Infinity, duration: 0.55, ease: "easeInOut" }}
+                              className="w-0.5 rounded-full bg-white/90"
+                            />
+                            <motion.span
+                              animate={{ height: ["8px", "14px", "6px"] }}
+                              transition={{ repeat: Infinity, duration: 0.45, delay: 0.12, ease: "easeInOut" }}
+                              className="w-0.5 rounded-full bg-white/90"
+                            />
+                            <motion.span
+                              animate={{ height: ["4px", "10px", "4px"] }}
+                              transition={{ repeat: Infinity, duration: 0.65, delay: 0.06, ease: "easeInOut" }}
+                              className="w-0.5 rounded-full bg-white/90"
+                            />
+                          </span>
+                        )}
+                        <span
+                          className={`tracking-tight truncate font-semibold drop-shadow-md ${
+                            isPresenting ? "text-sky-300" : "text-white"
+                          }`}
+                          style={{ fontSize: layout.nameSize, maxWidth: tileWidth - 40 }}
+                        >
+                          {feed.title}
+                        </span>
+                        {feed.isMuted && (
+                          <span title="Microfone silenciado" className="inline-flex items-center text-white/50 shrink-0">
+                            <MicOff className="h-3 w-3" aria-hidden="true" />
+                          </span>
+                        )}
+                        {feed.isDeafened && (
+                          <span title="Áudio desativado" className="inline-flex items-center text-white/50 shrink-0">
+                            <VolumeX className="h-3 w-3" aria-hidden="true" />
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-white/60 font-medium">Câmera ativa</span>
                     </div>
                   </>
                 ) : (
                   <>
-                    {/* Orbloom Orb de fundo + Avatar central */}
+                    {/* Esfera Orbloom + Halo de Presença */}
                     <div
                       className="relative flex items-center justify-center mb-1.5"
                       style={{ height: layout.orbSize, width: layout.orbSize }}
                     >
+                      {/* Resposta suave no contorno ao falar (Halo discreto de luz) */}
+                      {isSpeaking && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.92 }}
+                          animate={{
+                            opacity: [0.4, 0.85, 0.4],
+                            scale: [1, 1.05, 1],
+                          }}
+                          transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+                          className="absolute -inset-2 rounded-full pointer-events-none"
+                          style={{
+                            border: "1.5px solid rgba(255, 255, 255, 0.45)",
+                            boxShadow: "0 0 20px rgba(255, 255, 255, 0.22), inset 0 0 10px rgba(255, 255, 255, 0.12)",
+                          }}
+                        />
+                      )}
+
                       <OrbloomOrb
                         size={layout.orbSize}
                         quality={orbQuality}
@@ -454,72 +569,120 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                         label={`Atividade de voz de ${feed.title}`}
                       />
 
+                      {/* Avatar Central (Mais presente, integrado sem quadrado escuro por trás) */}
                       <div
-                        className={`absolute rounded-full overflow-hidden border-2 transition-all duration-200 z-10 ${
+                        className={`absolute rounded-full overflow-hidden border transition-all duration-200 z-10 bg-[#0E0E0E] flex items-center justify-center ${
                           isSpeaking
-                            ? "border-white/80 shadow-[0_0_16px_rgba(255,255,255,0.35)] scale-105"
-                            : "border-white/15"
+                            ? "border-white/70 shadow-[0_0_14px_rgba(255,255,255,0.28)]"
+                            : "border-white/12"
                         }`}
-                        style={{ height: layout.avatarSize, width: layout.avatarSize }}
+                        style={{
+                          height: layout.avatarSize,
+                          width: layout.avatarSize,
+                          boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.7)",
+                        }}
                       >
                         {feed.avatar ? (
                           <img
                             src={feed.avatar}
                             alt={feed.title}
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-cover rounded-full"
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-black/70 font-black text-white backdrop-blur-sm">
+                          <div
+                            className="flex h-full w-full items-center justify-center font-bold text-white tracking-tight select-none"
+                            style={{ fontSize: Math.max(13, Math.round(layout.avatarSize * 0.38)) }}
+                          >
                             {feed.title.slice(0, 2).toUpperCase()}
                           </div>
                         )}
                       </div>
 
-                      {feed.isDeafened ? (
+                      {/* Badge discreto de Microfone Mudo sobre a esfera */}
+                      {feed.isMuted && (
                         <div
-                          title="Áudio silenciado (Deafened)"
-                          className="absolute bottom-1 right-1 p-1.5 rounded-full bg-rose-600 text-white shadow-md ring-2 ring-[#0F0F0F] z-20"
+                          title="Microfone desativado"
+                          className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[#181818] border border-white/20 text-white/70 shadow-md ring-2 ring-[#0F0F0F] z-20"
                         >
-                          <VolumeX className="h-3 w-3" aria-hidden="true" />
+                          <MicOff className="h-3 w-3 text-white/70" aria-hidden="true" />
                         </div>
-                      ) : feed.isMuted ? (
+                      )}
+                      {feed.isDeafened && (
                         <div
-                          title="Microfone mutado"
-                          className="absolute bottom-1 right-1 p-1.5 rounded-full bg-rose-600 text-white shadow-md ring-2 ring-[#0F0F0F] z-20"
+                          title="Áudio silenciado"
+                          className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[#181818] border border-white/20 text-white/70 shadow-md ring-2 ring-[#0F0F0F] z-20"
                         >
-                          <MicOff className="h-3 w-3" aria-hidden="true" />
+                          <VolumeX className="h-3 w-3 text-white/70" aria-hidden="true" />
                         </div>
-                      ) : null}
-                    </div>
-
-                    {/* Nome do Participante */}
-                    <div className="flex items-center gap-1.5 max-w-full justify-center px-2">
-                      <span
-                        className={`tracking-tight truncate font-semibold ${
-                          isPresenting ? "text-sky-300" : "text-white"
-                        }`}
-                        style={{ fontSize: layout.nameSize, maxWidth: tileWidth - 32 }}
-                      >
-                        {feed.title}
-                      </span>
-                      {isSpeaking && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" aria-label="Falando" />
                       )}
                     </div>
 
-                    {layout.showSubtitle && (
-                      <span className="text-[11px] text-white/60 mt-0.5 font-medium">
-                        {isPresenting
-                          ? "Transmitindo tela"
-                          : feed.isLocal
-                            ? "Você"
-                            : isSpeaking
-                              ? "Falando…"
-                              : feed.isMuted
-                                ? "Mutado"
-                                : "Conectado"}
-                      </span>
-                    )}
+                    {/* Nome do Participante + Indicador de fala não apenas por cor */}
+                    <div className="space-y-0.5 mt-0.5 max-w-full px-1 text-center">
+                      <div className="flex items-center gap-1.5 max-w-full justify-center">
+                        {isSpeaking && (
+                          <span className="inline-flex items-center gap-0.5 h-3 shrink-0" aria-label="Falando">
+                            <motion.span
+                              animate={{ height: ["4px", "12px", "4px"] }}
+                              transition={{ repeat: Infinity, duration: 0.55, ease: "easeInOut" }}
+                              className="w-0.5 rounded-full bg-white/90"
+                            />
+                            <motion.span
+                              animate={{ height: ["8px", "14px", "6px"] }}
+                              transition={{ repeat: Infinity, duration: 0.45, delay: 0.12, ease: "easeInOut" }}
+                              className="w-0.5 rounded-full bg-white/90"
+                            />
+                            <motion.span
+                              animate={{ height: ["4px", "10px", "4px"] }}
+                              transition={{ repeat: Infinity, duration: 0.65, delay: 0.06, ease: "easeInOut" }}
+                              className="w-0.5 rounded-full bg-white/90"
+                            />
+                          </span>
+                        )}
+
+                        <span
+                          className={`tracking-tight truncate font-semibold ${
+                            isPresenting ? "text-sky-300" : "text-white"
+                          }`}
+                          style={{ fontSize: layout.nameSize, maxWidth: tileWidth - 40 }}
+                        >
+                          {feed.title}
+                        </span>
+
+                        {/* Ícone explícito de microfone silenciado junto ao nome */}
+                        {feed.isMuted && (
+                          <span title="Microfone silenciado" className="inline-flex items-center text-white/50 shrink-0">
+                            <MicOff className="h-3 w-3" aria-hidden="true" />
+                          </span>
+                        )}
+                        {feed.isDeafened && (
+                          <span title="Áudio desativado" className="inline-flex items-center text-white/50 shrink-0">
+                            <VolumeX className="h-3 w-3" aria-hidden="true" />
+                          </span>
+                        )}
+                      </div>
+
+                      {layout.showSubtitle && (
+                        <p className="text-[11px] text-white/50 font-medium truncate flex items-center justify-center gap-1">
+                          {feed.isRinging ? (
+                            "Chamando…"
+                          ) : feed.isConnecting ? (
+                            <>
+                              <Loader2 className="h-2.5 w-2.5 animate-spin text-white/60" />
+                              <span>Conectando…</span>
+                            </>
+                          ) : isSpeaking ? (
+                            <span className="text-white/80">Falando…</span>
+                          ) : feed.isMuted ? (
+                            <span className="text-white/40">Silenciado</span>
+                          ) : feed.isLocal ? (
+                            "Você"
+                          ) : (
+                            "Conectado"
+                          )}
+                        </p>
+                      )}
+                    </div>
                   </>
                 )}
               </motion.div>

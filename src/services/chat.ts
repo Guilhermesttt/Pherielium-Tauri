@@ -1,6 +1,6 @@
 import { supabase } from "./supabase";
 import type { ChatMessage } from "../types/domain";
-import { apiUrl, getUsableSession } from "./api";
+import { apiFetch, getUsableSession } from "./api";
 import { sendFastReadReceipt, sendFastU2UMessage, subscribeToGlobalEventBus } from "./realtimeEventBus";
 
 const HISTORY_LIMIT = 50;
@@ -129,12 +129,10 @@ export const ensureChatSession = async (
       if (!session?.access_token || session.user.id !== currentUid) {
         throw new Error("Sessao expirada. Entre novamente.");
       }
-      const response = await fetch(apiUrl("/api/chat/open"), {
+      const response = await apiFetch("/api/chat/open", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
+        authenticated: true,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ friendUid }),
       });
       const payload = await response.json().catch(() => ({})) as {

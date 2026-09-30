@@ -4,7 +4,7 @@
  * Keeps a client-side memory cache for 10 minutes.
  * Falls back to public Google STUN servers if the backend is unreachable or offline.
  */
-import { apiUrl, getUsableSession } from "./api";
+import { apiFetch, getUsableSession } from "./api";
 
 const FALLBACK_STUN_ONLY: RTCIceServer[] = [
   { urls: "stun:stun.l.google.com:19302" },
@@ -48,18 +48,9 @@ export const getTurnServers = async (): Promise<RTCIceServer[]> => {
 
   try {
     const session = await getUsableSession();
-    const token = session?.access_token;
-
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    const response = await fetch(apiUrl("/api/voice/turn-credentials"), {
-      headers,
-      signal: AbortSignal.timeout(5000),
+    const response = await apiFetch("/api/voice/turn-credentials", {
+      authenticated: Boolean(session?.access_token),
+      timeoutMs: 5000,
     });
 
     if (!response.ok) {

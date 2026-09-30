@@ -34,11 +34,14 @@ function makeListen<T>(event: string, cb: (payload: T) => void): () => void {
 export const tauriAPI = {
 
   // ─── Launcher ─────────────────────────────────────────────────────────────
-  launchExecutable: (path: string, profile?: unknown, opts?: { hideLauncher?: boolean }) =>
+  launchExecutable: (path: string, profile?: unknown, opts?: { hideLauncher?: boolean; gameId?: string; steamAppId?: string }) =>
     invoke("launcher_open_executable", { path, profile, opts }),
 
   selectExecutable: () =>
     invoke<string | null>("launcher_select_executable"),
+
+  detectAppIdFromPath: (path: string) =>
+    invoke<string | null>("detect_app_id_from_path", { path }),
 
   // ─── Game library ──────────────────────────────────────────────────────────
   scanLocalGames: () =>
@@ -56,6 +59,9 @@ export const tauriAPI = {
 
   searchSteamStore: (query: string) =>
     invoke<any[]>("steam_search_store", { query }),
+
+  fetchSteamAppDetails: (appId: string, language?: string) =>
+    invoke<any>("steam_fetch_app_details", { appId, language }),
 
   listLocalGames: (uid: string) =>
     invoke<unknown[]>("library_list", { uid }),
@@ -180,11 +186,32 @@ export const tauriAPI = {
   getAchievementProgress: (gameId: string) =>
     invoke<unknown | null>("achievement_get_progress", { gameId }),
 
-  getLocalAchievementState: (appId: string) =>
-    invoke<Record<string, { earned: boolean; earnedTime: number }>>("achievement_get_local_state", { appId }),
+  getLocalAchievementState: (appId: string, gameDir?: string) =>
+    invoke<Record<string, { earned: boolean; earnedTime: number }>>("achievement_get_local_state", { appId, gameDir }),
 
-  unlockAchievement: (gameId: string, achievementId: string) =>
-    invoke<{ duplicate: boolean }>("achievement_unlock", { gameId, achievementId }),
+  unlockAchievement: (
+    gameId: string,
+    achievementId: string,
+    metadata?: {
+      name?: string;
+      title?: string;
+      description?: string;
+      icon?: string;
+      tier?: string;
+      percent?: number;
+      gameTitle?: string;
+    },
+  ) =>
+    invoke<{ duplicate: boolean }>("achievement_unlock", {
+      gameId,
+      achievementId,
+      name: metadata?.name ?? metadata?.title,
+      description: metadata?.description,
+      icon: metadata?.icon,
+      tier: metadata?.tier,
+      percent: metadata?.percent,
+      gameTitle: metadata?.gameTitle,
+    }),
 
   getLocalAchievementLibrarySummary: () =>
     invoke<unknown>("achievement_get_library_summary"),
@@ -515,14 +542,50 @@ export const tauriAPI = {
   updateOverlayPanel: (payload: unknown) =>
     invoke<void>("overlay_update_panel", { payload }),
 
-  setAchievementVolume: (volume: number) =>
-    Promise.resolve({ volume }),
+  setAchievementVolume: async (volume: number) => {
+    try {
+      localStorage.setItem("checkpoint_achievement_volume_global", String(volume));
+    } catch {}
+    try {
+      await invoke<void>("overlay_update_panel", {
+        payload: { settings: { achievementVolume: volume } },
+      });
+    } catch (e) {
+      console.warn("[tauriAPI] Failed to update overlay panel volume:", e);
+    }
+    return { volume };
+  },
 
-  setAchievementSoundTheme: (theme: string) =>
-    Promise.resolve({ theme }),
+  setAchievementSoundTheme: async (theme: any) => {
+    try {
+      localStorage.setItem("checkpoint_sound_theme_global", String(theme));
+    } catch {}
+    try {
+      await invoke<void>("overlay_update_panel", {
+        payload: { settings: { achievementSoundTheme: String(theme) } },
+      });
+    } catch (e) {
+      console.warn("[tauriAPI] Failed to update overlay panel sound theme:", e);
+    }
+    return { theme };
+  },
 
-  setAchievementNotificationSettings: (settings: unknown) =>
-    Promise.resolve(settings),
+  setAchievementNotificationSettings: async (settings: any) => {
+    try {
+      localStorage.setItem(
+        "checkpoint_achievement_notifications_settings_global",
+        JSON.stringify(settings),
+      );
+    } catch {}
+    try {
+      await invoke<void>("overlay_update_panel", {
+        payload: { settings: { achievementNotifications: settings } },
+      });
+    } catch (e) {
+      console.warn("[tauriAPI] Failed to update overlay notification settings:", e);
+    }
+    return settings;
+  },
 
   onOverlayPanelAction: (callback: (payload: unknown) => void) =>
     makeListen("overlay:panel-action", callback),
@@ -549,7 +612,7 @@ export const tauriAPI = {
   getCapturesDir: () =>
     invoke<string>("get_captures_dir"),
 
-  captureScreen: (gameTitle?: string) =>
+  captureScreen: (gameTitle?: string, target?: string) =>
     invoke<{
       id: string;
       name: string;
@@ -557,7 +620,10 @@ export const tauriAPI = {
       url: string;
       createdAt: string;
       gameTitle?: string;
-    }>("capture_screen", { gameTitle: gameTitle ?? null }),
+    }>("capture_screen", { gameTitle: gameTitle ?? null, target: target ?? null }),
+
+  getCaptureFullImage: (path: string) =>
+    invoke<string>("get_capture_full_image", { path }),
 
   deleteCapture: (path: string) =>
     invoke<void>("delete_capture", { path }),

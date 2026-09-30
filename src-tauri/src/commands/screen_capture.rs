@@ -841,3 +841,90 @@ mod win_grab {
         }
     }
 }
+
+#[cfg(windows)]
+pub fn find_game_or_active_monitor_index(game_title: Option<&str>) -> u32 {
+    use windows::Win32::Graphics::Gdi::{
+        EnumDisplayMonitors, MonitorFromWindow, HMONITOR, MONITOR_DEFAULTTONEAREST,
+    };
+    use windows::Win32::UI::WindowsAndMessaging::{
+        EnumWindows, GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, IsWindowVisible,
+    };
+    use windows::Win32::Foundation::{BOOL, HWND, LPARAM, RECT};
+
+    unsafe {
+        let mut target_hwnd: Option<HWND> = None;
+        if let Some(title_query) = game_title {
+            let query = title_query.trim().to_lowercase();
+            if !query.is_empty() {
+                struct SearchContext {
+                    query: String,
+                    found: Option<HWND>,
+                }
+                let mut ctx = SearchContext {
+                    query,
+                    found: None,
+                };
+                unsafe extern "system" fn enum_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
+                    let ctx = &mut *(lparam.0 as *mut SearchContext);
+                    if IsWindowVisible(hwnd).as_bool() {
+                        let len = GetWindowTextLengthW(hwnd);
+                        if len > 0 {
+                            let mut buf = vec![0u16; (len + 1) as usize];
+                            let read = GetWindowTextW(hwnd, &mut buf);
+                            if read > 0 {
+                                let title = String::from_utf16_lossy(&buf[..read as usize]).to_lowercase();
+                                if title.contains(&ctx.query) {
+                                    ctx.found = Some(hwnd);
+                                    return BOOL(0);
+                                }
+                            }
+                        }
+                    }
+                    BOOL(1)
+                }
+                let _ = EnumWindows(Some(enum_proc), LPARAM(&mut ctx as *mut _ as isize));
+                target_hwnd = ctx.found;
+            }
+        }
+
+        let hwnd = target_hwnd.unwrap_or_else(|| GetForegroundWindow());
+        if hwnd.is_invalid() {
+            return 0;
+        }
+
+        let target_hmon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+
+        struct MonSearch {
+            target: HMONITOR,
+            current_index: u32,
+            found_index: Option<u32>,
+        }
+        let mut mon_search = MonSearch {
+            target: target_hmon,
+            current_index: 0,
+            found_index: None,
+        };
+        unsafe extern "system" fn enum_mon_proc(
+            hmon: HMONITOR,
+            _hdc: windows::Win32::Graphics::Gdi::HDC,
+            _rect: *mut RECT,
+            lparam: LPARAM,
+        ) -> BOOL {
+            let ctx = &mut *(lparam.0 as *mut MonSearch);
+            if hmon == ctx.target {
+                ctx.found_index = Some(ctx.current_index);
+                return BOOL(0);
+            }
+            ctx.current_index += 1;
+            BOOL(1)
+        }
+        let _ = EnumDisplayMonitors(None, None, Some(enum_mon_proc), LPARAM(&mut mon_search as *mut _ as isize));
+        mon_search.found_index.unwrap_or(0)
+    }
+}
+
+#[cfg(not(windows))]
+pub fn find_game_or_active_monitor_index(_game_title: Option<&str>) -> u32 {
+    0
+}

@@ -52,6 +52,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { supabase } from "../services/supabase";
 // Correção 1: Importando Game, UserProfile e SocialFriend no mesmo lugar
 import type { ChatMessage, Game, SocialFriend, UserProfile, LauncherType } from "../types/domain";
+import { getMonitorableExecutablePath, resolveMonitorableExecutablePath } from "../services/launcher";
 import { useImagePreloader } from "../hooks/useImagePreloader";
 import { useSoundEffects } from "../hooks/useSoundEffects";
 import { useGameColor } from "../hooks/useGameColor";
@@ -176,7 +177,7 @@ const APP_THEME_OPTIONS: Array<{
     {
       id: "default",
       label: "Phelierium Default",
-      hint: "Estética Espaço Preto & Branco + sons originais Phelierium",
+      hint: "Preto carvão + branco neutro, superfícies foscas",
       swatch: "rgb(255 255 255)",
       soundTheme: "default",
       visualTheme: "phelierium",
@@ -184,15 +185,15 @@ const APP_THEME_OPTIONS: Array<{
     {
       id: "ps5",
       label: "PlayStation 5",
-      hint: "Branco futurista PlayStation 5 + sons PS5",
-      swatch: "rgb(255 255 255)",
+      hint: "Branco porcelana + azul elétrico pontual",
+      swatch: "rgb(244 244 246)",
       soundTheme: "ps5",
       visualTheme: "ps5",
     },
     {
       id: "ps4",
       label: "PlayStation 4",
-      hint: "Azul cobalto + sons PS4",
+      hint: "Azul médio intenso com gradientes amplos",
       swatch: "rgb(0 112 209)",
       soundTheme: "ps4",
       visualTheme: "ps4",
@@ -200,16 +201,16 @@ const APP_THEME_OPTIONS: Array<{
     {
       id: "psp",
       label: "PSP",
-      hint: "Cyan Waves + sons PSP",
-      swatch: "rgb(6 182 212)",
+      hint: "Grafite + prata com ondas e champagne discreto",
+      swatch: "rgb(203 213 225)",
       soundTheme: "psp",
       visualTheme: "psp",
     },
     {
       id: "playstation",
       label: "PlayStation 2",
-      hint: "Azul clássico + sons PS2",
-      swatch: "rgb(37 99 235)",
+      hint: "Azul profundo com ciano pontual",
+      swatch: "rgb(29 78 216)",
       soundTheme: "ps2",
       visualTheme: "playstation",
     },
@@ -318,7 +319,17 @@ const Home: React.FC = () => {
   const [discordDisconnecting, setDiscordDisconnecting] = useState(false);
   const [epicDisconnecting, setEpicDisconnecting] = useState(false);
   const [epicConnectModalOpen, setEpicConnectModalOpen] = useState(false);
-  const [epicAuthConnected, setEpicAuthConnected] = useState(false);
+  const [epicAuthConnected, setEpicAuthConnected] = useState<boolean>(() => {
+    // Pre-initialize from localStorage so the state starts as `true` when the user
+    // was already linked. This prevents the false→true transition on every hub
+    // open from triggering the "new connection" auto-sync effect.
+    try {
+      const linkedUid = localStorage.getItem("checkpoint_epic_linked_uid");
+      return Boolean(linkedUid);
+    } catch {
+      return false;
+    }
+  });
   const [epicDisplayName, setEpicDisplayName] = useState("");
   const [isExitingSession, setIsExitingSession] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("general");
@@ -488,7 +499,10 @@ const Home: React.FC = () => {
   const gameRailWheelTimeRef = useRef(0);
   const previousSteamIdRef = useRef<string | undefined>(undefined);
   const previousDiscordIdRef = useRef<string | undefined>(undefined);
-  const previousEpicAuthRef = useRef(false);
+  // useRef does NOT support lazy initializers — read localStorage directly at declaration time.
+  const previousEpicAuthRef = useRef<boolean>(
+    (() => { try { return Boolean(localStorage.getItem("checkpoint_epic_linked_uid")); } catch { return false; } })()
+  );
   const didInitConnectionRefs = useRef(false);
   const lastOverlayWelcomeGameRef = useRef<string | null>(null);
   const lastGameLaunchSoundRef = useRef<{ title: string; time: number }>({ title: "", time: 0 });
@@ -982,36 +996,50 @@ const Home: React.FC = () => {
     const handleGameLaunch = (event: Event) => {
       const detail = (event as CustomEvent<{
         title?: string;
+        gameId?: string;
         executablePath?: string | null;
+        game?: Game;
       }>).detail;
       const title = detail?.title?.trim();
       if (!title) return;
+
+      const matchedGame = detail?.game || games.find((g) =>
+        (detail?.gameId && g.id === detail.gameId) ||
+        g.title.trim().toLowerCase() === title.toLowerCase() ||
+        g.title.toLowerCase().includes(title.toLowerCase()) ||
+        title.toLowerCase().includes(g.title.toLowerCase())
+      ) || null;
+
+      const effectiveTitle = matchedGame?.title || title;
 
       const soundAlreadyPlayed = Boolean((detail as any)?.soundPlayed);
       const now = Date.now();
       if (
         !soundAlreadyPlayed &&
-        (lastGameLaunchSoundRef.current.title !== title ||
+        (lastGameLaunchSoundRef.current.title !== effectiveTitle ||
           now - lastGameLaunchSoundRef.current.time > 4000)
       ) {
-        lastGameLaunchSoundRef.current = { title, time: now };
+        lastGameLaunchSoundRef.current = { title: effectiveTitle, time: now };
         playSound("play");
       } else if (soundAlreadyPlayed) {
-        lastGameLaunchSoundRef.current = { title, time: now };
+        lastGameLaunchSoundRef.current = { title: effectiveTitle, time: now };
       }
-      lastOverlayWelcomeGameRef.current = title;
-      void window.electronAPI?.showGameStartOverlay({ gameTitle: title });
+      lastOverlayWelcomeGameRef.current = effectiveTitle;
+      void window.electronAPI?.showGameStartOverlay({ gameTitle: effectiveTitle });
 
-      // Para jogos com executável monitorável (.exe local), marcamos presença
-      // imediatamente — a detecção de processo confirmará em 10s.
-      // Para launchers via URI (Steam/Epic), NÃO marcamos presença aqui:
-      // o poll de 10s detectará o processo real, evitando contar horas de
-      // jogos não instalados que abrem apenas a tela de download/instalação.
-      const monitorablePath = detail?.executablePath || null;
-      const isLocalExe = Boolean(monitorablePath && /\.exe$/i.test(monitorablePath));
-      if (isLocalExe) {
-        markCurrentPresence(title, monitorablePath);
-      }
+      void (async () => {
+        const monitorablePath = detail?.executablePath
+          || (matchedGame ? await resolveMonitorableExecutablePath(matchedGame) : null)
+          || (matchedGame ? getMonitorableExecutablePath(matchedGame) : null);
+
+        if (monitorablePath && window.electronAPI?.setGameWatchTarget) {
+          void window.electronAPI.setGameWatchTarget(monitorablePath).catch(() => undefined);
+        }
+
+        // Marca presença imediatamente para qualquer jogo aberto a partir do hub
+        // (local, Steam, Epic Games ou emulador).
+        markCurrentPresence(effectiveTitle, monitorablePath);
+      })();
 
       if (user?.uid) {
         completeUserQuest(user.uid, "launch_game", {
@@ -1023,7 +1051,7 @@ const Home: React.FC = () => {
 
     window.addEventListener("checkpoint:game-launch", handleGameLaunch);
     return () => window.removeEventListener("checkpoint:game-launch", handleGameLaunch);
-  }, [markCurrentPresence, playSound, user?.uid, notify]);
+  }, [games, markCurrentPresence, playSound, user?.uid, notify]);
 
   // Detecta jogos já abertos quando o hub inicia ou quando a lista de jogos
   // é carregada pela primeira vez (caso o usuário tenha aberto o hub com um jogo já rodando).
@@ -1589,6 +1617,19 @@ const Home: React.FC = () => {
     setAddModalInitialLauncherType(undefined);
   }, [playSound]);
 
+  useEffect(() => {
+    const handleAddGameShortcut = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "n" || e.key === "N")) {
+        const activeTag = document.activeElement?.tagName.toLowerCase();
+        if (activeTag === "input" || activeTag === "textarea") return;
+        e.preventDefault();
+        openAddGameModal();
+      }
+    };
+    window.addEventListener("keydown", handleAddGameShortcut);
+    return () => window.removeEventListener("keydown", handleAddGameShortcut);
+  }, [openAddGameModal]);
+
   useGamepadButton("TRIANGLE", () => {
     if (isAnyModalOpen || searchOpen) return;
     // FRIENDS: call focused friend
@@ -1795,7 +1836,8 @@ const Home: React.FC = () => {
         if (game.launcherType === "local" && window.electronAPI) {
           if (items.length === 0) {
             const cached = await window.electronAPI.getLocalAchievementDefinitions(game.id).catch(() => null);
-            const cachedItems = Array.isArray(cached?.achievements) ? cached.achievements : [];
+            const cachedDefs = (cached as any)?.definitions || (cached as any)?.achievements;
+            const cachedItems = Array.isArray(cachedDefs) ? cachedDefs : [];
             items = cachedItems.map((raw) => {
               const achievement = raw as Record<string, unknown>;
               const id = String(achievement.id || achievement.apiName || "");
@@ -1957,7 +1999,8 @@ const Home: React.FC = () => {
           attachmentName: message.attachmentName,
           createdAt: message.createdAt,
           mine: message.senderId === user?.uid || message.senderId === "me",
-          pending: String(message.id || "").startsWith("overlay-pending-"),
+          pending: String(message.id || "").startsWith("overlay-pending-") && !(message as any).failed,
+          failed: Boolean((message as any).failed),
         })),
       } : null,
       profile: {
@@ -1981,6 +2024,16 @@ const Home: React.FC = () => {
         isDeafened: voiceCall.isDeafened,
         participantsCount: (voiceCall.session.participants?.length || 0) + 1,
         speakingUserNames: voiceCall.isSpeakingLocal ? ["Você"] : [],
+      } : null,
+      activeCall: voiceCall?.session && voiceCall.callState !== "idle" ? {
+        active: true,
+        friendId: voiceCall.session.friendUid,
+        friendName: voiceCall.session.friendName,
+        friendAvatar: voiceCall.session.friendAvatar,
+        muted: voiceCall.isMuted,
+        deafened: voiceCall.isDeafened,
+        connectionState: voiceCall.callState === "active" ? "connected" : "calling",
+        durationSeconds: voiceCall.callDuration,
       } : null,
       playerLevel: playerLevel ? {
         level: playerLevel.level,
@@ -2025,6 +2078,8 @@ const Home: React.FC = () => {
     voiceCall?.isMuted,
     voiceCall?.isDeafened,
     voiceCall?.isSpeakingLocal,
+    voiceCall?.callState,
+    voiceCall?.callDuration,
     playerLevel,
   ]);
 
@@ -2126,6 +2181,37 @@ const Home: React.FC = () => {
         voiceCallContext?.toggleDeafen();
         return;
       }
+      if (action.kind === "retry-message" && (action as any).text && overlayChatFriendUid) {
+        const text = (action as any).text.trim();
+        const oldId = (action as any).messageId;
+        if (oldId) {
+          setOverlayChatMessages((current) => current.filter((item) => item.id !== oldId));
+        }
+        if (!text || overlayChatSending) return;
+        const pendingId = `overlay-pending-${Date.now()}`;
+        setOverlayChatSending(true);
+        setOverlayChatError(null);
+        void setChatTyping(overlayChatFriendUid, false);
+        setOverlayChatMessages((current) => [...current, {
+          id: pendingId,
+          chatId: overlayChatFriendUid,
+          senderId: user?.uid || "me",
+          receiverId: overlayChatFriendUid,
+          text,
+          createdAt: new Date().toISOString(),
+          read: true,
+        }]);
+        void sendChatMessage(overlayChatFriendUid, text).then((message) => {
+          setOverlayChatMessages((current) => [
+            ...current.filter((item) => item.id !== pendingId && item.id !== message.id),
+            message,
+          ].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)));
+        }).catch((error) => {
+          setOverlayChatMessages((current) => current.map((item) => item.id === pendingId ? { ...item, failed: true } : item));
+          setOverlayChatError(error instanceof Error ? error.message : "Não foi possível enviar a mensagem.");
+        }).finally(() => setOverlayChatSending(false));
+        return;
+      }
       if (action.kind !== "send-message" || !overlayChatFriendUid || overlayChatSending) return;
       const text = action.text.trim();
       if (!text) return;
@@ -2148,7 +2234,7 @@ const Home: React.FC = () => {
           message,
         ].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)));
       }).catch((error) => {
-        setOverlayChatMessages((current) => current.filter((item) => item.id !== pendingId));
+        setOverlayChatMessages((current) => current.map((item) => item.id === pendingId ? { ...item, failed: true } : item));
         setOverlayChatError(error instanceof Error ? error.message : "Não foi possível enviar a mensagem.");
       }).finally(() => setOverlayChatSending(false));
     });
@@ -2709,11 +2795,9 @@ const Home: React.FC = () => {
                       setDisconnectEpicModalOpen(true);
                     }}
                     onTestOverlayWelcome={() => {
-                      playSound("select");
                       void window.electronAPI?.testOverlayWelcome();
                     }}
                     onTestOverlayAchievement={(tier) => {
-                      playSound("select");
                       void window.electronAPI?.testOverlayAchievement(tier);
                     }}
                     initialTab={settingsTab}
@@ -2923,49 +3007,67 @@ const Home: React.FC = () => {
                       transition={{ duration: 0.26, ease: [0.32, 0.72, 0, 1] }}
                       className="flex flex-col transform-gpu mt-4"
                     >
-                      <div
-                        key={`${currentGame?.id || canonicalIndex}-${currentGame?.title || "game"}`}
-                        className="t-stagger is-shown"
-                      >
-                        <div className="flex items-center justify-between gap-8 w-full mb-3">
-                          <div className="t-stagger-line t-stagger-line--1 min-w-0 flex-1">
-                            <h1
-                              className="tracking-tight font-display font-black text-3xl md:text-6xl bg-linear-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent leading-[1.08] drop-shadow-[0_8px_32px_rgba(0,0,0,0.85)] line-clamp-1"
-                              style={{
-                                maxWidth: "84vw",
-                              }}
-                            >
-                              {currentGame?.title}
-                            </h1>
-                          </div>
-                          <div className="flex items-center shrink-0">
-                            <ShinyButton
-                              onClick={() => currentGame && openDetails(currentGame)}
-                              onMouseEnter={() => playSound("hover")}
-                              className="shrink-0! flex! items-center! gap-2.5 shadow-[0_4px_24px_rgba(255,255,255,0.15)] px-8 py-4 text-[15px] cursor-pointer"
-                            >
-                              <svg
-                                viewBox="0 0 24 24"
-                                className="w-5 h-5 fill-white text-white shrink-0 transition-transform duration-300 group-hover:scale-110"
-                              >
-                                <path d="M8 5v14l11-7z" />
-                              </svg>
-                              <span className="font-bold tracking-widest uppercase">{t("playNow")}</span>
-                            </ShinyButton>
-                          </div>
+                      {/* Integrated Hero Action Block */}
+                      <div className="flex flex-col gap-4 max-w-4xl mb-8">
+                        {/* Title */}
+                        <div className="t-stagger-line t-stagger-line--1 min-w-0">
+                          <h1
+                            className="tracking-tight font-display font-black text-3xl sm:text-5xl md:text-6xl bg-gradient-to-b from-[#FFFFFF] to-[#9A9A9A] bg-clip-text text-transparent leading-[1.08] drop-shadow-[0_8px_32px_rgba(0,0,0,0.85)] line-clamp-2"
+                            style={{ maxWidth: "800px" }}
+                          >
+                            {currentGame?.title}
+                          </h1>
                         </div>
 
-                        <div className="t-stagger-line t-stagger-line--2 w-fit mb-8">
-                          <div className="flex items-center gap-3 flex-wrap font-body">
+                        {/* Action Button & Co-located Metadata Row */}
+                        <div className="t-stagger-line t-stagger-line--2 flex items-center gap-4 sm:gap-5 flex-wrap">
+                          {(() => {
+                            const isCurrentGameRunning = Boolean(
+                              currentPresenceGame &&
+                              currentGame?.title &&
+                              (currentPresenceGame.trim().toLowerCase() === currentGame.title.trim().toLowerCase() ||
+                               currentPresenceGame.toLowerCase().includes(currentGame.title.toLowerCase()) ||
+                               currentGame.title.toLowerCase().includes(currentPresenceGame.toLowerCase()))
+                            );
+
+                            return (
+                              <ShinyButton
+                                onClick={() => currentGame && openDetails(currentGame)}
+                                onMouseEnter={() => playSound("hover")}
+                                className={`shrink-0! flex! items-center! gap-2.5 shadow-[0_4px_24px_rgba(255,255,255,0.18)] px-7 py-3.5 text-[14px] cursor-pointer ${
+                                  isCurrentGameRunning ? "border-emerald-500/40! shadow-[0_0_24px_rgba(16,185,129,0.3)]! bg-emerald-950/30!" : ""
+                                }`}
+                              >
+                                {isCurrentGameRunning ? (
+                                  <span className="relative flex h-3 w-3 shrink-0">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 shadow-[0_0_10px_#10b981]" />
+                                  </span>
+                                ) : (
+                                  <svg
+                                    viewBox="0 0 24 24"
+                                    className="w-4.5 h-4.5 fill-white text-white shrink-0 transition-transform duration-300 group-hover:scale-110"
+                                  >
+                                    <path d="M8 5v14l11-7z" />
+                                  </svg>
+                                )}
+                                <span className={`font-bold tracking-wider uppercase ${isCurrentGameRunning ? "text-emerald-300" : ""}`}>
+                                  {isCurrentGameRunning ? "Em execução" : t("playNow")}
+                                </span>
+                              </ShinyButton>
+                            );
+                          })()}
+
+                          <div className="flex items-center gap-2.5 flex-wrap font-body">
                             {currentGamePlatformInfo && (
-                              <span className="inline-flex h-7.5 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3.5 text-xs font-medium text-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.4)] backdrop-blur-md">
+                              <span className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3.5 text-xs font-medium text-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-md">
                                 <currentGamePlatformInfo.icon className="w-3.5 h-3.5 text-white/90 shrink-0" />
                                 <span>{currentGamePlatformInfo.label}</span>
                               </span>
                             )}
 
                             {currentGame && (
-                              <span className="inline-flex h-7.5 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3.5 text-xs font-medium text-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.4)] backdrop-blur-md">
+                              <span className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3.5 text-xs font-medium text-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-md">
                                 <Clock className="w-3.5 h-3.5 text-white/70 shrink-0" />
                                 <DigitPopIn
                                   value={formatPlayedHours(getGamePlayedHours(currentGame))}
@@ -2976,7 +3078,7 @@ const Home: React.FC = () => {
                             )}
 
                             {currentGame?.isFavorite && (
-                              <span className="inline-flex h-7.5 shrink-0 items-center gap-2 rounded-full border border-amber-400/25 bg-amber-500/10 px-3.5 text-xs font-medium text-amber-300 shadow-[0_4px_16px_rgba(0,0,0,0.4)] backdrop-blur-md">
+                              <span className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-amber-400/30 bg-amber-500/10 px-3.5 text-xs font-medium text-amber-300 shadow-[0_4px_16px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(251,191,36,0.15)] backdrop-blur-md">
                                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
                                 <span>Favorito</span>
                               </span>
@@ -3032,6 +3134,7 @@ const Home: React.FC = () => {
             setIsDetailOpen(false);
             selectCategory("MODS");
           }}
+          currentPresenceGame={currentPresenceGame}
         />
       </React.Suspense>
 
@@ -3368,6 +3471,15 @@ const Home: React.FC = () => {
             isOpen={isWelcomeModalOpen}
             onClose={handleCloseWelcomeModal}
             playSound={playSound}
+            onOpenAddGame={() => {
+              handleCloseWelcomeModal();
+              openAddGameModal();
+            }}
+            onConnectPlatform={() => {
+              handleCloseWelcomeModal();
+              setSettingsTab("connections");
+              selectCategory("SETTINGS");
+            }}
           />
         )}
       </React.Suspense>

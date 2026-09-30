@@ -11,6 +11,7 @@ export interface GameDetailPanelProps {
   onLibraryChanged?: () => Promise<void> | void;
   onGameHydrated?: (game: Game) => void;
   onOpenMods?: () => void;
+  currentPresenceGame?: string | null;
 }
 
 export interface GamePanelMod {
@@ -112,6 +113,7 @@ export interface GameDetailCopy {
   timePlayed: string;
   lastSession: string;
   neverStarted: string;
+  noHubSession: string;
   achievements: string;
   appId: string;
   epicShortcutLabel: string;
@@ -200,6 +202,7 @@ export const DETAIL_PANEL_COPY: Record<string, GameDetailCopy> = {
     timePlayed: "TEMPO JOGADO",
     lastSession: "ÚLTIMA SESSÃO",
     neverStarted: "Ainda não iniciado",
+    noHubSession: "Sem sessão registrada no hub",
     achievements: "CONQUISTAS",
     appId: "App ID",
     epicShortcutLabel: "Epic",
@@ -287,6 +290,7 @@ export const DETAIL_PANEL_COPY: Record<string, GameDetailCopy> = {
     timePlayed: "TIME PLAYED",
     lastSession: "LAST SESSION",
     neverStarted: "Not started",
+    noHubSession: "No session in hub yet",
     achievements: "ACHIEVEMENTS",
     appId: "App ID",
     epicShortcutLabel: "Epic",
@@ -374,6 +378,7 @@ export const DETAIL_PANEL_COPY: Record<string, GameDetailCopy> = {
     timePlayed: "TIEMPO JUGADO",
     lastSession: "ÚLTIMA SESIÓN",
     neverStarted: "No iniciado",
+    noHubSession: "Sin sesión en el hub",
     achievements: "LOGROS",
     appId: "App ID",
     epicShortcutLabel: "Epic",

@@ -26,8 +26,14 @@
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",
     "os:default",
-    "http:default",
-    "http:allow-fetch",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://checkpoint-launcher.onrender.com/**" },
+        { "url": "http://localhost:8787/**" },
+        { "url": "https://localhost:8787/**" }
+      ]
+    },
     "process:default",
     "process:allow-exit"
   ]

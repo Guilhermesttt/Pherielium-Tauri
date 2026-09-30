@@ -47,7 +47,7 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
           : isPresenting
           ? "bg-[#0F0F0F]/90 text-white border border-sky-400/50 shadow-[0_2px_12px_rgba(56,189,248,0.18),inset_0_1px_0_rgba(255,255,255,0.08)]"
           : isSpeaking
-          ? "bg-[#0F0F0F]/90 text-white border border-emerald-400/50 shadow-[0_2px_12px_rgba(52,211,153,0.15),inset_0_1px_0_rgba(255,255,255,0.08)] -translate-y-0.5"
+          ? "bg-[#151515] text-white border border-white/20 shadow-[0_2px_12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] -translate-y-0.5"
           : "bg-[#0F0F0F]/80 text-white/85 hover:bg-[#151515]/90 hover:text-white border border-[#161616] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
       }`}
     >
@@ -64,7 +64,7 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
           <img
             src={feed.avatar}
             alt={feed.title}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover rounded-full"
           />
         ) : (
           <span className="text-[11px] font-bold text-white/80 font-mono">
@@ -74,13 +74,20 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
 
         {/* Micro indicador de fala na borda do avatar */}
         {isSpeaking && (
-          <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-[#0F0F0F]" />
+          <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-white ring-2 ring-[#0F0F0F] animate-pulse" />
         )}
       </div>
 
       {/* Info: Nome e Ícones de Status */}
       <div className="flex flex-col min-w-0 flex-1 justify-center">
         <div className="flex items-center gap-1.5">
+          {isSpeaking && (
+            <span className="inline-flex items-center gap-0.5 h-2.5 shrink-0" aria-label="Falando">
+              <span className="w-0.5 h-2 rounded-full bg-white/90 animate-pulse" />
+              <span className="w-0.5 h-3 rounded-full bg-white/90 animate-pulse" />
+              <span className="w-0.5 h-1.5 rounded-full bg-white/90 animate-pulse" />
+            </span>
+          )}
           <span className={`text-xs font-semibold tracking-tight truncate ${isPresenting ? "text-sky-300" : ""}`}>
             {feed.isLocal ? `${feed.title} (Você)` : feed.title}
           </span>
@@ -99,12 +106,12 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
               <span>Surdo</span>
             </span>
           ) : feed.isMuted ? (
-            <span className="flex items-center gap-1 text-rose-400">
+            <span className="flex items-center gap-1 text-white/50">
               <MicOff className="h-2.5 w-2.5" aria-hidden="true" />
               <span>Mudo</span>
             </span>
           ) : isSpeaking ? (
-            <span className="text-emerald-400 font-medium">Falando</span>
+            <span className="text-white/80 font-medium">Falando</span>
           ) : (
             <span className="text-white/50">Conectado</span>
           )}
