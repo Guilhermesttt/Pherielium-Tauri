@@ -22,7 +22,13 @@ import {
 } from "lucide-react";
 import type { VoiceRoom, RoomCategory, CallRoomConfig } from "../../types/voice-governance";
 import type { UserProfile } from "../../types/domain";
-import { listPublicVoiceRooms, getMyVoiceRooms, closeVoiceRoom, updateVoiceRoom } from "../../services/voiceRooms";
+import {
+  listPublicVoiceRooms,
+  getMyVoiceRooms,
+  closeVoiceRoom,
+  updateVoiceRoom,
+  subscribeToVoiceRoomTableChanges,
+} from "../../services/voiceRooms";
 import { CreateChannelModal, renderVoiceRoomIcon } from "./CreateChannelModal";
 
 interface VoiceRoomsTabProps {
@@ -98,6 +104,13 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
 
   useEffect(() => {
     void fetchRooms();
+  }, [fetchRooms]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToVoiceRoomTableChanges(() => {
+      void fetchRooms();
+    });
+    return unsubscribe;
   }, [fetchRooms]);
 
   // 1. Filtrar as salas públicas globais para NÃO duplicar salas onde o usuário já é o dono

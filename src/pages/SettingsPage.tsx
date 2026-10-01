@@ -17,6 +17,7 @@ import {
   Mic,
   MicOff,
   Palette,
+  Phone,
   Settings,
   ShieldCheck,
   SlidersHorizontal,
@@ -464,7 +465,9 @@ const VOICE_COPY = {
     standardNative: "Nativo Padrão",
     raw: "Estúdio / Sem Filtro",
     voiceActivity: "Atividade de Voz",
-    pushToTalk: "Push-to-Talk"
+    pushToTalk: "Push-to-Talk",
+    callOverlayTitle: "Widget de chamada no overlay",
+    callOverlayHint: "Exibe controles de voz (mute, surdo, desligar) durante o jogo",
   },
   "en-US": {
     ioTitle: "Input & Output",
@@ -487,7 +490,9 @@ const VOICE_COPY = {
     standardNative: "Standard Native",
     raw: "Studio / Raw",
     voiceActivity: "Voice Activity",
-    pushToTalk: "Push-to-Talk"
+    pushToTalk: "Push-to-Talk",
+    callOverlayTitle: "In-game call widget",
+    callOverlayHint: "Shows voice controls (mute, deafen, hang up) while playing",
   },
   "es-ES": {
     ioTitle: "Entrada y Salida",
@@ -510,7 +515,9 @@ const VOICE_COPY = {
     standardNative: "Nativo Estándar",
     raw: "Estudio / Sin Filtro",
     voiceActivity: "Actividad de Voz",
-    pushToTalk: "Pulsar para hablar"
+    pushToTalk: "Pulsar para hablar",
+    callOverlayTitle: "Widget de llamada en overlay",
+    callOverlayHint: "Muestra controles de voz (silenciar, ensordecer, colgar) mientras juegas",
   },
   "fr-FR": {
     ioTitle: "Entrée et Sortie",
@@ -533,7 +540,9 @@ const VOICE_COPY = {
     standardNative: "Natif Standard",
     raw: "Studio / Brut",
     voiceActivity: "Détection Vocale",
-    pushToTalk: "Appuyer pour parler"
+    pushToTalk: "Appuyer pour parler",
+    callOverlayTitle: "Widget d'appel dans l'overlay",
+    callOverlayHint: "Affiche les contrôles vocaux (muet, sourd, raccrocher) en jeu",
   },
   "de-DE": {
     ioTitle: "Eingang & Ausgang",
@@ -556,7 +565,9 @@ const VOICE_COPY = {
     standardNative: "Standard-Nativ",
     raw: "Studio / Roh",
     voiceActivity: "Sprachaktivität",
-    pushToTalk: "Push-to-Talk"
+    pushToTalk: "Push-to-Talk",
+    callOverlayTitle: "Anruf-Widget im Overlay",
+    callOverlayHint: "Zeigt Sprachsteuerung (Stumm, Taub, Auflegen) während des Spiels",
   },
   "it-IT": {
     ioTitle: "Ingresso e Uscita",
@@ -579,7 +590,9 @@ const VOICE_COPY = {
     standardNative: "Nativo Standard",
     raw: "Studio / Senza Filtri",
     voiceActivity: "Attività Vocale",
-    pushToTalk: "Premi per Parlare"
+    pushToTalk: "Premi per Parlare",
+    callOverlayTitle: "Widget chiamata nell'overlay",
+    callOverlayHint: "Mostra i controlli vocali (muto, non sentire, riaggancia) durante il gioco",
   }
 } as const;
 
@@ -1232,6 +1245,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
     setCustomAchievementNotifications,
     achievementNotificationPosition,
     setAchievementNotificationPosition,
+    callOverlayEnabled,
+    setCallOverlayEnabled,
   } = usePreferences();
 
   const { user, userProfile } = useAuth();
@@ -2842,6 +2857,27 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                       }
                     />
                   )}
+                </section>
+
+                <div className="h-px w-full bg-white/[0.06]" />
+
+                <section>
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <Phone className="h-4 w-4 text-white/70 shrink-0" />
+                    <h2 className="text-[17px] font-semibold text-white tracking-wide">{voiceCopy.callOverlayTitle}</h2>
+                  </div>
+
+                  <SettingsRow
+                    title={voiceCopy.callOverlayTitle}
+                    description={voiceCopy.callOverlayHint}
+                    hasBorder={false}
+                    action={
+                      <div className="flex items-center gap-3">
+                        <Switch checked={callOverlayEnabled} onCheckedChange={setCallOverlayEnabled} />
+                        <span className="text-[12px] text-white/50 w-16">{callOverlayEnabled ? t("enabled") : t("disabled")}</span>
+                      </div>
+                    }
+                  />
                 </section>
               </div>
             )}

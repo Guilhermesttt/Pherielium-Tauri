@@ -330,6 +330,12 @@ declare global {
       }>>;
       isExecutableRunning: (executablePath: string) => Promise<boolean>;
       detectRunningGames: (executablePaths: string[]) => Promise<string[]>;
+      detectRunningGameDetails?: (executablePaths: string[]) => Promise<Array<{
+        requestedPath: string;
+        matchedPath: string;
+        pid: number;
+        processStartTimeMs?: number | null;
+      }>>;
       startGoogleBrowserAuth: () => Promise<{ state: string; pollSecret: string }>;
       pollGoogleBrowserAuth?: (state: string, pollSecret: string) => Promise<{
         status: string;
@@ -652,6 +658,10 @@ declare global {
           connectionState?: "connected" | "calling";
           durationSeconds?: number;
         } | null;
+        settings?: {
+          callOverlayEnabled?: boolean;
+          effectsVolume?: number;
+        };
         playerLevel?: {
           level: number;
           xp: number;
@@ -770,7 +780,12 @@ declare global {
       ) => Promise<void>;
       setGameWatchTarget?: (executable: string | null) => Promise<void>;
       clearGameWatchTarget?: () => Promise<void>;
-      onGameWatchStarted?: (callback: (payload: { executable?: string | null }) => void) => () => void;
+      onGameWatchStarted?: (callback: (payload: {
+        executable?: string | null;
+        matchedPath?: string | null;
+        pid?: number | null;
+        processStartTimeMs?: number | null;
+      }) => void) => () => void;
       onGameWatchEnded?: (callback: (payload: { executable?: string | null }) => void) => () => void;
     };
   }

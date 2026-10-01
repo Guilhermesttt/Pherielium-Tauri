@@ -10,6 +10,7 @@ pub mod launcher;
 pub mod library;
 pub mod nexus;
 pub mod overlay;
+pub mod process_identity;
 pub mod process_monitor;
 pub mod ptt;
 pub mod screen_capture;

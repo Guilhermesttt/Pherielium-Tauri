@@ -24,6 +24,7 @@ import {
   getCheckpointFriendStatuses,
 } from '../services/checkpointFriends';
 import { completeUserQuest } from '../services/userQuests';
+import { parsePresenceUpdatedAt, shouldAcceptPresence } from '../services/presenceOrdering';
 
 export type { CheckpointFriendRequest, SocialFriend } from "../types/domain";
 
@@ -186,25 +187,12 @@ export function useFriendsSystem({
             const status = statusById.get(uid);
             if (!status) return friend;
 
-            const serverUpdatedAtMs = status.updatedAt ? Date.parse(String(status.updatedAt)) : 0;
+            const serverUpdatedAtMs = parsePresenceUpdatedAt(status.updatedAt);
             const lastUpdated = friendPresenceLastUpdatedRef.current.get(uid) || 0;
-            const isServerOffline = (status.status || "offline") === "offline";
-
-            if (!isServerOffline) {
-              // O servidor está dizendo que o amigo está ONLINE:
-              // Se o cliente já sabe que o amigo está OFFLINE (por um evento em tempo real mais recente),
-              // só aceitamos o ONLINE do servidor se o timestamp do servidor for estritamente mais novo.
-              if (friend.status === "offline" && lastUpdated && serverUpdatedAtMs <= lastUpdated) {
-                return friend;
-              }
-              if (serverUpdatedAtMs && lastUpdated && serverUpdatedAtMs < lastUpdated) {
-                return friend;
-              }
+            if (!shouldAcceptPresence(serverUpdatedAtMs, lastUpdated)) {
+              return friend;
             }
-
-            if (serverUpdatedAtMs) {
-              friendPresenceLastUpdatedRef.current.set(uid, serverUpdatedAtMs);
-            }
+            friendPresenceLastUpdatedRef.current.set(uid, serverUpdatedAtMs);
 
             const cleanName =
               (friend.name && friend.name !== "Amigo" && friend.name !== "Jogador")
@@ -284,22 +272,12 @@ export function useFriendsSystem({
             const status = statusById.get(uid);
             if (!status) return friend;
 
-            const serverUpdatedAtMs = status.updatedAt ? Date.parse(String(status.updatedAt)) : 0;
+            const serverUpdatedAtMs = parsePresenceUpdatedAt(status.updatedAt);
             const lastUpdated = friendPresenceLastUpdatedRef.current.get(uid) || 0;
-            const isServerOffline = (status.status || "offline") === "offline";
-
-            if (!isServerOffline) {
-              if (friend.status === "offline" && lastUpdated && serverUpdatedAtMs <= lastUpdated) {
-                return friend;
-              }
-              if (serverUpdatedAtMs && lastUpdated && serverUpdatedAtMs < lastUpdated) {
-                return friend;
-              }
+            if (!shouldAcceptPresence(serverUpdatedAtMs, lastUpdated)) {
+              return friend;
             }
-
-            if (serverUpdatedAtMs) {
-              friendPresenceLastUpdatedRef.current.set(uid, serverUpdatedAtMs);
-            }
+            friendPresenceLastUpdatedRef.current.set(uid, serverUpdatedAtMs);
 
             const cleanName =
               (friend.name && friend.name !== "Amigo" && friend.name !== "Jogador")
@@ -362,9 +340,9 @@ export function useFriendsSystem({
     const unsubPresenceBus = subscribeToGlobalEventBus(user.uid, {
       onStatusUpdate: (presence) => {
         if (!presence?.uid) return;
-        const eventUpdatedAt = presence.updatedAt || Date.now();
+        const eventUpdatedAt = parsePresenceUpdatedAt(presence.updatedAt);
         const lastUpdated = friendPresenceLastUpdatedRef.current.get(presence.uid) || 0;
-        if (lastUpdated && eventUpdatedAt < lastUpdated) {
+        if (!shouldAcceptPresence(eventUpdatedAt, lastUpdated)) {
           return;
         }
         friendPresenceLastUpdatedRef.current.set(presence.uid, eventUpdatedAt);

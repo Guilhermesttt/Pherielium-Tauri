@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PhoneCall, X } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { useNotification } from "../components/NotificationCenter";
+import { usePreferences } from "./PreferencesContext";
 import { useVoiceCall } from "../hooks/useVoiceCall";
 import { IncomingCallModal } from "../components/voice/IncomingCallModal";
 import { VoiceCallBar } from "../components/voice/VoiceCallBar";
@@ -32,10 +33,12 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // In unit tests without full notification center
   }
 
+  const { effectsVolume } = usePreferences();
   const voiceCall = useVoiceCall({
     user,
     userProfile,
     notify,
+    voiceSfxVolume: effectsVolume / 100,
   });
 
   const [socialFriends, setSocialFriends] = useState<SocialFriend[]>([]);
@@ -508,11 +511,28 @@ const safeFallbackVoiceCallContext: Partial<VoiceCallContextType> = {
   hangUp: async () => { },
   endCallForEveryone: async () => { },
   joinRoom: async () => { },
+  joinActiveCall: async () => { },
   createAndJoinRoom: async () => { },
   updateRoomPrivacy: async () => { },
+  updateRoomAppearance: async () => { },
   kickParticipant: async () => { },
   reconnectCall: async () => { },
   dismissReconnect: () => { },
+  simulateIncomingCall: () => { },
+  calibrateNoiseFloor: async () => ({ noiseFloor: 0, recommendedSensitivity: 35 }),
+  isCalibratingNoise: false,
+  currentNoiseFloor: 0,
+  isMicMonitoring: false,
+  setIsMicMonitoring: () => { },
+  micGain: 100,
+  setMicGain: () => { },
+  noiseGateEnabled: true,
+  setNoiseGateEnabled: () => { },
+  autoGainControl: true,
+  setAutoGainControl: () => { },
+  refreshDevices: async () => { },
+  deviceError: null,
+  clearDeviceError: () => { },
   toggleMute: () => { },
   toggleDeafen: () => { },
   toggleCamera: async () => { },

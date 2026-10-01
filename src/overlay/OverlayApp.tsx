@@ -193,6 +193,8 @@ export interface CommandPanelState {
     muteAllToasts?: boolean;
     fluidAnimations?: boolean;
     perfMonitor?: boolean;
+    callOverlayEnabled?: boolean;
+    effectsVolume?: number;
   };
 }
 
@@ -545,8 +547,10 @@ const OverlayApp: React.FC = () => {
       || t.kind === "achievement",
   );
   const fullCapturesCursor = overlayMode === "full";
+  const callOverlayEnabled = panelData.settings?.callOverlayEnabled !== false;
+  const showCallOverlayWidget = Boolean(activeCall?.active) && callOverlayEnabled;
   const hasHitTestTargets =
-    overlayMode === "quick" || Boolean(activeCall?.active) || hasInteractiveToasts;
+    overlayMode === "quick" || showCallOverlayWidget || hasInteractiveToasts;
 
   useEffect(() => {
     if (fullCapturesCursor) {
@@ -1358,7 +1362,7 @@ const OverlayApp: React.FC = () => {
 
       {/* ─── MINI BARRA PERSISTENTE DE CHAMADA DE VOZ ───────────────────────── */}
       <AnimatePresence>
-        {activeCall?.active && (
+        {showCallOverlayWidget && activeCall && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}

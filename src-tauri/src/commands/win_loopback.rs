@@ -1,5 +1,9 @@
 //! WASAPI render-device loopback — captures the Windows mix (system audio)
 //! without opening Chromium's getDisplayMedia picker.
+//!
+//! Not used for voice-call screen share: there is no process-tree exclusion yet,
+//! so loopback would retransmit call audio. Screen share audio stays on native
+//! getDisplayMedia (+ restrictOwnAudio) or video-only fallback.
 
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use serde_json::json;

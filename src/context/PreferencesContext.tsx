@@ -37,6 +37,7 @@ export interface PreferencesStateValue {
   restoreLastScreen: boolean;
   confirmBeforeExit: boolean;
   hapticsEnabled: boolean;
+  callOverlayEnabled: boolean;
   preferencesHydrated: boolean;
 }
 
@@ -60,6 +61,7 @@ export interface PreferencesActionsValue {
   setRestoreLastScreen: (value: boolean) => void;
   setConfirmBeforeExit: (value: boolean) => void;
   setHapticsEnabled: (value: boolean) => void;
+  setCallOverlayEnabled: (value: boolean) => void;
   t: (key: TranslationKey) => string;
 }
 
@@ -1016,6 +1018,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
   const [restoreLastScreen, setRestoreLastScreen] = useState(false);
   const [confirmBeforeExit, setConfirmBeforeExit] = useState(true);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
+  const [callOverlayEnabled, setCallOverlayEnabled] = useState(true);
   const [hydratedPreferencesUid, setHydratedPreferencesUid] = useState<string | null>(null);
 
   useEffect(() => {
@@ -1051,6 +1054,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
     const savedCustomAchievementNotifications = readPreference(user.uid, "custom_achievement_notifications");
     const savedAchievementNotificationPosition = readPreference(user.uid, "achievement_notification_position");
     const savedHapticsEnabled = readPreference(user.uid, "haptics_enabled");
+    const savedCallOverlayEnabled = readPreference(user.uid, "call_overlay_enabled");
 
     if (savedOpenAtLogin !== null) {
       const shouldOpenAtLogin = savedOpenAtLogin === "true";
@@ -1085,6 +1089,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
     if (savedRestoreLastScreen !== null) setRestoreLastScreen(savedRestoreLastScreen === "true");
     if (savedConfirmBeforeExit !== null) setConfirmBeforeExit(savedConfirmBeforeExit === "true");
     if (savedHapticsEnabled !== null) setHapticsEnabled(savedHapticsEnabled === "true");
+    if (savedCallOverlayEnabled !== null) setCallOverlayEnabled(savedCallOverlayEnabled === "true");
     if (savedAchievementNotifications !== null) {
       setAchievementNotificationsEnabled(savedAchievementNotifications === "true");
     }
@@ -1172,7 +1177,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
     writePreference(user.uid, "achievement_notifications", String(achievementNotificationsEnabled));
     writePreference(user.uid, "custom_achievement_notifications", String(customAchievementNotifications));
     writePreference(user.uid, "achievement_notification_position", achievementNotificationPosition);
-  }, [achievementNotificationPosition, achievementNotificationsEnabled, achievementVolume, closeOnLaunch, confirmBeforeExit, customAchievementNotifications, effectsVolume, gameBootIntroEnabled, gameBootIntroSoundEnabled, hapticsEnabled, hydratedPreferencesUid, language, lowPerformanceMode, minimizeToTrayOnClose, musicVolume, notificationVolume, openAtLogin, restoreLastScreen, soundTheme, user?.uid, visualTheme]);
+    writePreference(user.uid, "call_overlay_enabled", String(callOverlayEnabled));
+  }, [achievementNotificationPosition, achievementNotificationsEnabled, achievementVolume, callOverlayEnabled, closeOnLaunch, confirmBeforeExit, customAchievementNotifications, effectsVolume, gameBootIntroEnabled, gameBootIntroSoundEnabled, hapticsEnabled, hydratedPreferencesUid, language, lowPerformanceMode, minimizeToTrayOnClose, musicVolume, notificationVolume, openAtLogin, restoreLastScreen, soundTheme, user?.uid, visualTheme]);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -1256,9 +1262,10 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
       restoreLastScreen,
       confirmBeforeExit,
       hapticsEnabled,
+      callOverlayEnabled,
       preferencesHydrated: hydratedPreferencesUid === user?.uid,
     }),
-    [achievementNotificationPosition, achievementNotificationsEnabled, achievementVolume, closeOnLaunch, confirmBeforeExit, customAchievementNotifications, effectsVolume, gameBootIntroEnabled, gameBootIntroSoundEnabled, hapticsEnabled, hydratedPreferencesUid, language, lowPerformanceMode, minimizeToTrayOnClose, musicVolume, notificationVolume, openAtLogin, restoreLastScreen, soundTheme, user?.uid, visualTheme],
+    [achievementNotificationPosition, achievementNotificationsEnabled, achievementVolume, callOverlayEnabled, closeOnLaunch, confirmBeforeExit, customAchievementNotifications, effectsVolume, gameBootIntroEnabled, gameBootIntroSoundEnabled, hapticsEnabled, hydratedPreferencesUid, language, lowPerformanceMode, minimizeToTrayOnClose, musicVolume, notificationVolume, openAtLogin, restoreLastScreen, soundTheme, user?.uid, visualTheme],
   );
 
   const actionsValue = useMemo<PreferencesActionsValue>(
@@ -1287,6 +1294,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
       setRestoreLastScreen,
       setConfirmBeforeExit,
       setHapticsEnabled,
+      setCallOverlayEnabled,
       t: translate,
     }),
     [translate],

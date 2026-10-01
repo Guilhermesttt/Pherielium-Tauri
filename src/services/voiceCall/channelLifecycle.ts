@@ -51,6 +51,7 @@ const notifyStatus = (
 
 const MAX_SUB_ATTEMPTS = 3;
 const BACKOFF_DELAYS = [1000, 2000, 4000];
+const SUBSCRIBE_TIMEOUT_MS = 12_000;
 
 export const getOrCreateChannel = async (
   channelName: string,
@@ -100,13 +101,12 @@ export const getOrCreateChannel = async (
 
       const attemptResult = await new Promise<{ ok: boolean; status: string; channel: any }>((resolve) => {
         let finished = false;
-        const timeoutMs = 4500;
         const timer = setTimeout(() => {
           if (!finished) {
             finished = true;
             resolve({ ok: false, status: "TIMED_OUT", channel: newChannel });
           }
-        }, timeoutMs);
+        }, SUBSCRIBE_TIMEOUT_MS);
 
         try {
           newChannel.subscribe((status: string) => {

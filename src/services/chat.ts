@@ -484,147 +484,180 @@ export const markMessagesAsRead = async (friendUid: string) => {
 export const subscribeToChatMessages = (
   friendUid: string,
   callback: (messages: ChatMessage[]) => void,
+  onError?: (error: Error) => void,
 ) => {
   let cancelled = false;
   let latestMessages: ChatMessage[] = [];
-  let activeKey = "";
+  let unsubFast: (() => void) | null = null;
+  let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 
-  void getUsableSession().then(async (session) => {
-    if (!session?.user || cancelled) return;
-    const uid = session.user.id;
-    const chatId = await ensureChatSession(uid, friendUid);
+  const reportError = (message: string, cause?: unknown) => {
     if (cancelled) return;
-    activeKey = chatId;
+    const error = cause instanceof Error ? cause : new Error(message);
+    if (!(cause instanceof Error)) {
+      error.message = message;
+    }
+    onError?.(error);
+  };
 
-    supabase
-      .from("chat_messages")
-      .select("*")
-      .eq("chat_id", chatId)
-      .order("sequence_id", { ascending: false })
-      .limit(HISTORY_LIMIT)
-      .then(async ({ data }) => {
-        if (data && !cancelled) {
-          const historyMessages = await Promise.all(data.map((item) =>
-            hydrateAttachmentUrl(normalizeMessage(String(item.id), item as any)),
-          ));
-          const mergedById = new Map<string, ChatMessage>();
-          [...historyMessages, ...latestMessages].forEach((message) => {
-            if (message.id) mergedById.set(message.id, message);
-          });
-          latestMessages = Array.from(mergedById.values()).sort(compareChatMessages);
-          callback([...latestMessages]);
-        }
+  const deliverMessages = (messages: ChatMessage[]) => {
+    if (cancelled) return;
+    callback([...messages]);
+  };
+
+  void (async () => {
+    try {
+      const session = await getUsableSession();
+      if (cancelled) return;
+      if (!session?.user) {
+        reportError("Sessao expirada. Entre novamente.");
+        return;
+      }
+
+      const uid = session.user.id;
+      const chatId = await ensureChatSession(uid, friendUid);
+      if (cancelled) return;
+      if (!chatId) {
+        reportError("Sessao de chat invalida.");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("chat_id", chatId)
+        .order("sequence_id", { ascending: false })
+        .limit(HISTORY_LIMIT);
+
+      if (cancelled) return;
+      if (error) {
+        reportError(error.message || "Erro ao carregar historico do chat.", error);
+        return;
+      }
+
+      const historyMessages = await Promise.all(
+        (data || []).map((item) =>
+          hydrateAttachmentUrl(normalizeMessage(String(item.id), item as any)),
+        ),
+      );
+      if (cancelled) return;
+
+      const mergedById = new Map<string, ChatMessage>();
+      [...historyMessages, ...latestMessages].forEach((message) => {
+        if (message.id) mergedById.set(message.id, message);
+      });
+      latestMessages = Array.from(mergedById.values()).sort(compareChatMessages);
+      deliverMessages(latestMessages);
+
+      unsubFast = subscribeToGlobalEventBus(uid, {
+        onMessage: (fastMsg) => {
+          if (cancelled) return;
+          if (
+            (fastMsg.senderId === friendUid && fastMsg.receiverId === uid) ||
+            (fastMsg.senderId === uid && fastMsg.receiverId === friendUid) ||
+            fastMsg.chatId === chatId
+          ) {
+            const isAlreadyPresent = latestMessages.some(
+              (current) =>
+                current.id === fastMsg.id ||
+                (!current.id?.startsWith("fast_") &&
+                  current.senderId === fastMsg.senderId &&
+                  current.text.trim() === fastMsg.text.trim() &&
+                  Math.abs(messageTimestamp(current) - messageTimestamp(fastMsg)) < 15000),
+            );
+            if (!isAlreadyPresent) {
+              latestMessages = [...latestMessages, fastMsg].sort(compareChatMessages);
+              deliverMessages(latestMessages);
+            }
+          }
+        },
+        onReadReceipt: (data) => {
+          if (cancelled) return;
+          if (data.chatId === chatId || data.readerUid === friendUid) {
+            let changed = false;
+            latestMessages = latestMessages.map((m) => {
+              if (m.senderId === uid && !m.read) {
+                changed = true;
+                return { ...m, read: true };
+              }
+              return m;
+            });
+            if (changed) {
+              deliverMessages(latestMessages);
+            }
+          }
+        },
       });
 
-    // Fast-path WebSocket Event Bus listener for open chat window
-    const unsubFast = subscribeToGlobalEventBus(uid, {
-      onMessage: (fastMsg) => {
-        if (cancelled) return;
-        if (
-          (fastMsg.senderId === friendUid && fastMsg.receiverId === uid) ||
-          (fastMsg.senderId === uid && fastMsg.receiverId === friendUid) ||
-          fastMsg.chatId === chatId
-        ) {
-          // Verify if already present by ID or already confirmed by Postgres
-          const isAlreadyPresent = latestMessages.some(
-            (current) =>
-              current.id === fastMsg.id ||
-              (!current.id?.startsWith("fast_") &&
-                current.senderId === fastMsg.senderId &&
-                current.text.trim() === fastMsg.text.trim() &&
-                Math.abs(messageTimestamp(current) - messageTimestamp(fastMsg)) < 15000)
-          );
-          if (!isAlreadyPresent) {
-            latestMessages = [...latestMessages, fastMsg].sort(compareChatMessages);
-            callback([...latestMessages]);
-          }
-        }
-      },
-      onReadReceipt: (data) => {
-        if (cancelled) return;
-        if (data.chatId === chatId || data.readerUid === friendUid) {
-          let changed = false;
-          latestMessages = latestMessages.map((m) => {
-            if (m.senderId === uid && !m.read) {
-              changed = true;
-              return { ...m, read: true };
+      realtimeChannel = supabase
+        .channel(`chat_${chatId}_${Math.random().toString(36).slice(2, 8)}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "chat_messages", filter: `chat_id=eq.${chatId}` },
+          async (payload) => {
+            const msg = await hydrateAttachmentUrl(
+              normalizeMessage(String(payload.new.id), payload.new as any),
+            );
+            if (cancelled) return;
+
+            const existingFastIndex = latestMessages.findIndex(
+              (current) =>
+                current.id?.startsWith("fast_") &&
+                current.senderId === msg.senderId &&
+                current.text.trim() === msg.text.trim() &&
+                Math.abs(messageTimestamp(current) - messageTimestamp(msg)) < 15000,
+            );
+
+            if (existingFastIndex !== -1) {
+              latestMessages = latestMessages.map((item, idx) => (idx === existingFastIndex ? msg : item));
+              deliverMessages(latestMessages);
+              return;
             }
-            return m;
-          });
-          if (changed) {
-            callback([...latestMessages]);
-          }
-        }
-      },
-    });
 
-    const channel = supabase
-      .channel(`chat_${chatId}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "chat_messages", filter: `chat_id=eq.${chatId}` },
-        async (payload) => {
-          const msg = await hydrateAttachmentUrl(
-            normalizeMessage(String(payload.new.id), payload.new as any),
-          );
-          if (cancelled) return;
-
-          // Check if there is a matching fast_ temporary message to replace
-          const existingFastIndex = latestMessages.findIndex(
-            (current) =>
-              current.id?.startsWith("fast_") &&
-              current.senderId === msg.senderId &&
-              current.text.trim() === msg.text.trim() &&
-              Math.abs(messageTimestamp(current) - messageTimestamp(msg)) < 15000
-          );
-
-          if (existingFastIndex !== -1) {
-            latestMessages = latestMessages.map((item, idx) => (idx === existingFastIndex ? msg : item));
-            callback([...latestMessages]);
-            return;
-          }
-
-          if (!latestMessages.some((current) => current.id === msg.id)) {
-            latestMessages = [...latestMessages, msg].sort(compareChatMessages);
-            callback([...latestMessages]);
-          }
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "chat_messages", filter: `chat_id=eq.${chatId}` },
-        async (payload) => {
-          const updatedMsg = await hydrateAttachmentUrl(
-            normalizeMessage(String(payload.new.id), payload.new as any),
-          );
-          if (cancelled) return;
-          let changed = false;
-          latestMessages = latestMessages.map((m) => {
-            if (m.id === updatedMsg.id) {
-              changed = true;
-              return { ...m, ...updatedMsg };
+            if (!latestMessages.some((current) => current.id === msg.id)) {
+              latestMessages = [...latestMessages, msg].sort(compareChatMessages);
+              deliverMessages(latestMessages);
             }
-            return m;
-          });
-          if (changed) {
-            callback([...latestMessages]);
-          }
-        }
-      )
-      .subscribe();
-
-    activeChatChannels.set(chatId, { channel, unsubFast });
-  });
+          },
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "chat_messages", filter: `chat_id=eq.${chatId}` },
+          async (payload) => {
+            const updatedMsg = await hydrateAttachmentUrl(
+              normalizeMessage(String(payload.new.id), payload.new as any),
+            );
+            if (cancelled) return;
+            let changed = false;
+            latestMessages = latestMessages.map((m) => {
+              if (m.id === updatedMsg.id) {
+                changed = true;
+                return { ...m, ...updatedMsg };
+              }
+              return m;
+            });
+            if (changed) {
+              deliverMessages(latestMessages);
+            }
+          },
+        )
+        .subscribe();
+    } catch (err) {
+      if (!cancelled) {
+        reportError(
+          err instanceof Error ? err.message : "Erro ao iniciar conversa.",
+          err,
+        );
+      }
+    }
+  })();
 
   return () => {
     cancelled = true;
-    const item = activeChatChannels.get(activeKey);
-    if (item) {
-      if (typeof item.unsubFast === "function") item.unsubFast();
-      if (item.channel) supabase.removeChannel(item.channel);
-      else if (typeof item === "object") supabase.removeChannel(item);
-      activeChatChannels.delete(activeKey);
-    }
+    if (unsubFast) unsubFast();
+    if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+    unsubFast = null;
+    realtimeChannel = null;
   };
 };
 

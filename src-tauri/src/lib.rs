@@ -119,6 +119,7 @@ pub fn run() {
             launcher_select_executable,
             // Process monitor
             process_detect_running,
+            process_detect_running_details,
             process_is_running,
             game_scan_local,
             steam_scan_installed_games,

@@ -525,6 +525,7 @@ const Home: React.FC = () => {
     minimizeToTrayOnClose,
     confirmBeforeExit,
     restoreLastScreen,
+    callOverlayEnabled,
     preferencesHydrated,
     t,
   } = usePreferences();
@@ -649,7 +650,7 @@ const Home: React.FC = () => {
     currentPresenceExecutablePath,
     sessionStartedAt: overlaySessionStartedAt,
     presenceVerification,
-    markCurrentPresence,
+    prepareLaunchPresence,
     syncDetectedRunningGame,
   } = useGamePresence({
     userUid: user?.uid,
@@ -1036,9 +1037,8 @@ const Home: React.FC = () => {
           void window.electronAPI.setGameWatchTarget(monitorablePath).catch(() => undefined);
         }
 
-        // Marca presença imediatamente para qualquer jogo aberto a partir do hub
-        // (local, Steam, Epic Games ou emulador).
-        markCurrentPresence(effectiveTitle, monitorablePath);
+        // Presença fica pendente até o processo ser confirmado pelo watcher/monitor.
+        prepareLaunchPresence(effectiveTitle, monitorablePath);
       })();
 
       if (user?.uid) {
@@ -1051,7 +1051,7 @@ const Home: React.FC = () => {
 
     window.addEventListener("checkpoint:game-launch", handleGameLaunch);
     return () => window.removeEventListener("checkpoint:game-launch", handleGameLaunch);
-  }, [games, markCurrentPresence, playSound, user?.uid, notify]);
+  }, [games, prepareLaunchPresence, playSound, user?.uid, notify]);
 
   // Detecta jogos já abertos quando o hub inicia ou quando a lista de jogos
   // é carregada pela primeira vez (caso o usuário tenha aberto o hub com um jogo já rodando).
@@ -2025,16 +2025,23 @@ const Home: React.FC = () => {
         participantsCount: (voiceCall.session.participants?.length || 0) + 1,
         speakingUserNames: voiceCall.isSpeakingLocal ? ["Você"] : [],
       } : null,
-      activeCall: voiceCall?.session && voiceCall.callState !== "idle" ? {
-        active: true,
-        friendId: voiceCall.session.friendUid,
-        friendName: voiceCall.session.friendName,
-        friendAvatar: voiceCall.session.friendAvatar,
-        muted: voiceCall.isMuted,
-        deafened: voiceCall.isDeafened,
-        connectionState: voiceCall.callState === "active" ? "connected" : "calling",
-        durationSeconds: voiceCall.callDuration,
-      } : null,
+      activeCall:
+        callOverlayEnabled && voiceCall?.session && voiceCall.callState !== "idle"
+          ? {
+              active: true,
+              friendId: voiceCall.session.friendUid,
+              friendName: voiceCall.session.friendName,
+              friendAvatar: voiceCall.session.friendAvatar,
+              muted: voiceCall.isMuted,
+              deafened: voiceCall.isDeafened,
+              connectionState: voiceCall.callState === "active" ? "connected" : "calling",
+              durationSeconds: voiceCall.callDuration,
+            }
+          : null,
+      settings: {
+        callOverlayEnabled,
+        effectsVolume: effectsVolume / 100,
+      },
       playerLevel: playerLevel ? {
         level: playerLevel.level,
         xp: playerLevel.xp,
@@ -2081,6 +2088,8 @@ const Home: React.FC = () => {
     voiceCall?.callState,
     voiceCall?.callDuration,
     playerLevel,
+    callOverlayEnabled,
+    effectsVolume,
   ]);
 
   useEffect(() => {

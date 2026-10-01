@@ -170,6 +170,14 @@ export const tauriAPI = {
   detectRunningGames: (executablePaths: string[]) =>
     invoke<string[]>("process_detect_running", { executablePaths }),
 
+  detectRunningGameDetails: (executablePaths: string[]) =>
+    invoke<Array<{
+      requestedPath: string;
+      matchedPath: string;
+      pid: number;
+      processStartTimeMs?: number | null;
+    }>>("process_detect_running_details", { executablePaths }),
+
   isExecutableRunning: (executablePath: string) =>
     invoke<boolean>("process_is_running", { executablePath }),
 
@@ -650,7 +658,12 @@ export const tauriAPI = {
   clearGameWatchTarget: () =>
     invoke<void>("game_watch_stop"),
 
-  onGameWatchStarted: (callback: (payload: { executable?: string | null }) => void) =>
+  onGameWatchStarted: (callback: (payload: {
+    executable?: string | null;
+    matchedPath?: string | null;
+    pid?: number | null;
+    processStartTimeMs?: number | null;
+  }) => void) =>
     makeListen("game-watch:started", callback),
 
   onGameWatchEnded: (callback: (payload: { executable?: string | null }) => void) =>

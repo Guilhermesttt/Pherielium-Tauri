@@ -1080,9 +1080,11 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
           onOpenActiveWindow={() => {
             voiceCall.setIsVoiceWindowOpen(true);
           }}
-          onSimulateIncomingCall={() => {
-            voiceCall.simulateIncomingCall(true);
-          }}
+          onSimulateIncomingCall={
+            import.meta.env.DEV && typeof voiceCall.simulateIncomingCall === "function"
+              ? () => voiceCall.simulateIncomingCall(true)
+              : undefined
+          }
           notify={notify}
         />
       )}
@@ -1204,19 +1206,34 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
     }
   };
 
+  const handleCloseModal = () => {
+    playSound?.("back");
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
     <ModalShell
       isOpen={isOpen}
-      onClose={() => {
-        playSound?.("back");
-        onClose();
-      }}
+      onClose={handleCloseModal}
       title={t("addFriendTitle") || "Adicionar amigo"}
       maxWidthClassName="max-w-xl"
     >
       <div className="space-y-5 p-6">
+        <div className="flex items-center justify-between gap-3 border-b border-white/8 pb-4">
+          <h2 className="text-sm font-bold text-white">
+            {t("addFriendTitle") || "Adicionar amigo"}
+          </h2>
+          <button
+            type="button"
+            onClick={handleCloseModal}
+            aria-label="Fechar"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/60 transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
         <div>
           <label className="text-xs font-body font-medium text-white/70 block mb-2">
             Busque por nome de usuário ou email

@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { getOrCreateChannel } from "./voiceCall/channelLifecycle";
 import type { ChatMessage } from "../types/domain";
 
 export type UserPresenceStatus = "online" | "playing" | "offline";
@@ -70,29 +71,51 @@ const deliverPresenceStatusUpdate = (presence: PresencePayload) => {
   globalEventHandlers.forEach((h) => h.onStatusUpdate?.(presence));
 };
 
+const broadcastToUserInbox = async (
+  receiverUid: string,
+  event: string,
+  payload: unknown,
+): Promise<boolean> => {
+  const channelName = `user_inbox_${receiverUid}`;
+  try {
+    const targetChannel = await getOrCreateChannel(channelName);
+    if (!targetChannel) return false;
+
+    activeInboxChannels.set(channelName, targetChannel);
+
+    const message = {
+      type: "broadcast" as const,
+      event,
+      payload,
+    };
+
+    if (targetChannel.state === "joined") {
+      await targetChannel.send(message);
+      return true;
+    }
+
+    if (typeof targetChannel.httpSend === "function") {
+      await targetChannel.httpSend(event, payload as Record<string, unknown>);
+      return true;
+    }
+
+    await targetChannel.send(message);
+    return true;
+  } catch (err) {
+    console.warn(`[realtimeEventBus] broadcast ${event} failed for ${channelName}:`, err);
+    return false;
+  }
+};
+
 const sendPresenceToFriendInbox = async (receiverUid: string, presence: PresencePayload) => {
   const channelName = `user_inbox_${receiverUid}`;
-  let targetChannel = activeInboxChannels.get(channelName);
-
-  if (!targetChannel) {
-    targetChannel = supabase.channel(channelName);
-    activeInboxChannels.set(channelName, targetChannel);
-    channelRefCounts.set(channelName, 0);
-    try {
-      targetChannel.subscribe((s: string) => { });
-    } catch { }
-  }
-
-  try {
-    await targetChannel.send({
-      type: "broadcast",
-      event: "u2u:status",
-      payload: presence,
-    });
-  } catch { }
+  await broadcastToUserInbox(receiverUid, "u2u:status", presence);
 
   if ((channelRefCounts.get(channelName) || 0) <= 0) {
-    scheduleChannelIdleClose(channelName, targetChannel);
+    const targetChannel = activeInboxChannels.get(channelName);
+    if (targetChannel) {
+      scheduleChannelIdleClose(channelName, targetChannel);
+    }
   }
 };
 
@@ -357,34 +380,16 @@ export const broadcastPresenceStatus = async (
 export const sendFastU2UMessage = async (receiverUid: string, message: ChatMessage) => {
   try {
     const channelName = `user_inbox_${receiverUid}`;
-    let targetChannel = activeInboxChannels.get(channelName);
-
-    if (!targetChannel) {
-      targetChannel = supabase.channel(channelName);
-      activeInboxChannels.set(channelName, targetChannel);
-      channelRefCounts.set(channelName, 0);
-      // non-blocking subscribe
-      try {
-        targetChannel.subscribe((s: string) => { });
-      } catch { }
-    }
-
-    // Keep the channel alive while sending
     channelRefCounts.set(channelName, (channelRefCounts.get(channelName) || 0) + 1);
     cancelChannelIdleClose(channelName);
-
     sentMessageIds.add(message.id || "");
-
-    await targetChannel.send({
-      type: "broadcast",
-      event: "u2u:message",
-      payload: message,
-    });
-
-    // decrement refcount and schedule idle close if none left
+    await broadcastToUserInbox(receiverUid, "u2u:message", message);
     channelRefCounts.set(channelName, (channelRefCounts.get(channelName) || 1) - 1);
     if ((channelRefCounts.get(channelName) || 0) <= 0) {
-      scheduleChannelIdleClose(channelName, targetChannel);
+      const targetChannel = activeInboxChannels.get(channelName);
+      if (targetChannel) {
+        scheduleChannelIdleClose(channelName, targetChannel);
+      }
     }
   } catch (err) {
     console.warn("[realtimeEventBus] sendFastU2UMessage error:", err);
@@ -397,29 +402,12 @@ export const sendFastU2UMessage = async (receiverUid: string, message: ChatMessa
 export const sendFastU2UTyping = async (receiverUid: string, senderId: string, typing: boolean) => {
   try {
     const channelName = `user_inbox_${receiverUid}`;
-    let targetChannel = activeInboxChannels.get(channelName);
-
-    if (!targetChannel) {
-      targetChannel = supabase.channel(channelName);
-      activeInboxChannels.set(channelName, targetChannel);
-      channelRefCounts.set(channelName, 0);
-      try {
-        targetChannel.subscribe((s: string) => { });
-      } catch { }
-    }
-
-    // do not increase refcount for typing (fire-and-forget)
-    try {
-      await targetChannel.send({
-        type: "broadcast",
-        event: "u2u:typing",
-        payload: { senderId, typing },
-      });
-    } catch { }
-
-    // schedule idle close since this was only a fire-and-forget use
+    await broadcastToUserInbox(receiverUid, "u2u:typing", { senderId, typing });
     if ((channelRefCounts.get(channelName) || 0) <= 0) {
-      scheduleChannelIdleClose(channelName, targetChannel);
+      const targetChannel = activeInboxChannels.get(channelName);
+      if (targetChannel) {
+        scheduleChannelIdleClose(channelName, targetChannel);
+      }
     }
   } catch {
     // Ignore typing throttle errors
@@ -435,41 +423,16 @@ export const sendFastFriendRequestNotification = async (
 ) => {
   try {
     const channelName = `user_inbox_${targetUid}`;
-    let targetChannel = activeInboxChannels.get(channelName);
-    if (!targetChannel) {
-      targetChannel = supabase.channel(channelName);
-      activeInboxChannels.set(channelName, targetChannel);
-      channelRefCounts.set(channelName, 0);
-      await new Promise<void>((resolve) => {
-        let finished = false;
-        const timeout = setTimeout(() => {
-          if (!finished) {
-            finished = true;
-            resolve();
-          }
-        }, 1500);
-        targetChannel.subscribe((status: string) => {
-          if (!finished && (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT")) {
-            finished = true;
-            clearTimeout(timeout);
-            resolve();
-          }
-        });
-      });
-    }
-
-    await targetChannel.send({
-      type: "broadcast",
-      event: "u2u:friend_request",
-      payload: {
-        fromUid: fromUser.uid,
-        fromName: fromUser.displayName,
-        fromAvatar: fromUser.photoURL || null,
-      },
+    await broadcastToUserInbox(targetUid, "u2u:friend_request", {
+      fromUid: fromUser.uid,
+      fromName: fromUser.displayName,
+      fromAvatar: fromUser.photoURL || null,
     });
-
     if ((channelRefCounts.get(channelName) || 0) <= 0) {
-      scheduleChannelIdleClose(channelName, targetChannel);
+      const targetChannel = activeInboxChannels.get(channelName);
+      if (targetChannel) {
+        scheduleChannelIdleClose(channelName, targetChannel);
+      }
     }
   } catch (err) {
     console.warn("[realtimeEventBus] sendFastFriendRequestNotification error:", err);
@@ -485,41 +448,16 @@ export const sendFastFriendAcceptedNotification = async (
 ) => {
   try {
     const channelName = `user_inbox_${targetUid}`;
-    let targetChannel = activeInboxChannels.get(channelName);
-    if (!targetChannel) {
-      targetChannel = supabase.channel(channelName);
-      activeInboxChannels.set(channelName, targetChannel);
-      channelRefCounts.set(channelName, 0);
-      await new Promise<void>((resolve) => {
-        let finished = false;
-        const timeout = setTimeout(() => {
-          if (!finished) {
-            finished = true;
-            resolve();
-          }
-        }, 1500);
-        targetChannel.subscribe((status: string) => {
-          if (!finished && (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT")) {
-            finished = true;
-            clearTimeout(timeout);
-            resolve();
-          }
-        });
-      });
-    }
-
-    await targetChannel.send({
-      type: "broadcast",
-      event: "u2u:friend_accepted",
-      payload: {
-        friendUid: fromUser.uid,
-        friendName: fromUser.displayName,
-        friendAvatar: fromUser.photoURL || null,
-      },
+    await broadcastToUserInbox(targetUid, "u2u:friend_accepted", {
+      friendUid: fromUser.uid,
+      friendName: fromUser.displayName,
+      friendAvatar: fromUser.photoURL || null,
     });
-
     if ((channelRefCounts.get(channelName) || 0) <= 0) {
-      scheduleChannelIdleClose(channelName, targetChannel);
+      const targetChannel = activeInboxChannels.get(channelName);
+      if (targetChannel) {
+        scheduleChannelIdleClose(channelName, targetChannel);
+      }
     }
   } catch (err) {
     console.warn("[realtimeEventBus] sendFastFriendAcceptedNotification error:", err);
@@ -535,37 +473,12 @@ export const sendFastFriendRemovedNotification = async (
 ) => {
   try {
     const channelName = `user_inbox_${targetUid}`;
-    let targetChannel = activeInboxChannels.get(channelName);
-    if (!targetChannel) {
-      targetChannel = supabase.channel(channelName);
-      activeInboxChannels.set(channelName, targetChannel);
-      channelRefCounts.set(channelName, 0);
-      await new Promise<void>((resolve) => {
-        let finished = false;
-        const timeout = setTimeout(() => {
-          if (!finished) {
-            finished = true;
-            resolve();
-          }
-        }, 1500);
-        targetChannel.subscribe((status: string) => {
-          if (!finished && (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT")) {
-            finished = true;
-            clearTimeout(timeout);
-            resolve();
-          }
-        });
-      });
-    }
-
-    await targetChannel.send({
-      type: "broadcast",
-      event: "u2u:friend_removed",
-      payload: { fromUid: myUid },
-    });
-
+    await broadcastToUserInbox(targetUid, "u2u:friend_removed", { fromUid: myUid });
     if ((channelRefCounts.get(channelName) || 0) <= 0) {
-      scheduleChannelIdleClose(channelName, targetChannel);
+      const targetChannel = activeInboxChannels.get(channelName);
+      if (targetChannel) {
+        scheduleChannelIdleClose(channelName, targetChannel);
+      }
     }
   } catch (err) {
     console.warn("[realtimeEventBus] sendFastFriendRemovedNotification error:", err);
@@ -582,24 +495,12 @@ export const sendFastReadReceipt = async (
 ) => {
   try {
     const channelName = `user_inbox_${targetUid}`;
-    let targetChannel = activeInboxChannels.get(channelName);
-    if (!targetChannel) {
-      targetChannel = supabase.channel(channelName);
-      activeInboxChannels.set(channelName, targetChannel);
-      channelRefCounts.set(channelName, 0);
-      try {
-        targetChannel.subscribe((s: string) => {});
-      } catch {}
-    }
-
-    await targetChannel.send({
-      type: "broadcast",
-      event: "u2u:read_receipt",
-      payload: { readerUid, chatId },
-    });
-
+    await broadcastToUserInbox(targetUid, "u2u:read_receipt", { readerUid, chatId });
     if ((channelRefCounts.get(channelName) || 0) <= 0) {
-      scheduleChannelIdleClose(channelName, targetChannel);
+      const targetChannel = activeInboxChannels.get(channelName);
+      if (targetChannel) {
+        scheduleChannelIdleClose(channelName, targetChannel);
+      }
     }
   } catch (err) {
     console.warn("[realtimeEventBus] sendFastReadReceipt error:", err);

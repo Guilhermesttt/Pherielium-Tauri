@@ -156,32 +156,28 @@ export async function checkGithubUpdates(getInstalledVersion: () => Promise<stri
       };
 
       let release: GithubRelease | null = null;
-      const res = await fetch(GITHUB_API_LATEST_RELEASE_URL, { headers });
+      // Prefer list endpoint first to avoid noisy 404s when /releases/latest is unset.
+      const listRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO_SLUG}/releases?per_page=5`, { headers });
+      if (listRes.ok) {
+        const list = (await listRes.json()) as GithubRelease[];
+        release = list.find((r) => !r.draft && r.tag_name) ?? null;
+      }
 
-      if (res.ok) {
-        release = (await res.json()) as GithubRelease;
-      } else if (res.status === 404) {
-        // Fallback: se /releases/latest retornar 404 (comum quando a release está como pre-release ou rascunho),
-        // consulta a lista de releases e seleciona a mais recente publicada (não-draft)
-        const fallbackRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO_SLUG}/releases?per_page=5`, { headers });
-        if (fallbackRes.ok) {
-          const list = (await fallbackRes.json()) as GithubRelease[];
-          const candidate = list.find((r) => !r.draft && r.tag_name);
-          if (candidate) {
-            release = candidate;
-          } else {
-            // Nenhuma release pública publicada encontrada
-            setState(
-              { status: "not-available", info: null, progress: null, error: "" },
-              "update-not-available",
-            );
-            return getAppUpdateState();
-          }
+      if (!release) {
+        const latestRes = await fetch(GITHUB_API_LATEST_RELEASE_URL, { headers });
+        if (latestRes.ok) {
+          release = (await latestRes.json()) as GithubRelease;
+        } else if (latestRes.status === 404 && listRes.ok) {
+          setState(
+            { status: "not-available", info: null, progress: null, error: "" },
+            "update-not-available",
+          );
+          return getAppUpdateState();
+        } else if (!listRes.ok) {
+          throw new Error(`GitHub API ${listRes.status} (${GITHUB_REPO_SLUG})`);
         } else {
-          throw new Error(`GitHub API ${res.status} (${GITHUB_REPO_SLUG})`);
+          throw new Error(`GitHub API ${latestRes.status} (${GITHUB_REPO_SLUG})`);
         }
-      } else {
-        throw new Error(`GitHub API ${res.status} (${GITHUB_REPO_SLUG})`);
       }
 
       const remoteTag = String(release?.tag_name || "").trim();

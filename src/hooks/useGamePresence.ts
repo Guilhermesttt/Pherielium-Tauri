@@ -8,6 +8,11 @@ import {
   recordLibrarySession,
   updateLibraryGame,
 } from "../services/localLibrary";
+import {
+  executablePathsEqual,
+  normalizeExecutablePath,
+  type RunningProcessMatch,
+} from "../utils/processIdentity";
 
 interface UseGamePresenceProps {
   userUid?: string;
@@ -17,7 +22,13 @@ interface UseGamePresenceProps {
 }
 
 export const UNVERIFIED_URI_PRESENCE_TTL_MS = 12 * 60 * 60 * 1000;
-export type PresenceVerificationMode = "none" | "provisional" | "process" | "steam";
+export type PresenceVerificationMode = "none" | "pending" | "provisional" | "process" | "steam";
+
+export interface MarkPresenceOptions {
+  confirmed?: boolean;
+  processStartTimeMs?: number | null;
+  pid?: number | null;
+}
 
 async function ensureSteamInstalledMap(
   mapRef: React.MutableRefObject<Map<string, string>>,
@@ -76,6 +87,13 @@ export function useGamePresence({
   const activeSessionRef = useRef<{
     title: string;
     startedAt: number;
+    executablePath: string;
+    pid?: number;
+  } | null>(null);
+  const pendingLaunchRef = useRef<{
+    title: string;
+    executablePath: string | null;
+    launchedAt: number;
   } | null>(null);
   const steamId = userProfile?.steamId;
 
@@ -116,6 +134,7 @@ export function useGamePresence({
       console.error("Erro ao registrar sessao local:", error);
     });
     presenceRevisionRef.current += 1;
+    pendingLaunchRef.current = null;
     provisionalPresenceDeadlineRef.current = null;
     processMissesRef.current = 0;
     steamPresenceMissesRef.current = 0;
@@ -127,9 +146,47 @@ export function useGamePresence({
     setProvisionalPresenceExpiresAt(null);
   }, [finalizeActiveSession]);
 
-  const markCurrentPresence = useCallback((title: string, executablePath: string | null) => {
-    const normalizedExecutablePath = executablePath?.trim() || null;
-    const provisionalDeadline = normalizedExecutablePath
+  const beginConfirmedSession = useCallback((
+    title: string,
+    executablePath: string,
+    processStartTimeMs?: number | null,
+    pid?: number | null,
+  ) => {
+    const normalizedExecutablePath = normalizeExecutablePath(executablePath);
+    const startedAt = processStartTimeMs && processStartTimeMs > 0
+      ? processStartTimeMs
+      : Date.now();
+    const existing = activeSessionRef.current;
+
+    if (
+      existing
+      && existing.title === title
+      && executablePathsEqual(existing.executablePath, normalizedExecutablePath)
+    ) {
+      return;
+    }
+
+    void finalizeActiveSession().catch(() => undefined);
+    activeSessionRef.current = {
+      title,
+      startedAt,
+      executablePath: normalizedExecutablePath,
+      pid: pid ?? undefined,
+    };
+    pendingLaunchRef.current = null;
+    setSessionStartedAt(new Date(startedAt).toISOString());
+  }, [finalizeActiveSession]);
+
+  const markCurrentPresence = useCallback((
+    title: string,
+    executablePath: string | null,
+    options: MarkPresenceOptions = {},
+  ) => {
+    const normalizedExecutablePath = executablePath
+      ? normalizeExecutablePath(executablePath)
+      : null;
+    const confirmed = options.confirmed ?? false;
+    const provisionalDeadline = normalizedExecutablePath || confirmed
       ? null
       : Date.now() + UNVERIFIED_URI_PRESENCE_TTL_MS;
 
@@ -138,21 +195,46 @@ export function useGamePresence({
     processMissesRef.current = 0;
     steamPresenceMissesRef.current = 0;
     steamPresenceLastConfirmedAtRef.current = null;
-    if (title !== currentPresenceGame) {
-      void finalizeActiveSession().catch(() => undefined);
-      const startedAt = Date.now();
-      activeSessionRef.current = { title, startedAt };
-      setSessionStartedAt(new Date(startedAt).toISOString());
+
+    if (confirmed && normalizedExecutablePath) {
+      beginConfirmedSession(
+        title,
+        normalizedExecutablePath,
+        options.processStartTimeMs,
+        options.pid,
+      );
+      pendingLaunchRef.current = null;
+    } else if (normalizedExecutablePath) {
+      pendingLaunchRef.current = {
+        title,
+        executablePath: normalizedExecutablePath,
+        launchedAt: Date.now(),
+      };
+      if (activeSessionRef.current) {
+        void finalizeActiveSession().catch(() => undefined);
+        activeSessionRef.current = null;
+        setSessionStartedAt(null);
+      }
+    } else {
+      pendingLaunchRef.current = null;
+      if (title !== currentPresenceGame) {
+        void finalizeActiveSession().catch(() => undefined);
+        activeSessionRef.current = null;
+        setSessionStartedAt(null);
+      }
     }
+
     setCurrentPresenceGame(title);
     setCurrentPresenceExecutablePath(normalizedExecutablePath);
-    setPresenceVerification(normalizedExecutablePath ? "process" : "provisional");
+    setPresenceVerification(
+      confirmed
+        ? (normalizedExecutablePath ? "process" : "provisional")
+        : (normalizedExecutablePath ? "pending" : "provisional"),
+    );
     setProvisionalPresenceExpiresAt(
       provisionalDeadline == null ? null : new Date(provisionalDeadline).toISOString(),
     );
 
-    // Sem .exe monitoravel (ex: steam://run), a presença fica provisional.
-    // Assim que o mapa Steam tiver o caminho, promove para watch por processo.
     if (!normalizedExecutablePath) {
       const revision = presenceRevisionRef.current;
       void (async () => {
@@ -161,29 +243,50 @@ export function useGamePresence({
         const matchedGame = games.find((candidate) => {
           const candidateTitle = candidate.title.trim().toLowerCase();
           const presenceTitle = title.trim().toLowerCase();
-          return (
-            candidateTitle === presenceTitle
-            || candidateTitle.includes(presenceTitle)
-            || presenceTitle.includes(candidateTitle)
-          );
+          return candidateTitle === presenceTitle;
         });
         const resolved = resolveMonitorablePathForGame(matchedGame, steamMap);
         if (!resolved || presenceRevisionRef.current !== revision) return;
         if (window.electronAPI?.setGameWatchTarget) {
           void window.electronAPI.setGameWatchTarget(resolved).catch(() => undefined);
         }
-        setCurrentPresenceExecutablePath(resolved);
-        provisionalPresenceDeadlineRef.current = null;
-        setPresenceVerification("process");
+        setCurrentPresenceExecutablePath(normalizeExecutablePath(resolved));
+        setPresenceVerification("pending");
+        pendingLaunchRef.current = {
+          title,
+          executablePath: normalizeExecutablePath(resolved),
+          launchedAt: Date.now(),
+        };
         setProvisionalPresenceExpiresAt(null);
       })();
     } else if (window.electronAPI?.setGameWatchTarget) {
-      void window.electronAPI.setGameWatchTarget(normalizedExecutablePath).catch(() => undefined);
+      void window.electronAPI.setGameWatchTarget(executablePath).catch(() => undefined);
     }
-  }, [currentPresenceGame, finalizeActiveSession, games]);
+  }, [beginConfirmedSession, currentPresenceGame, finalizeActiveSession, games]);
+
+  const prepareLaunchPresence = useCallback((title: string, executablePath: string | null) => {
+    markCurrentPresence(title, executablePath, { confirmed: false });
+  }, [markCurrentPresence]);
+
+  const resolveRunningMatches = useCallback(async (
+    executablePaths: string[],
+  ): Promise<RunningProcessMatch[]> => {
+    if (executablePaths.length === 0) return [];
+    if (window.electronAPI?.detectRunningGameDetails) {
+      return window.electronAPI.detectRunningGameDetails(executablePaths);
+    }
+    if (!window.electronAPI?.detectRunningGames) return [];
+    const runningPaths = await window.electronAPI.detectRunningGames(executablePaths);
+    return runningPaths.map((requestedPath) => ({
+      requestedPath,
+      matchedPath: requestedPath,
+      pid: 0,
+      processStartTimeMs: null,
+    }));
+  }, []);
 
   const syncDetectedRunningGame = useCallback(async () => {
-    if (!window.electronAPI?.detectRunningGames || games.length === 0) {
+    if ((!window.electronAPI?.detectRunningGames && !window.electronAPI?.detectRunningGameDetails) || games.length === 0) {
       return false;
     }
 
@@ -201,30 +304,34 @@ export function useGamePresence({
     if (monitorableGames.length === 0) return false;
 
     try {
-      const runningPaths = await window.electronAPI.detectRunningGames(
+      const matches = await resolveRunningMatches(
         monitorableGames.map((entry) => entry.executablePath),
       );
       if (presenceRevisionRef.current !== requestRevision) return false;
 
-      const normalizedRunning = new Set(runningPaths.map((value) => value.trim().toLowerCase()));
-
       const matchedCurrent = currentPresenceExecutablePath
-        ? monitorableGames.find(
-            (entry) =>
-              entry.executablePath.trim().toLowerCase() === currentPresenceExecutablePath.trim().toLowerCase() &&
-              normalizedRunning.has(entry.executablePath.trim().toLowerCase()),
-          )
+        ? matches.find((match) => executablePathsEqual(match.requestedPath, currentPresenceExecutablePath))
         : undefined;
 
-      const matchedGame =
-        matchedCurrent ||
-        monitorableGames.find((entry) => normalizedRunning.has(entry.executablePath.trim().toLowerCase()));
+      const matchedEntry = matchedCurrent
+        ? (() => {
+            const entry = monitorableGames.find((candidate) =>
+              executablePathsEqual(candidate.executablePath, matchedCurrent.requestedPath));
+            return entry ? { ...entry, match: matchedCurrent } : undefined;
+          })()
+        : matches.reduce<{ game: Game; executablePath: string; match: RunningProcessMatch } | undefined>((found, match) => {
+            if (found) return found;
+            const entry = monitorableGames.find((candidate) =>
+              executablePathsEqual(candidate.executablePath, match.requestedPath));
+            return entry ? { ...entry, match } : undefined;
+          }, undefined);
 
-      if (!matchedGame) {
-        // Se temos um executável monitorado, apenas finaliza se já esgotou as chances e o período de carência
+      if (!matchedEntry) {
         if (currentPresenceExecutablePath) {
-          const startedAt = activeSessionRef.current?.startedAt || 0;
-          const elapsed = Date.now() - startedAt;
+          const pendingStartedAt = pendingLaunchRef.current?.launchedAt
+            || activeSessionRef.current?.startedAt
+            || 0;
+          const elapsed = Date.now() - pendingStartedAt;
           if (elapsed >= 45_000 && processMissesRef.current >= 3) {
             clearCurrentPresence();
           }
@@ -233,20 +340,17 @@ export function useGamePresence({
       }
 
       processMissesRef.current = 0;
-      if (
-        currentPresenceGame !== matchedGame.game.title ||
-        currentPresenceExecutablePath !== matchedGame.executablePath
-      ) {
-        markCurrentPresence(matchedGame.game.title, matchedGame.executablePath);
-      } else if (presenceVerification !== "process") {
-        setPresenceVerification("process");
-      }
+      const resolvedPath = matchedEntry.match.matchedPath || matchedEntry.executablePath;
+      markCurrentPresence(matchedEntry.game.title, resolvedPath, {
+        confirmed: true,
+        processStartTimeMs: matchedEntry.match.processStartTimeMs,
+        pid: matchedEntry.match.pid,
+      });
       return true;
     } catch {
-      // Presence auto-detection is best-effort.
       return false;
     }
-  }, [clearCurrentPresence, currentPresenceExecutablePath, currentPresenceGame, games, markCurrentPresence, presenceVerification]);
+  }, [clearCurrentPresence, currentPresenceExecutablePath, games, markCurrentPresence, resolveRunningMatches]);
 
   const verifyRunningState = useCallback(async () => {
     const requestRevision = presenceRevisionRef.current;
@@ -264,15 +368,15 @@ export function useGamePresence({
         }
 
         // Processo não respondeu neste tick. Verifica período de carência de inicialização (45s)
-        const startedAt = activeSessionRef.current?.startedAt || 0;
-        const elapsed = Date.now() - startedAt;
+        const pendingStartedAt = pendingLaunchRef.current?.launchedAt
+          || activeSessionRef.current?.startedAt
+          || 0;
+        const elapsed = Date.now() - pendingStartedAt;
         if (elapsed < 45_000) {
-          // Jogo ainda está carregando/iniciando
           return;
         }
 
         processMissesRef.current += 1;
-        // Requer 3 falhas consecutivas (~30s) para evitar fechar presença por falso positivo
         if (processMissesRef.current >= 3) {
           const matchedDetectedGame = await syncDetectedRunningGame();
           if (!matchedDetectedGame && presenceRevisionRef.current === requestRevision) {
@@ -287,6 +391,16 @@ export function useGamePresence({
 
     const matchedDetectedGame = await syncDetectedRunningGame();
     if (matchedDetectedGame || presenceRevisionRef.current !== requestRevision) return;
+
+    const pendingLaunch = pendingLaunchRef.current;
+    if (
+      pendingLaunch
+      && !activeSessionRef.current
+      && Date.now() - pendingLaunch.launchedAt >= 90_000
+    ) {
+      clearCurrentPresence();
+      return;
+    }
 
     const provisionalDeadline = provisionalPresenceDeadlineRef.current;
     if (
@@ -574,30 +688,22 @@ export function useGamePresence({
     if (!api?.onGameWatchStarted || !api?.onGameWatchEnded) return;
 
     const unlistenStarted = api.onGameWatchStarted((payload) => {
-      const exe = payload?.executable;
-      if (!exe) return;
+      const matchedPath = payload?.matchedPath || payload?.executable;
+      if (!matchedPath) return;
       processMissesRef.current = 0;
-      setPresenceVerification("process");
 
-      const exeBase = exe.split(/[\\/]/).pop()?.toLowerCase();
-      const exeStem = exeBase?.replace(/\.exe$/i, "");
+      const findByExactPath = (candidatePath: string | null | undefined) =>
+        executablePathsEqual(candidatePath, matchedPath);
 
-      const matchByExeName = (candidatePath: string | null | undefined) => {
-        const gExe = (candidatePath || "").split(/[\\/]/).pop()?.toLowerCase();
-        const gStem = gExe?.replace(/\.exe$/i, "");
-        return Boolean(
-          (gExe && exeBase && (gExe === exeBase || exeBase.includes(gExe) || gExe.includes(exeBase)))
-          || (gStem && exeStem && (gStem === exeStem || exeStem.includes(gStem) || gStem.includes(exeStem))),
-        );
-      };
-
-      let matched = games.find((g) => matchByExeName(g.executablePath));
-      let matchedExe = matched ? (getMonitorableExecutablePath(matched) || matched.executablePath || exe) : null;
+      let matched = games.find((game) => findByExactPath(getMonitorableExecutablePath(game) || game.executablePath));
+      let matchedExe = matched
+        ? (getMonitorableExecutablePath(matched) || matched.executablePath || matchedPath)
+        : null;
 
       if (!matched) {
         for (const [appId, installedPath] of steamInstalledMapRef.current.entries()) {
-          if (!matchByExeName(installedPath)) continue;
-          matched = games.find((g) => String(g.steamAppId || "") === String(appId));
+          if (!findByExactPath(installedPath)) continue;
+          matched = games.find((game) => String(game.steamAppId || "") === String(appId));
           if (matched) {
             matchedExe = installedPath;
             break;
@@ -605,10 +711,12 @@ export function useGamePresence({
         }
       }
 
-      if (matched && matched.title !== currentPresenceGame) {
-        markCurrentPresence(matched.title, matchedExe);
-      } else if (matched && matchedExe && matchedExe !== currentPresenceExecutablePath) {
-        setCurrentPresenceExecutablePath(matchedExe);
+      if (matched) {
+        markCurrentPresence(matched.title, matchedExe || matchedPath, {
+          confirmed: true,
+          processStartTimeMs: payload?.processStartTimeMs,
+          pid: payload?.pid,
+        });
       }
     });
 
@@ -629,6 +737,7 @@ export function useGamePresence({
     presenceVerification,
     provisionalPresenceExpiresAt,
     markCurrentPresence,
+    prepareLaunchPresence,
     clearCurrentPresence,
     syncDetectedRunningGame,
   };

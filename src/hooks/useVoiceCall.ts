@@ -32,19 +32,34 @@ import {
   addChannelStatusListener,
   type ChannelConnectionStatus,
 } from "../services/voiceCall";
-import type { CallRoomConfig, RoomCategory, VoiceRoomParticipant } from "../types/voice-governance";
+import type { CallInviteMeta, CallRoomConfig, RoomCategory, VoiceRoomParticipant } from "../types/voice-governance";
+import {
+  MAX_CALL_PARTICIPANTS,
+  callCapacityMessage,
+  canAcceptNewParticipant,
+  isPersistentVoiceRoomId,
+} from "../services/voiceCall/limits";
+import { shouldUseP2PFallback } from "../services/voiceCall/transportPolicy";
 import { getChatId } from "../services/chat";
 import { getTurnServers } from "../services/turnCredentials";
 import { buildProcessedAudioTrack } from "../services/audio/audioProcessing";
 import { attachKrispToTrack, detachKrispFromTrack } from "../services/audio/krispNoiseFilter";
-import { createCallAudioBarrier, type CallAudioBarrierInstance } from "../services/audio/CallAudioBarrier";
+import {
+  captureNativeScreenShare,
+  isDisplayMediaCancelledError,
+  publishScreenShareTracks,
+  releaseScreenCaptureStream,
+  screenShareProfile,
+  screenShareVideoConstraints,
+  SCREEN_SHARE_BITRATE,
+  type ScreenShareOptions,
+} from "../services/voiceCall/screenShare";
 import { createVoiceRoom, joinVoiceRoom, leaveVoiceRoom } from "../services/voiceRooms";
 import {
   detachScreenTracksFromPeers,
   replaceOutgoingAudioTrack,
   unpublishScreenPublications,
 } from "@/services/voiceCall/voiceMediaLifecycle";
-import { createTauriScreenCaptureStream } from "@/services/voiceCall/tauriScreenCapture";
 import {
   fetchLiveKitToken,
   isLiveKitCompatibleRoom,
@@ -76,10 +91,12 @@ import sfxStreamStart from "../sounds/Stoat_SFX/stream_start-C5XqRk1f.ogg";
 import sfxStreamEnd from "../sounds/Stoat_SFX/stream_end-CBLpDPZy.ogg";
 import sfxFullMute from "../sounds/Stoat_SFX/full_mute.ogg";
 
-const playSfx = (src: string, volume = 1.0) => {
+const voiceSfxVolumeRef = { current: 1.0 };
+
+const playSfx = (src: string, volumeScale = 1.0) => {
   try {
     const audio = new Audio(src);
-    audio.volume = volume;
+    audio.volume = Math.max(0, Math.min(1, voiceSfxVolumeRef.current * volumeScale));
     void audio.play().catch(() => { });
   } catch {
     // ignore
@@ -91,13 +108,8 @@ export type VoiceInputMode = "voice-activity" | "push-to-talk";
 /** Pipeline de ruído do microfone */
 export type NoiseSuppressionMode = "none" | "native" | "rnnoise" | "krisp";
 
-export interface ScreenShareOptions {
-  sourceId?: string;
-  resolution?: "720p" | "1080p" | "source";
-  fps?: 30 | 60;
-  withAudio?: boolean;
-  callAudioBarrier?: boolean;
-}
+export type { ScreenShareOptions } from "../services/voiceCall/screenShare";
+export { SCREEN_SHARE_BITRATE, screenShareProfile } from "../services/voiceCall/screenShare";
 
 /**
  * Bitrate máximo por perfil (bits/s) — mira nitidez de gameplay/UI no LiveKit.
@@ -110,34 +122,8 @@ export interface ScreenShareOptions {
  * | 1080p30  | 8.0 Mbps | ~3.6 |
  * | 1080p60  | 12 Mbps  | ~5.4 |
  */
-export const SCREEN_SHARE_BITRATE: Record<"720p" | "1080p", Record<30 | 60, number>> = {
-  "720p": {
-    30: 4_500_000,
-    60: 6_500_000,
-  },
-  "1080p": {
-    30: 8_000_000,
-    60: 12_000_000,
-  },
-};
-
 /** Teto do Room.publishDefaults — cobre o perfil mais alto (1080p60). */
 export const SCREEN_SHARE_ROOM_MAX_BITRATE = SCREEN_SHARE_BITRATE["1080p"][60];
-
-export const screenShareProfile = (options: ScreenShareOptions) => {
-  const fps: 30 | 60 = options.fps === 30 ? 30 : 60;
-  const resolution: "720p" | "1080p" = options.resolution === "720p" ? "720p" : "1080p";
-  const width = resolution === "720p" ? 1280 : 1920;
-  const height = resolution === "720p" ? 720 : 1080;
-  const bitrate = SCREEN_SHARE_BITRATE[resolution][fps];
-  return { fps, resolution, width, height, bitrate };
-};
-
-const screenShareVideoConstraints = (width: number, height: number, fps: number): MediaTrackConstraints => ({
-  width: { ideal: width, max: width },
-  height: { ideal: height, max: height },
-  frameRate: { ideal: fps, max: fps },
-});
 
 const lockRemoteScreenShareQuality = (publication: { source?: unknown; setVideoQuality?: (q: typeof LiveKitVideoQuality.HIGH) => void }) => {
   if (publication.source !== LiveKitTrack.Source.ScreenShare) return;
@@ -207,9 +193,11 @@ interface UseVoiceCallProps {
   user: AuthUser | null;
   userProfile: UserProfile | null;
   notify: (msg: string, type: "success" | "error" | "info") => void;
+  /** 0–1 scale from launcher effects volume preference */
+  voiceSfxVolume?: number;
 }
 
-export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) => {
+export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: UseVoiceCallProps) => {
   const [callState, setCallState] = useState<CallState>("idle");
   const [session, setSession] = useState<VoiceCallSession | null>(null);
   const [incomingInvite, setIncomingInvite] = useState<CallInvitePayload | null>(null);
@@ -285,6 +273,11 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
   }, [session?.chatId]);
 
   const [activeCallsByFriend, setActiveCallsByFriend] = useState<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    const clamped = Math.max(0, Math.min(1, Number(voiceSfxVolume) || 0));
+    voiceSfxVolumeRef.current = clamped;
+  }, [voiceSfxVolume]);
 
   const isCallActiveWithFriend = useCallback(
     (friendIdOrUid: string) => {
@@ -636,7 +629,6 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
   /** Cleanup function for the active audio processing chain (gain+compressor+RNNoise). */
   const audioProcCleanupRef = useRef<(() => void) | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
-  const screenBarrierRef = useRef<CallAudioBarrierInstance | null>(null);
   const screenVideoTrackRef = useRef<MediaStreamTrack | null>(null);
   const screenAudioTrackRef = useRef<MediaStreamTrack | null>(null);
   const screenShareStoppingRef = useRef(false);
@@ -664,6 +656,7 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
 
   // LiveKit SFU as primary transport flag
   const useLiveKitPrimaryRef = useRef(true);
+  const memberJoinedAnnouncedRef = useRef<Set<string>>(new Set());
   const livekitConnectedRef = useRef(false);
 
   // Live synchronization of remote participant & stream volume changes
@@ -1566,7 +1559,7 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
       if (type === "call") {
         const audio = new Audio(sfxIncomingCall);
         audio.loop = true;
-        audio.volume = 1.0;
+        audio.volume = Math.max(0, Math.min(1, voiceSfxVolumeRef.current));
         activeRingtoneAudioRef.current = audio;
         void audio.play().catch(() => { });
       } else if (type === "ringout") {
@@ -1574,7 +1567,7 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
         // Isso evita que o browser retome o áudio automaticamente ao restaurar a janela.
         const audio = new Audio(sfxRingingOut);
         audio.loop = false;
-        audio.volume = 0.85;
+        audio.volume = Math.max(0, Math.min(1, voiceSfxVolumeRef.current * 0.85));
         activeRingtoneAudioRef.current = audio;
         void audio.play().catch(() => { });
       } else if (type === "connect") {
@@ -1721,6 +1714,7 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
       unsubscribeSessionRef.current();
       unsubscribeSessionRef.current = null;
     }
+    memberJoinedAnnouncedRef.current.clear();
 
     // Se estiver em uma sala persistente, registra a saída no backend
     if (sessionRef.current?.chatId && /^[0-9a-f-]{36}$/i.test(sessionRef.current.chatId)) {
@@ -1748,6 +1742,16 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
     setIncomingInvite(null);
     setCallDuration(0);
   }, []);
+
+  const announceMemberJoinedOnce = useCallback(
+    async (chatId: string, payload: CallMemberJoinedPayload) => {
+      const key = `${chatId}:${payload.uid}`;
+      if (memberJoinedAnnouncedRef.current.has(key)) return;
+      memberJoinedAnnouncedRef.current.add(key);
+      await sendCallMemberJoined(chatId, payload);
+    },
+    [],
+  );
 
   // Cleanup on unmount
   useEffect(() => {
@@ -2027,6 +2031,26 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
               }
             }
           });
+        });
+
+        setSession((prev) => {
+          if (!prev) return prev;
+          const merged = new Map<string, VoiceCallParticipant>();
+          for (const p of prev.participants || []) merged.set(p.uid, p);
+          room.remoteParticipants.forEach((participant) => {
+            let avatar: string | undefined;
+            try {
+              if (participant.metadata) {
+                avatar = JSON.parse(participant.metadata)?.avatar;
+              }
+            } catch { /* ignore */ }
+            merged.set(participant.identity, {
+              uid: participant.identity,
+              name: participant.name || participant.identity,
+              avatar,
+            });
+          });
+          return { ...prev, participants: Array.from(merged.values()) };
         });
 
         // Publish raw mic to LiveKit (processed stream stays for local metering/UI).
@@ -2823,14 +2847,19 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
           console.warn("[ICE Preflight] Warning:", preflightResult.value.error);
         }
 
+        const livekitError =
+          livekitResult.status === "rejected" ? livekitResult.reason : undefined;
+
         if (livekitResult.status === "fulfilled") {
           livekitConnected = true;
           useLiveKitPrimaryRef.current = true;
           setMediaTransport("livekit");
-        } else {
-          console.warn("[LiveKit] SFU connection failed, falling back to P2P mesh:", livekitResult.reason);
+        } else if (shouldUseP2PFallback("start-call", livekitError)) {
+          console.warn("[LiveKit] SFU connection failed, falling back to P2P mesh:", livekitError);
           useLiveKitPrimaryRef.current = false;
           setMediaTransport("p2p");
+        } else {
+          throw new Error("Não foi possível conectar ao servidor de voz.");
         }
 
         // Subscribe to call session for SIGNALING only (call control: mute, hangup, etc.)
@@ -2851,7 +2880,7 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
         });
 
         // Notifica a sala caso o participante já esteja nela aguardando
-        await sendCallMemberJoined(chatId, {
+        await announceMemberJoinedOnce(chatId, {
           uid: user.uid,
           name: displayName,
           avatar: avatarUrl || null,
@@ -2895,7 +2924,7 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
         cleanUpCall();
       }
     },
-    [acquireAudioStream, applyAudioProcessingChain, callState, cleanUpCall, createPeerConnectionForPeer, createUnifiedSessionHandlers, inputMode, notify, playRingtone, selectedVideoInput, setupVoiceAnalyzer, user, userProfile],
+    [acquireAudioStream, announceMemberJoinedOnce, applyAudioProcessingChain, callState, cleanUpCall, createPeerConnectionForPeer, createUnifiedSessionHandlers, inputMode, notify, playRingtone, selectedVideoInput, setupVoiceAnalyzer, user, userProfile],
   );
 
   // ANSWER CALL (Callee 1:1) - LiveKit SFU Primary
@@ -2995,14 +3024,19 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
           console.warn("[ICE Preflight] Warning:", preflightResult.value.error);
         }
 
+        const livekitError =
+          livekitResult.status === "rejected" ? livekitResult.reason : undefined;
+
         if (livekitResult.status === "fulfilled") {
           livekitConnected = true;
           useLiveKitPrimaryRef.current = true;
           setMediaTransport("livekit");
-        } else {
-          console.warn("[LiveKit] SFU connection failed, falling back to P2P mesh:", livekitResult.reason);
+        } else if (shouldUseP2PFallback("answer-call", livekitError)) {
+          console.warn("[LiveKit] SFU connection failed, falling back to P2P mesh:", livekitError);
           useLiveKitPrimaryRef.current = false;
           setMediaTransport("p2p");
+        } else {
+          throw new Error("Não foi possível conectar ao servidor de voz.");
         }
 
         // Subscribe to call session for SIGNALING only (call control: mute, hangup, etc.)
@@ -3012,6 +3046,13 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
           user.uid,
           createUnifiedSessionHandlers(chatId),
         );
+
+        await announceMemberJoinedOnce(chatId, {
+          uid: user.uid,
+          name: displayName,
+          avatar: avatarUrl || null,
+          chatId,
+        });
 
         // If LiveKit failed, fall back to P2P mesh for media
         if (!livekitConnected) {
@@ -3045,7 +3086,7 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
       notify("Erro ao atender chamada.", "error");
       cleanUpCall();
     }
-  }, [acquireAudioStream, applyAudioProcessingChain, callState, cleanUpCall, createPeerConnectionForPeer, createUnifiedSessionHandlers, incomingInvite, inputMode, notify, playRingtone, selectedVideoInput, setupVoiceAnalyzer, stopRingtone, user, userProfile]);
+  }, [acquireAudioStream, announceMemberJoinedOnce, applyAudioProcessingChain, callState, cleanUpCall, createPeerConnectionForPeer, createUnifiedSessionHandlers, incomingInvite, inputMode, notify, playRingtone, selectedVideoInput, setupVoiceAnalyzer, stopRingtone, user, userProfile]);
 
   // JOIN ROOM (Persistente / Multi-Participante)
   const joinRoom = useCallback(
@@ -3062,6 +3103,10 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
           displayName,
           avatarUrl,
         });
+
+        if (joinResult.participants.length >= MAX_CALL_PARTICIPANTS) {
+          throw new Error(callCapacityMessage());
+        }
 
         const room = joinResult.room;
         const otherParticipants = joinResult.participants.filter((p) => p.uid !== user.uid);
@@ -3113,15 +3158,21 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
 
         // Connect to LiveKit SFU FIRST (primary transport for rooms)
         let livekitConnected = false;
+        let livekitError: unknown;
         try {
           await connectLiveKitRoom(room.id, user.uid, displayName, avatarUrl);
           livekitConnected = true;
           useLiveKitPrimaryRef.current = true;
           setMediaTransport("livekit");
         } catch (lkErr) {
-          console.warn("[LiveKit] SFU connection failed, falling back to P2P mesh:", lkErr);
-          useLiveKitPrimaryRef.current = false;
-          setMediaTransport("p2p");
+          livekitError = lkErr;
+          if (shouldUseP2PFallback("join-room", lkErr)) {
+            console.warn("[LiveKit] SFU connection failed, falling back to P2P mesh:", lkErr);
+            useLiveKitPrimaryRef.current = false;
+            setMediaTransport("p2p");
+          } else {
+            throw new Error("Não foi possível conectar ao servidor de voz.");
+          }
         }
 
         // Subscribe to call session for SIGNALING only (call control: mute, hangup, etc.)
@@ -3133,7 +3184,7 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
         );
 
         // Notifica a sala que entramos
-        await sendCallMemberJoined(room.id, {
+        await announceMemberJoinedOnce(room.id, {
           uid: user.uid,
           name: displayName,
           avatar: avatarUrl || null,
@@ -3172,7 +3223,177 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
         cleanUpCall();
       }
     },
-    [acquireAudioStream, applyAudioProcessingChain, callState, cleanUpCall, createPeerConnectionForPeer, createUnifiedSessionHandlers, inputMode, notify, playRingtone, setupVoiceAnalyzer, user, userProfile],
+    [acquireAudioStream, announceMemberJoinedOnce, applyAudioProcessingChain, callState, cleanUpCall, createPeerConnectionForPeer, createUnifiedSessionHandlers, inputMode, notify, playRingtone, setupVoiceAnalyzer, user, userProfile],
+  );
+
+  // JOIN ACTIVE CALL (via chat invite card — 1:1 expanded or persistent room)
+  const joinActiveCall = useCallback(
+    async (invite: CallInviteMeta, password?: string) => {
+      if (!user?.uid) return;
+      if (callState !== "idle") {
+        notify("Você já está em uma chamada.", "info");
+        return;
+      }
+
+      const chatId = String(invite.chatId || "").trim();
+      if (!chatId) {
+        notify("Convite de chamada inválido.", "error");
+        return;
+      }
+
+      if (isPersistentVoiceRoomId(chatId)) {
+        await joinRoom(chatId, password);
+        return;
+      }
+
+      try {
+        setCallState("connecting");
+        setIsVoiceWindowOpen(true);
+        setSession({
+          chatId,
+          friendName: invite.roomName,
+          hostUid: undefined,
+          isInitiator: false,
+          startedAt: Date.now(),
+          category: invite.category,
+          roomName: invite.roomName,
+          isPrivate: invite.isPrivate,
+          participants: [],
+        });
+
+        setRoomConfig({
+          roomName: invite.roomName,
+          category: invite.category,
+          isPrivate: Boolean(invite.isPrivate),
+        });
+
+        try {
+          sessionStorage.setItem(
+            "checkpoint_last_voice_session",
+            JSON.stringify({
+              chatId,
+              friendName: invite.roomName,
+              hasVideo: false,
+              timestamp: Date.now(),
+            }),
+          );
+        } catch { /* ignore */ }
+
+        const displayName = userProfile?.displayName || user.displayName || "Jogador";
+        const avatarUrl = userProfile?.photoURL || user.photoURL || undefined;
+
+        const rawAudioStream = await acquireAudioStream();
+        if (rawAudioStream) {
+          const processedStream = await applyAudioProcessingChain(rawAudioStream);
+          localStreamRef.current = processedStream;
+          setLocalStream(processedStream);
+          setupVoiceAnalyzer(processedStream, true);
+          if (inputMode === "push-to-talk") {
+            const track = processedStream.getAudioTracks()[0];
+            if (track) track.enabled = false;
+            const raw = rawStreamRef.current?.getAudioTracks()[0];
+            if (raw && raw !== track) raw.enabled = false;
+          }
+        } else {
+          setIsMuted(true);
+        }
+
+        const preflight = await runIcePreflightCheck();
+        if (!preflight.success) {
+          console.warn("[ICE Preflight] Warning:", preflight.error);
+        }
+
+        let livekitConnected = false;
+        try {
+          await connectLiveKitRoom(chatId, user.uid, displayName, avatarUrl);
+          livekitConnected = true;
+          useLiveKitPrimaryRef.current = true;
+          setMediaTransport("livekit");
+        } catch (lkErr) {
+          if (shouldUseP2PFallback("join-invite", lkErr)) {
+            console.warn("[LiveKit] SFU connection failed on invite join:", lkErr);
+            useLiveKitPrimaryRef.current = false;
+            setMediaTransport("p2p");
+          } else {
+            throw new Error("Não foi possível conectar ao servidor de voz.");
+          }
+        }
+
+        const remoteCount = livekitRoomRef.current?.remoteParticipants.size ?? 0;
+        if (remoteCount + 1 > MAX_CALL_PARTICIPANTS) {
+          notify(callCapacityMessage(), "info");
+          cleanUpCall();
+          return;
+        }
+
+        if (unsubscribeSessionRef.current) unsubscribeSessionRef.current();
+        unsubscribeSessionRef.current = subscribeToCallSession(
+          chatId,
+          user.uid,
+          createUnifiedSessionHandlers(chatId),
+        );
+
+        await announceMemberJoinedOnce(chatId, {
+          uid: user.uid,
+          name: displayName,
+          avatar: avatarUrl || null,
+          chatId,
+        });
+
+        if (!livekitConnected) {
+          const peers = sessionRef.current?.participants?.filter((p) => p.uid !== user.uid) || [];
+          for (const peer of peers) {
+            await createPeerConnectionForPeer(chatId, peer.uid, true);
+          }
+        }
+
+        setCallState("active");
+        setIsVoiceWindowOpen(true);
+        playRingtone("connect");
+
+        if (!callDurationTimerRef.current) {
+          callDurationTimerRef.current = window.setInterval(() => {
+            setCallDuration((prev) => prev + 1);
+          }, 1000);
+        }
+
+        void sendCallState(chatId, {
+          senderId: user.uid,
+          chatId,
+          isMuted: isMutedRef.current,
+          isDeafened: isDeafenedRef.current,
+          isCameraOn: cameraStreamRef.current !== null,
+          isSharingScreen: screenStreamRef.current !== null,
+        });
+
+        notify(`Conectado à chamada "${invite.roomName}"!`, "success");
+      } catch (err: unknown) {
+        console.error("[useVoiceCall] joinActiveCall failed:", err);
+        notify(
+          err instanceof Error ? err.message : "Não foi possível entrar na chamada.",
+          "error",
+        );
+        cleanUpCall();
+      }
+    },
+    [
+      acquireAudioStream,
+      announceMemberJoinedOnce,
+      applyAudioProcessingChain,
+      callState,
+      cleanUpCall,
+      connectLiveKitRoom,
+      createPeerConnectionForPeer,
+      createUnifiedSessionHandlers,
+      inputMode,
+      joinRoom,
+      notify,
+      playRingtone,
+      runIcePreflightCheck,
+      setupVoiceAnalyzer,
+      user,
+      userProfile,
+    ],
   );
 
   // CREATE AND JOIN ROOM (Criação de Sala Persistente)
@@ -3298,50 +3519,48 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
     } catch { }
   }, []);
 
+  const broadcastLocalCallState = useCallback(
+    (patch: Pick<CallStatePayload, "isMuted" | "isDeafened">) => {
+      const chatId = sessionRef.current?.chatId;
+      if (!chatId || !user?.uid) return;
+      void sendCallState(chatId, {
+        senderId: user.uid,
+        chatId,
+        isMuted: patch.isMuted ?? isMutedRef.current,
+        isDeafened: patch.isDeafened ?? isDeafenedRef.current,
+      });
+    },
+    [user?.uid],
+  );
+
   // MUTE / UNMUTE
   const toggleMute = useCallback(() => {
     if (!localStreamRef.current) return;
     const audioTrack = localStreamRef.current.getAudioTracks()[0];
-    if (audioTrack) {
-      const nextEnabled = !audioTrack.enabled;
-      setOutgoingMicEnabled(nextEnabled);
-      const nextMuted = !nextEnabled;
-      setIsMuted(nextMuted);
-      playSfx(nextMuted ? sfxMute : sfxUnmute);
+    if (!audioTrack) return;
 
-      if (session?.chatId && user?.uid) {
-        void sendCallState(session.chatId, {
-          senderId: user.uid,
-          chatId: session.chatId,
-          isMuted: nextMuted,
-          isDeafened: isDeafened,
-        });
-      }
-    }
-  }, [isDeafened, session?.chatId, user?.uid, playSfx, sfxMute, sfxUnmute, sendCallState, setOutgoingMicEnabled]);
+    const nextEnabled = !audioTrack.enabled;
+    setOutgoingMicEnabled(nextEnabled);
+    const nextMuted = !nextEnabled;
+    setIsMuted(nextMuted);
+    playSfx(nextMuted ? sfxMute : sfxUnmute);
+    broadcastLocalCallState({ isMuted: nextMuted, isDeafened: isDeafenedRef.current });
+  }, [broadcastLocalCallState, setOutgoingMicEnabled]);
 
   // DEAFEN / UNDEAFEN (MUTE ALL / SOM & MIC)
   const toggleDeafen = useCallback(() => {
-    setIsDeafened((prev) => {
-      const nextDeafened = !prev;
-      playSfx(nextDeafened ? sfxFullMute : sfxUndeafen);
-      if (nextDeafened) {
-        setIsMuted(true);
-        setOutgoingMicEnabled(false);
-      }
-
-      if (session?.chatId && user?.uid) {
-        void sendCallState(session.chatId, {
-          senderId: user.uid,
-          chatId: session.chatId,
-          isDeafened: nextDeafened,
-          isMuted: nextDeafened ? true : isMutedRef.current,
-        });
-      }
-
-      return nextDeafened;
+    const nextDeafened = !isDeafenedRef.current;
+    setIsDeafened(nextDeafened);
+    playSfx(nextDeafened ? sfxFullMute : sfxUndeafen);
+    if (nextDeafened) {
+      setIsMuted(true);
+      setOutgoingMicEnabled(false);
+    }
+    broadcastLocalCallState({
+      isDeafened: nextDeafened,
+      isMuted: nextDeafened ? true : isMutedRef.current,
     });
-  }, [session?.chatId, setOutgoingMicEnabled, user?.uid]);
+  }, [broadcastLocalCallState, setOutgoingMicEnabled]);
 
   // TOGGLE CAMERA
   const toggleCamera = useCallback(async () => {
@@ -3454,68 +3673,35 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
     async (opts?: string | ScreenShareOptions) => {
       if (!session?.chatId) return;
 
-      const options: ScreenShareOptions = typeof opts === "string" ? { sourceId: opts } : opts || {};
+      const options: ScreenShareOptions = typeof opts === "string" ? {} : opts || {};
       const { fps, width, height, bitrate } = screenShareProfile(options);
       const includeAudio = options.withAudio !== false;
       const videoConstraints = screenShareVideoConstraints(width, height, fps);
       setIsScreenPickerOpen(false);
 
+      let screenStream: MediaStream | null = null;
       try {
-        let screenStream: MediaStream;
         tauriScreenStopRef.current = null;
-
-        // Hub picker já escolheu a fonte → captura Tauri direta (sem seletor nativo).
-        // Sem sourceId → fallback getDisplayMedia (botão "Selecionar pelo sistema").
-        if (options.sourceId) {
-          try {
-            const capture = await createTauriScreenCaptureStream({
-              targetId: options.sourceId,
-              width,
-              height,
-              fps,
-              withAudio: includeAudio,
-            });
-            screenStream = capture.stream;
-            tauriScreenStopRef.current = capture.stop;
-            if (includeAudio && !capture.hasAudio) {
-              notify("Áudio do sistema indisponível; compartilhando apenas o vídeo.", "info");
-            }
-          } catch (tauriErr) {
-            console.error("[useVoiceCall] Captura Tauri da fonte selecionada falhou:", tauriErr);
-            notify("Não foi possível capturar a fonte escolhida.", "error");
-            return;
-          }
-        } else {
-          try {
-            screenStream = await navigator.mediaDevices.getDisplayMedia({
-              video: videoConstraints,
-              audio: includeAudio
-                ? ({
-                  echoCancellation: false,
-                  noiseSuppression: false,
-                  autoGainControl: false,
-                  restrictOwnAudio: true,
-                } as MediaTrackConstraints)
-                : false,
-            });
-          } catch (displayErr) {
-            if (includeAudio) {
-              console.warn("[useVoiceCall] getDisplayMedia with audio failed; retrying video-only:", displayErr);
-              screenStream = await navigator.mediaDevices.getDisplayMedia({
-                video: videoConstraints,
-                audio: false,
-              });
-              notify("Áudio do sistema indisponível; compartilhando apenas o vídeo.", "info");
-            } else {
-              throw displayErr;
-            }
-          }
+        const capture = await captureNativeScreenShare({
+          width,
+          height,
+          fps,
+          withAudio: includeAudio,
+        });
+        screenStream = capture.stream;
+        if (includeAudio && capture.droppedMonitorAudio) {
+          notify(
+            "Áudio da tela inteira bloqueado para evitar eco da chamada; compartilhando só vídeo. Prefira uma janela ou aba.",
+            "info",
+          );
+        } else if (includeAudio && !capture.hasSystemAudio) {
+          notify("Áudio indisponível para esta superfície; compartilhando apenas o vídeo.", "info");
         }
 
         screenStreamRef.current = screenStream;
         setLocalScreenStream(screenStream);
         const videoTrack = screenStream.getVideoTracks()[0];
-        let screenAudioTrack = screenStream.getAudioTracks()[0];
+        const screenAudioTrack = screenStream.getAudioTracks()[0];
         screenVideoTrackRef.current = videoTrack || null;
         screenAudioTrackRef.current = screenAudioTrack || null;
         screenShareStoppingRef.current = false;
@@ -3541,35 +3727,6 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
           contentHint: (videoTrack as MediaStreamTrack & { contentHint?: string }).contentHint,
         });
 
-        // Barreira ativa para isolar o áudio da chamada da transmissão de tela
-        if (includeAudio && screenAudioTrack && options.callAudioBarrier !== false) {
-          try {
-            if (screenBarrierRef.current) {
-              screenBarrierRef.current.destroy();
-              screenBarrierRef.current = null;
-            }
-            const barrier = createCallAudioBarrier(screenAudioTrack, () => {
-              const streams: MediaStream[] = [];
-              if (remoteStreamsRef.current) {
-                remoteStreamsRef.current.forEach((st) => {
-                  if (st && st.getAudioTracks().length > 0) streams.push(st);
-                });
-              }
-              if (remoteScreenStreamsRef.current) {
-                remoteScreenStreamsRef.current.forEach((st) => {
-                  if (st && st.getAudioTracks().length > 0) streams.push(st);
-                });
-              }
-              return streams;
-            });
-            screenAudioTrack = barrier.processedTrack;
-            screenAudioTrackRef.current = screenAudioTrack;
-            screenBarrierRef.current = barrier;
-          } catch (barrierErr) {
-            console.warn("[useVoiceCall] CallAudioBarrier init error:", barrierErr);
-          }
-        }
-
         if (isLocalTestCall(session.chatId, session.friendUid)) {
           if (screenAudioTrack) {
             screenAudioTrack.enabled = false;
@@ -3593,51 +3750,24 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
           try {
             const targetBitrate = bitrate;
 
-            const pub = await livekitRoomRef.current.localParticipant.publishTrack(videoTrack, {
-              name: "screen",
-              source: LiveKitTrack.Source.ScreenShare,
-              simulcast: false,
-              degradationPreference: fps >= 60 ? "maintain-framerate" : "balanced",
-              videoCodec: "h264",
-              videoEncoding: {
-                maxBitrate: targetBitrate,
-                maxFramerate: fps,
-                priority: "high",
-              },
-            });
-            livekitScreenPubRef.current = pub;
+            const published = await publishScreenShareTracks(
+              livekitRoomRef.current.localParticipant,
+              screenStream,
+              { fps, bitrate: targetBitrate },
+            );
+            livekitScreenPubRef.current = published.videoPublication;
+            livekitScreenAudioPubRef.current = published.audioPublication ?? null;
             console.info("[LiveKit] Screen share published", {
               maxBitrate: targetBitrate,
               maxFramerate: fps,
               degradationPreference: fps >= 60 ? "maintain-framerate" : "balanced",
               videoCodec: "h264",
               contentHint: (videoTrack as MediaStreamTrack & { contentHint?: string }).contentHint,
+              hasScreenAudio: Boolean(published.audioPublication),
             });
-            if (screenAudioTrack) {
-              try {
-                livekitScreenAudioPubRef.current = await livekitRoomRef.current.localParticipant.publishTrack(screenAudioTrack, {
-                  name: "screen-audio",
-                  source: LiveKitTrack.Source.ScreenShareAudio,
-                });
-              } catch (screenAudioErr) {
-                console.warn("[LiveKit] Screen audio publish failed; continuing video-only:", screenAudioErr);
-                notify("Não foi possível publicar o áudio da tela; vídeo ok.", "info");
-              }
-            }
           } catch (lkErr) {
             console.error("[LiveKit] Screen share publish failed:", lkErr);
-            // Tear down local capture — never mark sharing active without a published track
-            if (screenBarrierRef.current) {
-              try { screenBarrierRef.current.destroy(); } catch { }
-              screenBarrierRef.current = null;
-            }
-            screenStream.getTracks().forEach((t) => {
-              try { t.stop(); } catch { }
-            });
-            if (tauriScreenStopRef.current) {
-              try { await tauriScreenStopRef.current(); } catch { /* ignore */ }
-              tauriScreenStopRef.current = null;
-            }
+            releaseScreenCaptureStream(screenStream);
             screenStreamRef.current = null;
             screenVideoTrackRef.current = null;
             screenAudioTrackRef.current = null;
@@ -3717,7 +3847,15 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
         videoTrack.onended = () => {
           void stopScreenShare();
         };
-      } catch (err: any) {
+      } catch (err: unknown) {
+        releaseScreenCaptureStream(screenStream);
+        screenStreamRef.current = null;
+        screenVideoTrackRef.current = null;
+        screenAudioTrackRef.current = null;
+        setLocalScreenStream(null);
+        if (isDisplayMediaCancelledError(err)) {
+          return;
+        }
         console.error("[useVoiceCall] startScreenShare failed", err);
         notify("Não foi possível iniciar o compartilhamento de tela.", "error");
       }
@@ -3785,11 +3923,6 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
       } catch (err) {
         console.warn("[useVoiceCall] screen sender teardown warning:", err);
       }
-    }
-
-    if (screenBarrierRef.current) {
-      screenBarrierRef.current.destroy();
-      screenBarrierRef.current = null;
     }
 
     if (tauriScreenStopRef.current) {
@@ -4201,6 +4334,7 @@ export const useVoiceCall = ({ user, userProfile, notify }: UseVoiceCallProps) =
     // Actions
     startCall,
     joinRoom,
+    joinActiveCall,
     createAndJoinRoom,
     startTestCall,
     answerCall,

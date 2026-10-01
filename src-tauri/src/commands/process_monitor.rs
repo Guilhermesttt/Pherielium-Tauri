@@ -1,71 +1,103 @@
 //! Tauri commands: process monitoring
 //! Substitui electron/games/game-process-monitor.cjs (~12 KB)
 
+use crate::commands::process_identity::{
+    find_process_by_exact_path, find_process_in_directory, normalize_path, process_start_time_ms,
+};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System};
 use tauri::command;
 
-/// Normalize a Windows path for case-insensitive comparison
-fn normalize_path(p: &str) -> String {
-    p.trim_matches('"')
-        .trim_matches('\'')
-        .to_lowercase()
-        .replace('\\', "/")
-        .trim_matches('/')
-        .to_string()
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RunningProcessMatch {
+    pub requested_path: String,
+    pub matched_path: String,
+    pub pid: u32,
+    pub process_start_time_ms: Option<u64>,
+}
+
+fn collect_running_matches(
+    system: &System,
+    executable_paths: &[String],
+) -> Vec<RunningProcessMatch> {
+    let mut matches = Vec::new();
+
+    for target in executable_paths {
+        let normalized_target = normalize_path(target);
+        if normalized_target.is_empty() {
+            continue;
+        }
+
+        if let Some((pid, matched_path)) = find_process_by_exact_path(system, target) {
+            let process = system.process(pid);
+            matches.push(RunningProcessMatch {
+                requested_path: target.clone(),
+                matched_path: matched_path.to_string_lossy().to_string(),
+                pid: pid.as_u32(),
+                process_start_time_ms: process.and_then(process_start_time_ms),
+            });
+            continue;
+        }
+
+        let target_path = PathBuf::from(target.trim_matches('"').trim_matches('\''));
+        let target_dir = if target_path.is_dir() {
+            Some(target_path.clone())
+        } else {
+            target_path.parent().map(|parent| parent.to_path_buf())
+        };
+
+        if let Some(dir) = target_dir {
+            if let Some((pid, matched_path)) = find_process_in_directory(system, &dir) {
+                let process = system.process(pid);
+                matches.push(RunningProcessMatch {
+                    requested_path: target.clone(),
+                    matched_path: matched_path.to_string_lossy().to_string(),
+                    pid: pid.as_u32(),
+                    process_start_time_ms: process.and_then(process_start_time_ms),
+                });
+            }
+        }
+    }
+
+    matches.sort_by(|a, b| a.requested_path.cmp(&b.requested_path));
+    matches.dedup_by(|a, b| a.requested_path == b.requested_path);
+    matches
+}
+
+fn refresh_processes(system: &mut System, refresh_kind: ProcessRefreshKind) {
+    system.refresh_processes_specifics(ProcessesToUpdate::All, true, refresh_kind);
 }
 
 /// Returns the subset of `executable_paths` that are currently running as processes.
 #[command]
 pub async fn process_detect_running(executable_paths: Vec<String>) -> Result<Vec<String>, String> {
     let refresh_kind = ProcessRefreshKind::new().with_exe(sysinfo::UpdateKind::Always);
-    let mut sys = System::new_with_specifics(
-        RefreshKind::new().with_processes(refresh_kind),
-    );
-    sys.refresh_processes_specifics(ProcessesToUpdate::All, true, refresh_kind);
+    let mut sys = System::new_with_specifics(RefreshKind::new().with_processes(refresh_kind));
+    refresh_processes(&mut sys, refresh_kind);
 
-    let normalized_targets: Vec<String> =
-        executable_paths.iter().map(|p| normalize_path(p)).collect();
+    let matches = collect_running_matches(&sys, &executable_paths);
+    Ok(matches.into_iter().map(|item| item.requested_path).collect())
+}
 
-    let mut running = Vec::new();
-    for process in sys.processes().values() {
-        let exe_norm = process.exe().map(|exe| normalize_path(&exe.to_string_lossy()));
-        let name_norm = normalize_path(&process.name().to_string_lossy());
-        let name_stem = name_norm.trim_end_matches(".exe");
-
-        for (i, target) in normalized_targets.iter().enumerate() {
-            let target_base = target.rsplit('/').next().unwrap_or(target);
-            let target_stem = target_base.trim_end_matches(".exe");
-            let matched = if let Some(ref exe) = exe_norm {
-                exe.ends_with(target.as_str())
-                    || exe == target
-                    || exe.ends_with(&format!("/{target_base}"))
-            } else {
-                false
-            } || name_norm == target_base
-                || name_norm == *target
-                || (!target_stem.is_empty() && name_stem == target_stem);
-
-            if matched {
-                running.push(executable_paths[i].clone());
-                break;
-            }
-        }
-    }
-
-    // Deduplicate
-    running.sort();
-    running.dedup();
-    Ok(running)
+#[command]
+pub async fn process_detect_running_details(
+    executable_paths: Vec<String>,
+) -> Result<Vec<RunningProcessMatch>, String> {
+    let refresh_kind = ProcessRefreshKind::new().with_exe(sysinfo::UpdateKind::Always);
+    let mut sys = System::new_with_specifics(RefreshKind::new().with_processes(refresh_kind));
+    refresh_processes(&mut sys, refresh_kind);
+    Ok(collect_running_matches(&sys, &executable_paths))
 }
 
 /// Returns whether a single executable is currently running.
 #[command]
 pub async fn process_is_running(executable_path: String) -> Result<bool, String> {
-    let paths = vec![executable_path];
-    let running = process_detect_running(paths.clone()).await?;
-    Ok(!running.is_empty())
+    let refresh_kind = ProcessRefreshKind::new().with_exe(sysinfo::UpdateKind::Always);
+    let mut sys = System::new_with_specifics(RefreshKind::new().with_processes(refresh_kind));
+    refresh_processes(&mut sys, refresh_kind);
+    Ok(find_process_by_exact_path(&sys, &executable_path).is_some())
 }
 
 /// Scans common Windows game directories for installed games.
@@ -457,4 +489,3 @@ pub async fn steam_scan_installed_games() -> Result<Vec<LocalSteamGame>, String>
 
     Ok(games)
 }
-

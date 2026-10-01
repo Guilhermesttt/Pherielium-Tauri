@@ -4,6 +4,7 @@ import { Search, UserPlus, Check, X, Users, Radio, Send } from "lucide-react";
 import type { SocialFriend, UserProfile, VoiceCallSession } from "../../types/domain";
 import { sendChatMessage } from "../../services/chat";
 import { sendCallInvite } from "../../services/voiceCall";
+import { callCapacityMessage, canAcceptNewParticipant } from "../../services/voiceCall/limits";
 
 interface ChannelInviteModalProps {
   isOpen: boolean;
@@ -46,6 +47,10 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
 
   const handleSendInvite = async (friend: SocialFriend) => {
     if (!session) return;
+    if (!canAcceptNewParticipant(session.participants)) {
+      notify(callCapacityMessage(), "info");
+      return;
+    }
     const friendUid = friend.id.includes(":") ? friend.id.split(":")[1] : friend.id;
     setSendingId(friendUid);
 

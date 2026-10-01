@@ -29,6 +29,7 @@ import type { ChatMessage, SocialFriend } from "../../types/domain";
 import type { SoundEffectType } from "../../hooks/useSoundEffects";
 import { CONTROLLER_KEYBOARD_VISIBILITY_EVENT } from "../../utils/controllerTextInput";
 import { CallInviteCard, parseCallInviteText } from "../voice/CallInviteCard";
+import type { CallInviteMeta } from "../../types/voice-governance";
 
 const LINK_PATTERN = /(https?:\/\/[^\s]+)|(www\.[^\s]+)/gi;
 const IMAGE_LINK_PATTERN = /^https?:\/\/[^\s]+\.(png|jpe?g|gif|webp|bmp|svg)(\?[^\s]*)?$/i;
@@ -386,7 +387,7 @@ const ChatMessageRow: React.FC<{
   friend: SocialFriend;
   selfAvatarUrl?: string | null;
   onViewImage: (image: ViewingImage) => void;
-  onJoinCall: () => void;
+  onJoinCall: (invite: CallInviteMeta, password?: string) => void;
   playSound: (type: SoundEffectType) => void;
 }> = ({ msg, isMe, friend, selfAvatarUrl, onViewImage, onJoinCall, playSound }) => {
   const inviteMeta = parseCallInviteText(msg.text);
@@ -506,17 +507,21 @@ const ChatMessageRow: React.FC<{
 
 const ChatMessageList: React.FC<{
   isLoading: boolean;
+  loadError: string | null;
+  onRetryLoad: () => void;
   messages: ChatMessage[];
   friendUid: string | null;
   friend: SocialFriend;
   selfAvatarUrl?: string | null;
   friendTyping: boolean;
   onViewImage: (image: ViewingImage) => void;
-  onJoinCall: () => void;
+  onJoinCall: (invite: CallInviteMeta, password?: string) => void;
   playSound: (type: SoundEffectType) => void;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
 }> = ({
   isLoading,
+  loadError,
+  onRetryLoad,
   messages,
   friendUid,
   friend,
@@ -531,6 +536,20 @@ const ChatMessageList: React.FC<{
     {isLoading ? (
       <div className="flex flex-1 min-h-65 flex-col items-center justify-center space-y-3 py-16 text-center">
         <LoadingState label="Carregando conversa..." variant="searching" size="md" showTimer={false} />
+      </div>
+    ) : loadError ? (
+      <div className="flex flex-1 min-h-65 flex-col items-center justify-center space-y-4 py-16 text-center">
+        <MessageSquare className="h-6 w-6 text-amber-400/80" />
+        <p className="max-w-sm text-sm text-white/70">{loadError}</p>
+        <motion.button
+          type="button"
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.96 }}
+          onClick={onRetryLoad}
+          className="rounded-md border border-white/15 bg-white/8 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/12"
+        >
+          Tentar novamente
+        </motion.button>
       </div>
     ) : messages.length === 0 ? (
       <div className="flex flex-col items-center justify-center space-y-2 pb-8 text-center text-white/20">
@@ -720,9 +739,12 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
   ({ isOpen, onClose, friend, playSound, onStartVoiceCall }) => {
     const { notify } = useNotification();
     const { user, userProfile } = useAuth();
+    const { joinActiveCall } = useVoiceCallContext();
 
     const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([]);
     const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+    const [chatLoadError, setChatLoadError] = useState<string | null>(null);
+    const [chatRetryToken, setChatRetryToken] = useState(0);
     const optimisticRef = useRef<Map<string, ChatMessage>>(new Map());
     const [inputText, setInputText] = useState("");
     const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
@@ -739,6 +761,7 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
     const lastTypingSentRef = useRef(false);
     const lastTypingRefreshRef = useRef(0);
     const friendUidRef = useRef<string | null>(null);
+    const chatSubscriptionKeyRef = useRef<string>("");
     const pendingSnapshotRef = useRef<ChatMessage[] | null>(null);
 
     const friendUid = friend?.id.split(":")[1] ?? null;
@@ -810,16 +833,21 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
         setIsSendingImage(false);
         setSpamLockedUntil(null);
         setIsLoadingMessages(true);
+        setChatLoadError(null);
         recentSendTimestampsRef.current = [];
         lastTypingSentRef.current = false;
         friendUidRef.current = null;
+        chatSubscriptionKeyRef.current = "";
         pendingSnapshotRef.current = null;
         return;
       }
 
-      if (friendUidRef.current === friendUid) return;
+      const subscriptionKey = `${friendUid}:${chatRetryToken}`;
+      if (chatSubscriptionKeyRef.current === subscriptionKey) return;
+      chatSubscriptionKeyRef.current = subscriptionKey;
       friendUidRef.current = friendUid;
       setIsLoadingMessages(true);
+      setChatLoadError(null);
 
       void cleanupExpiredChatMessages(friendUid).catch(() => undefined);
       void markMessagesAsRead(friendUid);
@@ -827,8 +855,11 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
       let messagesInitialized = false;
       let knownServerMessageIds = new Set<string>();
 
-      const unsubscribeMessages = subscribeToChatMessages(friendUid, (serverMsgs) => {
+      const unsubscribeMessages = subscribeToChatMessages(
+        friendUid,
+        (serverMsgs) => {
         setIsLoadingMessages(false);
+        setChatLoadError(null);
         const serverIds = new Set(serverMsgs.map((m) => m.id));
         optimisticRef.current.forEach((_, key) => {
           if (serverIds.has(key)) optimisticRef.current.delete(key);
@@ -856,7 +887,12 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
         if (serverMsgs.some((message) => message.senderId === friendUid && !message.read)) {
           void markMessagesAsRead(friendUid);
         }
-      });
+      },
+        (error) => {
+          setIsLoadingMessages(false);
+          setChatLoadError(error.message || "Nao foi possivel carregar a conversa.");
+        },
+      );
 
       const unsubscribeTyping = subscribeToFriendTyping(friendUid, (typing) => {
         setFriendTyping(typing);
@@ -866,10 +902,11 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
         void setChatTyping(friendUid, false);
         unsubscribeMessages();
         unsubscribeTyping();
+        chatSubscriptionKeyRef.current = "";
         friendUidRef.current = null;
         pendingSnapshotRef.current = null;
       };
-    }, [detachPendingImage, isOpen, friendUid, playSound]);
+    }, [chatRetryToken, detachPendingImage, isOpen, friendUid, playSound]);
 
     // ── Scroll automático até a última mensagem ─────────────────────────────
     useEffect(() => {
@@ -1045,11 +1082,9 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
       onClose();
     };
 
-    const handleJoinCallFromInvite = () => {
+    const handleJoinCallFromInvite = (invite: CallInviteMeta, password?: string) => {
       onClose();
-      if (onStartVoiceCall && friend) {
-        onStartVoiceCall(friend, false);
-      }
+      void joinActiveCall(invite, password);
     };
 
     return (
@@ -1085,6 +1120,11 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
 
           <ChatMessageList
             isLoading={isLoadingMessages}
+            loadError={chatLoadError}
+            onRetryLoad={() => {
+              playSound("select");
+              setChatRetryToken((current) => current + 1);
+            }}
             messages={displayMessages}
             friendUid={friendUid}
             friend={friend}

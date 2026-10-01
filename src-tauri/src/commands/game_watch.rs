@@ -1,8 +1,12 @@
 //! Game process detection + overlay window positioning.
 
+use crate::commands::process_identity::{
+    find_process_by_exact_path, find_process_in_directory, normalize_path, paths_match_exact,
+    process_exe_within_dir, process_start_time_ms,
+};
 use parking_lot::Mutex;
 use serde_json::json;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use sysinfo::{ProcessesToUpdate, ProcessRefreshKind, RefreshKind, System};
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -14,33 +18,34 @@ pub struct GameWatchState {
     active: Mutex<bool>,
 }
 
-fn normalize_executable(value: &str) -> String {
-    value.trim().replace('/', "\\").to_lowercase()
+fn resolve_target_dir(executable: &str) -> Option<PathBuf> {
+    let clean = executable.trim_matches('"').trim_matches('\'');
+    let path = PathBuf::from(clean);
+    if path.is_dir() {
+        Some(path)
+    } else if path.is_absolute() {
+        path.parent().map(|parent| parent.to_path_buf())
+    } else {
+        None
+    }
 }
 
-fn executable_basename(value: &str) -> String {
-    let normalized = normalize_executable(value);
-    normalized
-        .rsplit(['\\', '/'])
-        .next()
-        .unwrap_or(normalized.as_str())
-        .to_string()
-}
-
-fn find_target_pid(system: &System, target: &str) -> Option<sysinfo::Pid> {
-    let wanted = executable_basename(target);
-    let wanted_stem = wanted.trim_end_matches(".exe");
-    system.processes().iter().find_map(|(&pid, process)| {
-        let name = executable_basename(&process.name().to_string_lossy());
-        let name_stem = name.trim_end_matches(".exe");
-        if name.eq_ignore_ascii_case(&wanted)
-            || (!wanted_stem.is_empty() && name_stem.eq_ignore_ascii_case(wanted_stem))
-        {
-            Some(pid)
-        } else {
-            None
-        }
-    })
+fn emit_started(
+    app: &AppHandle,
+    requested_executable: &str,
+    matched_path: &str,
+    pid: u32,
+    process_start_time_ms: Option<u64>,
+) {
+    let _ = app.emit(
+        "game-watch:started",
+        json!({
+            "executable": requested_executable,
+            "matchedPath": matched_path,
+            "pid": pid,
+            "processStartTimeMs": process_start_time_ms,
+        }),
+    );
 }
 
 pub fn ensure_overlay_fullscreen(app: &AppHandle) {
@@ -59,21 +64,14 @@ pub fn game_watch_set_target(
     state: State<'_, GameWatchState>,
     executable: Option<String>,
 ) -> Result<(), String> {
-    let dir = executable.as_ref().and_then(|val| {
-        let clean = val.trim_matches('"').trim_matches('\'');
-        let p = PathBuf::from(clean);
-        if p.is_dir() {
-            Some(p)
-        } else if p.is_absolute() {
-            p.parent().map(|d| d.to_path_buf())
-        } else {
-            None
-        }
-    });
-    let normalized = executable
+    let cleaned = executable
         .as_ref()
-        .map(|value| executable_basename(value.trim_matches('"').trim_matches('\'')))
+        .map(|value| value.trim_matches('"').trim_matches('\'').trim().to_string())
         .filter(|value| !value.is_empty());
+    let normalized = cleaned.as_ref().map(|value| normalize_path(value));
+    let dir = cleaned
+        .as_ref()
+        .and_then(|value| resolve_target_dir(value));
     *state.target_executable.lock() = normalized;
     *state.target_dir.lock() = dir;
     *state.active.lock() = true;
@@ -102,6 +100,43 @@ pub fn conceal_main_window(app: &AppHandle) {
     }
 }
 
+fn locate_target_process(
+    system: &System,
+    target_path: &str,
+    target_dir: Option<&Path>,
+    tracked_pid: Option<sysinfo::Pid>,
+) -> Option<(sysinfo::Pid, PathBuf, Option<u64>)> {
+    if let Some(pid) = tracked_pid {
+        if let Some(process) = system.process(pid) {
+            let exe = process.exe()?.to_path_buf();
+            if paths_match_exact(Some(&exe), target_path)
+                || target_dir.map_or(false, |dir| process_exe_within_dir(Some(&exe), dir))
+            {
+                return Some((pid, exe, process_start_time_ms(process)));
+            }
+        }
+        return None;
+    }
+
+    if let Some((pid, matched_path)) = find_process_by_exact_path(system, target_path) {
+        let start_ms = system
+            .process(pid)
+            .and_then(process_start_time_ms);
+        return Some((pid, matched_path, start_ms));
+    }
+
+    if let Some(dir) = target_dir {
+        if let Some((pid, matched_path)) = find_process_in_directory(system, dir) {
+            let start_ms = system
+                .process(pid)
+                .and_then(process_start_time_ms);
+            return Some((pid, matched_path, start_ms));
+        }
+    }
+
+    None
+}
+
 pub fn start_game_watch(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         let refresh_kind = ProcessRefreshKind::new().with_exe(sysinfo::UpdateKind::Always);
@@ -114,7 +149,6 @@ pub fn start_game_watch(app: AppHandle) {
         let mut handoff_grace_ticks: u32 = 0;
 
         loop {
-            // Adaptive sleep: 1000ms while running smoothly, 500ms when waiting for game to launch
             let sleep_ms = if was_running { 1000 } else { 500 };
             tokio::time::sleep(Duration::from_millis(sleep_ms)).await;
 
@@ -141,82 +175,67 @@ pub fn start_game_watch(app: AppHandle) {
             let target = target.unwrap();
             last_target = Some(target.clone());
 
-            let mut is_running = if let Some(pid) = tracked_pid {
-                system.refresh_processes_specifics(ProcessesToUpdate::Some(&[pid]), true, refresh_kind);
-                if let Some(proc) = system.process(pid) {
-                    let proc_name = executable_basename(&proc.name().to_string_lossy());
-                    let proc_stem = proc_name.trim_end_matches(".exe");
-                    let target_name = executable_basename(&target);
-                    let target_stem = target_name.trim_end_matches(".exe");
-                    proc_name.eq_ignore_ascii_case(&target_name)
-                        || (!target_stem.is_empty() && proc_stem.eq_ignore_ascii_case(target_stem))
-                        || target_dir.as_ref().map_or(false, |dir| {
-                            proc.exe().map_or(false, |exe| exe.starts_with(dir))
-                        })
-                } else {
-                    tracked_pid = None;
-                    false
-                }
+            let mut pid_refresh_buf = [sysinfo::Pid::from(0_usize); 1];
+            let processes_to_update = if let Some(pid) = tracked_pid {
+                pid_refresh_buf[0] = pid;
+                ProcessesToUpdate::Some(&pid_refresh_buf[..])
             } else {
-                system.refresh_processes_specifics(ProcessesToUpdate::All, true, refresh_kind);
-                if let Some(pid) = find_target_pid(&system, &target) {
-                    tracked_pid = Some(pid);
-                    true
-                } else if let Some(ref dir) = target_dir {
-                    if let Some((&pid, _)) = system.processes().iter().find(|(_, proc)| {
-                        proc.exe().map_or(false, |exe| exe.starts_with(dir))
-                    }) {
-                        tracked_pid = Some(pid);
-                        true
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                }
+                ProcessesToUpdate::All
             };
+            system.refresh_processes_specifics(processes_to_update, true, refresh_kind);
 
-            // If the launcher just exited but was_running was true, give a grace period
-            // to detect the actual game process spawned in the game directory (e.g. launcher.exe -> game.exe)
-            if !is_running && was_running && target_dir.is_some() {
-                if handoff_grace_ticks < 20 {
-                    handoff_grace_ticks += 1;
-                    system.refresh_processes_specifics(ProcessesToUpdate::All, true, refresh_kind);
-                    if let Some(ref dir) = target_dir {
-                        if let Some((&pid, _)) = system.processes().iter().find(|(_, proc)| {
-                            proc.exe().map_or(false, |exe| exe.starts_with(dir))
-                        }) {
-                            tracked_pid = Some(pid);
-                            handoff_grace_ticks = 0;
-                            is_running = true;
-                        } else {
-                            // Still within grace period, keep was_running alive
-                            continue;
-                        }
-                    }
-                }
+            let mut located = locate_target_process(
+                &system,
+                &target,
+                target_dir.as_deref(),
+                tracked_pid,
+            );
+
+            if located.is_none() && tracked_pid.is_some() {
+                tracked_pid = None;
+                system.refresh_processes_specifics(ProcessesToUpdate::All, true, refresh_kind);
+                located = locate_target_process(
+                    &system,
+                    &target,
+                    target_dir.as_deref(),
+                    None,
+                );
             }
 
-            if !is_running {
-                if was_running {
-                    was_running = false;
-                    tracked_pid = None;
-                    handoff_grace_ticks = 0;
-                    crate::commands::achievement_watcher::stop_all_achievement_watchers(&app);
-                    reveal_main_window(&app);
-                    let _ = app.emit("game-watch:ended", json!({ "executable": target }));
+            if let Some((pid, matched_path, start_ms)) = located {
+                tracked_pid = Some(pid);
+                handoff_grace_ticks = 0;
+
+                if !was_running {
+                    was_running = true;
+                    conceal_main_window(&app);
+                    ensure_overlay_fullscreen(&app);
+                    emit_started(
+                        &app,
+                        &target,
+                        &matched_path.to_string_lossy(),
+                        pid.as_u32(),
+                        start_ms,
+                    );
                 }
                 continue;
             }
 
-            handoff_grace_ticks = 0;
-
             if !was_running {
-                was_running = true;
-                conceal_main_window(&app);
-                ensure_overlay_fullscreen(&app);
-                let _ = app.emit("game-watch:started", json!({ "executable": target }));
+                continue;
             }
+
+            if target_dir.is_some() && handoff_grace_ticks < 20 {
+                handoff_grace_ticks += 1;
+                continue;
+            }
+
+            was_running = false;
+            tracked_pid = None;
+            handoff_grace_ticks = 0;
+            crate::commands::achievement_watcher::stop_all_achievement_watchers(&app);
+            reveal_main_window(&app);
+            let _ = app.emit("game-watch:ended", json!({ "executable": target }));
         }
     });
 }
