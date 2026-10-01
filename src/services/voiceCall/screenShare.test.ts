@@ -170,13 +170,10 @@ describe("captureNativeScreenShare", () => {
     expect(result.hasSystemAudio).toBe(false);
   });
 
-  it("strips monitor audio to avoid call echo loops", async () => {
-    const audioTrack = { kind: "audio", stop: vi.fn() };
-    const removeTrack = vi.fn();
+  it("flags monitor capture for launcher audio isolation", async () => {
     const getDisplayMedia = vi.fn().mockResolvedValue({
       getVideoTracks: () => [{ kind: "video", getSettings: () => ({ displaySurface: "monitor" }) }],
-      getAudioTracks: () => [audioTrack],
-      removeTrack,
+      getAudioTracks: () => [{ kind: "audio" }],
     });
 
     const result = await captureNativeScreenShare({
@@ -187,10 +184,8 @@ describe("captureNativeScreenShare", () => {
       getDisplayMedia,
     });
 
-    expect(audioTrack.stop).toHaveBeenCalledTimes(1);
-    expect(removeTrack).toHaveBeenCalledWith(audioTrack);
-    expect(result.hasSystemAudio).toBe(false);
-    expect(result.droppedMonitorAudio).toBe(true);
+    expect(result.hasSystemAudio).toBe(true);
+    expect(result.isMonitorShare).toBe(true);
   });
 });
 

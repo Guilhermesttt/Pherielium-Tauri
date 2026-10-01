@@ -116,28 +116,11 @@ export function isDisplayMediaCancelledError(error: unknown): boolean {
   return name === "NotAllowedError" || name === "AbortError";
 }
 
-const stripMonitorSystemAudio = (stream: MediaStream, videoTrack: MediaStreamTrack): boolean => {
-  const displaySurface = videoTrack.getSettings().displaySurface;
-  if (displaySurface !== "monitor") {
-    return stream.getAudioTracks().length > 0;
-  }
-
-  stream.getAudioTracks().forEach((track) => {
-    try {
-      track.stop();
-    } catch {
-      // ignore
-    }
-    stream.removeTrack(track);
-  });
-  return false;
-};
-
 export type NativeScreenCaptureResult = {
   stream: MediaStream;
   hasSystemAudio: boolean;
-  /** True when monitor audio was dropped to avoid call/system echo. */
-  droppedMonitorAudio: boolean;
+  /** Full desktop capture — launcher playback should be silenced locally. */
+  isMonitorShare: boolean;
 };
 
 /**
@@ -165,18 +148,16 @@ export async function captureNativeScreenShare(options: {
   const stream = await getDisplayMedia(request);
   const videoTrack = stream.getVideoTracks()[0];
   if (!videoTrack) {
-    return { stream, hasSystemAudio: false, droppedMonitorAudio: false };
+    return { stream, hasSystemAudio: false, isMonitorShare: false };
   }
 
-  const hadAudioBeforeStrip = stream.getAudioTracks().length > 0;
-  const hasSystemAudio = options.withAudio
-    ? stripMonitorSystemAudio(stream, videoTrack)
-    : false;
+  const isMonitorShare = videoTrack.getSettings().displaySurface === "monitor";
+  const hasSystemAudio = options.withAudio && stream.getAudioTracks().length > 0;
 
   return {
     stream,
     hasSystemAudio,
-    droppedMonitorAudio: options.withAudio && hadAudioBeforeStrip && !hasSystemAudio,
+    isMonitorShare,
   };
 }
 

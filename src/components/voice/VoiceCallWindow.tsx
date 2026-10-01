@@ -38,6 +38,21 @@ export type CallFeedId =
   | "local-user"
   | string;
 
+/** Camera video from a peer stream, excluding screen-share tracks when known. */
+const getPeerCameraStream = (
+  stream?: MediaStream | null,
+  screenStream?: MediaStream | null,
+): MediaStream | null => {
+  if (!stream) return null;
+  const screenTrackIds = new Set((screenStream?.getVideoTracks() ?? []).map((track) => track.id));
+  const cameraTracks = stream
+    .getVideoTracks()
+    .filter((track) => track.readyState === "live" && !screenTrackIds.has(track.id));
+  if (cameraTracks.length === 0) return null;
+  if (cameraTracks.length === stream.getVideoTracks().length) return stream;
+  return new MediaStream(cameraTracks);
+};
+
 export interface CallFeed {
   id: CallFeedId;
   peerId?: string;
@@ -502,6 +517,8 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
         const isSpeaking = remoteSpeakingStates?.get(p.uid) ?? false;
         const remoteState = remoteStatesMap?.get(p.uid);
         const peerSharingScreen = Boolean(remoteState?.isSharingScreen || screenStream);
+        const peerCameraStream = getPeerCameraStream(stream, screenStream);
+        const showPeerCamera = Boolean(remoteState?.isCameraOn || peerCameraStream);
 
         feeds.push({
           id: `remote-user:${p.uid}`,
@@ -518,12 +535,12 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
           avatar: p.avatar,
           color: p.color,
           stream,
-          cameraStream: remoteState?.isCameraOn ? stream : null,
+          cameraStream: showPeerCamera ? peerCameraStream ?? stream : null,
           isLocal: false,
           isSpeaking,
           isMuted: remoteState?.isMuted ?? false,
           isDeafened: remoteState?.isDeafened ?? false,
-          isCamera: remoteState?.isCameraOn ?? false,
+          isCamera: showPeerCamera,
           isRinging: isRingingOut,
           isConnecting: isConnecting,
         });
@@ -550,6 +567,8 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
       const oneToOneScreen =
         remoteScreenStreams?.get(session.friendUid) ||
         (isRemoteSharingScreen ? remoteStream : null);
+      const remoteCameraStream = getPeerCameraStream(remoteStream, oneToOneScreen);
+      const showRemoteCamera = Boolean(isRemoteCameraOn || remoteCameraStream);
       feeds.push({
         id: "remote-user",
         peerId: session.friendUid,
@@ -564,12 +583,12 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
               : "Conectado",
         avatar: session.friendAvatar,
         color: session.themeColor,
-        cameraStream: isRemoteCameraOn ? remoteStream : null,
+        cameraStream: showRemoteCamera ? remoteCameraStream ?? remoteStream : null,
         isLocal: false,
         isSpeaking: isSpeakingRemote,
         isMuted: isRemoteMuted,
         isDeafened: isRemoteDeafened,
-        isCamera: isRemoteCameraOn,
+        isCamera: showRemoteCamera,
         isRinging: isRingingOut,
         isConnecting: isConnecting,
       });
@@ -960,7 +979,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                 isSettingsOpen={isSettingsOpen}
                 isOnlyOnePerson={isOnlyOnePerson}
                 isMicAvailable={Boolean(!audioInputDevices || audioInputDevices.length > 0)}
-                isCameraAvailable={Boolean(!videoInputDevices || videoInputDevices.length > 0)}
+                isCameraAvailable={videoInputDevices.length > 0 || callState === "connecting" || callState === "active"}
                 onToggleMute={onToggleMute}
                 onToggleDeafen={onToggleDeafen}
                 onToggleCamera={onToggleCamera}

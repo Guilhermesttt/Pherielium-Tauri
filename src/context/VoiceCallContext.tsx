@@ -12,6 +12,7 @@ import { ScreenPickerModal } from "../components/voice/ScreenPickerModal";
 import { getCheckpointFriendStatuses } from "../services/checkpointFriends";
 import { audioContextManager } from "../services/audio/AudioContextManager";
 import { PeerAudioNode } from "../services/audio/PeerAudioNode";
+import { onLauncherAudioIsolationChange } from "../services/voiceCall/launcherAudioIsolation";
 import { CallConnectionBanner } from "../components/CallConnectionBanner";
 import type { SocialFriend } from "../types/domain";
 
@@ -92,6 +93,11 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   >(new Map());
   const audioContextManagerRef = React.useRef(audioContextManager);
   const p2pAudioContextAcquiredRef = React.useRef(false);
+  const [launcherAudioIsolationActive, setLauncherAudioIsolationActive] = React.useState(false);
+
+  React.useEffect(() => {
+    return onLauncherAudioIsolationChange(setLauncherAudioIsolationActive);
+  }, []);
 
   const destroyPeerAudioNodes = React.useCallback(() => {
     peerAudioNodesMapRef.current.forEach(({ node }) => node.destroy());
@@ -185,12 +191,19 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Volume/deafen updates are cheap and do not rebuild the Web Audio graph.
   React.useEffect(() => {
     peerAudioNodesMapRef.current.forEach(({ node }, peerId) => {
-      const peerVolume = voiceCall.isDeafened
+      const peerVolume = launcherAudioIsolationActive
         ? 0
-        : (voiceCall.peerVolumes?.[peerId] ?? voiceCall.remoteVolume ?? 100);
+        : voiceCall.isDeafened
+          ? 0
+          : (voiceCall.peerVolumes?.[peerId] ?? voiceCall.remoteVolume ?? 100);
       node.setVolume(peerVolume);
     });
-  }, [voiceCall.isDeafened, voiceCall.peerVolumes, voiceCall.remoteVolume]);
+  }, [
+    launcherAudioIsolationActive,
+    voiceCall.isDeafened,
+    voiceCall.peerVolumes,
+    voiceCall.remoteVolume,
+  ]);
 
   // Output-device changes are applied once at the shared AudioContext level.
   React.useEffect(() => {
@@ -518,7 +531,6 @@ const safeFallbackVoiceCallContext: Partial<VoiceCallContextType> = {
   kickParticipant: async () => { },
   reconnectCall: async () => { },
   dismissReconnect: () => { },
-  simulateIncomingCall: () => { },
   calibrateNoiseFloor: async () => ({ noiseFloor: 0, recommendedSensitivity: 35 }),
   isCalibratingNoise: false,
   currentNoiseFloor: 0,

@@ -54,6 +54,11 @@ import {
   SCREEN_SHARE_BITRATE,
   type ScreenShareOptions,
 } from "../services/voiceCall/screenShare";
+import {
+  applyLauncherPlaybackMuteToElement,
+  getLauncherSfxVolumeScale,
+  setLauncherAudioIsolation,
+} from "../services/voiceCall/launcherAudioIsolation";
 import { createVoiceRoom, joinVoiceRoom, leaveVoiceRoom } from "../services/voiceRooms";
 import {
   detachScreenTracksFromPeers,
@@ -96,7 +101,10 @@ const voiceSfxVolumeRef = { current: 1.0 };
 const playSfx = (src: string, volumeScale = 1.0) => {
   try {
     const audio = new Audio(src);
-    audio.volume = Math.max(0, Math.min(1, voiceSfxVolumeRef.current * volumeScale));
+    audio.volume = Math.max(
+      0,
+      Math.min(1, voiceSfxVolumeRef.current * volumeScale * getLauncherSfxVolumeScale()),
+    );
     void audio.play().catch(() => { });
   } catch {
     // ignore
@@ -677,6 +685,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
 
               pub.track.attachedElements?.forEach((el) => {
                 el.volume = normVol;
+                applyLauncherPlaybackMuteToElement(el);
                 if (selectedAudioOutput && selectedAudioOutput !== "default" && typeof (el as any).setSinkId === "function") {
                   void (el as any).setSinkId(selectedAudioOutput).catch(() => { });
                 }
@@ -1728,6 +1737,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     setLocalCameraStream(null);
     setLocalScreenStream(null);
     setIsSharingScreen(false);
+    setLauncherAudioIsolation(false);
     setIsRemoteSharingScreen(false);
     setIsCameraOn(false);
     setIsRemoteCameraOn(false);
@@ -1869,6 +1879,12 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
             setRemoteStream(stream);
             if (track.kind === LiveKitTrack.Kind.Video) {
               setIsRemoteCameraOn(true);
+              setRemoteStatesMap((prev) => {
+                const updated = new Map(prev);
+                const current = updated.get(peerId) || { senderId: peerId, chatId: sessionRef.current?.chatId || "" };
+                updated.set(peerId, { ...current, isCameraOn: true });
+                return updated;
+              });
             }
           }
         };
@@ -1896,6 +1912,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
               ? (peerVolumesRef.current[`screen:${peerId}`] ?? peerVolumesRef.current["remote-screen"] ?? peerVolumesRef.current[peerId] ?? remoteVolumeRef.current)
               : (peerVolumesRef.current[peerId] ?? peerVolumesRef.current["remote-user"] ?? remoteVolumeRef.current);
           el.volume = Math.max(0, Math.min(1.0, (peerVol ?? 100) / 100));
+          applyLauncherPlaybackMuteToElement(el);
           if (selectedAudioOutputRef.current && selectedAudioOutputRef.current !== "default" && typeof (el as any).setSinkId === "function") {
             void (el as any).setSinkId(selectedAudioOutputRef.current).catch(() => { });
           }
@@ -2747,12 +2764,27 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           });
         }
       },
-      onEnd: () => {
-        if (callStateRef.current !== "idle") {
-          notify("Chamada finalizada.", "info");
-          playRingtone("disconnect");
-          cleanUpCall();
+      onEnd: (endPayload) => {
+        if (callStateRef.current === "idle") return;
+
+        const currentInvite = incomingInviteRef.current;
+        const endChatId = endPayload?.chatId;
+
+        // Simulação local — ignora call:end externo que derrubava o modal na hora.
+        if (
+          currentInvite &&
+          isLocalTestCall(currentInvite.chatId, currentInvite.callerId)
+        ) {
+          return;
         }
+
+        if (callStateRef.current === "ringing-in" && currentInvite && endChatId && endChatId !== currentInvite.chatId) {
+          return;
+        }
+
+        notify("Chamada finalizada.", "info");
+        playRingtone("disconnect");
+        cleanUpCall();
       },
     });
 
@@ -3689,9 +3721,13 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           withAudio: includeAudio,
         });
         screenStream = capture.stream;
-        if (includeAudio && capture.droppedMonitorAudio) {
+        if (capture.isMonitorShare) {
+          setLauncherAudioIsolation(true);
+          livekitAttachedElementsRef.current.forEach((element) => {
+            applyLauncherPlaybackMuteToElement(element);
+          });
           notify(
-            "Áudio da tela inteira bloqueado para evitar eco da chamada; compartilhando só vídeo. Prefira uma janela ou aba.",
+            "Tela inteira: sons do launcher foram silenciados localmente para não vazarem na transmissão.",
             "info",
           );
         } else if (includeAudio && !capture.hasSystemAudio) {
@@ -3965,6 +4001,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     }
 
     setIsSharingScreen(false);
+    setLauncherAudioIsolation(false);
     playSfx(sfxStreamEnd);
     screenShareStoppingRef.current = false;
   }, [user?.uid]);
@@ -4145,30 +4182,64 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     [notify, session?.chatId, user?.uid],
   );
 
-  // SIMULATE INCOMING CALL (Para testes)
+  // SIMULATE INCOMING CALL (Para testes locais — não usa Supabase)
   const simulateIncomingCall = useCallback(
-    (hasVideo = true) => {
-      if (callState !== "idle") {
+    (hasVideo = false) => {
+      stopRingtone();
+      if (audioRingIntervalRef.current) {
+        clearInterval(audioRingIntervalRef.current);
+        audioRingIntervalRef.current = null;
+      }
+      if (incomingTimeoutTimerRef.current) {
+        window.clearTimeout(incomingTimeoutTimerRef.current);
+        incomingTimeoutTimerRef.current = null;
+      }
+
+      // Reutiliza ringing-in; só faz cleanup completo se já estiver em outra call.
+      if (callStateRef.current !== "idle" && callStateRef.current !== "ringing-in") {
         cleanUpCall();
       }
-      setIncomingInvite({
+
+      const invite: CallInvitePayload = {
         callerId: "ghost_tester_uid",
         callerName: "Ghost Rider (Simulação)",
         callerAvatar: null,
         chatId: "simulated_call_test",
         hasVideo,
         timestamp: Date.now(),
-      });
+      };
+
+      incomingInviteRef.current = invite;
+      callStateRef.current = "ringing-in";
+      lastProcessedInviteKeyRef.current = `${invite.chatId}:${invite.callerId}:${invite.timestamp}`;
+
+      setIncomingInvite(invite);
       setCallState("ringing-in");
       playRingtone("call");
-      if (audioRingIntervalRef.current) clearInterval(audioRingIntervalRef.current);
       audioRingIntervalRef.current = window.setInterval(() => {
         playRingtone("call");
       }, 3000);
+
+      incomingTimeoutTimerRef.current = window.setTimeout(() => {
+        if (
+          callStateRef.current === "ringing-in" &&
+          incomingInviteRef.current?.chatId === "simulated_call_test"
+        ) {
+          stopRingtone();
+          incomingInviteRef.current = null;
+          callStateRef.current = "idle";
+          setIncomingInvite(null);
+          setCallState("idle");
+          notify("Chamada simulada expirou.", "info");
+          playRingtone("disconnect");
+        }
+      }, 35000);
+
       notify("Simulação de chamada recebida disparada!", "info");
     },
-    [callState, cleanUpCall, notify, playRingtone],
+    [cleanUpCall, notify, playRingtone, stopRingtone],
   );
+  (simulateIncomingCall as typeof simulateIncomingCall & { isSimulationTool?: boolean }).isSimulationTool = true;
 
   // Calibração de Ruído Ambiente (Mede o ruído por 2s e sugere sensibilidade)
   const calibrateNoiseFloor = useCallback(async (): Promise<{ noiseFloor: number; recommendedSensitivity: number }> => {
