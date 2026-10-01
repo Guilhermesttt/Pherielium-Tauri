@@ -37,7 +37,11 @@ export const applyLauncherPlaybackMuteToElement = (element: HTMLMediaElement) =>
   }
   mutedElements.add(element);
   element.volume = 0;
-  void element.pause?.().catch(() => undefined);
+  try {
+    element.pause();
+  } catch {
+    // ignore
+  }
 };
 
 const restoreMutedElements = () => {

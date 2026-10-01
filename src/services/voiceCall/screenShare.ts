@@ -53,11 +53,17 @@ export const screenShareVideoConstraints = (
   frameRate: { ideal: fps, max: fps },
 });
 
-const readSupportedConstraints = (): MediaTrackSupportedConstraints => {
+/** Chromium-only constraint flags not yet in lib.dom MediaTrackSupportedConstraints. */
+export interface ScreenShareSupportedConstraints extends MediaTrackSupportedConstraints {
+  restrictOwnAudio?: boolean;
+  suppressLocalAudioPlayback?: boolean;
+}
+
+const readSupportedConstraints = (): ScreenShareSupportedConstraints => {
   if (typeof navigator === "undefined" || !navigator.mediaDevices?.getSupportedConstraints) {
     return {};
   }
-  return navigator.mediaDevices.getSupportedConstraints();
+  return navigator.mediaDevices.getSupportedConstraints() as ScreenShareSupportedConstraints;
 };
 
 /**
@@ -65,7 +71,7 @@ const readSupportedConstraints = (): MediaTrackSupportedConstraints => {
  * playback from entering the capture, and enable browser DSP before LiveKit.
  */
 export const screenShareAudioBarrierConstraints = (
-  supported: MediaTrackSupportedConstraints = readSupportedConstraints(),
+  supported: ScreenShareSupportedConstraints = readSupportedConstraints(),
 ): ScreenShareAudioTrackConstraints => {
   const audio: ScreenShareAudioTrackConstraints = {
     echoCancellation: true,
@@ -92,7 +98,7 @@ export const buildDisplayMediaRequest = (options: {
   height: number;
   fps: number;
   withAudio: boolean;
-  supportedConstraints?: MediaTrackSupportedConstraints;
+  supportedConstraints?: ScreenShareSupportedConstraints;
 }): DisplayMediaCaptureOptions => {
   const video = screenShareVideoConstraints(options.width, options.height, options.fps);
 
@@ -133,7 +139,7 @@ export async function captureNativeScreenShare(options: {
   fps: number;
   withAudio: boolean;
   getDisplayMedia?: typeof navigator.mediaDevices.getDisplayMedia;
-  supportedConstraints?: MediaTrackSupportedConstraints;
+  supportedConstraints?: ScreenShareSupportedConstraints;
 }): Promise<NativeScreenCaptureResult> {
   const getDisplayMedia =
     options.getDisplayMedia ?? navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);

@@ -5,7 +5,13 @@ import {
   isDisplayMediaCancelledError,
   screenShareAudioBarrierConstraints,
   screenShareProfile,
+  type ScreenShareSupportedConstraints,
 } from "./screenShare";
+
+const chromiumAudioIsolation: ScreenShareSupportedConstraints = {
+  restrictOwnAudio: true,
+  suppressLocalAudioPlayback: true,
+};
 
 describe("screenShareProfile", () => {
   it("maps the four requested quality presets", () => {
@@ -35,10 +41,7 @@ describe("screenShareProfile", () => {
 describe("screenShareAudioBarrierConstraints", () => {
   it("enables DSP and isolation flags when supported", () => {
     expect(
-      screenShareAudioBarrierConstraints({
-        restrictOwnAudio: true,
-        suppressLocalAudioPlayback: true,
-      }),
+      screenShareAudioBarrierConstraints(chromiumAudioIsolation),
     ).toEqual({
       echoCancellation: true,
       noiseSuppression: true,
@@ -64,10 +67,7 @@ describe("buildDisplayMediaRequest", () => {
       height: 1080,
       fps: 60,
       withAudio: true,
-      supportedConstraints: {
-        restrictOwnAudio: true,
-        suppressLocalAudioPlayback: true,
-      },
+      supportedConstraints: chromiumAudioIsolation,
     });
 
     expect(request.video).toMatchObject({
@@ -116,10 +116,7 @@ describe("captureNativeScreenShare", () => {
       fps: 60,
       withAudio: true,
       getDisplayMedia,
-      supportedConstraints: {
-        restrictOwnAudio: true,
-        suppressLocalAudioPlayback: true,
-      },
+      supportedConstraints: chromiumAudioIsolation,
     });
 
     expect(getDisplayMedia).toHaveBeenCalledTimes(1);
