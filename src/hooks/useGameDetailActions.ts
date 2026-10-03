@@ -105,18 +105,68 @@ export function useGameDetailActions({
     }
   }, [copy.loginToRemove, copy.removeError, copy.removedSuccess, dispatch, game?.id, game?.title, notify, onClose, onLibraryChanged, state.deleteConfirmText, state.isDeleting, user?.uid]);
 
+  const isEpicGame = Boolean(
+    game?.launcherType === "epic" || game?.epicCatalogId || game?.epicLaunchId,
+  );
+
+  const saveEpicInstallPath = React.useCallback(async (selectedPath: string) => {
+    if (!user?.uid || !game?.id) {
+      notify(copy.loginToRemove, "error");
+      return;
+    }
+    const cleaned = selectedPath.trim();
+    if (!cleaned) return;
+    try {
+      await updateLibraryGame(user.uid, game.id, {
+        executablePath: cleaned,
+        updatedAt: new Date().toISOString(),
+      });
+      await onLibraryChanged?.();
+      notify(copy.epicInstallPathSaved, "success");
+    } catch {
+      notify(copy.epicInstallPathError, "error");
+    }
+  }, [copy.epicInstallPathError, copy.epicInstallPathSaved, copy.loginToRemove, game?.id, notify, onLibraryChanged, user?.uid]);
+
+  const handleSelectEpicInstallFolder = React.useCallback(async () => {
+    if (!game || !isEpicGame) return;
+    try {
+      const selected = await window.electronAPI?.selectFolder?.(
+        `${copy.epicInstallPath} — ${game.title}`,
+      );
+      if (!selected) return;
+      await saveEpicInstallPath(selected);
+    } catch {
+      notify(copy.epicInstallPathError, "error");
+    }
+  }, [copy.epicInstallPath, copy.epicInstallPathError, game, isEpicGame, notify, saveEpicInstallPath]);
+
+  const handleSelectEpicExecutable = React.useCallback(async () => {
+    if (!game || !isEpicGame) return;
+    try {
+      const selected = await window.electronAPI?.selectExecutable?.();
+      if (!selected) return;
+      await saveEpicInstallPath(selected);
+    } catch {
+      notify(copy.epicInstallPathError, "error");
+    }
+  }, [copy.epicInstallPathError, game, isEpicGame, notify, saveEpicInstallPath]);
+
   const handleOpenFolder = React.useCallback(async () => {
     if (!game?.executablePath) {
-      notify("Caminho do executável não informado.", "warning");
+      notify(copy.epicInstallPathMissing, "warning");
       return;
     }
     try {
-      const parentDir = game.executablePath.replace(/[/\\][^/\\]+$/, "");
-      await window.electronAPI?.openPath?.(parentDir);
+      const configuredPath = game.executablePath.trim();
+      const targetPath = /\.exe$/i.test(configuredPath)
+        ? configuredPath.replace(/[/\\][^/\\]+$/, "")
+        : configuredPath;
+      await window.electronAPI?.openPath?.(targetPath);
     } catch {
       notify("Não foi possível abrir o diretório do jogo.", "error");
     }
-  }, [game?.executablePath, notify]);
+  }, [copy.epicInstallPathMissing, game?.executablePath, notify]);
 
   const handleVerifyExecutable = React.useCallback(async () => {
     if (!game?.executablePath) {
@@ -155,6 +205,8 @@ export function useGameDetailActions({
     handleOpenFolder,
     handleVerifyExecutable,
     handleSaveLaunchProfile,
+    handleSelectEpicInstallFolder,
+    handleSelectEpicExecutable,
     handleOpenMods: onOpenMods,
   };
 }

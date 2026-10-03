@@ -22,8 +22,91 @@ const isWindowsExecutablePath = (value: string) =>
 
 export const getMonitorableExecutablePath = (game: Game): string | null => {
   const executablePath = String(game.executablePath || "").trim();
-  return isWindowsExecutablePath(executablePath) ? executablePath : null;
+  if (!executablePath) return null;
+  if (isWindowsExecutablePath(executablePath)) return executablePath;
+  // Epic installs can be watched by install folder when no .exe is stored yet.
+  if (game.launcherType === "epic" || game.epicCatalogId || game.epicLaunchId) {
+    return executablePath;
+  }
+  return null;
 };
+
+export const parseEpicAppName = (
+  launchId?: string | null,
+  fallbackAppName?: string | null,
+): string => {
+  const explicit = String(fallbackAppName || "").trim();
+  if (explicit && !explicit.includes(":")) return explicit;
+
+  const launch = safeDecodeURIComponent(String(launchId || explicit || "").trim());
+  const parts = launch.split(":").filter(Boolean);
+  if (parts.length >= 3) return parts[parts.length - 1];
+  if (parts.length === 1) return parts[0];
+  return explicit || launch;
+};
+
+/** Legendary app slug used by `legendary achievements <app>`. */
+export const resolveEpicAchievementAppName = (game: Pick<Game, "epicLaunchId" | "epicCatalogId" | "title">): string => {
+  const catalogPart = game.epicCatalogId?.includes(":")
+    ? game.epicCatalogId.split(":")[1]
+    : game.epicCatalogId;
+  return parseEpicAppName(game.epicLaunchId, catalogPart || game.title);
+};
+
+export const isEpicInstallPath = (value?: string | null): boolean => {
+  const trimmed = String(value || "").trim();
+  if (!trimmed || trimmed.startsWith("com.epicgames.launcher://")) return false;
+  if (isWindowsExecutablePath(trimmed)) return true;
+  return /^(?:[a-zA-Z]:[\\/]|\\\\).+$/i.test(trimmed);
+};
+
+export interface EpicInstallPathInput {
+  title?: string | null;
+  epicLaunchId?: string | null;
+  epicCatalogId?: string | null;
+  appName?: string | null;
+  executable?: string | null;
+  installLocation?: string | null;
+  executablePath?: string | null;
+}
+
+/** Resolve install folder/exe from inline fields or local Epic manifests. */
+export const resolveEpicInstallPath = async (
+  input: EpicInstallPathInput,
+): Promise<string | null> => {
+  const inlinePath = [
+    input.executablePath,
+    input.executable,
+    input.installLocation,
+  ]
+    .map((value) => String(value || "").trim())
+    .find((value) => isEpicInstallPath(value));
+  if (inlinePath) return inlinePath;
+
+  if (!window.electronAPI?.resolveEpicWatchTarget) return null;
+
+  try {
+    const appName = parseEpicAppName(input.epicLaunchId, input.appName);
+    const result = await window.electronAPI.resolveEpicWatchTarget({
+      appName: appName || undefined,
+      catalogId: input.epicCatalogId || undefined,
+      title: input.title || undefined,
+    });
+    const watchTarget = String(result?.watchTarget || "").trim();
+    return isEpicInstallPath(watchTarget) ? watchTarget : null;
+  } catch {
+    return null;
+  }
+};
+
+export const resolveEpicWatchTarget = async (game: Game): Promise<string | null> =>
+  resolveEpicInstallPath({
+    title: game.title,
+    epicLaunchId: game.epicLaunchId,
+    epicCatalogId: game.epicCatalogId,
+    appName: game.epicLaunchId,
+    executablePath: game.executablePath,
+  });
 
 /** Resolve o .exe real de um jogo Steam instalado (AppID -> caminho local). */
 export const resolveSteamInstalledExecutable = async (
@@ -45,12 +128,16 @@ export const resolveSteamInstalledExecutable = async (
 export const resolveMonitorableExecutablePath = async (game: Game): Promise<string | null> => {
   const direct = getMonitorableExecutablePath(game);
   if (direct) return direct;
+  if (game.launcherType === "epic" || game.epicCatalogId || game.epicLaunchId) {
+    const epicTarget = await resolveEpicWatchTarget(game);
+    if (epicTarget) return epicTarget;
+  }
   if (game.steamAppId) {
     const steamExe = await resolveSteamInstalledExecutable(game.steamAppId);
     if (steamExe) return steamExe;
   }
   const fallback = String(game.executablePath || "").trim();
-  return /\.exe$/i.test(fallback) ? fallback : null;
+  return fallback || null;
 };
 
 const buildEpicLaunchUri = (game: Game): string | null => {

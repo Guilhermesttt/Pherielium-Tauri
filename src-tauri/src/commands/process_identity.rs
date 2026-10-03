@@ -71,6 +71,44 @@ pub fn find_process_by_exact_path(system: &System, target_path: &str) -> Option<
     })
 }
 
+/// Steam/updater/helper binaries that must not count as the game starting.
+pub fn is_excluded_helper_executable(basename: &str) -> bool {
+    let stem = basename
+        .trim_end_matches(".exe")
+        .trim_end_matches(".EXE")
+        .to_lowercase();
+    [
+        "unins",
+        "setup",
+        "redist",
+        "eac_launcher",
+        "easyanticheat",
+        "steam",
+        "steamclient",
+        "steamservice",
+        "gameoverlayui",
+        "gameoverlayrenderer",
+        "gameoverlayrenderer64",
+        "crashhandler",
+        "crashhandler64",
+        "write_minidump",
+        "steamservice",
+        "steamerrorreporter",
+        "steamerrorreporter64",
+        "steamservice",
+        "steamwebhelper",
+        "epicgameslauncher",
+        "epicwebhelper",
+        "dotnetfx",
+        "vcredist",
+        "install",
+        "updater",
+        "update",
+    ]
+    .iter()
+    .any(|blocked| stem.contains(blocked))
+}
+
 /// Prefer the newest non-launcher executable inside the game directory.
 pub fn find_process_in_directory(system: &System, target_dir: &Path) -> Option<(Pid, PathBuf)> {
     let normalized_dir = normalize_path(&target_dir.to_string_lossy());
@@ -89,13 +127,7 @@ pub fn find_process_in_directory(system: &System, target_dir: &Path) -> Option<(
         }
 
         let basename = executable_basename(&exe.to_string_lossy());
-        let stem = basename.trim_end_matches(".exe");
-        if stem.contains("unins")
-            || stem.contains("setup")
-            || stem.contains("redist")
-            || stem.contains("eac_launcher")
-            || stem.contains("easyanticheat")
-        {
+        if is_excluded_helper_executable(&basename) {
             continue;
         }
 
@@ -149,5 +181,14 @@ mod tests {
             Some(Path::new(r"C:\Games\Other\Game.exe")),
             game_dir,
         ));
+    }
+
+    #[test]
+    fn excluded_helpers_cover_steam_and_updaters() {
+        assert!(is_excluded_helper_executable("steam.exe"));
+        assert!(is_excluded_helper_executable("GameOverlayUI.exe"));
+        assert!(is_excluded_helper_executable("steamerrorreporter64.exe"));
+        assert!(!is_excluded_helper_executable("Game.exe"));
+        assert!(!is_excluded_helper_executable("MyGame-Win64-Shipping.exe"));
     }
 }

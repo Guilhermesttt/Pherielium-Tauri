@@ -8,6 +8,7 @@
  * existing frontend code continues to work unchanged.
  */
 import { invoke } from "@tauri-apps/api/core";
+import { parseEpicAppName } from "../services/launcher";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getVersion } from "@tauri-apps/api/app";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -39,6 +40,9 @@ export const tauriAPI = {
 
   selectExecutable: () =>
     invoke<string | null>("launcher_select_executable"),
+
+  selectFolder: (title?: string) =>
+    invoke<string | null>("launcher_select_folder", { title: title ?? null }),
 
   detectAppIdFromPath: (path: string) =>
     invoke<string | null>("detect_app_id_from_path", { path }),
@@ -181,6 +185,9 @@ export const tauriAPI = {
   isExecutableRunning: (executablePath: string) =>
     invoke<boolean>("process_is_running", { executablePath }),
 
+  isProcessRunning: (pid: number) =>
+    invoke<boolean>("process_is_pid_running", { pid }),
+
   // ─── Achievements ──────────────────────────────────────────────────────────
   getLocalAchievementDefinitions: (gameId: string) =>
     invoke<Record<string, unknown> | null>("achievement_get_definitions", { gameId }),
@@ -272,8 +279,70 @@ export const tauriAPI = {
   fetchEpicStoreDetails: (request: unknown) =>
     invoke<Record<string, unknown>>("epic_fetch_store_details", { request }),
 
-  getEpicLocalAchievements: (_request: unknown) =>
-    Promise.resolve({ source: "epic-local", status: "not-installed", installed: false, achievements: [], total: 0, unlocked: 0, readableFileCount: 0, binarySaveDetected: false, scanTruncated: false }),
+  resolveEpicWatchTarget: (request: { appName?: string; catalogId?: string; title?: string }) =>
+    invoke<{
+      watchTarget?: string | null;
+      executablePath?: string | null;
+      installLocation?: string | null;
+      isInstalled?: boolean;
+    }>(
+      "epic_resolve_watch_target",
+      { appName: request.appName, catalogId: request.catalogId, title: request.title },
+    ),
+
+  getEpicLocalAchievements: async (request: {
+    title?: string;
+    epicLaunchId?: string;
+    epicCatalogId?: string;
+  }) => {
+    const catalogPart = request.epicCatalogId?.includes(":")
+      ? request.epicCatalogId.split(":")[1]
+      : request.epicCatalogId;
+    const appName = parseEpicAppName(request.epicLaunchId, catalogPart || request.title);
+    if (!appName) {
+      return {
+        source: "epic-local",
+        status: "missing-app-name",
+        installed: false,
+        achievements: [],
+        total: 0,
+        unlocked: 0,
+        readableFileCount: 0,
+        binarySaveDetected: false,
+        scanTruncated: false,
+      };
+    }
+    try {
+      const result = await invoke<{ total: number; completed: number; list: unknown[] }>(
+        "epic_get_achievements",
+        { appName },
+      );
+      const achievements = Array.isArray(result?.list) ? result.list : [];
+      return {
+        source: "epic-local",
+        status: achievements.length > 0 ? "ok" : "empty",
+        installed: achievements.length > 0,
+        achievements,
+        total: result?.total || achievements.length,
+        unlocked: result?.completed || achievements.filter((item: any) => item?.achieved || item?.unlocked).length,
+        readableFileCount: 0,
+        binarySaveDetected: false,
+        scanTruncated: false,
+      };
+    } catch {
+      return {
+        source: "epic-local",
+        status: "error",
+        installed: false,
+        achievements: [],
+        total: 0,
+        unlocked: 0,
+        readableFileCount: 0,
+        binarySaveDetected: false,
+        scanTruncated: false,
+      };
+    }
+  },
 
   // ─── Nexus Mods ────────────────────────────────────────────────────────────
   getNexusStatus: () =>

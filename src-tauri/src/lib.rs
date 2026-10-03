@@ -117,10 +117,12 @@ pub fn run() {
             // Launcher
             launcher_open_executable,
             launcher_select_executable,
+            launcher_select_folder,
             // Process monitor
             process_detect_running,
             process_detect_running_details,
             process_is_running,
+            process_is_pid_running,
             game_scan_local,
             steam_scan_installed_games,
             // Achievements
@@ -144,6 +146,7 @@ pub fn run() {
             epic_open_login_window,
             epic_capture_auth_code,
             epic_fetch_store_details,
+            epic_resolve_watch_target,
             // Nexus
             nexus_get_status,
             nexus_connect_personal_key,

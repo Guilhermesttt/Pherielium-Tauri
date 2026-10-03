@@ -7,15 +7,22 @@ use crate::commands::process_identity::{
 use parking_lot::Mutex;
 use serde_json::json;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use sysinfo::{ProcessesToUpdate, ProcessRefreshKind, RefreshKind, System};
 use tauri::{AppHandle, Emitter, Manager, State};
+
+/// After launch, only exact-path matches are accepted for this long (Steam updates/helpers).
+pub const LAUNCH_DIRECTORY_GRACE_SECS: u64 = 45;
 
 #[derive(Default)]
 pub struct GameWatchState {
     target_executable: Mutex<Option<String>>,
     target_dir: Mutex<Option<PathBuf>>,
+    target_set_at: Mutex<Option<Instant>>,
+    target_is_directory: Mutex<bool>,
     active: Mutex<bool>,
+    /// When true, hide the hub on game start and show it only after a confirmed exit.
+    restore_launcher: Mutex<bool>,
 }
 
 fn resolve_target_dir(executable: &str) -> Option<PathBuf> {
@@ -69,11 +76,17 @@ pub fn game_watch_set_target(
         .map(|value| value.trim_matches('"').trim_matches('\'').trim().to_string())
         .filter(|value| !value.is_empty());
     let normalized = cleaned.as_ref().map(|value| normalize_path(value));
+    let is_directory = cleaned
+        .as_ref()
+        .map(|value| Path::new(value).is_dir())
+        .unwrap_or(false);
     let dir = cleaned
         .as_ref()
         .and_then(|value| resolve_target_dir(value));
     *state.target_executable.lock() = normalized;
     *state.target_dir.lock() = dir;
+    *state.target_set_at.lock() = Some(Instant::now());
+    *state.target_is_directory.lock() = is_directory;
     *state.active.lock() = true;
     Ok(())
 }
@@ -82,21 +95,44 @@ pub fn game_watch_set_target(
 pub fn game_watch_stop(state: State<'_, GameWatchState>) -> Result<(), String> {
     *state.target_executable.lock() = None;
     *state.target_dir.lock() = None;
+    *state.target_set_at.lock() = None;
+    *state.target_is_directory.lock() = false;
     *state.active.lock() = false;
     Ok(())
 }
 
+fn should_restore_launcher(app: &AppHandle) -> bool {
+    app.try_state::<GameWatchState>()
+        .map(|state| *state.restore_launcher.lock())
+        .unwrap_or(false)
+}
+
 pub fn reveal_main_window(app: &AppHandle) {
+    if !should_restore_launcher(app) {
+        return;
+    }
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();
     }
+    if let Some(state) = app.try_state::<GameWatchState>() {
+        *state.restore_launcher.lock() = false;
+    }
 }
 
 pub fn conceal_main_window(app: &AppHandle) {
+    if !should_restore_launcher(app) {
+        return;
+    }
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.hide();
+    }
+}
+
+pub fn set_restore_launcher(app: &AppHandle, restore: bool) {
+    if let Some(state) = app.try_state::<GameWatchState>() {
+        *state.restore_launcher.lock() = restore;
     }
 }
 
@@ -105,6 +141,7 @@ fn locate_target_process(
     target_path: &str,
     target_dir: Option<&Path>,
     tracked_pid: Option<sysinfo::Pid>,
+    allow_directory_fallback: bool,
 ) -> Option<(sysinfo::Pid, PathBuf, Option<u64>)> {
     if let Some(pid) = tracked_pid {
         if let Some(process) = system.process(pid) {
@@ -125,12 +162,14 @@ fn locate_target_process(
         return Some((pid, matched_path, start_ms));
     }
 
-    if let Some(dir) = target_dir {
-        if let Some((pid, matched_path)) = find_process_in_directory(system, dir) {
-            let start_ms = system
-                .process(pid)
-                .and_then(process_start_time_ms);
-            return Some((pid, matched_path, start_ms));
+    if allow_directory_fallback {
+        if let Some(dir) = target_dir {
+            if let Some((pid, matched_path)) = find_process_in_directory(system, dir) {
+                let start_ms = system
+                    .process(pid)
+                    .and_then(process_start_time_ms);
+                return Some((pid, matched_path, start_ms));
+            }
         }
     }
 
@@ -157,7 +196,16 @@ pub fn start_game_watch(app: AppHandle) {
             };
             let target = state.target_executable.lock().clone();
             let target_dir = state.target_dir.lock().clone();
+            let target_set_at = *state.target_set_at.lock();
+            let target_is_directory = *state.target_is_directory.lock();
             let active = *state.active.lock();
+            let allow_directory_fallback = if target_is_directory {
+                true
+            } else {
+                target_set_at
+                    .map(|set_at| set_at.elapsed() >= Duration::from_secs(LAUNCH_DIRECTORY_GRACE_SECS))
+                    .unwrap_or(false)
+            };
             if !active || target.is_none() {
                 if was_running {
                     was_running = false;
@@ -189,6 +237,7 @@ pub fn start_game_watch(app: AppHandle) {
                 &target,
                 target_dir.as_deref(),
                 tracked_pid,
+                allow_directory_fallback,
             );
 
             if located.is_none() && tracked_pid.is_some() {
@@ -199,6 +248,7 @@ pub fn start_game_watch(app: AppHandle) {
                     &target,
                     target_dir.as_deref(),
                     None,
+                    allow_directory_fallback,
                 );
             }
 
@@ -225,6 +275,8 @@ pub fn start_game_watch(app: AppHandle) {
                 continue;
             }
 
+            // Launcher helpers die before the real game exe. Wait ~20s before ending,
+            // matching the old hub's handoff grace so the window is not revealed early.
             if target_dir.is_some() && handoff_grace_ticks < 20 {
                 handoff_grace_ticks += 1;
                 continue;

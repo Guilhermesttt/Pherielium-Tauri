@@ -428,6 +428,208 @@ pub async fn epic_authenticate(
     Ok(json!({ "success": true }))
 }
 
+fn epic_catalog_token(value: &str) -> String {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return String::new();
+    }
+    trimmed
+        .rsplit(':')
+        .next()
+        .unwrap_or(trimmed)
+        .to_lowercase()
+}
+
+fn epic_launch_tokens(value: &str) -> Vec<String> {
+    let mut tokens = Vec::new();
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return tokens;
+    }
+    tokens.push(trimmed.to_lowercase());
+    for part in trimmed.split(':') {
+        let token = part.trim().to_lowercase();
+        if !token.is_empty() && !tokens.contains(&token) {
+            tokens.push(token);
+        }
+    }
+    tokens
+}
+
+fn epic_titles_match(expected: &str, candidate: &str) -> bool {
+    let expected = expected.trim().to_lowercase();
+    let candidate = candidate.trim().to_lowercase();
+    if expected.is_empty() || candidate.is_empty() {
+        return false;
+    }
+    expected == candidate || candidate.contains(&expected) || expected.contains(&candidate)
+}
+
+fn find_installed_epic_game<'a>(
+    installed: &'a [EpicLibraryGame],
+    app_name: &str,
+    catalog_id: &str,
+    title: &str,
+) -> Option<&'a EpicLibraryGame> {
+    if !app_name.is_empty() {
+        for token in epic_launch_tokens(app_name) {
+            if let Some(game) = installed.iter().find(|game| {
+                game.app_name.eq_ignore_ascii_case(&token)
+                    || epic_titles_match(&token, &game.title)
+            }) {
+                return Some(game);
+            }
+        }
+    }
+
+    if !catalog_id.is_empty() {
+        let query_catalog = epic_catalog_token(catalog_id);
+        if !query_catalog.is_empty() {
+            if let Some(game) = installed.iter().find(|game| {
+                !game.catalog_id.is_empty()
+                    && (game.catalog_id.eq_ignore_ascii_case(catalog_id)
+                        || epic_catalog_token(&game.catalog_id) == query_catalog
+                        || catalog_id.ends_with(&game.catalog_id)
+                        || game.catalog_id.ends_with(catalog_id))
+            }) {
+                return Some(game);
+            }
+        }
+
+        if let Some(game) = installed
+            .iter()
+            .find(|game| !game.namespace.is_empty() && game.namespace.eq_ignore_ascii_case(catalog_id))
+        {
+            return Some(game);
+        }
+    }
+
+    if !title.is_empty() {
+        let exact = installed
+            .iter()
+            .filter(|game| epic_titles_match(title, &game.title))
+            .collect::<Vec<_>>();
+        if exact.len() == 1 {
+            return Some(exact[0]);
+        }
+        if exact.len() > 1 {
+            let normalized_title = title.trim().to_lowercase();
+            if let Some(game) = exact.iter().find(|game| game.title.trim().eq_ignore_ascii_case(title)) {
+                return Some(game);
+            }
+            if let Some(game) = exact.iter().find(|game| game.title.trim().to_lowercase() == normalized_title) {
+                return Some(game);
+            }
+        }
+    }
+
+    None
+}
+
+fn attach_install_info_to_result(item: &mut Value, installed: &[EpicLibraryGame]) {
+    let Some(obj) = item.as_object_mut() else {
+        return;
+    };
+    if obj.get("isInstalled").and_then(|v| v.as_bool()) == Some(true)
+        && obj.get("installLocation").and_then(|v| v.as_str()).is_some()
+    {
+        return;
+    }
+
+    let app_name = obj
+        .get("appName")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    let catalog_id = obj
+        .get("catalogId")
+        .or_else(|| obj.get("id"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    let title = obj
+        .get("title")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+
+    let Some(game) = find_installed_epic_game(
+        installed,
+        app_name.as_str(),
+        catalog_id.as_str(),
+        title.as_str(),
+    ) else {
+        return;
+    };
+
+    obj.insert("isInstalled".to_string(), json!(true));
+    obj.insert("installLocation".to_string(), json!(game.install_location));
+    obj.insert("executable".to_string(), json!(game.executable));
+    if app_name.is_empty() && !game.app_name.is_empty() {
+        obj.insert("appName".to_string(), json!(game.app_name));
+    }
+    if catalog_id.is_empty() && !game.catalog_id.is_empty() {
+        obj.insert("catalogId".to_string(), json!(game.catalog_id));
+        obj.insert("id".to_string(), json!(game.catalog_id));
+    }
+    if obj
+        .get("namespace")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .is_empty()
+        && !game.namespace.is_empty()
+    {
+        obj.insert("namespace".to_string(), json!(game.namespace));
+    }
+}
+
+#[command]
+pub fn epic_resolve_watch_target(
+    app_name: Option<String>,
+    catalog_id: Option<String>,
+    title: Option<String>,
+) -> Result<Value, String> {
+    let app_name = app_name.unwrap_or_default();
+    let catalog_id = catalog_id.unwrap_or_default();
+    let title = title.unwrap_or_default();
+    let installed = read_installed_epic_games();
+
+    let matched = find_installed_epic_game(&installed, app_name.trim(), catalog_id.trim(), title.trim());
+
+    let Some(game) = matched else {
+        return Ok(json!({
+            "watchTarget": Value::Null,
+            "executablePath": Value::Null,
+            "installLocation": Value::Null,
+            "isInstalled": false,
+        }));
+    };
+
+    let install_location = game
+        .install_location
+        .as_ref()
+        .filter(|loc| Path::new(loc.as_str()).is_dir())
+        .cloned();
+    let executable = game
+        .executable
+        .as_ref()
+        .filter(|path| Path::new(path.as_str()).is_file())
+        .cloned();
+
+    let watch_target = install_location.clone().or(executable.clone());
+
+    Ok(json!({
+        "watchTarget": watch_target,
+        "executablePath": executable,
+        "installLocation": install_location,
+        "appName": game.app_name,
+        "isInstalled": watch_target.is_some(),
+    }))
+}
+
 #[command]
 pub async fn epic_list_library(app: AppHandle) -> Result<Value, String> {
     emit_epic_progress(&app, "reading-library", None, None);
@@ -962,6 +1164,7 @@ pub async fn epic_search_store(query: String) -> Result<Vec<Value>, String> {
                     "description": inst.description,
                     "isInstalled": true,
                     "executable": inst.executable,
+                    "installLocation": inst.install_location,
                 }));
             }
         }
@@ -1118,7 +1321,73 @@ pub async fn epic_search_store(query: String) -> Result<Vec<Value>, String> {
         }
     }
 
+    let installed = read_installed_epic_games();
+    for item in results.iter_mut() {
+        attach_install_info_to_result(item, &installed);
+    }
+
     Ok(results)
+}
+
+const EPIC_SIBLING_QUALIFIERS: &[&str] = &[
+    "lego", "odyssey", "rocket", "racing", "festival", "metal", "storm", "reload", "creative",
+    "blitz", "save", "world", "party", "zero", "build",
+];
+
+fn tokenize_epic_title(title: &str) -> Vec<String> {
+    title
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { ' ' })
+        .collect::<String>()
+        .split_whitespace()
+        .map(|s| s.to_string())
+        .collect()
+}
+
+fn epic_slug_conflicts_with_title(slug: &str, title: &str) -> bool {
+    if title.trim().is_empty() {
+        return false;
+    }
+    let slug_lower = slug.to_lowercase();
+    let title_lower = title.to_lowercase();
+    EPIC_SIBLING_QUALIFIERS.iter().any(|token| {
+        slug_lower.contains(token) && !title_lower.contains(token)
+    })
+}
+
+fn epic_titles_compatible(expected: &str, actual: &str) -> bool {
+    let expected = expected.trim();
+    let actual = actual.trim();
+    if expected.is_empty() || actual.is_empty() {
+        return true;
+    }
+
+    let expected_tokens: HashSet<String> = tokenize_epic_title(expected).into_iter().collect();
+    for token in tokenize_epic_title(actual) {
+        let is_qualifier = EPIC_SIBLING_QUALIFIERS.iter().any(|qualifier| {
+            token == *qualifier || token.contains(qualifier) || qualifier.contains(&token)
+        });
+        if is_qualifier && !expected_tokens.contains(&token) {
+            return false;
+        }
+    }
+
+    let expected_norm: String = tokenize_epic_title(expected).join("");
+    let actual_norm: String = tokenize_epic_title(actual).join("");
+    if expected_norm.is_empty() || actual_norm.is_empty() {
+        return false;
+    }
+    if expected_norm == actual_norm {
+        return true;
+    }
+
+    let (shorter, longer) = if expected_norm.len() <= actual_norm.len() {
+        (&expected_norm, &actual_norm)
+    } else {
+        (&actual_norm, &expected_norm)
+    };
+    shorter.len() >= 3 && longer.starts_with(shorter.as_str())
 }
 
 #[command]
@@ -1236,18 +1505,26 @@ pub async fn epic_fetch_store_details(request: Value) -> Result<Value, String> {
                         || v.eq_ignore_ascii_case(&app_clean)
                         || v.to_lowercase().contains(&app_clean)
                     {
+                        if epic_slug_conflicts_with_title(v, title_query) {
+                            continue;
+                        }
                         if !candidate_slugs.contains(v) {
                             candidate_slugs.push(v.clone());
-                            if candidate_slugs.len() >= 4 {
+                            if candidate_slugs.len() >= 8 {
                                 break;
                             }
                         }
                     }
                 }
             }
-            candidate_slugs.truncate(4);
+            candidate_slugs.truncate(8);
         }
     }
+
+    if !title_query.is_empty() {
+        candidate_slugs.retain(|slug| !epic_slug_conflicts_with_title(slug, title_query));
+    }
+    candidate_slugs.truncate(4);
 
     // 2. Itera sobre candidate_slugs tentando buscar página de produto no CDN Akamai da Epic
     for candidate in candidate_slugs.iter().take(4) {
@@ -1401,6 +1678,10 @@ pub async fn epic_fetch_store_details(request: Value) -> Result<Value, String> {
                             .or_else(|| page.get("_title").and_then(|s| s.as_str()))
                             .unwrap_or(title_query);
 
+                        if !title_query.is_empty() && !epic_titles_compatible(title_query, title) {
+                            continue;
+                        }
+
                         if !card_image.is_empty() || !bg_image.is_empty() || !screenshots.is_empty() || !description.is_empty() {
                             return Ok(json!({
                                 "catalogId": request.get("catalogId").cloned().unwrap_or(json!("")),
@@ -1452,7 +1733,7 @@ pub async fn epic_fetch_store_details(request: Value) -> Result<Value, String> {
                         .and_then(|v| v.as_str())
                         .unwrap_or(title_query);
 
-                    if !appid.is_empty() {
+                    if epic_titles_compatible(title_query, matched_name) && !appid.is_empty() {
                         let card_img = format!(
                             "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{appid}/library_600x900_2x.jpg"
                         );

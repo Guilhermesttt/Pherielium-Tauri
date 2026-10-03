@@ -2,6 +2,8 @@ import { apiFetch } from "./api";
 import type { LauncherLanguage } from "../context/PreferencesContext";
 import type { Game, LauncherType } from "../types/domain";
 import { createLibraryGame, updateLibraryGame, listLibraryGames, deleteLibraryGame } from "./localLibrary";
+import { resolveEpicInstallPath } from "./launcher";
+import { epicStoreDetailsMatch } from "../utils/epicDetailsMatch";
 
 export interface EpicAppDetails {
   catalogId: string;
@@ -308,8 +310,23 @@ export const syncEpicLibraryToLocal = async (
           (gameTitle ? existingByTitle.get(gameTitle.toLowerCase().trim()) : null) ||
           existingById.get(deterministicDocId);
 
+        const libraryMetadataDrifted = Boolean(
+          existing?.title &&
+          gameTitle &&
+          !epicStoreDetailsMatch({
+            expectedTitle: gameTitle,
+            expectedCatalogId: catalogId,
+            expectedLaunchId: appName,
+            resultTitle: existing.title,
+            resultCatalogId: existing.epicCatalogId,
+            resultAppName: existing.epicLaunchId,
+          }),
+        );
+
         // Se o jogo já possui metadados completos em cache local, evita requisição de loja redundante
-        const needsStoreDetails = !existing || !existing.cardImage || !existing.description;
+        const needsStoreDetails =
+          !existing || !existing.cardImage || !existing.description || libraryMetadataDrifted;
+        const keepExistingArt = Boolean(existing && !libraryMetadataDrifted);
 
         const [detailsResult, achievements] = await Promise.all([
           needsStoreDetails
@@ -336,18 +353,17 @@ export const syncEpicLibraryToLocal = async (
         ]);
         const rawDetails = detailsResult?.ok ? detailsResult.data : null;
         let validDetails = rawDetails;
-        if (validDetails && gameTitle && validDetails.title) {
-          const normGame = gameTitle.toLowerCase().replace(/[^a-z0-9]/g, "");
-          const normStore = validDetails.title.toLowerCase().replace(/[^a-z0-9]/g, "");
-          const isMatch =
-            normGame === normStore ||
-            (normGame.length >= 3 && normStore.length >= 3 && (
-              normGame.startsWith(normStore) ||
-              normStore.startsWith(normGame) ||
-              normStore.includes(normGame) ||
-              normGame.includes(normStore)
-            )) ||
-            Boolean(catalogId && validDetails.catalogId && catalogId.toLowerCase() === validDetails.catalogId.toLowerCase());
+        if (validDetails && (gameTitle || catalogId || appName)) {
+          const isMatch = epicStoreDetailsMatch({
+            expectedTitle: gameTitle,
+            expectedCatalogId: catalogId,
+            expectedLaunchId: appName,
+            expectedProductSlug: productSlug,
+            resultTitle: validDetails.title,
+            resultCatalogId: validDetails.catalogId,
+            resultProductSlug: validDetails.productSlug,
+            resultAppName: appName,
+          });
           if (!isMatch) {
             validDetails = null;
           }
@@ -365,12 +381,24 @@ export const syncEpicLibraryToLocal = async (
         )?.url;
 
         const docId = existing?.id || deterministicDocId;
-        const resolvedCover = validDetails?.cardImage || tallImage || wideImage || existing?.cardImage || existing?.image || "";
-        const resolvedBackground = validDetails?.backgroundImage || wideImage || tallImage || existing?.backgroundImage || "";
-        const resolvedLogo = validDetails?.logoImage || rawLogoImage || existing?.logoImage || "";
+        const resolvedCover =
+          validDetails?.cardImage ||
+          tallImage ||
+          wideImage ||
+          (keepExistingArt ? existing?.cardImage : "") ||
+          (keepExistingArt ? existing?.image : "") ||
+          "";
+        const resolvedBackground =
+          validDetails?.backgroundImage ||
+          wideImage ||
+          tallImage ||
+          (keepExistingArt ? existing?.backgroundImage : "") ||
+          "";
+        const resolvedLogo =
+          validDetails?.logoImage || rawLogoImage || (keepExistingArt ? existing?.logoImage : "") || "";
         const resolvedScreenshots = validDetails?.screenshots?.length
           ? validDetails.screenshots
-          : (wideImage ? [wideImage] : (existing?.screenshots || []));
+          : (wideImage ? [wideImage] : (keepExistingArt ? existing?.screenshots || [] : []));
 
         const gameData: Game = {
           id: docId,
@@ -390,7 +418,15 @@ export const syncEpicLibraryToLocal = async (
           isFavorite: existing?.isFavorite ?? false,
           hoursPlayed: existing?.hoursPlayed ?? 0,
           lastPlayedAt: existing?.lastPlayedAt,
-          executablePath: existing?.executablePath || "",
+          executablePath: await resolveEpicInstallPath({
+            title: gameTitle,
+            appName,
+            epicLaunchId: appName,
+            epicCatalogId: catalogId,
+            executable: owned.executable,
+            installLocation: owned.installLocation,
+            executablePath: existing?.executablePath,
+          }) || "",
           launcherType: "epic" as LauncherType,
           epicCatalogId: catalogId,
           epicLaunchId: appName,

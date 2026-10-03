@@ -71,14 +71,44 @@ fn overlay_url(_app: &AppHandle) -> Result<WebviewUrl, String> {
     Ok(WebviewUrl::App("overlay.html".into()))
 }
 
+fn claim_overlay_foreground(window: &tauri::WebviewWindow) {
+    let _ = window.show();
+    let _ = window.set_always_on_top(true);
+    let _ = window.set_focus();
+
+    #[cfg(windows)]
+    {
+        use windows::Win32::UI::WindowsAndMessaging::{
+            ClipCursor, SetForegroundWindow, SetWindowPos, HWND_TOPMOST, SWP_NOMOVE, SWP_NOSIZE,
+            SWP_SHOWWINDOW,
+        };
+
+        if let Ok(hwnd) = window.hwnd() {
+            let hwnd = windows::Win32::Foundation::HWND(hwnd.0);
+            unsafe {
+                let _ = ClipCursor(None);
+                let _ = SetWindowPos(
+                    hwnd,
+                    HWND_TOPMOST,
+                    0,
+                    0,
+                    0,
+                    0,
+                    SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW,
+                );
+                let _ = SetForegroundWindow(hwnd);
+            }
+        }
+    }
+}
+
 fn set_overlay_interactive(app: &AppHandle, interactive: bool) -> Result<(), String> {
     if let Some(window) = app.get_webview_window(OVERLAY_LABEL) {
         window
             .set_ignore_cursor_events(!interactive)
             .map_err(|e| e.to_string())?;
         if interactive {
-            let _ = window.show();
-            let _ = window.set_always_on_top(true);
+            claim_overlay_foreground(&window);
         }
     }
     Ok(())
@@ -257,9 +287,9 @@ pub fn overlay_show_game_start(app: AppHandle, payload: Value) -> Result<(), Str
             "gameTitle": game_title,
             "title": "Divirta-se",
             "description": if game_title.is_empty() {
-                "O overlay está ativo enquanto você joga.".to_string()
+                "Preparando sessão de jogo…".to_string()
             } else {
-                format!("Jogando {game_title}")
+                format!("Preparando {game_title}…")
             },
         }),
     );
@@ -361,10 +391,6 @@ fn ensure_cursor_watch(app: &AppHandle) {
 pub fn overlay_set_cursor_watch(app: AppHandle, enabled: bool) -> Result<(), String> {
     ensure_cursor_watch(&app);
     CURSOR_WATCH_ENABLED.store(enabled, Ordering::SeqCst);
-    if !enabled {
-        // Restore click-through when watch stops (panel closed / toasts gone).
-        let _ = set_overlay_interactive(&app, false);
-    }
     Ok(())
 }
 

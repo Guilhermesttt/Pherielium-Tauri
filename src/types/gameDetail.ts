@@ -183,6 +183,13 @@ export interface GameDetailCopy {
   launch: string;
   launching: string;
   openFolder: string;
+  epicInstallPath: string;
+  epicInstallPathHint: string;
+  epicSelectInstallFolder: string;
+  epicSelectExecutable: string;
+  epicInstallPathSaved: string;
+  epicInstallPathError: string;
+  epicInstallPathMissing: string;
   confirmDeletePlaceholder: string;
   gameRunning: string;
 }
@@ -273,6 +280,13 @@ export const DETAIL_PANEL_COPY: Record<string, GameDetailCopy> = {
     launch: "Jogar",
     launching: "Iniciando...",
     openFolder: "Abrir pasta",
+    epicInstallPath: "Local de instalação (Epic)",
+    epicInstallPathHint: "Aponte a pasta do jogo ou o .exe principal para o hub detectar quando você estiver jogando.",
+    epicSelectInstallFolder: "Escolher pasta",
+    epicSelectExecutable: "Escolher .exe",
+    epicInstallPathSaved: "Local do jogo Epic salvo.",
+    epicInstallPathError: "Não foi possível salvar o local do jogo.",
+    epicInstallPathMissing: "Nenhum local configurado",
     confirmDeletePlaceholder: "Digite o nome do jogo",
     gameRunning: "Jogo em execução",
   },
@@ -361,6 +375,13 @@ export const DETAIL_PANEL_COPY: Record<string, GameDetailCopy> = {
     launch: "Play",
     launching: "Launching...",
     openFolder: "Open folder",
+    epicInstallPath: "Install location (Epic)",
+    epicInstallPathHint: "Point to the game folder or main .exe so the hub can detect when you are playing.",
+    epicSelectInstallFolder: "Choose folder",
+    epicSelectExecutable: "Choose .exe",
+    epicInstallPathSaved: "Epic game location saved.",
+    epicInstallPathError: "Could not save the game location.",
+    epicInstallPathMissing: "No location configured",
     confirmDeletePlaceholder: "Type the game name",
     gameRunning: "Game is running",
   },
@@ -449,6 +470,13 @@ export const DETAIL_PANEL_COPY: Record<string, GameDetailCopy> = {
     launch: "Jugar",
     launching: "Iniciando...",
     openFolder: "Abrir carpeta",
+    epicInstallPath: "Ubicación de instalación (Epic)",
+    epicInstallPathHint: "Indica la carpeta del juego o el .exe principal para que el hub detecte cuando estés jugando.",
+    epicSelectInstallFolder: "Elegir carpeta",
+    epicSelectExecutable: "Elegir .exe",
+    epicInstallPathSaved: "Ubicación del juego Epic guardada.",
+    epicInstallPathError: "No se pudo guardar la ubicación del juego.",
+    epicInstallPathMissing: "Sin ubicación configurada",
     confirmDeletePlaceholder: "Escribe el nombre del juego",
     gameRunning: "El juego está en ejecución",
   },

@@ -74,6 +74,8 @@ interface AchievementToastCardProps {
   toast: AchievementToast;
   position?: AchievementNotificationPosition;
   animated?: boolean;
+  className?: string;
+  interactive?: boolean;
   onOpenDetails?: () => void;
 }
 
@@ -87,6 +89,8 @@ export const AchievementToastCard: React.FC<AchievementToastCardProps> = ({
   toast,
   position = "top-right",
   animated = true,
+  className = "",
+  interactive = false,
   onOpenDetails,
 }) => {
   const tier = toast.tier || "bronze";
@@ -115,7 +119,14 @@ export const AchievementToastCard: React.FC<AchievementToastCardProps> = ({
       }
       exit={
         animated
-          ? { opacity: 0, x: entry.x * 0.6, y: entry.y * 0.6, scale: 0.97, transition: { duration: 0.22, ease: "easeOut" } }
+          ? {
+            opacity: 0,
+            x: entry.x * 0.85,
+            y: entry.y * 0.85,
+            scale: 0.94,
+            filter: "blur(2px)",
+            transition: { duration: 0.32, ease: [0.4, 0, 1, 1] },
+          }
           : { opacity: 0, transition: { duration: 0.12 } }
       }
       transition={
@@ -125,8 +136,9 @@ export const AchievementToastCard: React.FC<AchievementToastCardProps> = ({
       }
       whileHover={animated ? { scale: 1.015 } : undefined}
       whileTap={onOpenDetails && animated ? { scale: 0.985 } : undefined}
-      className={`overlay-card achievement-card tier-${tier}${onOpenDetails ? " is-clickable" : ""}${isPlatinum ? " is-platinum" : ""}`}
+      className={`overlay-card achievement-card tier-${tier}${onOpenDetails ? " is-clickable" : ""}${isPlatinum ? " is-platinum" : ""}${className ? ` ${className}` : ""}`}
       data-side={side}
+      {...(interactive ? { "data-overlay-interactive": "" } : {})}
       onClick={onOpenDetails}
       role={onOpenDetails ? "button" : undefined}
       tabIndex={onOpenDetails ? 0 : undefined}

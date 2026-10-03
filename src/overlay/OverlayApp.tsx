@@ -486,6 +486,10 @@ const OverlayApp: React.FC = () => {
         return;
       }
 
+      if (toast.kind === "game-start" && toastsRef.current.some((item) => item.kind === "game-start")) {
+        return;
+      }
+
       let toastIdToSchedule = toast.id;
 
       // Agrupamento inteligente para mensagens repetidas do mesmo amigo
@@ -554,11 +558,17 @@ const OverlayApp: React.FC = () => {
 
   useEffect(() => {
     if (fullCapturesCursor) {
-      void invoke("overlay_set_cursor_watch", { enabled: false }).catch(() => undefined);
-      void invoke("overlay_set_ignore_cursor_events", { ignore: false }).catch((err) =>
-        overlayLogger.warn("Falha ao ajustar cursor do overlay:", err),
-      );
-      return;
+      let cancelled = false;
+      void (async () => {
+        await invoke("overlay_set_cursor_watch", { enabled: false }).catch(() => undefined);
+        if (cancelled) return;
+        await invoke("overlay_set_ignore_cursor_events", { ignore: false }).catch((err) =>
+          overlayLogger.warn("Falha ao ajustar cursor do overlay:", err),
+        );
+      })();
+      return () => {
+        cancelled = true;
+      };
     }
 
     if (!hasHitTestTargets) {
@@ -608,8 +618,6 @@ const OverlayApp: React.FC = () => {
       cancelled = true;
       unlisten?.();
       document.removeEventListener("pointerleave", onLeaveInteractive, true);
-      void invoke("overlay_set_cursor_watch", { enabled: false }).catch(() => undefined);
-      void invoke("overlay_set_ignore_cursor_events", { ignore: true }).catch(() => undefined);
     };
   }, [fullCapturesCursor, hasHitTestTargets]);
 
@@ -755,11 +763,11 @@ const OverlayApp: React.FC = () => {
       if (isGameStart && startTitle) {
         setPanelData((prev) => ({
           ...prev,
-          gameTitle: prev.gameTitle || startTitle,
-          playingGame: prev.playingGame || {
+          gameTitle: startTitle,
+          playingGame: {
             id: "active-game",
             title: startTitle,
-            sessionStartedAt: prev.playingGame?.sessionStartedAt || new Date().toISOString(),
+            monitoring: "unverified",
           },
         }));
       }
@@ -768,7 +776,7 @@ const OverlayApp: React.FC = () => {
         ...normalized,
         title: isGameStart ? (payload.title || "Divirta-se") : normalized.title,
         description: isGameStart
-          ? (payload.description || "O overlay está ativo enquanto você joga.")
+          ? (payload.description || "Aguardando o jogo iniciar…")
           : normalized.description,
       };
       if (!isGameStart) {
@@ -833,7 +841,12 @@ const OverlayApp: React.FC = () => {
           ...activeGame,
           title: title || activeGame.title,
           image: activeGame.image || activeGame.backgroundImage || activeGame.cardImage,
-          sessionStartedAt: activeGame.sessionStartedAt || prev.playingGame?.sessionStartedAt,
+          sessionStartedAt: (() => {
+            const incoming = activeGame.sessionStartedAt;
+            const unverified = activeGame.monitoring === "unverified";
+            if (incoming === "" || unverified) return undefined;
+            return incoming || undefined;
+          })(),
         } : (payload.currentGame === null || payload.playingGame === null ? undefined : prev.playingGame),
         friends: friendsList,
         achievements,
@@ -1201,6 +1214,7 @@ const OverlayApp: React.FC = () => {
   const hasCurrentGame = Boolean(panelData.gameTitle || panelData.playingGame?.title);
   const gameArt = panelData.playingGame?.image;
   const sessionStartedAt = panelData.playingGame?.sessionStartedAt;
+  const presenceStatus = panelData.playingGame?.presenceStatus || panelData.presenceStatus;
 
   useEffect(() => {
     if (!sessionStartedAt) return;
@@ -1209,7 +1223,10 @@ const OverlayApp: React.FC = () => {
   }, [sessionStartedAt]);
 
   const sessionClock = React.useMemo(() => {
-    if (!sessionStartedAt) return hasCurrentGame ? "Em andamento" : "Aguardando jogo";
+    if (!hasCurrentGame) return "Aguardando jogo";
+    if (!sessionStartedAt) {
+      return presenceStatus === "waiting" ? "Preparando sessão…" : "Aguardando jogo iniciar…";
+    }
     const start = Date.parse(sessionStartedAt);
     if (!Number.isFinite(start)) return "Em andamento";
     const total = Math.max(0, Math.floor((nowMs - start) / 1000));
@@ -1218,7 +1235,7 @@ const OverlayApp: React.FC = () => {
     const secs = total % 60;
     if (hours > 0) return `${hours}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
     return `${mins}:${String(secs).padStart(2, "0")}`;
-  }, [hasCurrentGame, nowMs, sessionStartedAt]);
+  }, [hasCurrentGame, nowMs, presenceStatus, sessionStartedAt]);
   const progressPercent = totalCount > 0 ? Math.round((unlockedCount / totalCount) * 100) : 0;
   const onlineFriends = (panelData.friends || []).filter((f: any) => {
     const st = String(f.status || "").toLowerCase();
@@ -1252,29 +1269,30 @@ const OverlayApp: React.FC = () => {
       {/* ─── TOASTS FLUTUANTES ──────────────────────────────────────────────── */}
       {/* Achievement toasts */}
       <div className="overlay-toast-stack" data-position={achievementPosition}>
-        <AnimatePresence>
+        <AnimatePresence mode="popLayout">
           {toasts
             .filter((t): t is AchievementToast => t.kind === "achievement")
             .map((toast) => (
-              <div key={toast.id} data-overlay-interactive className="pointer-events-auto">
-                <AchievementToastCard
-                  toast={toast}
-                  position={achievementPosition}
-                  animated={fluidAnimations}
-                  onOpenDetails={() => {
-                    setOverlayMode("full");
-                    setActiveView("achievements");
-                    removeToast(toast.id);
-                  }}
-                />
-              </div>
+              <AchievementToastCard
+                key={toast.id}
+                toast={toast}
+                position={achievementPosition}
+                animated={fluidAnimations}
+                className="pointer-events-auto"
+                interactive
+                onOpenDetails={() => {
+                  setOverlayMode("full");
+                  setActiveView("achievements");
+                  removeToast(toast.id);
+                }}
+              />
             ))}
         </AnimatePresence>
       </div>
 
       {/* Social / welcome toasts */}
       <div className="overlay-toast-stack" data-position="bottom-left">
-        <AnimatePresence>
+        <AnimatePresence mode="popLayout">
           {toasts
             .filter((t): t is SocialToast => t.kind !== "achievement")
             .map((toast) => {
@@ -1283,6 +1301,20 @@ const OverlayApp: React.FC = () => {
               const isFriendRequest = toast.kind === "friend-request";
               const hasActions = isCall || isMessage || isFriendRequest;
               const friendUid = (toast.friendId || toast.callerUid || "").replace("cp-friend:", "");
+
+              if (toast.kind === "game-start" || toast.kind === "hint") {
+                return (
+                  <WelcomeToastCard
+                    key={toast.id}
+                    title={toast.title}
+                    subtitle={toast.subtitle || toast.message || toast.description}
+                    avatar={toast.avatar}
+                    badge={toast.kind === "game-start" ? "PHELIERIUM" : "OVERLAY"}
+                    animated={fluidAnimations}
+                    className="pointer-events-auto"
+                  />
+                );
+              }
 
               return (
                 <div
@@ -1296,13 +1328,6 @@ const OverlayApp: React.FC = () => {
                       subtitle={toast.description || toast.message}
                       previewUrl={toast.screenshotUrl}
                       animated={fluidAnimations}
-                    />
-                  ) : toast.kind === "game-start" || toast.kind === "hint" ? (
-                    <WelcomeToastCard
-                      title={toast.title}
-                      subtitle={toast.subtitle || toast.message || toast.description}
-                      avatar={toast.avatar}
-                      badge={toast.kind === "game-start" ? "PHELIERIUM" : "OVERLAY"}
                     />
                   ) : (
                     <SocialToastCard
@@ -1479,7 +1504,9 @@ const OverlayApp: React.FC = () => {
                   <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Jogo Atual</span>
                   <h4 className="truncate text-sm font-black text-white">{panelData.gameTitle || "Nenhum jogo em execução"}</h4>
                   {hasCurrentGame ? (
-                    <p className="text-[11px] font-semibold tabular-nums text-white/70">Sessão {sessionClock}</p>
+                    <p className="text-[11px] font-semibold tabular-nums text-white/70">
+                      {sessionStartedAt ? `Sessão ${sessionClock}` : sessionClock}
+                    </p>
                   ) : (
                     <p className="text-[11px] leading-relaxed text-white/60">
                       Abra um jogo pela biblioteca para acompanhar a sessão e suas conquistas.
@@ -1514,7 +1541,9 @@ const OverlayApp: React.FC = () => {
                     <Trophy className="h-4 w-4" style={{ color: accentColor }} /> Conquistas
                   </div>
                   <span className="text-[10px] font-black text-white/40">
-                    {hasCurrentGame && totalCount > 0 ? `${unlockedCount}/${totalCount}` : "—"}
+                    {hasCurrentGame && (totalCount > 0 || unlockedCount > 0)
+                      ? `${unlockedCount}/${totalCount || "?"}`
+                      : "—"}
                   </span>
                 </button>
                 <button

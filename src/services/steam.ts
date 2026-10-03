@@ -361,10 +361,24 @@ export const setCachedSteamAchievementDetails = (
   });
 };
 
+export const invalidateSteamAchievementCache = (
+  steamId?: string,
+  appId?: string,
+  language?: LauncherLanguage,
+) => {
+  if (!steamId || !appId) {
+    achievementMemoryCache.clear();
+    return;
+  }
+  const cacheKey = `${steamId}_${appId}_${language || "pt-BR"}`;
+  achievementMemoryCache.delete(cacheKey);
+};
+
 export const fetchSteamAchievementDetails = async (
   steamId: string,
   appId: string,
   language: LauncherLanguage = "pt-BR",
+  options: { bypassCache?: boolean } = {},
 ): Promise<{
   achievements: SteamAchievement[];
   total: number;
@@ -372,7 +386,11 @@ export const fetchSteamAchievementDetails = async (
 }> => {
   const cacheKey = `${steamId}_${appId}_${language}`;
   const cached = achievementMemoryCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < 1000 * 60 * 15) {
+  if (
+    !options.bypassCache
+    && cached
+    && Date.now() - cached.timestamp < 1000 * 60 * 15
+  ) {
     return cached;
   }
 

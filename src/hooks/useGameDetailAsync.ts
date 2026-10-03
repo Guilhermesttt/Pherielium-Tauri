@@ -5,14 +5,15 @@ import type { EpicAppDetails } from "../services/epic";
 import type { DisplayOption, GamePanelMod } from "../types/gameDetail";
 import type { LauncherLanguage } from "../context/PreferencesContext";
 import {
-  fetchSteamAchievementDetails,
-  fetchSteamAchievementSchema,
   fetchSteamAppDetailsResult,
-  getCachedSteamAchievementDetails,
-  setCachedSteamAchievementDetails,
-  searchSteamGames,
 } from "../services/steam";
-import { fetchEpicAppDetailsResult, fetchEpicAchievements } from "../services/epic";
+import { fetchEpicAppDetailsResult } from "../services/epic";
+import {
+  achievementUnlockBelongsToGame,
+  loadGameAchievements,
+  patchGameAchievementUnlock,
+} from "../services/gameAchievements";
+import { epicStoreDetailsMatch } from "../utils/epicDetailsMatch";
 import { updateLibraryGame } from "../services/localLibrary";
 import {
   getAchievementTierIndex as getUnifiedTierIndex,
@@ -200,23 +201,19 @@ export function useGameDetailAsync({
         if (cancelled) return;
         if (result.ok && result.data) {
           const d = result.data;
-          if (game.title && d.title) {
-            const normGame = game.title.toLowerCase().replace(/[^a-z0-9]/g, "");
-            const normResult = d.title.toLowerCase().replace(/[^a-z0-9]/g, "");
-            const isMatch =
-              normGame === normResult ||
-              (normGame.length >= 3 && normResult.length >= 3 && (
-                normGame.startsWith(normResult) ||
-                normResult.startsWith(normGame) ||
-                normResult.includes(normGame) ||
-                normGame.includes(normResult)
-              )) ||
-              Boolean(d.catalogId && game.epicCatalogId && d.catalogId.toLowerCase() === game.epicCatalogId.toLowerCase()) ||
-              Boolean(d.productSlug && game.productSlug && d.productSlug.toLowerCase() === game.productSlug.toLowerCase());
-            if (!isMatch) {
-              if (!cancelled) setIsEpicAppDetailsLoading(false);
-              return;
-            }
+          const isMatch = epicStoreDetailsMatch({
+            expectedTitle: game.title,
+            expectedCatalogId: game.epicCatalogId,
+            expectedLaunchId: game.epicLaunchId,
+            expectedProductSlug: game.productSlug,
+            resultTitle: d.title,
+            resultCatalogId: d.catalogId,
+            resultProductSlug: d.productSlug,
+            resultAppName: d.epicLaunchId || game.epicLaunchId,
+          });
+          if (!isMatch) {
+            if (!cancelled) setIsEpicAppDetailsLoading(false);
+            return;
           }
           setEpicAppDetails(d);
           const enrichedGame: Game = {
@@ -281,352 +278,54 @@ export function useGameDetailAsync({
       }
 
       setAchievementsError(null);
-      let resolvedAppId = String(game.steamAppId || "").trim();
 
-      // FASE 1: Cache em memória instantâneo
-      const cached = resolvedAppId
-        ? getCachedSteamAchievementDetails(userProfile?.steamId || "", resolvedAppId, language)
-        : null;
-
-      if (cached && cached.achievements.length > 0) {
-        setAchievementSourceAppId(resolvedAppId);
-        setAchievementItems(cached.achievements);
-        setIsAchievementsLoading(false);
-      }
-
-      // FASE 2: Dados locais no disco (~1ms)
-      let localDefs: Array<{ id: string; name: string; description: string; icon: string }> | null = null;
-      let localSteamAppId = "";
       try {
-        if (window.electronAPI?.getLocalAchievementDefinitions) {
-          const raw = await window.electronAPI.getLocalAchievementDefinitions(game.id);
-          const rawDefs = (raw as any)?.definitions || (raw as any)?.achievements;
-          if (rawDefs && Array.isArray(rawDefs) && rawDefs.length > 0) {
-            localDefs = rawDefs;
-            localSteamAppId = (raw as any).steamAppId || "";
-          }
-        }
-      } catch { /* ignore */ }
-
-      if (cancelled) return;
-
-      if (localDefs && localDefs.length > 0 && (!cached || cached.achievements.length === 0)) {
-        const progressKeys: string[] = Array.from(new Set([
-          game.id,
-          localSteamAppId ? `steam_${localSteamAppId}` : "",
-          localSteamAppId,
-          resolvedAppId ? `steam_${resolvedAppId}` : "",
-          resolvedAppId,
-          game.steamAppId ? `steam_${game.steamAppId}` : "",
-          game.steamAppId,
-        ])).filter(Boolean) as string[];
-        let localProgress: { unlockedAchievements?: Record<string, { unlockedAt?: string }> } | null = null;
-        if (window.electronAPI?.getLocalAchievementProgress) {
-          for (const key of progressKeys) {
-            try {
-              const p = await window.electronAPI.getLocalAchievementProgress(key);
-              if (p?.unlockedAchievements && Object.keys(p.unlockedAchievements).length > 0) {
-                localProgress = p;
-                break;
-              }
-            } catch { /* ignore */ }
-          }
-        }
-
-        let retroactiveState: Record<string, { earned?: boolean; earnedTime?: number }> = {};
-        if (window.electronAPI?.getLocalAchievementState) {
-          const gameDir = game.executablePath
-            ? game.executablePath.replace(/[/\\][^/\\]+$/, "")
-            : undefined;
-          for (const key of progressKeys) {
-            try {
-              const state = await window.electronAPI.getLocalAchievementState(key, gameDir);
-              if (state && Object.keys(state).length > 0) {
-                retroactiveState = state;
-                break;
-              }
-            } catch { /* ignore */ }
-          }
-        }
-
-        if (cancelled) return;
-
-        const merged = localDefs.map((def) => {
-          const unlocked = localProgress?.unlockedAchievements?.[def.id]
-            || localProgress?.unlockedAchievements?.[def.id.toLowerCase()];
-          const emuState = retroactiveState[def.id] || retroactiveState[def.id.toLowerCase()];
-          const achieved = Boolean(unlocked || emuState?.earned);
-          const unlockTime = unlocked?.unlockedAt
-            ? Math.floor(new Date(unlocked.unlockedAt).getTime() / 1000)
-            : emuState?.earnedTime || 0;
-          return {
-            apiName: def.id,
-            name: def.name,
-            description: def.description,
-            icon: def.icon,
-            iconGray: "",
-            achieved,
-            unlockTime,
-            percent: 0,
-          } as SteamAchievement;
-        });
-
-        setAchievementSourceAppId(localSteamAppId || resolvedAppId);
-        setAchievementItems(merged);
-        setIsAchievementsLoading(false);
-      } else if (!cached || cached.achievements.length === 0) {
-        setIsAchievementsLoading(true);
-      }
-
-      // FASE 3: Background sync
-      try {
-        if (game.launcherType === "epic") {
-          let onlineAchievements: any = null;
-          const appName = game.epicLaunchId ||
-            (game.epicCatalogId && game.epicCatalogId.includes(":")
-              ? game.epicCatalogId.split(":")[1]
-              : game.epicCatalogId) ||
-            game.title;
-          const sandboxId = game.epicNamespace || (game.epicCatalogId && game.epicCatalogId.includes(":") ? game.epicCatalogId.split(":")[0] : undefined);
-
-          try {
-            const achRes = await fetchEpicAchievements(sandboxId, appName);
-            if (achRes.list && achRes.list.length > 0) {
-              onlineAchievements = achRes;
-            }
-          } catch { /* ignore */ }
-
-          if (cancelled) return;
-
-          if (onlineAchievements && onlineAchievements.list.length > 0) {
-            setAchievementSourceAppId("epic-online");
-            setAchievementItems(
-              onlineAchievements.list.map((ach: any) => ({
-                apiName: ach.apiName || ach.name,
-                name: ach.name || ach.display_name || "Conquista",
-                description: ach.description || ach.unlockedDescription || "",
-                achieved: Boolean(ach.achieved || ach.unlocked),
-                icon: ach.icon || ach.icon_link || ach.iconLink || ach.unlockedIconLink || "",
-                iconGray: ach.iconGray || ach.locked_icon_link || ach.icon || ach.icon_link || "",
-                hidden: Boolean(ach.hidden),
-                percent: typeof ach.percent === "number" ? ach.percent : (ach.rarity?.percent ?? 0),
-                unlockTime: typeof ach.unlockTime === "number" && ach.unlockTime > 0
-                  ? ach.unlockTime
-                  : ach.unlockDate || ach.unlock_date
-                    ? Math.round(new Date(ach.unlockDate || ach.unlock_date).getTime() / 1000)
-                    : 0,
-              }))
-            );
-            setIsAchievementsLoading(false);
-            if (user?.uid) {
-              void updateLibraryGame(user.uid, game.id, {
-                totalAchievements: onlineAchievements.total,
-                completedAchievements: onlineAchievements.completed,
-                achievementsUpdatedAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              }).catch(() => { }).then(() => onLibraryChanged?.());
-            }
-            return;
-          }
-
-          if (window.electronAPI?.getEpicLocalAchievements) {
-            const catalogItemId = game.epicCatalogId?.includes(":") ? game.epicCatalogId.split(":")[1] : game.epicCatalogId;
-            const fullLaunchId = (game.epicNamespace && game.epicCatalogId && game.epicLaunchId)
-              ? `${game.epicNamespace}:${catalogItemId}:${game.epicLaunchId}`
-              : game.epicLaunchId;
-
-            const localResult = await window.electronAPI.getEpicLocalAchievements({
-              gameId: catalogItemId || game.id,
-              title: game.title,
-              epicCatalogId: catalogItemId || game.epicCatalogId,
-              epicLaunchId: fullLaunchId || game.epicLaunchId,
-              executablePath: game.executablePath,
-            });
-            if (cancelled) return;
-            if (localResult.achievements && localResult.achievements.length > 0) {
-              setAchievementSourceAppId("epic-local");
-              setAchievementItems(
-                localResult.achievements.map((a: any) => ({
-                  ...a,
-                  percent: a.percent ?? 0,
-                })),
-              );
-              setIsAchievementsLoading(false);
-              if (user?.uid) {
-                void updateLibraryGame(user.uid, game.id, {
-                  totalAchievements: localResult.total,
-                  completedAchievements: localResult.unlocked,
-                  achievementsUpdatedAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
-                }).catch(() => { }).then(() => onLibraryChanged?.());
-              }
-              return;
-            }
-          }
-
-          setAchievementSourceAppId("epic-online");
-          if (!localDefs) {
-            setAchievementsError("Nenhuma conquista encontrada.");
-          }
-          return;
-        }
-
-        if (!resolvedAppId) {
-          const results = await searchSteamGames(game.title);
-          const normalizedTitle = normalizeSteamLookup(game.title);
-          const matched = results.find((candidate) => {
-            const rawName = typeof candidate.name === "string" ? candidate.name : typeof candidate.title === "string" ? candidate.title : "";
-            return normalizeSteamLookup(rawName) === normalizedTitle;
-          });
-          if (matched && matched.id != null) {
-            resolvedAppId = String(matched.id).trim();
-          }
-        }
-
-        if (!resolvedAppId) {
-          if (localDefs) {
-            setIsAchievementsLoading(false);
-            return;
-          }
-          setAchievementsError("Este jogo não possui Steam App ID.");
-          setIsAchievementsLoading(false);
-          return;
-        }
-
-        let result = game.launcherType === "local"
-          ? await fetchSteamAchievementSchema(resolvedAppId, language)
-          : userProfile?.steamId
-            ? await fetchSteamAchievementDetails(userProfile.steamId, resolvedAppId, language)
-            : await fetchSteamAchievementSchema(resolvedAppId, language);
-
-        if (cancelled) return;
-
-        if (result.achievements && result.achievements.length > 0 && window.electronAPI?.saveLocalAchievementDefinitions) {
-          try {
-            await window.electronAPI.saveLocalAchievementDefinitions(
-              game.id,
-              result.achievements.map((ach) => ({
-                id: ach.apiName,
-                name: ach.name,
-                description: ach.description,
-                icon: ach.icon,
-              })),
-              String(resolvedAppId)
-            );
-          } catch { /* ignore */ }
-        }
-
-        setAchievementSourceAppId(resolvedAppId);
-        let mergedAchievements = result.achievements;
-
-        if (game.launcherType === "local") {
-          const progressKeys: string[] = Array.from(new Set([
-            game.id,
-            localSteamAppId ? `steam_${localSteamAppId}` : "",
-            localSteamAppId,
-            resolvedAppId ? `steam_${resolvedAppId}` : "",
-            resolvedAppId,
-            game.steamAppId ? `steam_${game.steamAppId}` : "",
-            game.steamAppId,
-          ])).filter(Boolean) as string[];
-
-          let localProgress: { unlockedAchievements?: Record<string, { unlockedAt?: string }> } | null = null;
-          if (window.electronAPI?.getLocalAchievementProgress) {
-            for (const key of progressKeys) {
-              try {
-                const p = await window.electronAPI.getLocalAchievementProgress(key);
-                if (p?.unlockedAchievements && Object.keys(p.unlockedAchievements).length > 0) {
-                  localProgress = p;
-                  break;
-                }
-              } catch { /* ignore */ }
-            }
-          }
-
-          let retroactiveState: Record<string, { earned?: boolean; earnedTime?: number }> = {};
-          if (window.electronAPI?.getLocalAchievementState) {
-            for (const key of progressKeys) {
-              try {
-                const state = await window.electronAPI.getLocalAchievementState(key);
-                if (state && Object.keys(state).length > 0) {
-                  retroactiveState = state;
-                  break;
-                }
-              } catch { /* ignore */ }
-            }
-          }
-
-          const savedAchievements: Record<string, { unlockedAt?: string }> =
-            localProgress?.unlockedAchievements ?? {};
-          const progressById = new Map(
-            Object.entries(savedAchievements).map(([id, value]) => [
-              id.toLowerCase(),
-              value,
-            ]),
-          );
-
-          if (mergedAchievements.length > 0) {
-            mergedAchievements = mergedAchievements.map((achievement) => {
-              const saved = progressById.get(achievement.apiName.toLowerCase());
-              const emu = retroactiveState[achievement.apiName] || retroactiveState[achievement.apiName.toLowerCase()];
-              const prevLocal = localDefs?.find((d) => d.id.toLowerCase() === achievement.apiName.toLowerCase());
-              const achieved = Boolean(saved || emu?.earned || (prevLocal as any)?.achieved);
-              const unlockTime = saved?.unlockedAt
-                ? Math.floor(Date.parse(saved.unlockedAt) / 1000)
-                : emu?.earnedTime || (prevLocal as any)?.unlockTime || 0;
-              return {
-                ...achievement,
-                achieved,
-                unlockTime: achieved ? (unlockTime || Math.floor(Date.now() / 1000)) : 0,
-              };
-            });
-          } else if (localDefs && localDefs.length > 0) {
-            mergedAchievements = localDefs.map((def) => {
-              const saved = progressById.get(def.id.toLowerCase());
-              const emu = retroactiveState[def.id] || retroactiveState[def.id.toLowerCase()];
-              const achieved = Boolean(saved || emu?.earned);
-              const unlockTime = saved?.unlockedAt
-                ? Math.floor(Date.parse(saved.unlockedAt) / 1000)
-                : emu?.earnedTime || 0;
-              return {
-                apiName: def.id,
-                name: def.name,
-                description: def.description,
-                icon: def.icon,
-                iconGray: "",
-                achieved,
-                unlockTime: achieved ? (unlockTime || Math.floor(Date.now() / 1000)) : 0,
-                percent: 0,
-              } as SteamAchievement;
-            });
-          }
-        }
-
-        if (mergedAchievements.length > 0) {
-          setAchievementItems(mergedAchievements);
-          setCachedSteamAchievementDetails(
-            userProfile?.steamId || "",
-            resolvedAppId,
-            { achievements: mergedAchievements, total: mergedAchievements.length, unlocked: mergedAchievements.filter(a => a.achieved).length },
+        const result = await loadGameAchievements(
+          game,
+          {
             language,
-          );
+            steamId: userProfile?.steamId,
+            bypassSteamCache: refetchKey > 0,
+            persistLibrary: Boolean(user?.uid),
+            userUid: user?.uid,
+          },
+          {
+            onCached: (phase) => {
+              if (cancelled) return;
+              setAchievementSourceAppId(phase.sourceAppId);
+              setAchievementItems(phase.items);
+              setIsAchievementsLoading(false);
+            },
+            onLocal: (phase) => {
+              if (cancelled) return;
+              setAchievementSourceAppId(phase.sourceAppId);
+              setAchievementItems(phase.items);
+              setIsAchievementsLoading(false);
+            },
+            onLoadingRemote: () => {
+              if (!cancelled) setIsAchievementsLoading(true);
+            },
+          },
+        );
+
+        if (cancelled) return;
+
+        if (result.items.length > 0) {
+          setAchievementSourceAppId(result.sourceAppId);
+          setAchievementItems(result.items);
         }
+        setAchievementsError(result.error);
 
-        if (user?.uid && (mergedAchievements.length > 0 || !game.totalAchievements)) {
-          const unlockedCount = mergedAchievements.filter((a) => a.achieved).length;
-          const finalUnlockedCount = (unlockedCount === 0 && (game.completedAchievements || 0) > 0 && game.launcherType === "local")
-            ? game.completedAchievements
-            : unlockedCount;
-          const newTotal = mergedAchievements.length || game.totalAchievements || 0;
-
+        if (user?.uid && result.libraryPatch) {
+          const { totalAchievements, completedAchievements } = result.libraryPatch;
           const hasChanged =
-            game.totalAchievements !== newTotal ||
-            game.completedAchievements !== finalUnlockedCount;
+            game.totalAchievements !== totalAchievements
+            || game.completedAchievements !== completedAchievements;
 
           if (hasChanged) {
             void updateLibraryGame(user.uid, game.id, {
-              totalAchievements: newTotal,
-              completedAchievements: finalUnlockedCount,
+              totalAchievements,
+              completedAchievements,
               achievementsUpdatedAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             }).catch(() => { }).then(() => onLibraryChangedRef.current?.());
@@ -634,22 +333,14 @@ export function useGameDetailAsync({
             if (onGameHydratedRef.current) {
               onGameHydratedRef.current({
                 ...game,
-                totalAchievements: newTotal,
-                completedAchievements: finalUnlockedCount,
+                totalAchievements,
+                completedAchievements,
               });
             }
           }
         }
-
-        if (result.achievements.length === 0 && !localDefs) {
-          setAchievementsError(
-            !userProfile?.steamId && game.launcherType !== "local"
-              ? "Conecte sua conta Steam para carregar conquistas."
-              : "Nenhuma conquista encontrada."
-          );
-        }
       } catch {
-        if (!cancelled && !localDefs && (!cached || cached.achievements.length === 0)) {
+        if (!cancelled) {
           setAchievementsError("Nenhuma conquista encontrada.");
         }
       } finally {
@@ -669,32 +360,27 @@ export function useGameDetailAsync({
     if (!window.electronAPI?.onRealtimeAchievementUnlock) return;
 
     const handler = window.electronAPI.onRealtimeAchievementUnlock((payload) => {
-      const { achievementId, earnedTime, unlockedAt } = payload;
-      const payloadSteamAppId = payload.gameId.match(/^steam_(\d+)$/i)?.[1];
-      const belongsToCurrentGame =
-        String(game.id) === String(payload.gameId) ||
-        (payloadSteamAppId && String(game.steamAppId || "") === payloadSteamAppId) ||
-        String(game.steamAppId || "") === String(payload.gameId);
-      if (!belongsToCurrentGame) return;
+      if (!achievementUnlockBelongsToGame(game, payload)) return;
 
       setAchievementItems((prev) => {
-        let changed = false;
-        const next = prev.map((ach) => {
-          const isMatch = ach.apiName.toLowerCase() === achievementId.toLowerCase();
-          if (!isMatch || ach.achieved) return ach;
-          changed = true;
-          if (user?.uid) {
-            try {
-              markHubAchievement(user.uid, game.id, ach.apiName);
-              const isPlatina = isPlatinaByText(ach as any);
-              const isRarest = ach.apiName === getRarestAchievementApiName(prev as any) || ach.apiName === getPlatinaCandidateApiName(prev as any);
-              const tierIdx = getUnifiedTierIndex(ach as any, prev.length, { isRarest: Boolean(isRarest), isPlatinaText: Boolean(isPlatina) });
-              incrementHubCount(user.uid, game.id, tierIdx);
-            } catch { /* ignore */ }
-          }
-          const unixSecs = earnedTime > 0 ? earnedTime : Math.floor(new Date(unlockedAt).getTime() / 1000);
-          return { ...ach, achieved: true, unlockTime: unixSecs };
-        });
+        const { items: next, changed } = patchGameAchievementUnlock(prev, payload);
+        if (!changed) return prev;
+
+        const unlocked = next.find((ach) =>
+          ach.apiName.toLowerCase() === payload.achievementId.toLowerCase());
+        if (user?.uid && unlocked) {
+          try {
+            markHubAchievement(user.uid, game.id, unlocked.apiName);
+            const isPlatina = isPlatinaByText(unlocked as any);
+            const isRarest = unlocked.apiName === getRarestAchievementApiName(prev as any)
+              || unlocked.apiName === getPlatinaCandidateApiName(prev as any);
+            const tierIdx = getUnifiedTierIndex(unlocked as any, prev.length, {
+              isRarest: Boolean(isRarest),
+              isPlatinaText: Boolean(isPlatina),
+            });
+            incrementHubCount(user.uid, game.id, tierIdx);
+          } catch { /* ignore */ }
+        }
 
         if (changed && user?.uid) {
           void updateLibraryGame(user.uid, game.id, {

@@ -7,6 +7,7 @@ import {
   Gamepad2,
   RefreshCw,
   FolderOpen,
+  FileSearch,
   HardDrive,
   Check,
   CheckCircle2,
@@ -40,7 +41,8 @@ import {
 } from "../services/epic";
 import { apiUrl } from "../services/api";
 import type { SoundEffectType } from "../hooks/useSoundEffects";
-import type { LauncherType } from "../types/domain";
+import type { Game, LauncherType } from "../types/domain";
+import { resolveEpicInstallPath } from "../services/launcher";
 import {
   SteamBrandIcon,
   EpicBrandIcon,
@@ -139,6 +141,16 @@ const removeUndefined = (data: Record<string, unknown>) =>
 
 const isWindowsExecutablePath = (value: string) =>
   /^(?:[a-zA-Z]:[\\/]|\\\\).+\.exe$/i.test(String(value || "").trim());
+
+const isEpicInstallPath = (value?: string | null) => {
+  const trimmed = String(value || "").trim();
+  if (!trimmed || trimmed.startsWith("com.epicgames.launcher://")) return false;
+  if (isWindowsExecutablePath(trimmed)) return true;
+  return /^(?:[a-zA-Z]:[\\/]|\\\\).+$/i.test(trimmed);
+};
+
+const pickEpicInstallPath = (...candidates: Array<string | null | undefined>) =>
+  candidates.find((candidate) => isEpicInstallPath(candidate)) || "";
 
 // Dropdown de busca reutilizado entre Steam e Epic — antes era duplicado
 // quase inteiro em dois blocos JSX separados.
@@ -259,7 +271,15 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
       editSubtitle: "Atualize os dados, as artes e a forma de inicialização deste jogo.",
       localDescription: "Jogos instalados no PC e executáveis personalizados.",
       steamDescription: "Metadados, biblioteca e inicialização pela Steam.",
-      epicDescription: "Metadados da Epic com inicialização local opcional.",
+      epicDescription: "Catálogo Epic com pasta de instalação para detectar sessão e tempo jogado.",
+      epicInstallPath: "Local de instalação",
+      epicInstallPathHint: "Opcional. Se o jogo estiver instalado, o caminho é detectado automaticamente para sessão e tempo jogado.",
+      epicInstallPathAutoDetected: "Detectado automaticamente",
+      epicSelectInstallFolder: "Escolher pasta",
+      epicSelectExecutable: "Escolher .exe",
+      epicInstallPathMissing: "Nenhum local selecionado",
+      epicInstallPathRequired: "Selecione a pasta ou o executável do jogo Epic antes de continuar.",
+      changeInstallPath: "Trocar local",
       platformSubtitle: "Escolha onde o jogo está instalado ou de onde ele vem.",
       automaticFill: "Preenchimento automático",
       automaticFillHint: "Busque um jogo para importar capa, descrição e metadados.",
@@ -329,7 +349,15 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
       editSubtitle: "Update this game's details, artwork and launch method.",
       localDescription: "Installed PC games and custom executables.",
       steamDescription: "Steam metadata, library ownership and launch support.",
-      epicDescription: "Epic catalog metadata with optional local launching.",
+      epicDescription: "Epic catalog with an install folder to detect sessions and playtime.",
+      epicInstallPath: "Install location",
+      epicInstallPathHint: "Optional. If the game is installed, the path is detected automatically for sessions and playtime.",
+      epicInstallPathAutoDetected: "Auto-detected",
+      epicSelectInstallFolder: "Choose folder",
+      epicSelectExecutable: "Choose .exe",
+      epicInstallPathMissing: "No location selected",
+      epicInstallPathRequired: "Select the Epic game folder or executable before continuing.",
+      changeInstallPath: "Change location",
       platformSubtitle: "Choose where the game is installed or comes from.",
       automaticFill: "Automatic details",
       automaticFillHint: "Search for a game to import artwork, description and metadata.",
@@ -399,7 +427,14 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
       editSubtitle: "Actualiza los datos, las imágenes y el método de inicio de este juego.",
       localDescription: "Juegos instalados en el PC y ejecutables personalizados.",
       steamDescription: "Metadados, biblioteca e inicio mediante Steam.",
-      epicDescription: "Metadados de Epic con soporte para inicio local.",
+      epicDescription: "Catálogo Epic con carpeta de instalación para detectar sesiones y tiempo jugado.",
+      epicInstallPath: "Ubicación de instalación",
+      epicInstallPathHint: "Indica la carpeta del juego o el .exe principal para detectar cuando estés jugando.",
+      epicSelectInstallFolder: "Elegir carpeta",
+      epicSelectExecutable: "Elegir .exe",
+      epicInstallPathMissing: "Sin ubicación seleccionada",
+      epicInstallPathRequired: "Selecciona la carpeta o el ejecutable del juego Epic antes de continuar.",
+      changeInstallPath: "Cambiar ubicación",
       platformSubtitle: "Elige dónde está instalado o de dónde proviene el juego.",
       automaticFill: "Relleno automático",
       automaticFillHint: "Busca un juego para importar portadas, descripción y metadados.",
@@ -556,6 +591,7 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
   const [showCoverUrl, setShowCoverUrl] = useState<boolean>(false);
   const [showWallpaperUrl, setShowWallpaperUrl] = useState<boolean>(false);
   const [showAdvancedDetails, setShowAdvancedDetails] = useState<boolean>(false);
+  const [epicPathAutoDetected, setEpicPathAutoDetected] = useState(false);
 
   const [formData, setFormData] = useState<GameFormData>(() => {
     if (gameToEdit) {
@@ -982,9 +1018,27 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
       || (namespace && catalogId ? `${namespace}:${catalogId}${appName ? `:${appName}` : ""}` : catalogId),
     ).trim();
 
+    const { path: resolvedInstallPath, autoDetected } = await resolveEpicInstallPathForSelection(
+      game,
+      catalogId,
+      appName,
+      initialLaunchId,
+      gameTitle,
+      formData.executablePath,
+    );
+    if (autoDetected && resolvedInstallPath) {
+      setEpicPathAutoDetected(true);
+      notify(`${copy.epicInstallPathAutoDetected}: ${resolvedInstallPath}`, "success");
+    } else {
+      setEpicPathAutoDetected(false);
+    }
+
     // 1. PREENCHE IMEDIATAMENTE os dados básicos para o modal preencher na hora!
     setFormData((prev) => {
       const isEpic = prev.launcherType === "epic";
+      const installPath = isEpic
+        ? (resolvedInstallPath || pickEpicInstallPath(prev.executablePath))
+        : prev.executablePath;
       return {
         ...prev,
         title: gameTitle || prev.title,
@@ -993,10 +1047,7 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
         backgroundImage: defaultWallpaper || prev.backgroundImage,
         description: game.description || prev.description || "",
         launcherType: isEpic ? "epic" : prev.launcherType,
-        executablePath: isEpic
-          ? ((isWindowsExecutablePath(game.executablePath) && game.executablePath)
-            || (isWindowsExecutablePath(prev.executablePath) ? prev.executablePath : ""))
-          : prev.executablePath,
+        executablePath: installPath,
         steamAppId: isEpic ? "" : prev.steamAppId,
         epicCatalogId: catalogId || prev.epicCatalogId,
         epicLaunchId: initialLaunchId || prev.epicLaunchId,
@@ -1035,6 +1086,15 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
 
         setFormData((prev) => {
           const isEpic = prev.launcherType === "epic";
+          const installPath = isEpic
+            ? pickEpicInstallPath(
+              resolvedInstallPath,
+              prev.executablePath,
+              d.executablePath,
+              game.executable,
+              game.installLocation,
+            )
+            : prev.executablePath;
           return {
             ...prev,
             title: d.title || gameTitle || prev.title,
@@ -1046,11 +1106,7 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
             description: d.description || game.description || prev.description || "",
             aboutTheGame: d.aboutTheGame || game.aboutTheGame || prev.aboutTheGame || "",
             launcherType: isEpic ? "epic" : prev.launcherType,
-            executablePath: isEpic
-              ? ((isWindowsExecutablePath(d.executablePath || "") && d.executablePath)
-                || (isWindowsExecutablePath(game.executablePath) && game.executablePath)
-                || (isWindowsExecutablePath(prev.executablePath) ? prev.executablePath : ""))
-              : prev.executablePath,
+            executablePath: installPath,
             steamAppId: isEpic ? "" : prev.steamAppId,
             epicCatalogId: resolvedCatalogId || prev.epicCatalogId,
             epicLaunchId: launchId || prev.epicLaunchId,
@@ -1170,6 +1226,82 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
     }
   };
 
+  const applyEpicInstallPath = (installPath: string) => {
+    const cleaned = installPath.trim();
+    if (!cleaned) return;
+    setEpicPathAutoDetected(false);
+    setFormData((prev) => ({
+      ...prev,
+      launcherType: "epic",
+      executablePath: cleaned,
+      source: prev.epicCatalogId ? "epic" : prev.source,
+    }));
+    playSound("select");
+  };
+
+  const handleChooseEpicFolder = async () => {
+    if (!window.electronAPI?.selectFolder) {
+      notify("Selecione a pasta pelo aplicativo desktop.", "warning");
+      return;
+    }
+    try {
+      const selected = await window.electronAPI.selectFolder(
+        `${copy.epicInstallPath} — ${formData.title || copy.epic}`,
+      );
+      if (selected) applyEpicInstallPath(selected);
+    } catch (error) {
+      notify(
+        error instanceof Error ? error.message : "Nao foi possivel selecionar a pasta.",
+        "error",
+      );
+    }
+  };
+
+  const handleChooseEpicExecutable = async () => {
+    if (!window.electronAPI?.selectExecutable) {
+      notify("Selecione o executavel pelo aplicativo desktop.", "warning");
+      return;
+    }
+    try {
+      const selected = await window.electronAPI.selectExecutable();
+      if (selected) applyEpicInstallPath(selected);
+    } catch (error) {
+      notify(
+        error instanceof Error ? error.message : "Nao foi possivel selecionar o executavel.",
+        "error",
+      );
+    }
+  };
+
+  const resolveEpicInstallPathForSelection = async (
+    game: any,
+    catalogId: string,
+    appName: string,
+    initialLaunchId: string,
+    gameTitle: string,
+    currentPath?: string,
+  ): Promise<{ path: string; autoDetected: boolean }> => {
+    const manifestPath = pickEpicInstallPath(
+      game.executable,
+      game.installLocation,
+      game.executablePath,
+    );
+    if (manifestPath) return { path: manifestPath, autoDetected: true };
+    if (isEpicInstallPath(currentPath)) {
+      return { path: String(currentPath).trim(), autoDetected: false };
+    }
+
+    const autoPath = await resolveEpicInstallPath({
+      title: gameTitle || game.title || game.name || formData.title,
+      appName,
+      epicLaunchId: initialLaunchId,
+      epicCatalogId: catalogId,
+      executable: game.executable,
+      installLocation: game.installLocation,
+    });
+    return { path: autoPath || "", autoDetected: Boolean(autoPath) };
+  };
+
   const handleCoverSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1233,6 +1365,7 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
     detailsRequestRef.current += 1;
     setLoading(false);
     resetSearch();
+    setEpicPathAutoDetected(false);
     setSearchSource(launcherType === "epic" ? "epic" : "steam");
     setFormData((prev) => {
       const platformChanged = prev.launcherType !== launcherType;
@@ -1357,6 +1490,49 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
 
   const selectedPlatformOption =
     PLATFORM_OPTIONS.find((opt) => opt.id === formData.launcherType) || PLATFORM_OPTIONS[0];
+
+  const epicInstallPathSection = (
+    <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[#141416] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+      <div>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-white">{copy.epicInstallPath}</h3>
+          {isEpicInstallPath(formData.executablePath) && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+              <CheckCircle2 size={13} />
+              {epicPathAutoDetected
+                ? (copy.epicInstallPathAutoDetected || "Detectado automaticamente")
+                : copy.selected}
+            </span>
+          )}
+        </div>
+        <p className="text-[12px] text-white/45 mt-1 leading-relaxed">
+          {copy.epicInstallPathHint}
+        </p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
+        <button
+          type="button"
+          onClick={() => void handleChooseEpicFolder()}
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white/[0.08] px-4 py-3 text-[12px] font-bold text-white transition-all hover:bg-white/[0.14] active:scale-[0.98]"
+        >
+          <FolderOpen size={15} /> {copy.epicSelectInstallFolder}
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleChooseEpicExecutable()}
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[12px] font-bold text-white transition-all hover:bg-white/[0.08] active:scale-[0.98]"
+        >
+          <FileSearch size={15} /> {copy.epicSelectExecutable}
+        </button>
+        <div className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/40 px-4 py-3">
+          <p className="truncate text-[12px] font-mono text-white/70">
+            {formData.executablePath || copy.epicInstallPathMissing}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <ModalShell
@@ -1527,6 +1703,8 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
                     </div>
 
                     {/* Executável no Início: seleciona e auto-detecta AppID / pasta */}
+                    {formData.launcherType === "epic" && epicInstallPathSection}
+
                     {formData.launcherType === "local" && (
                       <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[#141416] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                         <div>
@@ -1686,6 +1864,8 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
                         </button>
                       )}
                     </div>
+
+                    {formData.launcherType === "epic" && epicInstallPathSection}
 
                     {/* Confirmação e Edição de Título e Categoria */}
                     <div className="space-y-4 rounded-2xl border border-white/[0.08] bg-[#141416] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
@@ -2031,12 +2211,18 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[11px] font-bold text-white/80">
-                    {formData.executablePath ? "Executável selecionado" : "Executável"}
+                    {formData.launcherType === "epic"
+                      ? copy.epicInstallPath
+                      : (formData.executablePath ? "Executável selecionado" : "Executável")}
                   </p>
                   <p className="truncate text-[10px] text-white/40">
                     {formData.executablePath
                       ? formData.executablePath.split(/[/\\]+/).pop()
-                      : (formData.launcherType === "local" ? "Nenhum selecionado" : "Gerenciado pela plataforma")}
+                      : (formData.launcherType === "local"
+                        ? copy.noExecutable
+                        : formData.launcherType === "epic"
+                          ? copy.epicInstallPathMissing
+                          : "Gerenciado pela plataforma")}
                   </p>
                 </div>
               </div>

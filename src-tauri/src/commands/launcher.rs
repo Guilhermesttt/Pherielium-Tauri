@@ -96,11 +96,11 @@ pub async fn launcher_open_executable(
         );
     }
 
-    // Optionally minimize the launcher window
     if let Some(opts) = opts {
+        crate::commands::game_watch::set_restore_launcher(&app, opts.hide_launcher);
         if opts.hide_launcher {
             if let Some(win) = app.get_webview_window("main") {
-                let _ = win.minimize();
+                let _ = win.hide();
             }
         }
     }
@@ -119,4 +119,22 @@ pub async fn launcher_select_executable(app: AppHandle) -> Result<Option<String>
         .blocking_pick_file();
 
     Ok(path.and_then(|p| p.into_path().ok()).map(|p| p.to_string_lossy().to_string()))
+}
+
+#[command]
+pub async fn launcher_select_folder(
+    app: AppHandle,
+    title: Option<String>,
+) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let mut dialog = app.dialog().file();
+    if let Some(title) = title.filter(|value| !value.trim().is_empty()) {
+        dialog = dialog.set_title(title);
+    }
+
+    Ok(dialog
+        .blocking_pick_folder()
+        .and_then(|p| p.into_path().ok())
+        .map(|p| p.to_string_lossy().to_string()))
 }

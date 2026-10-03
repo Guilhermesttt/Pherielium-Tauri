@@ -22,3 +22,15 @@ export function executablePathsEqual(
   const normalizedRight = normalizeExecutablePath(right);
   return Boolean(normalizedLeft && normalizedRight && normalizedLeft === normalizedRight);
 }
+
+/** True when `actual` is the same executable or lives under an install directory root. */
+export function monitorPathsRelated(
+  root: string | null | undefined,
+  actual: string | null | undefined,
+): boolean {
+  if (executablePathsEqual(root, actual)) return true;
+  const normalizedRoot = normalizeExecutablePath(root);
+  const normalizedActual = normalizeExecutablePath(actual);
+  if (!normalizedRoot || !normalizedActual) return false;
+  return normalizedActual.startsWith(`${normalizedRoot}/`);
+}

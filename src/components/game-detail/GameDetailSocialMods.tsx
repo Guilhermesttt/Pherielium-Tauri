@@ -1,5 +1,5 @@
 import React from "react";
-import { Camera, FolderOpen, PackageOpen, Trash2 } from "lucide-react";
+import { Camera, FileSearch, FolderOpen, PackageOpen, Trash2 } from "lucide-react";
 import type { Game, GameLaunchProfile } from "../../types/domain";
 import type { GameDetailCopy, GamePanelMod, DisplayOption } from "../../types/gameDetail";
 import type { SoundEffectType } from "../../hooks/useSoundEffects";
@@ -31,6 +31,8 @@ interface GameDetailSocialModsProps {
   onSaveLaunchProfile: () => void;
   onOpenDeleteModal: () => void;
   onOpenFolder: () => void;
+  onSelectEpicInstallFolder?: () => void;
+  onSelectEpicExecutable?: () => void;
   onOpenMods?: () => void;
   onSelectCapture: (index: number) => void;
   playSound: (type: SoundEffectType) => void;
@@ -71,6 +73,8 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
   onSaveLaunchProfile,
   onOpenDeleteModal,
   onOpenFolder,
+  onSelectEpicInstallFolder,
+  onSelectEpicExecutable,
   onOpenMods,
   onSelectCapture,
   playSound,
@@ -296,6 +300,8 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
   // ABA GERENCIAR
   // ==========================================
   if (activeTab === copy.tabManage) {
+    const isEpicGame = game.launcherType === "epic" || Boolean(game.epicCatalogId || game.epicLaunchId);
+
     return (
       <div className="w-full flex flex-col gap-8">
         {/* Metadados de Integração do Hub */}
@@ -320,12 +326,44 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
                     : copy.sourceManual}
               </span>
             </div>
-            {game.executablePath && (
-              <div className="flex flex-col gap-1 sm:col-span-2">
-                <span className="text-white/40">Executável</span>
-                <span className="font-mono text-[11px] text-white/70 truncate">{game.executablePath}</span>
-              </div>
-            )}
+            <div className="flex flex-col gap-2 sm:col-span-2">
+              <span className="text-white/40">
+                {isEpicGame ? copy.epicInstallPath : "Executável"}
+              </span>
+              <span className="font-mono text-[11px] text-white/70 break-all">
+                {game.executablePath || copy.epicInstallPathMissing}
+              </span>
+              {isEpicGame && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={onSelectEpicInstallFolder}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/15 text-[11px] font-bold text-white hover:bg-white/20 transition-colors"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    {copy.epicSelectInstallFolder}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onSelectEpicExecutable}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/15 text-[11px] font-bold text-white hover:bg-white/20 transition-colors"
+                  >
+                    <FileSearch className="w-3.5 h-3.5" />
+                    {copy.epicSelectExecutable}
+                  </button>
+                  {game.executablePath && (
+                    <button
+                      type="button"
+                      onClick={onOpenFolder}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] font-bold text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                    >
+                      <FolderOpen className="w-3.5 h-3.5" />
+                      {copy.openFolder}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

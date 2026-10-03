@@ -7,6 +7,8 @@ interface WelcomeToastCardProps {
   subtitle?: string;
   avatar?: string;
   badge?: string;
+  animated?: boolean;
+  className?: string;
 }
 
 export const WelcomeToastCard: React.FC<WelcomeToastCardProps> = ({
@@ -14,13 +16,26 @@ export const WelcomeToastCard: React.FC<WelcomeToastCardProps> = ({
   subtitle,
   avatar,
   badge = "PHELIERIUM",
+  animated = true,
+  className = "",
 }) => (
   <motion.div
-    initial={{ opacity: 0, x: -24, scale: 0.94 }}
-    animate={{ opacity: 1, x: 0, scale: 1 }}
-    exit={{ opacity: 0, x: -18, scale: 0.96 }}
-    transition={{ type: "spring", stiffness: 320, damping: 24 }}
-    className="overlay-card welcome-card social-card"
+    initial={animated ? { opacity: 0, x: -28, y: 8, scale: 0.92 } : { opacity: 0 }}
+    animate={animated ? { opacity: 1, x: 0, y: 0, scale: 1 } : { opacity: 1 }}
+    exit={
+      animated
+        ? {
+          opacity: 0,
+          x: -22,
+          y: -6,
+          scale: 0.94,
+          filter: "blur(2px)",
+          transition: { duration: 0.34, ease: [0.4, 0, 1, 1] },
+        }
+        : { opacity: 0, transition: { duration: 0.12 } }
+    }
+    transition={animated ? { type: "spring", stiffness: 320, damping: 24 } : { duration: 0.15 }}
+    className={`overlay-card welcome-card social-card${className ? ` ${className}` : ""}`}
   >
     <div className="overlay-shell layout-left">
       <motion.div

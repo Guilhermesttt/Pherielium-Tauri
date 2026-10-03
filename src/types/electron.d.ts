@@ -9,6 +9,7 @@ declare global {
         launchOptions?: { hideLauncher?: boolean; gameId?: string; steamAppId?: string },
       ) => Promise<void>;
       selectExecutable: () => Promise<string | null>;
+      selectFolder?: (title?: string) => Promise<string | null>;
       detectAppIdFromPath?: (path: string) => Promise<string | null>;
       minimizeWindow?: () => Promise<void>;
       maximizeWindow?: () => Promise<boolean>;
@@ -291,6 +292,16 @@ declare global {
         appId: string,
         language?: import("../context/PreferencesContext").LauncherLanguage,
       ) => Promise<import("../services/steam").SteamAppDetails | null>;
+      resolveEpicWatchTarget?: (request: {
+        appName?: string;
+        catalogId?: string;
+        title?: string;
+      }) => Promise<{
+        watchTarget?: string | null;
+        executablePath?: string | null;
+        installLocation?: string | null;
+        isInstalled?: boolean;
+      }>;
       fetchEpicStoreDetails: (request: {
         catalogId?: string;
         namespace?: string;
@@ -329,6 +340,7 @@ declare global {
         height: number;
       }>>;
       isExecutableRunning: (executablePath: string) => Promise<boolean>;
+      isProcessRunning?: (pid: number) => Promise<boolean>;
       detectRunningGames: (executablePaths: string[]) => Promise<string[]>;
       detectRunningGameDetails?: (executablePaths: string[]) => Promise<Array<{
         requestedPath: string;
@@ -586,6 +598,7 @@ declare global {
         userDisplay?: string;
         userAvatar?: string;
         gameTitle?: string;
+        presenceStatus?: string;
         playingGame?: unknown;
         friends: Array<{ id: string; name: string; status: string; playing?: string; avatar?: string; unread?: number; canChat?: boolean }>;
         achievements: {

@@ -91,13 +91,30 @@ pub async fn process_detect_running_details(
     Ok(collect_running_matches(&sys, &executable_paths))
 }
 
+/// Returns whether a process with the given PID is still alive.
+#[command]
+pub async fn process_is_pid_running(pid: u32) -> Result<bool, String> {
+    if pid == 0 {
+        return Ok(false);
+    }
+    let refresh_kind = ProcessRefreshKind::new().with_exe(sysinfo::UpdateKind::Always);
+    let mut sys = System::new_with_specifics(RefreshKind::new().with_processes(refresh_kind));
+    let target_pid = sysinfo::Pid::from_u32(pid);
+    sys.refresh_processes_specifics(
+        ProcessesToUpdate::Some(&[target_pid]),
+        true,
+        refresh_kind,
+    );
+    Ok(sys.process(target_pid).is_some())
+}
+
 /// Returns whether a single executable is currently running.
 #[command]
 pub async fn process_is_running(executable_path: String) -> Result<bool, String> {
     let refresh_kind = ProcessRefreshKind::new().with_exe(sysinfo::UpdateKind::Always);
     let mut sys = System::new_with_specifics(RefreshKind::new().with_processes(refresh_kind));
     refresh_processes(&mut sys, refresh_kind);
-    Ok(find_process_by_exact_path(&sys, &executable_path).is_some())
+    Ok(!collect_running_matches(&sys, &[executable_path]).is_empty())
 }
 
 /// Scans common Windows game directories for installed games.
