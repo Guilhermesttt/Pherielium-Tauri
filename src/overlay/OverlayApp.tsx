@@ -161,6 +161,7 @@ export interface ActiveCallState {
 
 export interface CommandPanelState {
   gameTitle?: string;
+  presenceStatus?: string;
   userDisplay?: string;
   userAvatar?: string;
   playerLevel?: number | any;

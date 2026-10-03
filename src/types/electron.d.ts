@@ -600,8 +600,8 @@ declare global {
         gameTitle?: string;
         presenceStatus?: string;
         playingGame?: unknown;
-        friends: Array<{ id: string; name: string; status: string; playing?: string; avatar?: string; unread?: number; canChat?: boolean }>;
-        achievements: {
+        friends?: Array<{ id: string; name: string; status: string; playing?: string; avatar?: string; unread?: number; canChat?: boolean }>;
+        achievements?: {
           unlocked: number;
           available: number;
           loading?: boolean;

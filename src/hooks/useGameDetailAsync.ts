@@ -6,6 +6,7 @@ import type { DisplayOption, GamePanelMod } from "../types/gameDetail";
 import type { LauncherLanguage } from "../context/PreferencesContext";
 import {
   fetchSteamAppDetailsResult,
+  searchSteamGames,
 } from "../services/steam";
 import { fetchEpicAppDetailsResult } from "../services/epic";
 import {

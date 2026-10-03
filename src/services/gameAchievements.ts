@@ -144,6 +144,7 @@ function mergeDefsWithLocalProgress(
       description: def.description,
       icon: def.icon,
       iconGray: "",
+      hidden: false,
       achieved,
       unlockTime,
       percent: 0,
@@ -177,7 +178,7 @@ async function loadEpicAchievements(game: Game): Promise<GameAchievementsResult 
   const tryOnline = async (targetAppName: string) => {
     const achRes = await fetchEpicAchievements(sandboxId, targetAppName);
     if (!achRes.list?.length) return null;
-    const items = achRes.list.map((ach) => mapEpicAchievement(ach as Record<string, unknown>));
+    const items = achRes.list.map((ach) => mapEpicAchievement(ach as unknown as Record<string, unknown>));
     return {
       items,
       sourceAppId: "epic-online",
@@ -218,7 +219,7 @@ async function loadEpicAchievements(game: Game): Promise<GameAchievementsResult 
 
     if (localResult?.achievements?.length) {
       const items = localResult.achievements.map((ach) => ({
-        ...mapEpicAchievement(ach as Record<string, unknown>),
+        ...mapEpicAchievement(ach as unknown as Record<string, unknown>),
         percent: (ach as any).percent ?? 0,
       }));
       return {
@@ -366,6 +367,7 @@ async function loadSteamAchievements(
           description: def.description,
           icon: def.icon,
           iconGray: "",
+          hidden: false,
           achieved,
           unlockTime: achieved ? (unlockTime || Math.floor(Date.now() / 1000)) : 0,
           percent: 0,
