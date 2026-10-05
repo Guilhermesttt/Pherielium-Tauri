@@ -54,15 +54,15 @@ import {
   SCREEN_SHARE_BITRATE,
   type ScreenShareOptions,
 } from "../services/voiceCall/screenShare";
-import {
-  applyLauncherPlaybackMuteToElement,
-  getLauncherSfxVolumeScale,
-  setLauncherAudioIsolation,
-} from "../services/voiceCall/launcherAudioIsolation";
+import { startDesktopAudioCapture } from "../services/voiceCall/desktopAudioCapture";
+import { emptyCallMediaStats, summarizeRtcStats, type ByteSample, type CallMediaStats } from "../services/voiceCall/mediaStats";
 import { createVoiceRoom, joinVoiceRoom, leaveVoiceRoom } from "../services/voiceRooms";
 import {
+  detachCameraTrackFromPeers,
+  attachScreenTracksToPeer,
   detachScreenTracksFromPeers,
   replaceOutgoingAudioTrack,
+  replaceOutgoingCameraTrack,
   unpublishScreenPublications,
 } from "@/services/voiceCall/voiceMediaLifecycle";
 import {
@@ -103,7 +103,7 @@ const playSfx = (src: string, volumeScale = 1.0) => {
     const audio = new Audio(src);
     audio.volume = Math.max(
       0,
-      Math.min(1, voiceSfxVolumeRef.current * volumeScale * getLauncherSfxVolumeScale()),
+      Math.min(1, voiceSfxVolumeRef.current * volumeScale),
     );
     void audio.play().catch(() => { });
   } catch {
@@ -267,6 +267,11 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   const [isVoiceWindowOpen, setIsVoiceWindowOpen] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [iceConnectionState, setIceConnectionState] = useState("new");
+  const [peerConnectionCount, setPeerConnectionCount] = useState(0);
+  const [mediaStats, setMediaStats] = useState<CallMediaStats>(emptyCallMediaStats);
+  const mediaStatsSampleRef = useRef<ByteSample | null>(null);
   const [channelConnectionStatus, setChannelConnectionStatus] = useState<ChannelConnectionStatus>("idle");
   const [mediaTransport, setMediaTransport] = useState<"none" | "livekit" | "p2p" | "echo">("none");
 
@@ -685,7 +690,6 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
 
               pub.track.attachedElements?.forEach((el) => {
                 el.volume = normVol;
-                applyLauncherPlaybackMuteToElement(el);
                 if (selectedAudioOutput && selectedAudioOutput !== "default" && typeof (el as any).setSinkId === "function") {
                   void (el as any).setSinkId(selectedAudioOutput).catch(() => { });
                 }
@@ -1382,23 +1386,30 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         const newVideoTrack = stream.getVideoTracks()[0];
         if (!newVideoTrack) return;
 
-        if (cameraStreamRef.current) {
-          cameraStreamRef.current.getVideoTracks().forEach((t) => t.stop());
-        }
+        const previousStream = cameraStreamRef.current;
+        const previousTrack = previousStream?.getVideoTracks()[0] ?? null;
+        const screenTracks = screenStreamRef.current?.getVideoTracks() ?? [];
+
+        await replaceOutgoingCameraTrack({
+          peerConnections: peerConnectionsRef.current.values(),
+          livekitPublication: livekitVideoPubRef.current,
+          previousTrack,
+          screenTracks,
+          newTrack: newVideoTrack,
+        });
+
         cameraStreamRef.current = stream;
         setLocalCameraStream(stream);
+        previousStream?.getVideoTracks().forEach((track) => {
+          if (track !== newVideoTrack) {
+            try { track.stop(); } catch { /* ignore */ }
+          }
+        });
 
         if (isLocalTestCall(sessionRef.current?.chatId, sessionRef.current?.friendUid)) {
           setRemoteStream(stream);
           return;
         }
-
-        peerConnectionsRef.current.forEach((pc) => {
-          const sender = pc.getSenders().find((s) => s.track?.kind === "video");
-          if (sender) {
-            void sender.replaceTrack(newVideoTrack);
-          }
-        });
 
         notify("Câmera alterada.", "info");
       } catch (err) {
@@ -1632,6 +1643,14 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     }
     reconnectAttemptsRef.current = 0;
     setIsReconnecting(false);
+    setIsDisconnecting(false);
+    setIceConnectionState("new");
+    setPeerConnectionCount(0);
+    if (tauriScreenStopRef.current) {
+      const stopDesktopAudio = tauriScreenStopRef.current;
+      tauriScreenStopRef.current = null;
+      void stopDesktopAudio();
+    }
 
     // Destroy local audio pipeline
     destroyAudioPipeline(localPipelineRef.current);
@@ -1737,7 +1756,6 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     setLocalCameraStream(null);
     setLocalScreenStream(null);
     setIsSharingScreen(false);
-    setLauncherAudioIsolation(false);
     setIsRemoteSharingScreen(false);
     setIsCameraOn(false);
     setIsRemoteCameraOn(false);
@@ -1912,7 +1930,6 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
               ? (peerVolumesRef.current[`screen:${peerId}`] ?? peerVolumesRef.current["remote-screen"] ?? peerVolumesRef.current[peerId] ?? remoteVolumeRef.current)
               : (peerVolumesRef.current[peerId] ?? peerVolumesRef.current["remote-user"] ?? remoteVolumeRef.current);
           el.volume = Math.max(0, Math.min(1.0, (peerVol ?? 100) / 100));
-          applyLauncherPlaybackMuteToElement(el);
           if (selectedAudioOutputRef.current && selectedAudioOutputRef.current !== "default" && typeof (el as any).setSinkId === "function") {
             void (el as any).setSinkId(selectedAudioOutputRef.current).catch(() => { });
           }
@@ -1973,10 +1990,20 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
               remoteScreenSharingPeersRef.current.set(peerId, false);
               syncRemoteScreenSharingFlag();
             } else {
-              // Keep camera-on if peer still has another camera video track
               const camStream = remoteStreamsRef.current.get(peerId);
-              const stillHasCamera = Boolean(camStream?.getVideoTracks().some((t) => t.readyState !== "ended"));
+              const stillHasCamera = Boolean(
+                camStream?.getVideoTracks().some((t) => t !== mediaTrack && t.readyState === "live"),
+              );
               setIsRemoteCameraOn(stillHasCamera);
+              setRemoteStatesMap((prev) => {
+                const updated = new Map(prev);
+                const current = updated.get(peerId) || {
+                  senderId: peerId,
+                  chatId: sessionRef.current?.chatId || "",
+                };
+                updated.set(peerId, { ...current, isCameraOn: stillHasCamera });
+                return updated;
+              });
             }
           }
         });
@@ -2204,6 +2231,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
       });
 
       peerConnectionsRef.current.set(targetPeerUid, pc);
+      setPeerConnectionCount(peerConnectionsRef.current.size);
 
       // Attach local tracks
       if (localStreamRef.current) {
@@ -2249,9 +2277,25 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
               stream.addTrack(event.track);
             }
             setIsRemoteCameraOn(true);
+            setRemoteStatesMap((prev) => {
+              const updated = new Map(prev);
+              const current = updated.get(targetPeerUid) || { senderId: targetPeerUid, chatId };
+              updated.set(targetPeerUid, { ...current, isCameraOn: true });
+              return updated;
+            });
 
             event.track.onended = () => {
               try { stream.removeTrack(event.track); } catch { }
+              const stillHasCamera = stream.getVideoTracks().some((track) => track.readyState === "live");
+              if (!stillHasCamera) {
+                setIsRemoteCameraOn(false);
+                setRemoteStatesMap((prev) => {
+                  const updated = new Map(prev);
+                  const current = updated.get(targetPeerUid) || { senderId: targetPeerUid, chatId };
+                  updated.set(targetPeerUid, { ...current, isCameraOn: false });
+                  return updated;
+                });
+              }
               setRemoteStreams(new Map(remoteStreamsRef.current));
             };
             event.track.onmute = () => {
@@ -2318,6 +2362,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
       };
 
       pc.oniceconnectionstatechange = () => {
+        setIceConnectionState(pc.iceConnectionState);
         if (pc.iceConnectionState === "disconnected") {
           if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
           reconnectTimerRef.current = window.setTimeout(() => {
@@ -2547,6 +2592,20 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         }
         if (typeof remoteState.isCameraOn === "boolean") {
           setIsRemoteCameraOn(remoteState.isCameraOn);
+          if (remoteState.isCameraOn === false) {
+            const peerSharing =
+              remoteState.isSharingScreen === true ||
+              remoteScreenSharingPeersRef.current.get(remoteState.senderId) === true;
+            if (!peerSharing) {
+              const peerStream = remoteStreamsRef.current.get(remoteState.senderId);
+              peerStream?.getVideoTracks().forEach((track) => {
+                try { peerStream.removeTrack(track); } catch { /* ignore */ }
+              });
+              if (peerStream) {
+                setRemoteStreams(new Map(remoteStreamsRef.current));
+              }
+            }
+          }
         }
         if (typeof remoteState.isSharingScreen === "boolean") {
           // Prefer LiveKit per-peer map when available; still merge signal into remoteStatesMap above.
@@ -2618,6 +2677,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
             pc.close();
           } catch { }
           peerConnectionsRef.current.delete(left.uid);
+          setPeerConnectionCount(peerConnectionsRef.current.size);
         }
         remoteStreamsRef.current.delete(left.uid);
         remoteScreenStreamsRef.current.delete(left.uid);
@@ -3470,6 +3530,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
 
   // HANGUP / DISCONNECT - User leaves the call but call stays active for others
   const hangUp = useCallback(async () => {
+    setIsDisconnecting(true);
     stopRingtone();
     try {
       sessionStorage.removeItem("checkpoint_last_voice_session");
@@ -3478,31 +3539,35 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
 
     const hasRemotePeers = peerConnectionsRef.current.size > 0 || (session?.participants && session.participants.length > 1);
 
-    if (session && user?.uid) {
-      if (hasRemotePeers && session.friendUid) {
-        setActiveCallsByFriend((prev) => new Map(prev).set(session.friendUid!, session.chatId));
+    try {
+      if (session && user?.uid) {
+        if (hasRemotePeers && session.friendUid) {
+          setActiveCallsByFriend((prev) => new Map(prev).set(session.friendUid!, session.chatId));
+        } else {
+          setActiveCallsByFriend((prev) => {
+            const next = new Map(prev);
+            if (session.friendUid) next.delete(session.friendUid);
+            return next;
+          });
+        }
+        if (!isLocalTestCall(session.chatId, session.friendUid)) {
+          await sendCallMemberLeft(session.chatId, {
+            uid: user.uid,
+            chatId: session.chatId,
+          });
+        }
       } else {
-        setActiveCallsByFriend((prev) => {
-          const next = new Map(prev);
-          if (session.friendUid) next.delete(session.friendUid);
-          return next;
-        });
+        setActiveCallsByFriend(new Map());
       }
-      if (!isLocalTestCall(session.chatId, session.friendUid)) {
-        await sendCallMemberLeft(session.chatId, {
-          uid: user.uid,
-          chatId: session.chatId,
-        });
-      }
-    } else {
-      setActiveCallsByFriend(new Map());
+    } finally {
+      playRingtone("disconnect");
+      cleanUpCall();
     }
-    playRingtone("disconnect");
-    cleanUpCall();
   }, [cleanUpCall, playRingtone, session, stopRingtone, user?.uid]);
 
   // END CALL FOR EVERYONE - Host/admin terminates the call completely
   const endCallForEveryone = useCallback(async () => {
+    setIsDisconnecting(true);
     stopRingtone();
     try {
       sessionStorage.removeItem("checkpoint_last_voice_session");
@@ -3510,19 +3575,22 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     setPendingReconnectSession(null);
     setActiveCallsByFriend(new Map());
 
-    if (session && user?.uid && !isLocalTestCall(session.chatId, session.friendUid)) {
-      await sendCallEnd(session.chatId, "room-all", {
-        senderId: user.uid,
-        chatId: session.chatId,
-        reason: "hangup",
-      });
-      await sendCallMemberLeft(session.chatId, {
-        uid: user.uid,
-        chatId: session.chatId,
-      });
+    try {
+      if (session && user?.uid && !isLocalTestCall(session.chatId, session.friendUid)) {
+        await sendCallEnd(session.chatId, "room-all", {
+          senderId: user.uid,
+          chatId: session.chatId,
+          reason: "hangup",
+        });
+        await sendCallMemberLeft(session.chatId, {
+          uid: user.uid,
+          chatId: session.chatId,
+        });
+      }
+    } finally {
+      playRingtone("disconnect");
+      cleanUpCall();
     }
-    playRingtone("disconnect");
-    cleanUpCall();
   }, [cleanUpCall, playRingtone, session, stopRingtone, user?.uid]);
 
   // RECONNECT TO LAST SESSION
@@ -3599,30 +3667,53 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     if (!session?.chatId) return;
 
     if (isCameraOn) {
-      if (cameraStreamRef.current) {
-        cameraStreamRef.current.getTracks().forEach((track) => track.stop());
-        cameraStreamRef.current = null;
-      }
-      setLocalCameraStream(null);
+      const cameraStream = cameraStreamRef.current;
+      const cameraTracks = cameraStream?.getVideoTracks() ?? [];
 
       if (livekitVideoPubRef.current && livekitRoomRef.current?.localParticipant) {
         try {
           if (livekitVideoPubRef.current.track) {
-            void livekitRoomRef.current.localParticipant.unpublishTrack(livekitVideoPubRef.current.track);
+            await livekitRoomRef.current.localParticipant.unpublishTrack(livekitVideoPubRef.current.track);
           }
-        } catch { }
+        } catch { /* ignore */ }
         livekitVideoPubRef.current = null;
       }
 
-      // Remove video track from all peers
-      peerConnectionsRef.current.forEach((pc) => {
-        const sender = pc.getSenders().find((s) => s.track?.kind === "video");
-        if (sender && !isSharingScreen) {
-          try {
-            pc.removeTrack(sender);
-          } catch { }
+      const senderId = user?.uid;
+      const skipP2P =
+        isSharingScreen ||
+        isLocalTestCall(session.chatId, session.friendUid) ||
+        !senderId;
+      if (!skipP2P && senderId) {
+        try {
+          await detachCameraTrackFromPeers({
+            peerConnections: peerConnectionsRef.current.values(),
+            cameraTracks,
+          });
+          for (const [peerId, pc] of peerConnectionsRef.current.entries()) {
+            try {
+              const offer = await pc.createOffer();
+              await pc.setLocalDescription(offer);
+              await sendCallSignal(session.chatId, {
+                senderId,
+                chatId: session.chatId,
+                targetUid: peerId,
+                signal: offer,
+              });
+            } catch (err) {
+              console.warn("[useVoiceCall] P2P camera-off renegotiation warning:", peerId, err);
+            }
+          }
+        } catch (err) {
+          console.warn("[useVoiceCall] camera sender teardown warning:", err);
         }
+      }
+
+      cameraTracks.forEach((track) => {
+        try { track.stop(); } catch { /* ignore */ }
       });
+      cameraStreamRef.current = null;
+      setLocalCameraStream(null);
 
       setIsCameraOn(false);
       if (session.chatId && user?.uid) {
@@ -3712,25 +3803,29 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
       setIsScreenPickerOpen(false);
 
       let screenStream: MediaStream | null = null;
+      let desktopAudio: Awaited<ReturnType<typeof startDesktopAudioCapture>> | null = null;
       try {
         tauriScreenStopRef.current = null;
+        if (includeAudio) {
+          try {
+            desktopAudio = await startDesktopAudioCapture();
+            tauriScreenStopRef.current = desktopAudio.stop;
+          } catch (audioErr) {
+            console.warn("[useVoiceCall] Process loopback unavailable:", audioErr);
+          }
+        }
         const capture = await captureNativeScreenShare({
           width,
           height,
           fps,
-          withAudio: includeAudio,
+          withAudio: includeAudio && !desktopAudio,
         });
         screenStream = capture.stream;
-        if (capture.isMonitorShare) {
-          setLauncherAudioIsolation(true);
-          livekitAttachedElementsRef.current.forEach((element) => {
-            applyLauncherPlaybackMuteToElement(element);
-          });
-          notify(
-            "Tela inteira: sons do launcher foram silenciados localmente para não vazarem na transmissão.",
-            "info",
-          );
-        } else if (includeAudio && !capture.hasSystemAudio) {
+        const desktopTrack = desktopAudio?.stream.getAudioTracks()[0];
+        if (desktopTrack) {
+          screenStream.addTrack(desktopTrack);
+        }
+        if (includeAudio && !desktopTrack && !capture.hasSystemAudio) {
           notify("Áudio indisponível para esta superfície; compartilhando apenas o vídeo.", "info");
         }
 
@@ -3803,6 +3898,10 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
             });
           } catch (lkErr) {
             console.error("[LiveKit] Screen share publish failed:", lkErr);
+            if (tauriScreenStopRef.current) {
+              try { await tauriScreenStopRef.current(); } catch { /* ignore */ }
+              tauriScreenStopRef.current = null;
+            }
             releaseScreenCaptureStream(screenStream);
             screenStreamRef.current = null;
             screenVideoTrackRef.current = null;
@@ -3816,28 +3915,12 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           const targetBitrate = bitrate;
 
           for (const [peerId, pc] of peerConnectionsRef.current.entries()) {
-            const senders = pc.getSenders();
-            let sender = senders.find((s) => s.track?.kind === "video" || (s as any)._kind === "video" || s.track === null);
-            if (!sender) {
-              const transceivers = pc.getTransceivers ? pc.getTransceivers() : [];
-              const videoTransceiver = transceivers.find((t) => t.receiver?.track?.kind === "video" || t.sender?.track?.kind === "video" || (t as any)._kind === "video");
-              if (videoTransceiver) {
-                sender = videoTransceiver.sender;
-              }
-            }
-
-            if (sender) {
-              await sender.replaceTrack(videoTrack);
-            } else {
-              pc.addTrack(videoTrack, screenStream);
-            }
-
-            if (includeAudio && screenAudioTrack) {
-              const audioSender = pc.getSenders().find((s) => s.track === screenAudioTrack);
-              if (!audioSender) {
-                pc.addTrack(screenAudioTrack, screenStream);
-              }
-            }
+            await attachScreenTracksToPeer({
+              peer: pc,
+              stream: screenStream,
+              videoTrack,
+              audioTrack: includeAudio ? screenAudioTrack : null,
+            });
 
             // Apply bitrate and maintain-framerate preferences
             try {
@@ -3884,6 +3967,10 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           void stopScreenShare();
         };
       } catch (err: unknown) {
+        if (tauriScreenStopRef.current) {
+          try { await tauriScreenStopRef.current(); } catch { /* ignore */ }
+          tauriScreenStopRef.current = null;
+        }
         releaseScreenCaptureStream(screenStream);
         screenStreamRef.current = null;
         screenVideoTrackRef.current = null;
@@ -4001,7 +4088,6 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     }
 
     setIsSharingScreen(false);
-    setLauncherAudioIsolation(false);
     playSfx(sfxStreamEnd);
     screenShareStoppingRef.current = false;
   }, [user?.uid]);
@@ -4326,8 +4412,76 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     }
   }, [acquireAudioStream, notify, setVoiceSensitivity]);
 
+  useEffect(() => {
+    if (callState !== "active") {
+      mediaStatsSampleRef.current = null;
+      setMediaStats(emptyCallMediaStats());
+      return;
+    }
+
+    let cancelled = false;
+    const sampleOnce = async () => {
+      const reports: RTCStatsReport[] = [];
+      for (const pc of peerConnectionsRef.current.values()) {
+        try {
+          reports.push(await pc.getStats());
+        } catch { /* ignore */ }
+      }
+      const publications = (livekitRoomRef.current as {
+        localParticipant?: { trackPublications?: { forEach: (fn: (publication: { track?: { getRTCStatsReport?: () => Promise<RTCStatsReport> } }) => void) => void } };
+      } | null)?.localParticipant?.trackPublications;
+      if (publications) {
+        const pending: Promise<RTCStatsReport | null>[] = [];
+        publications.forEach((publication) => {
+          const read = publication.track?.getRTCStatsReport?.bind(publication.track);
+          if (read) pending.push(read().catch(() => null));
+        });
+        for (const report of await Promise.all(pending)) {
+          if (report) reports.push(report);
+        }
+      }
+      if (cancelled) return;
+      let merged = emptyCallMediaStats();
+      let cursor = mediaStatsSampleRef.current;
+      for (const report of reports) {
+        const next = summarizeRtcStats(report, cursor);
+        cursor = next.sample;
+        merged = {
+          rttMs: next.stats.rttMs ?? merged.rttMs,
+          packetLoss: next.stats.packetLoss ?? merged.packetLoss,
+          bitrate: next.stats.bitrate ?? merged.bitrate,
+          videoFps: next.stats.videoFps ?? merged.videoFps,
+        };
+      }
+      mediaStatsSampleRef.current = cursor;
+      setMediaStats(merged);
+    };
+
+    void sampleOnce();
+    const timer = window.setInterval(() => void sampleOnce(), 2000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [callState]);
+
+  const connectionPhase =
+    isDisconnecting && callState !== "idle"
+      ? "disconnecting"
+      : callState === "idle"
+        ? "disconnected"
+        : isReconnecting
+          ? "reconnecting"
+          : callState === "active"
+            ? "connected"
+            : "connecting";
+
   return {
     callState,
+    connectionPhase,
+    iceConnectionState,
+    peerConnectionCount,
+    mediaStats,
     session,
     roomConfig,
     incomingInvite,

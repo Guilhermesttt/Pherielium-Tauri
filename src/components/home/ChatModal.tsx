@@ -6,6 +6,7 @@ import { LoadingState } from "../ui/loading-state";
 import { useNotification } from "../NotificationCenter";
 import { useAuth } from "../../auth/AuthProvider";
 import { useVoiceCallContext } from "../../context/VoiceCallContext";
+import { presenceLabel } from "../../services/presenceStatus";
 import {
   MessageGroup,
   Message,
@@ -20,6 +21,9 @@ import {
   markMessagesAsRead,
   sendChatImage,
   sendChatMessage,
+  editChatMessage,
+  deleteChatMessage,
+  toggleChatReaction,
   setChatTyping,
   subscribeToChatMessages,
   subscribeToFriendTyping,
@@ -107,7 +111,17 @@ function renderMessageText(text: string): React.ReactNode {
     .map((part, index) => {
       const isLink = /^(https?:\/\/|www\.)/i.test(part);
       if (!isLink) {
-        return <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>;
+        return (
+          <React.Fragment key={`${part}-${index}`}>
+            {part.split(/(@\S+)/g).map((bit, bitIndex) =>
+              bit.startsWith("@") ? (
+                <span key={`${bit}-${bitIndex}`} className="font-semibold text-sky-300">{bit}</span>
+              ) : (
+                <React.Fragment key={`${bit}-${bitIndex}`}>{bit}</React.Fragment>
+              ),
+            )}
+          </React.Fragment>
+        );
       }
 
       const href = part.startsWith("http") ? part : `https://${part}`;
@@ -331,7 +345,7 @@ const ChatIdentityHero: React.FC<{ friend: SocialFriend }> = ({ friend }) => (
     </div>
     <h2 className="mt-4 text-xl font-black tracking-tight text-white">{friend.name}</h2>
     <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.22em] text-white/35">
-      {friend.status === "playing" ? `Jogando ${friend.playing}` : friend.status === "online" ? "Online agora" : "Offline"}
+      {presenceLabel(friend.status, friend.playing)}
     </p>
     <div className="mt-5 flex items-center -space-x-2" aria-hidden="true">
       <ChatAvatar
@@ -389,7 +403,12 @@ const ChatMessageRow: React.FC<{
   onViewImage: (image: ViewingImage) => void;
   onJoinCall: (invite: CallInviteMeta, password?: string) => void;
   playSound: (type: SoundEffectType) => void;
-}> = ({ msg, isMe, friend, selfAvatarUrl, onViewImage, onJoinCall, playSound }) => {
+  replyPreview?: string;
+  onReply?: (message: ChatMessage) => void;
+  onEdit?: (message: ChatMessage) => void;
+  onDelete?: (message: ChatMessage) => void;
+  onReact?: (message: ChatMessage) => void;
+}> = ({ msg, isMe, friend, selfAvatarUrl, onViewImage, onJoinCall, playSound, replyPreview, onReply, onEdit, onDelete, onReact }) => {
   const inviteMeta = parseCallInviteText(msg.text);
   const inlineImageLinks = extractImageLinks(msg.text);
   const visibleImages = Array.from(
@@ -437,11 +456,18 @@ const ChatMessageRow: React.FC<{
             }
           >
             <BubbleContent className="p-3 text-sm">
-              {msg.text && (
+              {replyPreview ? (
+                <p className={`mb-2 border-l-2 pl-2 text-[11px] ${isMe ? "border-black/30 text-black/60" : "border-white/30 text-white/50"}`}>
+                  {replyPreview}
+                </p>
+              ) : null}
+              {msg.deletedAt ? (
+                <p className="italic opacity-60">Mensagem apagada</p>
+              ) : msg.text ? (
                 <p className="leading-relaxed select-text cursor-text selection:bg-black/20 wrap-break-words font-sans">
                   {renderMessageText(msg.text)}
                 </p>
-              )}
+              ) : null}
 
               {visibleImages.length > 0 && (
                 <div
@@ -482,6 +508,21 @@ const ChatMessageRow: React.FC<{
               isMe ? "justify-end" : "justify-start"
             }`}
           >
+            {msg.editedAt && !msg.deletedAt ? <span>editada</span> : null}
+            {!msg.deletedAt && onReply ? (
+              <button type="button" className="hover:text-white" onClick={() => onReply(msg)}>responder</button>
+            ) : null}
+            {!msg.deletedAt && onReact ? (
+              <button type="button" className="hover:text-white" onClick={() => onReact(msg)}>
+                {(msg.reactions?.["👍"]?.length || 0) > 0 ? `👍 ${msg.reactions?.["👍"]?.length}` : "👍"}
+              </button>
+            ) : null}
+            {isMe && !msg.deletedAt && onEdit ? (
+              <button type="button" className="hover:text-white" onClick={() => onEdit(msg)}>editar</button>
+            ) : null}
+            {isMe && !msg.deletedAt && onDelete ? (
+              <button type="button" className="hover:text-white" onClick={() => onDelete(msg)}>apagar</button>
+            ) : null}
             {isMe ? (
               <span>
                 {msg.id?.startsWith("local-")
@@ -518,6 +559,10 @@ const ChatMessageList: React.FC<{
   onJoinCall: (invite: CallInviteMeta, password?: string) => void;
   playSound: (type: SoundEffectType) => void;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  onReply?: (message: ChatMessage) => void;
+  onEdit?: (message: ChatMessage) => void;
+  onDelete?: (message: ChatMessage) => void;
+  onReact?: (message: ChatMessage) => void;
 }> = ({
   isLoading,
   loadError,
@@ -531,6 +576,10 @@ const ChatMessageList: React.FC<{
   onJoinCall,
   playSound,
   messagesEndRef,
+  onReply,
+  onEdit,
+  onDelete,
+  onReact,
 }) => (
   <div className="chat-scrollbar flex-1 space-y-2 overflow-y-auto px-7 py-6 pr-4 md:px-9">
     {isLoading ? (
@@ -578,6 +627,11 @@ const ChatMessageList: React.FC<{
                 onViewImage={onViewImage}
                 onJoinCall={onJoinCall}
                 playSound={playSound}
+                replyPreview={messages.find((item) => item.id === msg.replyToId)?.text}
+                onReply={onReply}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onReact={onReact}
               />
             </React.Fragment>
           );
@@ -604,6 +658,8 @@ const ChatComposer: React.FC<{
   friendTyping: boolean;
   friendName: string;
   spamLockedUntil: number | null;
+  contextLabel?: string | null;
+  onClearContext?: () => void;
 }> = ({
   inputText,
   onChangeInputText,
@@ -618,6 +674,8 @@ const ChatComposer: React.FC<{
   friendTyping,
   friendName,
   spamLockedUntil,
+  contextLabel,
+  onClearContext,
 }) => {
     const isSpamLocked = Boolean(spamLockedUntil && spamLockedUntil > Date.now());
 
@@ -631,6 +689,13 @@ const ChatComposer: React.FC<{
             <span className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-400">DEVAGAR PAE</span>
           ) : null}
         </div>
+
+        {contextLabel ? (
+          <div className="mb-2 flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[11px] text-white/70">
+            <span className="truncate">{contextLabel}</span>
+            <button type="button" onClick={onClearContext} className="ml-3 text-white/40 hover:text-white">fechar</button>
+          </div>
+        ) : null}
 
         {pendingImage ? (
           <div className="relative mb-3 w-fit max-w-full rounded-xl border border-white/10 bg-[#141414] p-2">
@@ -747,6 +812,8 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
     const [chatRetryToken, setChatRetryToken] = useState(0);
     const optimisticRef = useRef<Map<string, ChatMessage>>(new Map());
     const [inputText, setInputText] = useState("");
+    const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
+    const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
     const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
     const [viewingImage, setViewingImage] = useState<ViewingImage | null>(null);
     const [friendTyping, setFriendTyping] = useState(false);
@@ -980,8 +1047,23 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
         return;
       }
 
+      if (editingMessage) {
+        try {
+          const updated = await editChatMessage(editingMessage, text);
+          setDisplayMessages((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+          setEditingMessage(null);
+          setInputText("");
+        } catch (error) {
+          notify(error instanceof Error ? error.message : "Não foi possível editar a mensagem.", "error");
+        }
+        return;
+      }
+
       try {
         playSound("chatSent");
+        const mentions = friendUid && friend.name && new RegExp(`@${friend.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i").test(text)
+          ? [friendUid]
+          : undefined;
         const optimisticMessage: ChatMessage = {
           id: optimisticId,
           chatId: friendUid,
@@ -994,12 +1076,15 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
           attachmentUrl: imageDraft?.previewUrl,
           attachmentType: imageDraft?.file.type,
           attachmentSize: imageDraft?.file.size,
+          replyToId: replyTarget?.id,
+          mentions,
         };
 
         recentSendTimestampsRef.current = [...freshTimestamps, now];
         optimisticRef.current.set(optimisticId, optimisticMessage);
         setDisplayMessages((current) => [...current, optimisticMessage].sort(compareChatMessages));
         setInputText("");
+        setReplyTarget(null);
         if (imageDraft) {
           pendingImageRef.current = null;
           setPendingImage(null);
@@ -1009,7 +1094,10 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
         void setChatTyping(friendUid, false);
         const confirmedMessage = imageDraft
           ? await sendChatImage(friendUid, imageDraft.file, text)
-          : await sendChatMessage(friendUid, text);
+          : await sendChatMessage(friendUid, text, undefined, {
+              replyToId: replyTarget?.id,
+              mentions,
+            });
         optimisticRef.current.delete(optimisticId);
         setDisplayMessages((current) =>
           deduplicateChatMessages([
@@ -1134,6 +1222,26 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
             onJoinCall={handleJoinCallFromInvite}
             playSound={playSound}
             messagesEndRef={messagesEndRef}
+            onReply={(message) => {
+              setEditingMessage(null);
+              setReplyTarget(message);
+            }}
+            onEdit={(message) => {
+              setReplyTarget(null);
+              setEditingMessage(message);
+              setInputText(message.text);
+            }}
+            onDelete={(message) => {
+              void deleteChatMessage(message)
+                .then((updated) => setDisplayMessages((current) => current.map((item) => (item.id === updated.id ? updated : item))))
+                .catch((error) => notify(error instanceof Error ? error.message : "Não foi possível apagar a mensagem.", "error"));
+            }}
+            onReact={(message) => {
+              if (!user?.uid) return;
+              void toggleChatReaction(message, "👍", user.uid)
+                .then((updated) => setDisplayMessages((current) => current.map((item) => (item.id === updated.id ? updated : item))))
+                .catch((error) => notify(error instanceof Error ? error.message : "Não foi possível reagir.", "error"));
+            }}
           />
 
           <ChatComposer
@@ -1150,6 +1258,17 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
             friendTyping={friendTyping}
             friendName={friend.name}
             spamLockedUntil={spamLockedUntil}
+            contextLabel={
+              editingMessage
+                ? "Editando mensagem"
+                : replyTarget
+                  ? `Respondendo: ${replyTarget.deletedAt ? "Mensagem apagada" : replyTarget.text}`
+                  : null
+            }
+            onClearContext={() => {
+              setReplyTarget(null);
+              setEditingMessage(null);
+            }}
           />
         </div>
 

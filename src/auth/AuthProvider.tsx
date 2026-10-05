@@ -203,9 +203,10 @@ const loadSocialGraph = async (uid: string) => {
     const profile = profileById.get(relatedUid);
     const presenceUpdatedAt = Date.parse(String(profile?.presence_updated_at || ""));
     const isFresh = Number.isFinite(presenceUpdatedAt) && Date.now() - presenceUpdatedAt < 75_000;
-    const resolvedStatus: "online" | "playing" | "offline" =
-      isFresh && (profile?.status === "online" || profile?.status === "playing")
-        ? profile.status
+    const rawStatus = String(profile?.status || "");
+    const resolvedStatus =
+      isFresh && (rawStatus === "online" || rawStatus === "playing" || rawStatus === "streaming" || rawStatus === "in_call" || rawStatus === "idle" || rawStatus === "dnd")
+        ? rawStatus as "online" | "playing" | "streaming" | "in_call" | "idle" | "dnd"
         : "offline";
     const resolvedPlaying = resolvedStatus === "playing" ? (profile?.playing as any) || null : null;
     return {

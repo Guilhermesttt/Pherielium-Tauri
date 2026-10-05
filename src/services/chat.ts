@@ -98,6 +98,13 @@ export const normalizeMessage = (
     attachmentType: typeof value.attachmentType === "string" ? value.attachmentType : typeof value.attachment_type === "string" ? value.attachment_type : undefined,
     attachmentSize: typeof value.attachmentSize === "number" ? value.attachmentSize : typeof value.attachment_size === "number" ? value.attachment_size : undefined,
     attachmentPath: typeof value.attachmentPath === "string" ? value.attachmentPath : typeof value.attachment_path === "string" ? value.attachment_path : undefined,
+    replyToId: typeof value.replyToId === "string" ? value.replyToId : typeof value.reply_to === "string" ? value.reply_to : undefined,
+    editedAt: typeof value.editedAt === "string" ? value.editedAt : typeof value.edited_at === "string" ? value.edited_at : undefined,
+    deletedAt: typeof value.deletedAt === "string" ? value.deletedAt : typeof value.deleted_at === "string" ? value.deleted_at : undefined,
+    mentions: Array.isArray(value.mentions) ? value.mentions.map(String) : undefined,
+    reactions: value.reactions && typeof value.reactions === "object" && !Array.isArray(value.reactions)
+      ? value.reactions as Record<string, string[]>
+      : undefined,
   };
 };
 
@@ -181,7 +188,8 @@ export const establishChatConnection = async () => {
   const session = await getUsableSession();
   if (!session?.user) return;
   const uid = session.user.id;
-  subscribeToActiveChats(uid);
+  const unsubscribe = subscribeToActiveChats(uid);
+  activeChatChannels.set(`active_${uid}`, { unsubFast: unsubscribe });
 };
 
 const processedMessageKeys = new Map<string, number>();
@@ -192,15 +200,8 @@ const isDuplicateIncomingMessage = (msg: ChatMessage): boolean => {
     if (now - timestamp > 15_000) processedMessageKeys.delete(key);
   });
 
-  if (msg.id && processedMessageKeys.has(msg.id)) return true;
-
-  const timeWindow = Math.floor(messageTimestamp(msg) / 6000);
-  const signature = `${msg.senderId}_${msg.receiverId}_${msg.text.trim()}_${timeWindow}`;
-
-  if (processedMessageKeys.has(signature)) return true;
-
-  if (msg.id) processedMessageKeys.set(msg.id, now);
-  processedMessageKeys.set(signature, now);
+  if (!msg.id || processedMessageKeys.has(msg.id)) return Boolean(msg.id);
+  processedMessageKeys.set(msg.id, now);
   return false;
 };
 
@@ -250,7 +251,7 @@ export const subscribeToActiveChats = (uid: string) => {
       }
     )
     .subscribe();
-  activeChatChannels.set(channelKey, channel);
+  activeChatChannels.set(channelKey, { channel, unsubFast: unsubFastBus });
 
   void supabase
     .from("chat_messages")
@@ -300,6 +301,11 @@ export const closeChatConnection = () => {
   emitUnread();
 };
 
+export type SendChatOptions = {
+  replyToId?: string;
+  mentions?: string[];
+};
+
 export const sendChatMessage = async (
   receiverUid: string,
   rawText: string,
@@ -307,6 +313,7 @@ export const sendChatMessage = async (
     ChatMessage,
     "attachmentName" | "attachmentUrl" | "attachmentType" | "attachmentSize" | "attachmentPath"
   >,
+  options?: SendChatOptions,
 ): Promise<ChatMessage> => {
   const session = await getUsableSession();
   const senderId = session?.user?.id;
@@ -335,6 +342,8 @@ export const sendChatMessage = async (
     attachmentType: attachment?.attachmentType,
     attachmentSize: attachment?.attachmentSize,
     attachmentPath: attachment?.attachmentPath,
+    replyToId: options?.replyToId,
+    mentions: options?.mentions,
   };
 
   void sendFastU2UMessage(receiverId, fastMsg);
@@ -350,6 +359,8 @@ export const sendChatMessage = async (
     attachment_type: attachment?.attachmentType || null,
     attachment_size: attachment?.attachmentSize || null,
     attachment_path: attachment?.attachmentPath || null,
+    ...(options?.replyToId ? { reply_to: options.replyToId } : {}),
+    ...(options?.mentions?.length ? { mentions: options.mentions } : {}),
   };
 
   // Persistência em segundo plano / DB
@@ -360,6 +371,62 @@ export const sendChatMessage = async (
   }
 
   return hydrateAttachmentUrl(normalizeMessage(String(data.id), data as any));
+};
+
+const broadcastMessageUpdate = async (message: ChatMessage) => {
+  if (message.receiverId) {
+    void sendFastU2UMessage(message.receiverId, message);
+  }
+};
+
+export const editChatMessage = async (message: ChatMessage, rawText: string): Promise<ChatMessage> => {
+  const session = await getUsableSession();
+  if (!session?.user || session.user.id !== message.senderId) {
+    throw new Error("Só é possível editar a própria mensagem.");
+  }
+  const text = rawText.trim();
+  if (!text || !message.id || message.id.startsWith("local-") || message.id.startsWith("fast_")) {
+    throw new Error("Mensagem ainda não confirmada.");
+  }
+  const editedAt = new Date().toISOString();
+  const { error } = await supabase.from("chat_messages").update({ text, edited_at: editedAt }).eq("id", message.id);
+  if (error) throw new Error(error.message);
+  const next = { ...message, text, editedAt };
+  await broadcastMessageUpdate(next);
+  return next;
+};
+
+export const deleteChatMessage = async (message: ChatMessage): Promise<ChatMessage> => {
+  const session = await getUsableSession();
+  if (!session?.user || session.user.id !== message.senderId) {
+    throw new Error("Só é possível apagar a própria mensagem.");
+  }
+  if (!message.id || message.id.startsWith("local-") || message.id.startsWith("fast_")) {
+    throw new Error("Mensagem ainda não confirmada.");
+  }
+  const deletedAt = new Date().toISOString();
+  const { error } = await supabase.from("chat_messages").update({ text: "", deleted_at: deletedAt }).eq("id", message.id);
+  if (error) throw new Error(error.message);
+  const next = { ...message, text: "", deletedAt };
+  await broadcastMessageUpdate(next);
+  return next;
+};
+
+export const toggleChatReaction = async (message: ChatMessage, emoji: string, userId: string): Promise<ChatMessage> => {
+  if (!message.id || message.id.startsWith("local-") || message.id.startsWith("fast_")) {
+    throw new Error("Mensagem ainda não confirmada.");
+  }
+  const reactions = { ...(message.reactions || {}) };
+  const current = new Set(reactions[emoji] || []);
+  if (current.has(userId)) current.delete(userId);
+  else current.add(userId);
+  reactions[emoji] = Array.from(current);
+  if (reactions[emoji].length === 0) delete reactions[emoji];
+  const { error } = await supabase.from("chat_messages").update({ reactions }).eq("id", message.id);
+  if (error) throw new Error(error.message);
+  const next = { ...message, reactions };
+  await broadcastMessageUpdate(next);
+  return next;
 };
 
 export const sendChatImage = async (
@@ -549,6 +616,7 @@ export const subscribeToChatMessages = (
       latestMessages = Array.from(mergedById.values()).sort(compareChatMessages);
       deliverMessages(latestMessages);
 
+      if (cancelled) return;
       unsubFast = subscribeToGlobalEventBus(uid, {
         onMessage: (fastMsg) => {
           if (cancelled) return;
@@ -557,13 +625,18 @@ export const subscribeToChatMessages = (
             (fastMsg.senderId === uid && fastMsg.receiverId === friendUid) ||
             fastMsg.chatId === chatId
           ) {
+            const existingIndex = latestMessages.findIndex((current) => current.id === fastMsg.id);
+            if (existingIndex !== -1) {
+              latestMessages = latestMessages.map((item, index) => (index === existingIndex ? { ...item, ...fastMsg } : item));
+              deliverMessages(latestMessages);
+              return;
+            }
             const isAlreadyPresent = latestMessages.some(
               (current) =>
-                current.id === fastMsg.id ||
-                (!current.id?.startsWith("fast_") &&
-                  current.senderId === fastMsg.senderId &&
-                  current.text.trim() === fastMsg.text.trim() &&
-                  Math.abs(messageTimestamp(current) - messageTimestamp(fastMsg)) < 15000),
+                !current.id?.startsWith("fast_") &&
+                current.senderId === fastMsg.senderId &&
+                current.text.trim() === fastMsg.text.trim() &&
+                Math.abs(messageTimestamp(current) - messageTimestamp(fastMsg)) < 15000,
             );
             if (!isAlreadyPresent) {
               latestMessages = [...latestMessages, fastMsg].sort(compareChatMessages);
@@ -589,7 +662,13 @@ export const subscribeToChatMessages = (
         },
       });
 
-      realtimeChannel = supabase
+      if (cancelled) {
+        unsubFast?.();
+        unsubFast = null;
+        return;
+      }
+
+      const channel = supabase
         .channel(`chat_${chatId}_${Math.random().toString(36).slice(2, 8)}`)
         .on(
           "postgres_changes",
@@ -641,7 +720,15 @@ export const subscribeToChatMessages = (
             }
           },
         )
-        .subscribe();
+      realtimeChannel = channel;
+      if (cancelled) {
+        unsubFast?.();
+        unsubFast = null;
+        supabase.removeChannel(channel);
+        realtimeChannel = null;
+        return;
+      }
+      channel.subscribe();
     } catch (err) {
       if (!cancelled) {
         reportError(
@@ -661,7 +748,10 @@ export const subscribeToChatMessages = (
   };
 };
 
-const typingSubscriptionMap = new Map<string, { channel: any; count: number }>();
+const typingSubscriptionMap = new Map<string, {
+  channel: ReturnType<typeof supabase.channel>;
+  callbacks: Set<(typing: boolean) => void>;
+}>();
 
 export const subscribeToFriendTyping = (
   friendUid: string,
@@ -669,17 +759,17 @@ export const subscribeToFriendTyping = (
 ) => {
   let cancelled = false;
   let resolvedChatId: string | null = null;
+  const listener = (typing: boolean) => callback(typing);
 
   const cleanup = () => {
-    if (resolvedChatId) {
-      const sub = typingSubscriptionMap.get(resolvedChatId);
-      if (sub) {
-        sub.count--;
-        if (sub.count <= 0) {
-          supabase.removeChannel(sub.channel);
-          typingSubscriptionMap.delete(resolvedChatId);
-        }
-      }
+    if (!resolvedChatId) return;
+    const sub = typingSubscriptionMap.get(resolvedChatId);
+    if (!sub) return;
+    sub.callbacks.delete(listener);
+    if (sub.callbacks.size === 0) {
+      supabase.removeChannel(sub.channel);
+      typingSubscriptionMap.delete(resolvedChatId);
+      activeChatChannels.delete(`typing_receive_${resolvedChatId}`);
     }
   };
 
@@ -687,28 +777,33 @@ export const subscribeToFriendTyping = (
     if (!session?.user || cancelled) return;
     const uid = session.user.id;
     const chatId = await ensureChatSession(uid, friendUid);
-    if (cancelled) return;
+    if (!chatId || cancelled) return;
     resolvedChatId = chatId;
 
-    // Reuse existing channel if already subscribed for this chat
     let sub = typingSubscriptionMap.get(chatId);
     if (!sub) {
+      const callbacks = new Set<(typing: boolean) => void>();
+      const targetFriendUid = String(friendUid).replace(/^cp-friend:/, "");
       const channel = supabase
         .channel(`typing_${chatId}`)
         .on("broadcast", { event: "typing" }, (event) => {
           const payload = event.payload;
           if (!payload) return;
           const senderId = String(payload.senderId || "").replace(/^cp-friend:/, "");
-          const targetFriendUid = String(friendUid).replace(/^cp-friend:/, "");
-          if (senderId === targetFriendUid) {
-            callback(Boolean(payload.typing));
-          }
+          if (senderId !== targetFriendUid) return;
+          typingSubscriptionMap.get(chatId)?.callbacks.forEach((notify) => {
+            notify(Boolean(payload.typing));
+          });
         })
         .subscribe();
-      sub = { channel, count: 0 };
+      sub = { channel, callbacks };
       typingSubscriptionMap.set(chatId, sub);
     }
-    sub.count++;
+    if (cancelled) {
+      cleanup();
+      return;
+    }
+    sub.callbacks.add(listener);
     activeChatChannels.set(`typing_receive_${chatId}`, sub.channel);
   });
 

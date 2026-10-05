@@ -121,7 +121,7 @@ export interface UserProfile {
   epicGamesCount?: number;
   retroAchievementsUlid?: string;
   retroAchievementsUsername?: string;
-  status?: "online" | "playing" | "offline";
+  status?: SocialPresenceStatus;
   playing?: string | null;
   updatedAt?: number | string | null;
   discordFriends?: Array<{
@@ -134,7 +134,7 @@ export interface UserProfile {
     uid: string;
     displayName: string;
     photoURL?: string | null;
-    status?: "online" | "playing" | "offline";
+    status?: SocialPresenceStatus;
     playing?: string | null;
     updatedAt?: number | string | null;
   }>;
@@ -205,6 +205,11 @@ export interface ChatMessage {
   attachmentType?: string;
   attachmentSize?: number;
   attachmentPath?: string;
+  replyToId?: string;
+  editedAt?: string;
+  deletedAt?: string;
+  mentions?: string[];
+  reactions?: Record<string, string[]>;
 }
 
 export interface Chat {
@@ -217,7 +222,7 @@ export interface Chat {
 export interface SocialFriend {
   id: string;
   name: string;
-  status: "online" | "playing" | "offline";
+  status: SocialPresenceStatus;
   playing?: string;
   avatar?: string;
   source?: "discord" | "discord_friend" | "local" | "checkpoint";
@@ -238,6 +243,22 @@ export interface PriceAlert {
 }
 
 export type CallState = "idle" | "ringing-out" | "ringing-in" | "connecting" | "active";
+
+export type CallConnectionPhase =
+  | "disconnected"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "disconnecting";
+
+export type SocialPresenceStatus =
+  | "online"
+  | "playing"
+  | "streaming"
+  | "in_call"
+  | "idle"
+  | "dnd"
+  | "offline";
 
 export interface VoiceCallParticipant {
   uid: string;

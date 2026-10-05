@@ -559,7 +559,7 @@ export function useFriendsSystem({
         const existing = current.find((c) => c.id === `cp-friend:${f.uid}`);
         const resolvedStatus = existing?.status
           ? existing.status
-          : (f.status === "playing" ? "playing" : f.status === "online" ? "online" : "offline");
+          : (f.status === "playing" || f.status === "online" || f.status === "streaming" || f.status === "in_call" || f.status === "idle" || f.status === "dnd" ? f.status : "offline");
         const resolvedPlaying = existing
           ? (existing.status === "playing" ? existing.playing : undefined)
           : (f.status === "playing" ? f.playing : undefined);

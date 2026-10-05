@@ -7,7 +7,7 @@
 
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use serde_json::json;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 use windows::core::GUID;
@@ -26,6 +26,7 @@ const WAVE_FORMAT_PCM: u16 = 1;
 const WAVE_FORMAT_IEEE_FLOAT: u16 = 3;
 const WAVE_FORMAT_EXTENSIBLE: u16 = 0xFFFE;
 const AUDCLNT_BUFFERFLAGS_SILENT: u32 = 0x2;
+static DESKTOP_AUDIO_GEN: AtomicU64 = AtomicU64::new(0);
 
 const SUBTYPE_IEEE_FLOAT: GUID = GUID::from_values(
     0x0000_0003,
@@ -261,6 +262,258 @@ unsafe fn drain_packets(
             .map_err(|e| format!("GetNextPacketSize: {e}"))?;
     }
     Ok(())
+}
+
+pub fn stop_excluding_self() {
+    DESKTOP_AUDIO_GEN.fetch_add(1, Ordering::SeqCst);
+}
+
+/// Captures the render mix except this process tree. Local playback is unchanged.
+pub fn start_excluding_self(app: AppHandle) -> Result<LoopbackInfo, String> {
+    let generation = DESKTOP_AUDIO_GEN.fetch_add(1, Ordering::SeqCst) + 1;
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::Builder::new()
+        .name("desktop-audio-exclude".into())
+        .spawn(move || {
+            if let Err(err) = run_excluding_self(app, generation, &tx) {
+                let _ = tx.send(Err(err));
+            }
+        })
+        .map_err(|e| format!("Falha ao iniciar o audio de desktop: {e}"))?;
+
+    rx.recv_timeout(Duration::from_secs(4))
+        .map_err(|_| "Timeout ao iniciar o audio de desktop.".to_string())?
+}
+
+fn run_excluding_self(
+    app: AppHandle,
+    generation: u64,
+    tx: &std::sync::mpsc::Sender<Result<LoopbackInfo, String>>,
+) -> Result<(), String> {
+    unsafe {
+        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+    }
+    struct ComGuard;
+    impl Drop for ComGuard {
+        fn drop(&mut self) {
+            unsafe { CoUninitialize(); }
+        }
+    }
+    let _com = ComGuard;
+
+    let client = activate_excluding_self()?;
+    let pwfx = unsafe {
+        client
+            .GetMixFormat()
+            .map_err(|e| format!("GetMixFormat: {e}"))?
+    };
+    if pwfx.is_null() {
+        return Err("Mix format nulo.".into());
+    }
+
+    let wfx = unsafe { *pwfx };
+    let channels = wfx.nChannels.max(1);
+    let sample_rate = wfx.nSamplesPerSec.max(8000);
+    let bits = wfx.wBitsPerSample;
+    let block_align = wfx.nBlockAlign.max(1);
+    let kind = unsafe { detect_kind(pwfx, bits) };
+
+    let init = unsafe {
+        client.Initialize(
+            AUDCLNT_SHAREMODE_SHARED,
+            AUDCLNT_STREAMFLAGS_LOOPBACK,
+            1_000_000,
+            0,
+            pwfx,
+            None,
+        )
+    };
+    unsafe { CoTaskMemFree(Some(pwfx.cast())); }
+    init.map_err(|e| format!("IAudioClient::Initialize: {e}"))?;
+
+    let capture: IAudioCaptureClient = unsafe {
+        client
+            .GetService()
+            .map_err(|e| format!("GetService IAudioCaptureClient: {e}"))?
+    };
+    unsafe {
+        client
+            .Start()
+            .map_err(|e| format!("IAudioClient::Start: {e}"))?;
+    }
+
+    let _ = tx.send(Ok(LoopbackInfo {
+        sample_rate,
+        channels,
+    }));
+
+    loop {
+        if DESKTOP_AUDIO_GEN.load(Ordering::SeqCst) != generation {
+            break;
+        }
+        unsafe {
+            match drain_packets(&app, &capture, channels, sample_rate, block_align, kind) {
+                Ok(()) => {}
+                Err(err) => {
+                    eprintln!("[desktop-audio] Falha no loopback por processo: {err}");
+                    break;
+                }
+            }
+        }
+        std::thread::sleep(Duration::from_millis(8));
+    }
+
+    unsafe { let _ = client.Stop(); }
+    Ok(())
+}
+
+fn activate_excluding_self() -> Result<IAudioClient, String> {
+    use std::sync::atomic::AtomicU32;
+    use std::sync::Mutex;
+    use windows::core::{Interface, GUID, HRESULT, IUnknown};
+    use windows::Win32::Media::Audio::{
+        ActivateAudioInterfaceAsync,
+        IActivateAudioInterfaceCompletionHandler, IActivateAudioInterfaceCompletionHandler_Vtbl,
+        AUDIOCLIENT_ACTIVATION_PARAMS, AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK,
+        AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS, PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE,
+        VIRTUAL_AUDIO_DEVICE_PROCESS_LOOPBACK,
+    };
+
+    #[repr(C)]
+    struct ActivationBlob {
+        vt: u16,
+        reserved1: u16,
+        reserved2: u16,
+        reserved3: u16,
+        size: u32,
+        data: *const AUDIOCLIENT_ACTIVATION_PARAMS,
+    }
+
+    #[repr(C)]
+    struct Handler {
+        vtbl: *const IActivateAudioInterfaceCompletionHandler_Vtbl,
+        ref_count: AtomicU32,
+        tx: Mutex<Option<std::sync::mpsc::Sender<()>>>,
+    }
+
+    unsafe extern "system" fn query_interface(
+        this: *mut std::ffi::c_void,
+        iid: *const GUID,
+        out: *mut *mut std::ffi::c_void,
+    ) -> HRESULT {
+        if iid.is_null() || out.is_null() {
+            return HRESULT(0x8000_4003u32 as i32);
+        }
+        let iid = unsafe { *iid };
+        let iunknown = GUID::from_u128(0x0000_0000_0000_0000_c000_0000_0000_0046);
+        let handler = <IActivateAudioInterfaceCompletionHandler as Interface>::IID;
+        if iid == iunknown || iid == handler {
+            unsafe {
+                *out = this;
+                add_ref(this);
+            }
+            HRESULT(0)
+        } else {
+            unsafe { *out = std::ptr::null_mut(); }
+            HRESULT(0x8000_4002u32 as i32)
+        }
+    }
+
+    unsafe extern "system" fn add_ref(this: *mut std::ffi::c_void) -> u32 {
+        let handler = unsafe { &*(this as *const Handler) };
+        handler.ref_count.fetch_add(1, Ordering::SeqCst) + 1
+    }
+
+    unsafe extern "system" fn release(this: *mut std::ffi::c_void) -> u32 {
+        let handler = unsafe { &*(this as *const Handler) };
+        let next = handler.ref_count.fetch_sub(1, Ordering::SeqCst) - 1;
+        if next == 0 {
+            unsafe { drop(Box::from_raw(this as *mut Handler)); }
+        }
+        next
+    }
+
+    unsafe extern "system" fn activate_completed(
+        this: *mut std::ffi::c_void,
+        _operation: *mut std::ffi::c_void,
+    ) -> HRESULT {
+        let handler = unsafe { &*(this as *const Handler) };
+        if let Some(tx) = handler.tx.lock().ok().and_then(|mut slot| slot.take()) {
+            let _ = tx.send(());
+        }
+        HRESULT(0)
+    }
+
+    static VTBL: IActivateAudioInterfaceCompletionHandler_Vtbl =
+        IActivateAudioInterfaceCompletionHandler_Vtbl {
+            base__: windows::core::IUnknown_Vtbl {
+                QueryInterface: query_interface,
+                AddRef: add_ref,
+                Release: release,
+            },
+            ActivateCompleted: activate_completed,
+        };
+
+    let params = AUDIOCLIENT_ACTIVATION_PARAMS {
+        ActivationType: AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK,
+        Anonymous: windows::Win32::Media::Audio::AUDIOCLIENT_ACTIVATION_PARAMS_0 {
+            ProcessLoopbackParams: AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS {
+                TargetProcessId: std::process::id(),
+                ProcessLoopbackMode: PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE,
+            },
+        },
+    };
+    let blob = ActivationBlob {
+        vt: 65, // VT_BLOB
+        reserved1: 0,
+        reserved2: 0,
+        reserved3: 0,
+        size: std::mem::size_of::<AUDIOCLIENT_ACTIVATION_PARAMS>() as u32,
+        data: &params,
+    };
+
+    let (ready_tx, ready_rx) = std::sync::mpsc::channel();
+    let handler = Box::new(Handler {
+        vtbl: &VTBL,
+        ref_count: AtomicU32::new(1),
+        tx: Mutex::new(Some(ready_tx)),
+    });
+    let raw = Box::into_raw(handler);
+    let handler_iface = unsafe {
+        IActivateAudioInterfaceCompletionHandler::from_raw(raw as *mut std::ffi::c_void)
+    };
+
+    let operation = unsafe {
+        ActivateAudioInterfaceAsync(
+            VIRTUAL_AUDIO_DEVICE_PROCESS_LOOPBACK,
+            &IAudioClient::IID,
+            Some(&blob as *const ActivationBlob as *const windows::core::PROPVARIANT),
+            &handler_iface,
+        )
+        .map_err(|e| format!("ActivateAudioInterfaceAsync: {e}"))?
+    };
+
+    ready_rx
+        .recv_timeout(Duration::from_secs(3))
+        .map_err(|_| "Timeout ao ativar o loopback por processo.".to_string())?;
+
+    let mut activate_hr = HRESULT(0);
+    let mut unknown: Option<IUnknown> = None;
+    unsafe {
+        operation
+            .GetActivateResult(&mut activate_hr, &mut unknown)
+            .map_err(|e| format!("GetActivateResult: {e}"))?;
+    }
+    if activate_hr.is_err() {
+        drop(handler_iface);
+        return Err(format!("Loopback por processo recusado: {activate_hr}"));
+    }
+    let unknown = unknown.ok_or_else(|| "Loopback por processo nao retornou cliente.".to_string())?;
+    let client: IAudioClient = unknown
+        .cast()
+        .map_err(|e| format!("IAudioClient: {e}"))?;
+    drop(handler_iface);
+    Ok(client)
 }
 
 fn to_s16le(bytes: &[u8], frames: u32, channels: u16, kind: SampleKind) -> Vec<u8> {

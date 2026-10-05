@@ -10,6 +10,7 @@ import {
   Loader2,
   Phone,
   PictureInPicture2,
+  MessageSquare,
 } from "lucide-react";
 import type { VoiceCallSession, CallState } from "../../../types/domain";
 import type { CallRoomConfig } from "../../../types/voice-governance";
@@ -33,6 +34,8 @@ interface CallHeaderProps {
   isDevMode?: boolean;
   onAddDevMockParticipant?: () => void;
   onRemoveDevMockParticipant?: () => void;
+  roomChatOpen?: boolean;
+  onToggleRoomChat?: () => void;
 }
 
 const formatDuration = (secs: number) => {
@@ -60,6 +63,8 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
   isDevMode = false,
   onAddDevMockParticipant,
   onRemoveDevMockParticipant,
+  roomChatOpen = false,
+  onToggleRoomChat,
 }) => {
   const isRoomSession = Boolean(
     session.roomName || (session.participants && session.participants.length > 0)
@@ -185,6 +190,20 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
         )}
 
         {/* Botão Convidar */}
+        {isRoomSession && onToggleRoomChat && (
+          <button
+            type="button"
+            onClick={onToggleRoomChat}
+            className={`h-8 w-8 flex items-center justify-center rounded-[10px] transition cursor-pointer ${
+              roomChatOpen ? "bg-white text-black" : "text-white/60 hover:text-white hover:bg-white/[0.08]"
+            }`}
+            title="Texto da sala"
+            aria-label="Texto da sala"
+          >
+            <MessageSquare className="h-4 w-4" />
+          </button>
+        )}
+
         {onOpenInvite && (
           <button
             type="button"

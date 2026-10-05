@@ -10,7 +10,6 @@ import {
 
 const chromiumAudioIsolation: ScreenShareSupportedConstraints = {
   restrictOwnAudio: true,
-  suppressLocalAudioPlayback: true,
 };
 
 describe("screenShareProfile", () => {
@@ -39,24 +38,22 @@ describe("screenShareProfile", () => {
 });
 
 describe("screenShareAudioBarrierConstraints", () => {
-  it("enables DSP and isolation flags when supported", () => {
+  it("excludes this app's audio without silencing local playback", () => {
     expect(
       screenShareAudioBarrierConstraints(chromiumAudioIsolation),
     ).toEqual({
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
       restrictOwnAudio: true,
-      suppressLocalAudioPlayback: true,
     });
+    expect(
+      screenShareAudioBarrierConstraints({
+        restrictOwnAudio: true,
+        suppressLocalAudioPlayback: true,
+      } as ScreenShareSupportedConstraints),
+    ).not.toHaveProperty("suppressLocalAudioPlayback");
   });
 
   it("omits unsupported isolation flags", () => {
-    expect(screenShareAudioBarrierConstraints({})).toEqual({
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
-    });
+    expect(screenShareAudioBarrierConstraints({})).toEqual({});
   });
 });
 
@@ -74,13 +71,10 @@ describe("buildDisplayMediaRequest", () => {
       width: { ideal: 1920, max: 1920 },
       frameRate: { ideal: 60, max: 60 },
     });
-    expect(request.audio).toMatchObject({
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
+    expect(request.audio).toEqual({
       restrictOwnAudio: true,
-      suppressLocalAudioPlayback: true,
     });
+    expect(request.audio).not.toHaveProperty("suppressLocalAudioPlayback");
     expect(request.systemAudio).toBe("exclude");
     expect(request.windowAudio).toBe("window");
   });
@@ -125,10 +119,8 @@ describe("captureNativeScreenShare", () => {
       width: { ideal: 1920, max: 1920 },
       frameRate: { ideal: 60, max: 60 },
     });
-    expect(getDisplayMedia.mock.calls[0]?.[0]?.audio).toMatchObject({
-      echoCancellation: true,
+    expect(getDisplayMedia.mock.calls[0]?.[0]?.audio).toEqual({
       restrictOwnAudio: true,
-      suppressLocalAudioPlayback: true,
     });
     expect(getDisplayMedia.mock.calls[0]?.[0]?.systemAudio).toBe("exclude");
     expect(getDisplayMedia.mock.calls[0]?.[0]?.windowAudio).toBe("window");
@@ -167,7 +159,7 @@ describe("captureNativeScreenShare", () => {
     expect(result.hasSystemAudio).toBe(false);
   });
 
-  it("flags monitor capture for launcher audio isolation", async () => {
+  it("flags monitor capture without requesting local playback suppression", async () => {
     const getDisplayMedia = vi.fn().mockResolvedValue({
       getVideoTracks: () => [{ kind: "video", getSettings: () => ({ displaySurface: "monitor" }) }],
       getAudioTracks: () => [{ kind: "audio" }],

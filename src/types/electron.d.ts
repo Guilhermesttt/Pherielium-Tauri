@@ -668,6 +668,9 @@ declare global {
           friendAvatar?: string;
           muted?: boolean;
           deafened?: boolean;
+          cameraOn?: boolean;
+          screenSharing?: boolean;
+          speaking?: boolean;
           connectionState?: "connected" | "calling";
           durationSeconds?: number;
         } | null;
@@ -697,6 +700,9 @@ declare global {
         | { kind: "voice-hangup" }
         | { kind: "voice-mute" }
         | { kind: "voice-deafen" }
+        | { kind: "voice-camera" }
+        | { kind: "voice-screen" }
+        | { kind: "voice-open-hub" }
         | { kind: "retry-message"; messageId?: string; text: string }
         | { kind: "close" }
       ) => void) => () => void;

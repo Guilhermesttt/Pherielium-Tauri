@@ -1,7 +1,7 @@
 import React from "react";
 
 type Props = {
-  status: "idle" | "connecting" | "connected" | "poor" | "error";
+  status: "idle" | "connecting" | "connected" | "reconnecting" | "disconnecting" | "poor" | "error";
   onRetry?: () => void;
 };
 
@@ -9,7 +9,11 @@ export const CallConnectionBanner: React.FC<Props> = ({ status, onRetry }) => {
   if (status === "connected" || status === "idle") return null;
 
   const message =
-    status === "connecting"
+    status === "reconnecting"
+      ? "Reconectando chamada..."
+      : status === "disconnecting"
+      ? "Saindo da chamada..."
+      : status === "connecting"
       ? "Conectando chamada..."
       : status === "poor"
       ? "Conexão fraca — áudio pode falhar"

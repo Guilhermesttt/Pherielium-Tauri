@@ -350,6 +350,32 @@ pub fn screen_share_status(state: State<'_, ScreenCaptureState>) -> Result<Value
 }
 
 #[tauri::command]
+pub fn desktop_audio_start(app: AppHandle) -> Result<Value, String> {
+    #[cfg(windows)]
+    {
+        let info = win_loopback::start_excluding_self(app)?;
+        return Ok(json!({
+            "active": true,
+            "sampleRate": info.sample_rate,
+            "channels": info.channels,
+            "excludeProcess": true,
+        }));
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        Err("Captura de audio por processo disponivel apenas no Windows.".into())
+    }
+}
+
+#[tauri::command]
+pub fn desktop_audio_stop() -> Result<Value, String> {
+    #[cfg(windows)]
+    win_loopback::stop_excluding_self();
+    Ok(json!({ "active": false }))
+}
+
+#[tauri::command]
 pub fn screen_share_stop(app: AppHandle, state: State<'_, ScreenCaptureState>) -> Result<Value, String> {
     livekit_publish::stop_screen_publish();
     state.generation.fetch_add(1, Ordering::SeqCst);

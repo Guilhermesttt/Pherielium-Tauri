@@ -12,6 +12,7 @@ import {
   Check,
 } from "lucide-react";
 import { GhostSelect } from "../../ui/GhostSelect";
+import type { CallDiagnosticsSnapshot } from "../../../services/voiceCall/callDiagnostics";
 
 interface CallSettingsPopoverProps {
   isOpen: boolean;
@@ -51,6 +52,7 @@ interface CallSettingsPopoverProps {
   isRecordingKey?: boolean;
   setIsRecordingKey?: (recording: boolean) => void;
   onOpenOrbloomCustomizer?: () => void;
+  diagnostics?: CallDiagnosticsSnapshot | null;
 }
 
 export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
@@ -91,8 +93,9 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
   isRecordingKey = false,
   setIsRecordingKey,
   onOpenOrbloomCustomizer,
+  diagnostics,
 }) => {
-  const [activeTab, setActiveTab] = useState<"devices" | "audio" | "activation">("devices");
+  const [activeTab, setActiveTab] = useState<"devices" | "audio" | "activation" | "status">("devices");
 
   if (!isOpen) return null;
 
@@ -178,6 +181,17 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
               }`}
             >
               Ativação de Voz
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("status")}
+              className={`flex-1 py-1.5 rounded-[9px] text-xs font-semibold transition cursor-pointer ${
+                activeTab === "status"
+                  ? "bg-white/12 text-white shadow-sm"
+                  : "text-white/50 hover:text-white/80"
+              }`}
+            >
+              Status
             </button>
           </div>
 
@@ -498,6 +512,36 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                     </button>
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === "status" && (
+              <div className="space-y-2">
+                {(
+                  [
+                    ["Conexão", diagnostics?.connection ?? "—"],
+                    ["Sinalização", diagnostics?.signaling ?? "—"],
+                    ["Transporte", diagnostics?.transport ?? "—"],
+                    ["ICE", diagnostics?.ice ?? "—"],
+                    ["Peers", String(diagnostics?.peers ?? 0)],
+                    ["Microfone", diagnostics?.microphone ? "ligado" : "mudo"],
+                    ["Câmera", diagnostics?.camera ? "ligada" : "desligada"],
+                    ["Tela", diagnostics?.screenShare ? "compartilhando" : "parada"],
+                    ["Deafen", diagnostics?.deafened ? "ativo" : "desligado"],
+                    ["RTT", diagnostics?.rttMs == null ? "—" : `${diagnostics.rttMs} ms`],
+                    ["Perda", diagnostics?.packetLoss == null ? "—" : `${diagnostics.packetLoss}%`],
+                    ["Bitrate", diagnostics?.bitrate == null ? "—" : `${diagnostics.bitrate} kbps`],
+                    ["FPS", diagnostics?.videoFps == null ? "—" : String(diagnostics.videoFps)],
+                  ] as const
+                ).map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="flex items-center justify-between rounded-xl border border-[#161616] bg-white/3 px-3.5 py-2.5"
+                  >
+                    <span className="text-xs text-white/50">{label}</span>
+                    <span className="text-xs font-semibold text-white">{value}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>

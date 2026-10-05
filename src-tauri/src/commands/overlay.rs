@@ -24,6 +24,7 @@ pub struct OverlayRuntime {
     pub pending: VecDeque<(String, Value)>,
     pub panel_open: bool,
     pub panel_state: Value,
+    pub call_overlay_forced: bool,
 }
 
 impl Default for OverlayRuntime {
@@ -33,6 +34,7 @@ impl Default for OverlayRuntime {
             pending: VecDeque::new(),
             panel_open: false,
             panel_state: json!({}),
+            call_overlay_forced: false,
         }
     }
 }
@@ -212,7 +214,7 @@ fn hide_overlay_if_idle(app: &AppHandle) {
     }
 }
 
-pub fn send_overlay_event(app: &AppHandle, channel: &str, payload: Value) {
+pub fn send_overlay_event(app: &AppHandle, channel: &str, mut payload: Value) {
     let _ = ensure_overlay(app);
 
     if let Some(state) = app.try_state::<Mutex<OverlayRuntime>>() {
@@ -228,10 +230,37 @@ pub fn send_overlay_event(app: &AppHandle, channel: &str, payload: Value) {
 
     if let Some(window) = app.get_webview_window(OVERLAY_LABEL) {
         let panel_open = panel_is_open(app);
+        let hub_visible = app
+            .get_webview_window("main")
+            .and_then(|main| main.is_visible().ok())
+            .unwrap_or(true);
+        if channel == "overlay:panel-state" {
+            if let Some(obj) = payload.as_object_mut() {
+                obj.insert("hubVisible".to_string(), Value::Bool(hub_visible));
+            }
+        }
+        let call_active = payload
+            .get("activeCall")
+            .and_then(|call| call.get("active"))
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        let call_force = channel == "overlay:panel-state" && call_active && !hub_visible && !panel_open;
+        let mut hide_forced_call = false;
+        if channel == "overlay:panel-state" {
+            if let Some(state) = app.try_state::<Mutex<OverlayRuntime>>() {
+                let mut runtime = state.lock();
+                if call_force {
+                    runtime.call_overlay_forced = true;
+                } else if runtime.call_overlay_forced && (!call_active || hub_visible) && !panel_open {
+                    runtime.call_overlay_forced = false;
+                    hide_forced_call = true;
+                }
+            }
+        }
         // Nao chamar show() em toda atualizacao de painel — isso roubava o mouse
         // mesmo com o overlay "fechado" visualmente.
         let should_show = match channel {
-            "overlay:panel-state" => panel_open,
+            "overlay:panel-state" => panel_open || call_force,
             "overlay:panel-visibility" => payload
                 .get("open")
                 .or_else(|| payload.get("visible"))
@@ -248,6 +277,8 @@ pub fn send_overlay_event(app: &AppHandle, channel: &str, payload: Value) {
             if !panel_open {
                 let _ = window.set_ignore_cursor_events(true);
             }
+        } else if hide_forced_call {
+            let _ = window.hide();
         }
 
         let _ = window.emit(channel, payload);

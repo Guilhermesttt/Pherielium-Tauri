@@ -173,6 +173,7 @@ pub fn run() {
             window_fullscreen_toggle,
             window_fullscreen_set,
             window_fullscreen_get,
+            window_show,
             window_minimize,
             window_maximize_toggle,
             window_is_maximized,
@@ -222,6 +223,8 @@ pub fn run() {
             screen_share_start_frames,
             screen_share_stop,
             screen_share_status,
+            desktop_audio_start,
+            desktop_audio_stop,
             capture_target_jpeg,
             // Push-to-Talk
             ptt_register,

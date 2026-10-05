@@ -967,6 +967,12 @@ html[data-launcher-theme="xbox360"] {
   }
 }
 
+/* --- Balanced: keep glass, drop the heaviest blur --- */
+body.balanced-performance [class*="backdrop-blur-2xl"],
+body.balanced-performance [class*="backdrop-blur-xl"] {
+  backdrop-filter: blur(8px) !important;
+}
+
 /* --- Low Performance Mode --- */
 body.low-performance * {
   backdrop-filter: none !important;

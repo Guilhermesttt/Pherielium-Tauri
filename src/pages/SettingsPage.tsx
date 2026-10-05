@@ -1225,6 +1225,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
     setOpenAtLogin,
     lowPerformanceMode,
     setLowPerformanceMode,
+    performanceTier,
+    setPerformanceTier,
     gameBootIntroEnabled,
     setGameBootIntroEnabled,
     gameBootIntroSoundEnabled,
@@ -2074,6 +2076,26 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                   {perfSubTab === "general" && (
                     <SettingsRow title={detailCopy.performanceTitle} hasBorder={false}>
                       <p className="mb-3 text-[11px] leading-relaxed text-white/40">{detailCopy.performanceHint}</p>
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        {([
+                          ["quality", "Qualidade"],
+                          ["balanced", "Equilíbrio"],
+                          ["performance", "Desempenho"],
+                        ] as const).map(([id, label]) => (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => setPerformanceTier(id)}
+                            className={`rounded-[var(--radius-control)] px-3 py-1.5 text-[12px] font-semibold border cursor-pointer ${
+                              performanceTier === id
+                                ? "bg-[var(--selection-bg)] text-[var(--selection-text)] border-[var(--selection-border)]"
+                                : "border-white/10 text-white/60 hover:text-white"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                       <div className="flex items-center gap-3">
                         <Switch checked={lowPerformanceMode} onCheckedChange={setLowPerformanceMode} />
                         <span className="text-[12px] text-white/50 w-16">{lowPerformanceMode ? t("enabled") : t("disabled")}</span>

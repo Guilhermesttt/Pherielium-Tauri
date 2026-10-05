@@ -10,6 +10,7 @@ export type LauncherLanguage =
   | "it-IT";
 export type SoundTheme = "default" | "ps5" | "ps4" | "psp" | "ps2" | "gamecube" | "xbox360" | "cyberpunk";
 export type VisualTheme = "phelierium" | "ps5" | "playstation" | "ps4" | "psp" | "gamecube" | "xbox360" | "checkpoint" | "cyberpunk";
+export type PerformanceTier = "quality" | "balanced" | "performance";
 export type AchievementNotificationPosition =
   | "top-left"
   | "top-right"
@@ -30,6 +31,7 @@ export interface PreferencesStateValue {
   visualTheme: VisualTheme;
   openAtLogin: boolean;
   lowPerformanceMode: boolean;
+  performanceTier: PerformanceTier;
   gameBootIntroEnabled: boolean;
   gameBootIntroSoundEnabled: boolean;
   closeOnLaunch: boolean;
@@ -54,6 +56,7 @@ export interface PreferencesActionsValue {
   setVisualTheme: (theme: VisualTheme) => void;
   setOpenAtLogin: (value: boolean) => void;
   setLowPerformanceMode: (value: boolean) => void;
+  setPerformanceTier: (tier: PerformanceTier) => void;
   setGameBootIntroEnabled: (value: boolean) => void;
   setGameBootIntroSoundEnabled: (value: boolean) => void;
   setCloseOnLaunch: (value: boolean) => void;
@@ -1011,6 +1014,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
   const [visualTheme, setVisualTheme] = useState<VisualTheme>("phelierium");
   const [openAtLogin, setOpenAtLoginState] = useState(false);
   const [lowPerformanceMode, setLowPerformanceMode] = useState(false);
+  const [performanceTier, setPerformanceTier] = useState<PerformanceTier>("quality");
   const [gameBootIntroEnabled, setGameBootIntroEnabled] = useState(true);
   const [gameBootIntroSoundEnabled, setGameBootIntroSoundEnabled] = useState(true);
   const [closeOnLaunch, setCloseOnLaunch] = useState(true);
@@ -1044,6 +1048,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
     const savedVisualTheme = readPreference(user.uid, "visual_theme");
     const savedOpenAtLogin = readPreference(user.uid, "open_at_login");
     const savedLowPerf = readPreference(user.uid, "low_perf");
+    const savedPerfTier = readPreference(user.uid, "perf_tier");
     const savedGameBootIntro = readPreference(user.uid, "game_boot_intro");
     const savedGameBootSound = readPreference(user.uid, "game_boot_intro_sound");
     const savedCloseLaunch = readPreference(user.uid, "close_launch");
@@ -1071,8 +1076,12 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
     if (savedGameBootSound !== null) {
       setGameBootIntroSoundEnabled(savedGameBootSound === "true");
     }
-    if (savedLowPerf !== null) {
+    if (savedPerfTier === "quality" || savedPerfTier === "balanced" || savedPerfTier === "performance") {
+      setPerformanceTier(savedPerfTier);
+      setLowPerformanceMode(savedPerfTier === "performance");
+    } else if (savedLowPerf !== null) {
       setLowPerformanceMode(savedLowPerf === "true");
+      setPerformanceTier(savedLowPerf === "true" ? "performance" : "quality");
     } else {
       const nav = typeof navigator !== "undefined" ? (navigator as unknown as { deviceMemory?: number; hardwareConcurrency?: number }) : null;
       const isWeakDevice = Boolean(
@@ -1082,6 +1091,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
       );
       if (isWeakDevice) {
         setLowPerformanceMode(true);
+        setPerformanceTier("performance");
       }
     }
     if (savedCloseLaunch !== null) setCloseOnLaunch(savedCloseLaunch === "true");
@@ -1167,6 +1177,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
     writePreference(user.uid, "visual_theme", visualTheme);
     writePreference(user.uid, "open_at_login", String(openAtLogin));
     writePreference(user.uid, "low_perf", String(lowPerformanceMode));
+    writePreference(user.uid, "perf_tier", performanceTier);
     writePreference(user.uid, "game_boot_intro", String(gameBootIntroEnabled));
     writePreference(user.uid, "game_boot_intro_sound", String(gameBootIntroSoundEnabled));
     writePreference(user.uid, "close_launch", String(closeOnLaunch));
@@ -1178,7 +1189,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
     writePreference(user.uid, "custom_achievement_notifications", String(customAchievementNotifications));
     writePreference(user.uid, "achievement_notification_position", achievementNotificationPosition);
     writePreference(user.uid, "call_overlay_enabled", String(callOverlayEnabled));
-  }, [achievementNotificationPosition, achievementNotificationsEnabled, achievementVolume, callOverlayEnabled, closeOnLaunch, confirmBeforeExit, customAchievementNotifications, effectsVolume, gameBootIntroEnabled, gameBootIntroSoundEnabled, hapticsEnabled, hydratedPreferencesUid, language, lowPerformanceMode, minimizeToTrayOnClose, musicVolume, notificationVolume, openAtLogin, restoreLastScreen, soundTheme, user?.uid, visualTheme]);
+  }, [achievementNotificationPosition, achievementNotificationsEnabled, achievementVolume, callOverlayEnabled, closeOnLaunch, confirmBeforeExit, customAchievementNotifications, effectsVolume, gameBootIntroEnabled, gameBootIntroSoundEnabled, hapticsEnabled, hydratedPreferencesUid, language, lowPerformanceMode, minimizeToTrayOnClose, musicVolume, notificationVolume, openAtLogin, performanceTier, restoreLastScreen, soundTheme, user?.uid, visualTheme]);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -1186,12 +1197,9 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     document.documentElement.dataset.launcherTheme = visualTheme;
-    if (lowPerformanceMode) {
-      document.body.classList.add("low-performance");
-    } else {
-      document.body.classList.remove("low-performance");
-    }
-  }, [visualTheme, lowPerformanceMode]);
+    document.body.classList.toggle("low-performance", performanceTier === "performance");
+    document.body.classList.toggle("balanced-performance", performanceTier === "balanced");
+  }, [visualTheme, performanceTier]);
 
   useEffect(() => {
     try { localStorage.setItem("checkpoint_haptics_enabled_global", String(hapticsEnabled)); } catch {}
@@ -1255,6 +1263,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
       visualTheme,
       openAtLogin,
       lowPerformanceMode,
+      performanceTier,
       gameBootIntroEnabled,
       gameBootIntroSoundEnabled,
       closeOnLaunch,
@@ -1265,7 +1274,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
       callOverlayEnabled,
       preferencesHydrated: hydratedPreferencesUid === user?.uid,
     }),
-    [achievementNotificationPosition, achievementNotificationsEnabled, achievementVolume, callOverlayEnabled, closeOnLaunch, confirmBeforeExit, customAchievementNotifications, effectsVolume, gameBootIntroEnabled, gameBootIntroSoundEnabled, hapticsEnabled, hydratedPreferencesUid, language, lowPerformanceMode, minimizeToTrayOnClose, musicVolume, notificationVolume, openAtLogin, restoreLastScreen, soundTheme, user?.uid, visualTheme],
+    [achievementNotificationPosition, achievementNotificationsEnabled, achievementVolume, callOverlayEnabled, closeOnLaunch, confirmBeforeExit, customAchievementNotifications, effectsVolume, gameBootIntroEnabled, gameBootIntroSoundEnabled, hapticsEnabled, hydratedPreferencesUid, language, lowPerformanceMode, minimizeToTrayOnClose, musicVolume, notificationVolume, openAtLogin, performanceTier, restoreLastScreen, soundTheme, user?.uid, visualTheme],
   );
 
   const actionsValue = useMemo<PreferencesActionsValue>(
@@ -1286,7 +1295,14 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
           setOpenAtLoginState(result.openAtLogin);
         }).catch(console.error);
       },
-      setLowPerformanceMode,
+      setLowPerformanceMode: (value) => {
+        setLowPerformanceMode(value);
+        setPerformanceTier((current) => (value ? "performance" : current === "performance" ? "quality" : current));
+      },
+      setPerformanceTier: (tier) => {
+        setPerformanceTier(tier);
+        setLowPerformanceMode(tier === "performance");
+      },
       setGameBootIntroEnabled,
       setGameBootIntroSoundEnabled,
       setCloseOnLaunch,

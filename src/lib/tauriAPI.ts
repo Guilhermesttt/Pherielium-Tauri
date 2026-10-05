@@ -742,7 +742,7 @@ export const tauriAPI = {
     invoke<void>("window_minimize"),
 
   showMainWindow: () =>
-    Promise.resolve(),
+    invoke<void>("window_show"),
 
   // ─── Displays ─────────────────────────────────────────────────────────────
   getDisplays: () =>

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
+import { isManualDnd, setManualDnd } from "../services/presenceStatus";
 import {
   MessageSquare,
   Phone,
@@ -568,6 +569,7 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
   playSound,
 }) => {
   const [friendSearch, setFriendSearch] = useState("");
+  const [dnd, setDnd] = useState(isManualDnd);
   const [activeSubTab, setActiveSubTab] = useState<SocialSubTab>("AMIGOS");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ONLINE" | "PLAYING" | "OFFLINE">("ALL");
   const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
@@ -607,7 +609,7 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
 
       if (!matchesSearch) return false;
 
-      if (statusFilter === "ONLINE") return friend.status === "online" || friend.status === "playing";
+      if (statusFilter === "ONLINE") return friend.status === "online" || friend.status === "playing" || friend.status === "streaming" || friend.status === "in_call" || friend.status === "idle";
       if (statusFilter === "PLAYING") return friend.status === "playing";
       if (statusFilter === "OFFLINE") return friend.status === "offline";
       return true;
@@ -615,7 +617,7 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
   }, [friends, normalizedSearch, statusFilter]);
 
   const onlineFriends = useMemo(
-    () => filteredFriends.filter((f) => f.status === "online" || f.status === "playing"),
+    () => filteredFriends.filter((f) => f.status === "online" || f.status === "playing" || f.status === "streaming" || f.status === "in_call" || f.status === "idle" || f.status === "dnd"),
     [filteredFriends],
   );
 
@@ -676,14 +678,29 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
       title="Amigos"
       description="Conecte-se e jogue junto."
       actions={
-        <button
-          type="button"
-          onMouseEnter={() => playSound?.("hover")}
-          onClick={onAddFriendClick}
-          className="cursor-pointer flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-body font-bold text-xs tracking-wide shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all"
-        >
-          <span>+ ADICIONAR AMIGO</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const next = !dnd;
+              setDnd(next);
+              setManualDnd(next);
+            }}
+            className={`cursor-pointer rounded-full px-4 py-2.5 text-xs font-bold tracking-wide ${
+              dnd ? "bg-rose-500/20 text-rose-200" : "bg-white/10 text-white/80"
+            }`}
+          >
+            {dnd ? "Não perturbe" : "Disponível"}
+          </button>
+          <button
+            type="button"
+            onMouseEnter={() => playSound?.("hover")}
+            onClick={onAddFriendClick}
+            className="cursor-pointer flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-body font-bold text-xs tracking-wide shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all"
+          >
+            <span>+ ADICIONAR AMIGO</span>
+          </button>
+        </div>
       }
     >
       <FriendsSubTabs
@@ -860,6 +877,10 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
                         <p className="text-[11px] font-body text-white/50 line-clamp-1 mt-0.5">
                           {friend.status === "playing"
                             ? `Começou a jogar ${friend.playing || "um jogo"}`
+                            : friend.status === "streaming"
+                              ? "Começou a transmitir"
+                            : friend.status === "in_call"
+                              ? "Entrou em uma chamada"
                             : friend.status === "online"
                               ? "Entrou no ecossistema Pherielium"
                               : "Atividade registrada"}

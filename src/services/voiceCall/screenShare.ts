@@ -31,7 +31,6 @@ export interface DisplayMediaCaptureOptions extends DisplayMediaStreamOptions {
 /** Extended audio constraints for display capture isolation. */
 export interface ScreenShareAudioTrackConstraints extends MediaTrackConstraints {
   restrictOwnAudio?: boolean;
-  suppressLocalAudioPlayback?: boolean;
 }
 
 export const screenShareProfile = (options: ScreenShareOptions) => {
@@ -56,7 +55,6 @@ export const screenShareVideoConstraints = (
 /** Chromium-only constraint flags not yet in lib.dom MediaTrackSupportedConstraints. */
 export interface ScreenShareSupportedConstraints extends MediaTrackSupportedConstraints {
   restrictOwnAudio?: boolean;
-  suppressLocalAudioPlayback?: boolean;
 }
 
 const readSupportedConstraints = (): ScreenShareSupportedConstraints => {
@@ -67,23 +65,18 @@ const readSupportedConstraints = (): ScreenShareSupportedConstraints => {
 };
 
 /**
- * Audio barrier for screen share: isolate to the shared surface, block hub/call
- * playback from entering the capture, and enable browser DSP before LiveKit.
+ * Capture constraints for screen-share audio.
+ * restrictOwnAudio keeps this app's own output out of the capture when Chromium
+ * supports it. suppressLocalAudioPlayback is intentionally omitted: it silences
+ * local speakers for whatever is being captured.
  */
 export const screenShareAudioBarrierConstraints = (
   supported: ScreenShareSupportedConstraints = readSupportedConstraints(),
 ): ScreenShareAudioTrackConstraints => {
-  const audio: ScreenShareAudioTrackConstraints = {
-    echoCancellation: true,
-    noiseSuppression: true,
-    autoGainControl: true,
-  };
+  const audio: ScreenShareAudioTrackConstraints = {};
 
   if (supported.restrictOwnAudio) {
     audio.restrictOwnAudio = true;
-  }
-  if (supported.suppressLocalAudioPlayback) {
-    audio.suppressLocalAudioPlayback = true;
   }
 
   return audio;
@@ -109,9 +102,9 @@ export const buildDisplayMediaRequest = (options: {
   return {
     video,
     audio: screenShareAudioBarrierConstraints(options.supportedConstraints),
-    // Do not offer monitor-wide system audio (prevents call return / speaker loop).
+    // Monitor-wide mix includes this app. Window audio is captured instead.
+    // Process-level loopback (exclude Pherielium) replaces this in a later phase.
     systemAudio: "exclude",
-    // When the user picks a window/app, prefer that surface's audio mix only.
     windowAudio: "window",
   };
 };
@@ -125,7 +118,7 @@ export function isDisplayMediaCancelledError(error: unknown): boolean {
 export type NativeScreenCaptureResult = {
   stream: MediaStream;
   hasSystemAudio: boolean;
-  /** Full desktop capture — launcher playback should be silenced locally. */
+  /** Full desktop / monitor surface, as reported by the capture track. */
   isMonitorShare: boolean;
 };
 

@@ -153,11 +153,8 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
             </div>
 
             <p className="rounded-[14px] border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] leading-relaxed text-white/45">
-              A barreira de áudio usa constraints nativas (
-              <code className="text-white/60">restrictOwnAudio</code>,{" "}
-              <code className="text-white/60">suppressLocalAudioPlayback</code>,{" "}
-              <code className="text-white/60">windowAudio</code>) para isolar o app/janela compartilhada.
-              Tela inteira nunca envia áudio do sistema — prefira janela ou aba para sons do jogo.
+              Compartilhar a tela não silencia o jogo, o sistema nem a chamada.
+              O áudio enviado é o do computador, sem o som do próprio Pherielium.
             </p>
           </div>
 

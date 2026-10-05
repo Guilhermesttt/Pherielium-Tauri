@@ -87,6 +87,12 @@ pub async fn window_fullscreen_get(app: AppHandle) -> Result<bool, String> {
 }
 
 #[command]
+pub async fn window_show(app: AppHandle) -> Result<(), String> {
+    crate::tray::show_main_window(&app);
+    Ok(())
+}
+
+#[command]
 pub async fn window_minimize(app: AppHandle) -> Result<(), String> {
     let win = app
         .get_webview_window("main")

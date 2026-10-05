@@ -27,6 +27,8 @@ import {
   BellOff,
   Contrast,
   Trash2,
+  Monitor,
+  AppWindow,
 } from "lucide-react";
 
 import achievementUnlockDefault from "../sounds/Phelierium Default/Achievment_Unlock.mp3";
@@ -55,6 +57,8 @@ import {
 } from "../lib/overlayPrefs";
 import type { AchievementNotificationPosition } from "../types/overlay";
 import { getOverlayThemeTokens } from "../constants/overlayTheme";
+import { resolveOverlayCallPhase } from "./overlayCallPhase";
+import { presenceLabel } from "../services/presenceStatus";
 
 // ─── Logger Estruturado ────────────────────────────────────────────────────────
 const overlayLogger = {
@@ -155,6 +159,9 @@ export interface ActiveCallState {
   friendAvatar?: string;
   muted?: boolean;
   deafened?: boolean;
+  cameraOn?: boolean;
+  screenSharing?: boolean;
+  speaking?: boolean;
   connectionState?: CallConnectionState;
   durationSeconds?: number;
 }
@@ -348,6 +355,9 @@ const OverlayApp: React.FC = () => {
   const [muteSocial, setMuteSocial] = useState(false);
   const [muteAllToasts, setMuteAllToasts] = useState(false);
   const [fluidAnimations, setFluidAnimations] = useState(true);
+  const [systemReducedMotion, setSystemReducedMotion] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
   const [perfMonitor, setPerfMonitor] = useState(false);
   const [achievementToastsEnabled, setAchievementToastsEnabled] = useState(true);
   const [captureShortcut, setCaptureShortcut] = useState("F8");
@@ -364,6 +374,13 @@ const OverlayApp: React.FC = () => {
     setPerfMonitor(prefs.perfMonitor);
     setCaptureShortcut(prefs.captureShortcut);
     setOverlayShortcut(prefs.overlayShortcut);
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = () => setSystemReducedMotion(media.matches);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
   }, []);
 
   useEffect(() => {
@@ -553,9 +570,26 @@ const OverlayApp: React.FC = () => {
   );
   const fullCapturesCursor = overlayMode === "full";
   const callOverlayEnabled = panelData.settings?.callOverlayEnabled !== false;
-  const showCallOverlayWidget = Boolean(activeCall?.active) && callOverlayEnabled;
+  const hubVisible = (panelData as { hubVisible?: boolean }).hubVisible !== false;
+  const [callDismissed, setCallDismissed] = useState(false);
+  const [pointerInReveal, setPointerInReveal] = useState(false);
+  useEffect(() => {
+    if (hubVisible || !activeCall?.active) {
+      setCallDismissed(false);
+      setPointerInReveal(false);
+    }
+  }, [hubVisible, activeCall?.active]);
+  const overlayCallPhase = resolveOverlayCallPhase({
+    enabled: callOverlayEnabled,
+    callActive: Boolean(activeCall?.active),
+    hubVisible,
+    dismissed: callDismissed,
+    pointerInReveal,
+  });
+  const showCallOverlayWidget = overlayCallPhase === "visible" || overlayCallPhase === "revealing";
+  const showCallReveal = overlayCallPhase === "dismissed";
   const hasHitTestTargets =
-    overlayMode === "quick" || showCallOverlayWidget || hasInteractiveToasts;
+    overlayMode === "quick" || showCallOverlayWidget || showCallReveal || hasInteractiveToasts;
 
   useEffect(() => {
     if (fullCapturesCursor) {
@@ -1159,15 +1193,6 @@ const OverlayApp: React.FC = () => {
   };
 
   const handleVoiceCall = (friendId: string, friendName: string, friendAvatar?: string) => {
-    setActiveCall({
-      active: true,
-      friendId,
-      friendName,
-      friendAvatar,
-      muted: false,
-      deafened: false,
-      connectionState: "calling",
-    });
     (window as any).achievementOverlay?.panelAction?.({
       kind: "voice-call",
       friendId,
@@ -1177,18 +1202,35 @@ const OverlayApp: React.FC = () => {
   };
 
   const handleEndCall = () => {
-    setActiveCall(null);
     (window as any).achievementOverlay?.panelAction?.({ kind: "voice-hangup" });
   };
 
   const toggleMute = () => {
-    setActiveCall((prev) => (prev ? { ...prev, muted: !prev.muted } : null));
     (window as any).achievementOverlay?.panelAction?.({ kind: "voice-mute" });
   };
 
   const toggleDeafen = () => {
-    setActiveCall((prev) => (prev ? { ...prev, deafened: !prev.deafened } : null));
     (window as any).achievementOverlay?.panelAction?.({ kind: "voice-deafen" });
+  };
+
+  const toggleCamera = () => {
+    (window as any).achievementOverlay?.panelAction?.({ kind: "voice-camera" });
+  };
+
+  const toggleScreenShare = () => {
+    (window as any).achievementOverlay?.panelAction?.({ kind: "voice-screen" });
+  };
+
+  const openHub = () => {
+    (window as any).achievementOverlay?.panelAction?.({ kind: "voice-open-hub" });
+  };
+
+  const revealCallOverlay = () => {
+    setPointerInReveal(true);
+    window.setTimeout(() => {
+      setCallDismissed(false);
+      setPointerInReveal(false);
+    }, 160);
   };
 
   // Cálculos de Conquistas e Progresso
@@ -1261,7 +1303,7 @@ const OverlayApp: React.FC = () => {
       className={[
         "fixed inset-0 pointer-events-none z-9999 select-none overflow-hidden bg-transparent font-sans text-white",
         autoContrast ? "overlay-high-contrast drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)]" : "",
-        fluidAnimations ? "" : "overlay-reduced-motion",
+        fluidAnimations && !systemReducedMotion ? "" : "overlay-reduced-motion",
       ].filter(Boolean).join(" ")}
     >
       {perfHud.enabled ? (
@@ -1278,7 +1320,7 @@ const OverlayApp: React.FC = () => {
                 key={toast.id}
                 toast={toast}
                 position={achievementPosition}
-                animated={fluidAnimations}
+                animated={fluidAnimations && !systemReducedMotion}
                 className="pointer-events-auto"
                 interactive
                 onOpenDetails={() => {
@@ -1311,7 +1353,7 @@ const OverlayApp: React.FC = () => {
                     subtitle={toast.subtitle || toast.message || toast.description}
                     avatar={toast.avatar}
                     badge={toast.kind === "game-start" ? "PHELIERIUM" : "OVERLAY"}
-                    animated={fluidAnimations}
+                    animated={fluidAnimations && !systemReducedMotion}
                     className="pointer-events-auto"
                   />
                 );
@@ -1328,13 +1370,13 @@ const OverlayApp: React.FC = () => {
                       title={toast.title || "Captura salva"}
                       subtitle={toast.description || toast.message}
                       previewUrl={toast.screenshotUrl}
-                      animated={fluidAnimations}
+                      animated={fluidAnimations && !systemReducedMotion}
                     />
                   ) : (
                     <SocialToastCard
                       toast={toast}
                       accentColor={accentColor}
-                      animated={fluidAnimations}
+                      animated={fluidAnimations && !systemReducedMotion}
                       onDismiss={() => removeToast(toast.id)}
                       onAcceptCall={
                         isCall
@@ -1386,6 +1428,18 @@ const OverlayApp: React.FC = () => {
         </AnimatePresence>
       </div>
 
+      {showCallReveal && (
+        <button
+          type="button"
+          data-overlay-interactive
+          aria-label="Mostrar chamada"
+          onMouseEnter={revealCallOverlay}
+          onFocus={revealCallOverlay}
+          onClick={revealCallOverlay}
+          className="fixed top-0 left-0 right-0 z-10020 h-3 cursor-pointer bg-transparent"
+        />
+      )}
+
       {/* ─── MINI BARRA PERSISTENTE DE CHAMADA DE VOZ ───────────────────────── */}
       <AnimatePresence>
         {showCallOverlayWidget && activeCall && (
@@ -1432,6 +1486,37 @@ const OverlayApp: React.FC = () => {
               </button>
               <button
                 type="button"
+                onClick={toggleCamera}
+                aria-label={activeCall.cameraOn ? "Desligar câmera" : "Ligar câmera"}
+                className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+                  activeCall.cameraOn ? "bg-white/15 text-white" : "hover:bg-white/10 text-white/70"
+                }`}
+                title={activeCall.cameraOn ? "Desligar câmera" : "Ligar câmera"}
+              >
+                <Camera className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={toggleScreenShare}
+                aria-label={activeCall.screenSharing ? "Parar compartilhamento" : "Compartilhar tela"}
+                className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+                  activeCall.screenSharing ? "bg-white/15 text-white" : "hover:bg-white/10 text-white/70"
+                }`}
+                title={activeCall.screenSharing ? "Parar compartilhamento" : "Compartilhar tela"}
+              >
+                <Monitor className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={openHub}
+                aria-label="Abrir Pherielium"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10"
+                title="Abrir Pherielium"
+              >
+                <AppWindow className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
                 onClick={toggleDeafen}
                 aria-label={activeCall.deafened ? "Ativar áudio" : "Silenciar áudio"}
                 className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
@@ -1440,6 +1525,15 @@ const OverlayApp: React.FC = () => {
                 title={activeCall.deafened ? "Áudio Silenciado" : "Silenciar Áudio"}
               >
                 {activeCall.deafened ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCallDismissed(true)}
+                aria-label="Ocultar chamada"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10"
+                title="Ocultar"
+              >
+                <X className="h-3.5 w-3.5" />
               </button>
               <button
                 type="button"
@@ -1920,11 +2014,7 @@ const OverlayApp: React.FC = () => {
                             <div className="min-w-0">
                               <p className="text-xs font-bold text-white truncate">{friend.name || "Amigo"}</p>
                               <p className="text-[10px] text-white/40 truncate">
-                                {friend.status === "playing"
-                                  ? `Jogando ${friend.playing || ""}`
-                                  : friend.status === "online"
-                                  ? "Online"
-                                  : "Offline"}
+                                {presenceLabel(friend.status, friend.playing)}
                               </p>
                             </div>
                           </div>

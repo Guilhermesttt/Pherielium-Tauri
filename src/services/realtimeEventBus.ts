@@ -1,8 +1,9 @@
 import { supabase } from "./supabase";
 import { getOrCreateChannel } from "./voiceCall/channelLifecycle";
 import type { ChatMessage } from "../types/domain";
+import type { CallEndPayload, CallInvitePayload } from "./voiceCall/types";
 
-export type UserPresenceStatus = "online" | "playing" | "offline";
+export type UserPresenceStatus = "online" | "playing" | "streaming" | "in_call" | "idle" | "dnd" | "offline";
 
 export interface PresencePayload {
   uid: string;
@@ -22,6 +23,8 @@ export interface U2UEventHandlers {
   onFriendAccepted?: (data: { friendUid: string; friendName: string; friendAvatar?: string | null }) => void;
   onFriendRemoved?: (data: { fromUid: string }) => void;
   onCustomEvent?: (event: string, payload: any) => void;
+  onCallInvite?: (invite: CallInvitePayload) => void;
+  onCallEnd?: (end: CallEndPayload) => void;
 }
 
 let inboxChannel: any = null;
@@ -212,6 +215,16 @@ export const subscribeToGlobalEventBus = (
       .on("broadcast", { event: "u2u:custom" }, (e: any) => {
         if (e.payload && typeof e.payload === "object") {
           globalEventHandlers.forEach((h) => h.onCustomEvent?.(e.payload.event, e.payload.data));
+        }
+      })
+      .on("broadcast", { event: "call:invite" }, (e: any) => {
+        if (e.payload && typeof e.payload === "object") {
+          globalEventHandlers.forEach((h) => h.onCallInvite?.(e.payload as CallInvitePayload));
+        }
+      })
+      .on("broadcast", { event: "call:end" }, (e: any) => {
+        if (e.payload && typeof e.payload === "object") {
+          globalEventHandlers.forEach((h) => h.onCallEnd?.(e.payload as CallEndPayload));
         }
       });
 

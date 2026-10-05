@@ -91,9 +91,11 @@ import {
   sendChatImage,
   sendChatMessage,
   setChatTyping,
+  compareChatMessages,
   subscribeToChatMessages,
   subscribeToFriendTyping,
 } from "../services/chat";
+import { isManualDnd, PRESENCE_PREF_EVENT } from "../services/presenceStatus";
 import type { SteamAchievement } from "../services/steam";
 import {
   invalidateSteamAchievementCache,
@@ -250,6 +252,7 @@ const Home: React.FC = () => {
   const gamepad = useGamepad();
   const voiceCallContext = useVoiceCallContext();
   const voiceCall = voiceCallContext;
+  const lastPresenceActivityRef = useRef(Date.now());
   const [games, setGames] = useState<Game[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState("ALL");
@@ -980,11 +983,37 @@ const Home: React.FC = () => {
   }, [user?.uid]);
 
   useEffect(() => {
+    const mark = () => {
+      lastPresenceActivityRef.current = Date.now();
+    };
+    window.addEventListener("pointerdown", mark);
+    window.addEventListener("keydown", mark);
+    return () => {
+      window.removeEventListener("pointerdown", mark);
+      window.removeEventListener("keydown", mark);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!user?.uid) return;
 
     const heartbeat = () => {
+      const inCall = Boolean(voiceCall?.callState && voiceCall.callState !== "idle");
+      const sharing = Boolean(voiceCall?.isSharingScreen);
+      const idle = Date.now() - lastPresenceActivityRef.current > 5 * 60 * 1000;
+      const status = currentPresenceGame
+        ? "playing"
+        : sharing
+          ? "streaming"
+          : inCall
+            ? "in_call"
+            : isManualDnd()
+              ? "dnd"
+              : idle
+                ? "idle"
+                : "online";
       updateCheckpointPresence(
-        currentPresenceGame ? "playing" : "online",
+        status,
         currentPresenceGame || undefined,
         userProfile?.displayName || undefined,
         userProfile?.photoURL,
@@ -993,8 +1022,12 @@ const Home: React.FC = () => {
 
     heartbeat();
     const interval = window.setInterval(heartbeat, 60_000);
-    return () => window.clearInterval(interval);
-  }, [currentPresenceGame, user?.uid, userProfile?.displayName, userProfile?.photoURL]);
+    window.addEventListener(PRESENCE_PREF_EVENT, heartbeat);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener(PRESENCE_PREF_EVENT, heartbeat);
+    };
+  }, [currentPresenceGame, user?.uid, userProfile?.displayName, userProfile?.photoURL, voiceCall?.callState, voiceCall?.isSharingScreen]);
 
   useEffect(() => {
     const handleGameLaunch = (event: Event) => {
@@ -2052,6 +2085,9 @@ const Home: React.FC = () => {
               friendAvatar: voiceCall.session.friendAvatar,
               muted: voiceCall.isMuted,
               deafened: voiceCall.isDeafened,
+              cameraOn: voiceCall.isCameraOn,
+              screenSharing: voiceCall.isSharingScreen,
+              speaking: voiceCall.isSpeakingLocal,
               connectionState: voiceCall.callState === "active" ? "connected" : "calling",
             }
           : null,
@@ -2108,6 +2144,8 @@ const Home: React.FC = () => {
     voiceCall?.session,
     voiceCall?.isMuted,
     voiceCall?.isDeafened,
+    voiceCall?.isCameraOn,
+    voiceCall?.isSharingScreen,
     voiceCall?.isSpeakingLocal,
     voiceCall?.callState,
     playerLevel,
@@ -2164,9 +2202,7 @@ const Home: React.FC = () => {
         void sendChatImage(overlayChatFriendUid, file).then((message) => {
           setOverlayChatMessages((current) => current.some((item) => item.id === message.id)
             ? current
-            : [...current, message].sort(
-              (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
-            ));
+            : [...current, message].sort(compareChatMessages));
         }).catch((error) => {
           setOverlayChatError(error instanceof Error ? error.message : "Nao foi possivel enviar a imagem.");
         }).finally(() => setOverlayChatSending(false));
@@ -2213,6 +2249,24 @@ const Home: React.FC = () => {
         voiceCallContext?.toggleDeafen();
         return;
       }
+      if (action.kind === "voice-camera") {
+        void voiceCallContext?.toggleCamera();
+        return;
+      }
+      if (action.kind === "voice-screen") {
+        if (!voiceCallContext) return;
+        if (voiceCallContext.isSharingScreen) {
+          void voiceCallContext.stopScreenShare();
+        } else {
+          void window.electronAPI?.showMainWindow?.();
+          voiceCallContext.setIsScreenPickerOpen(true);
+        }
+        return;
+      }
+      if (action.kind === "voice-open-hub") {
+        void window.electronAPI?.showMainWindow?.();
+        return;
+      }
       if (action.kind === "retry-message" && (action as any).text && overlayChatFriendUid) {
         const text = (action as any).text.trim();
         const oldId = (action as any).messageId;
@@ -2237,7 +2291,7 @@ const Home: React.FC = () => {
           setOverlayChatMessages((current) => [
             ...current.filter((item) => item.id !== pendingId && item.id !== message.id),
             message,
-          ].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)));
+          ].sort(compareChatMessages));
         }).catch((error) => {
           setOverlayChatMessages((current) => current.map((item) => item.id === pendingId ? { ...item, failed: true } : item));
           setOverlayChatError(error instanceof Error ? error.message : "Não foi possível enviar a mensagem.");
@@ -2264,7 +2318,7 @@ const Home: React.FC = () => {
         setOverlayChatMessages((current) => [
           ...current.filter((item) => item.id !== pendingId && item.id !== message.id),
           message,
-        ].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)));
+        ].sort(compareChatMessages));
       }).catch((error) => {
         setOverlayChatMessages((current) => current.map((item) => item.id === pendingId ? { ...item, failed: true } : item));
         setOverlayChatError(error instanceof Error ? error.message : "Não foi possível enviar a mensagem.");

@@ -1,4 +1,5 @@
 import { supabase } from "../supabase";
+import { subscribeToGlobalEventBus } from "../realtimeEventBus";
 import { getOrCreateChannel, getVoiceRoomTopic, removeChannel } from "./channelLifecycle";
 import type { CallAnswerPayload, CallEndPayload, CallInvitePayload } from "./types";
 
@@ -31,30 +32,21 @@ export const subscribeToUserIncomingCalls = (
     })
     .subscribe();
 
-  // Also listen on inbox channel as fallback
-  const inboxChannelName = `user_inbox_${cleanUid}`;
-  const inboxChannel = supabase.channel(inboxChannelName, {
-    config: { broadcast: { self: false } },
-  })
-    .on("broadcast", { event: "call:invite" }, (e) => {
-      if (e.payload && typeof e.payload === "object" && e.payload.callerId && e.payload.callerId !== cleanUid) {
-        callbacks.onInvite(e.payload as CallInvitePayload);
-      }
-    })
-    .on("broadcast", { event: "call:end" }, (e) => {
-      if (e.payload && typeof e.payload === "object") {
-        callbacks.onEnd(e.payload as CallEndPayload);
-      }
-    })
-    .subscribe();
+  // Inbox delivery goes through the shared user_inbox channel. A second
+  // subscription with the same name would remove the social inbox on cleanup.
+  const unsubscribeInbox = subscribeToGlobalEventBus(cleanUid, {
+    onCallInvite: (invite) => {
+      if (invite.callerId && invite.callerId !== cleanUid) callbacks.onInvite(invite);
+    },
+    onCallEnd: (end) => callbacks.onEnd(end),
+  });
 
   return () => {
     try {
       supabase.removeChannel(channel);
-      supabase.removeChannel(inboxChannel);
     } catch { }
     removeChannel(channelName);
-    removeChannel(inboxChannelName);
+    unsubscribeInbox();
   };
 };
 

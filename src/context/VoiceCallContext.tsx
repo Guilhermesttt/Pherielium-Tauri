@@ -12,7 +12,6 @@ import { ScreenPickerModal } from "../components/voice/ScreenPickerModal";
 import { getCheckpointFriendStatuses } from "../services/checkpointFriends";
 import { audioContextManager } from "../services/audio/AudioContextManager";
 import { PeerAudioNode } from "../services/audio/PeerAudioNode";
-import { onLauncherAudioIsolationChange } from "../services/voiceCall/launcherAudioIsolation";
 import { CallConnectionBanner } from "../components/CallConnectionBanner";
 import type { SocialFriend } from "../types/domain";
 
@@ -93,11 +92,6 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   >(new Map());
   const audioContextManagerRef = React.useRef(audioContextManager);
   const p2pAudioContextAcquiredRef = React.useRef(false);
-  const [launcherAudioIsolationActive, setLauncherAudioIsolationActive] = React.useState(false);
-
-  React.useEffect(() => {
-    return onLauncherAudioIsolationChange(setLauncherAudioIsolationActive);
-  }, []);
 
   const destroyPeerAudioNodes = React.useCallback(() => {
     peerAudioNodesMapRef.current.forEach(({ node }) => node.destroy());
@@ -191,15 +185,12 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Volume/deafen updates are cheap and do not rebuild the Web Audio graph.
   React.useEffect(() => {
     peerAudioNodesMapRef.current.forEach(({ node }, peerId) => {
-      const peerVolume = launcherAudioIsolationActive
+      const peerVolume = voiceCall.isDeafened
         ? 0
-        : voiceCall.isDeafened
-          ? 0
-          : (voiceCall.peerVolumes?.[peerId] ?? voiceCall.remoteVolume ?? 100);
+        : (voiceCall.peerVolumes?.[peerId] ?? voiceCall.remoteVolume ?? 100);
       node.setVolume(peerVolume);
     });
   }, [
-    launcherAudioIsolationActive,
     voiceCall.isDeafened,
     voiceCall.peerVolumes,
     voiceCall.remoteVolume,
@@ -306,13 +297,17 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       <CallConnectionBanner
         status={
-          voiceCall.channelConnectionStatus === "failed"
+          voiceCall.connectionPhase === "disconnecting"
+            ? "disconnecting"
+            : voiceCall.channelConnectionStatus === "failed"
             ? "error"
             : voiceCall.channelConnectionStatus === "degraded"
               ? "poor"
-              : voiceCall.isReconnecting ||
-                voiceCall.channelConnectionStatus === "reconnecting" ||
-                voiceCall.callState === "connecting" ||
+              : voiceCall.connectionPhase === "reconnecting" ||
+                voiceCall.isReconnecting ||
+                voiceCall.channelConnectionStatus === "reconnecting"
+                ? "reconnecting"
+                : voiceCall.callState === "connecting" ||
                 voiceCall.callState === "ringing-out"
                 ? "connecting"
                 : voiceCall.callState === "active"
@@ -411,6 +406,21 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         onCalibrateNoise={voiceCall.calibrateNoiseFloor}
         isCalibratingNoise={voiceCall.isCalibratingNoise}
         currentNoiseFloor={voiceCall.currentNoiseFloor}
+        diagnostics={{
+          connection: voiceCall.connectionPhase,
+          signaling: voiceCall.channelConnectionStatus,
+          transport: voiceCall.mediaTransport,
+          ice: voiceCall.iceConnectionState,
+          peers: voiceCall.peerConnectionCount,
+          microphone: !voiceCall.isMuted,
+          camera: Boolean(voiceCall.isCameraOn),
+          screenShare: voiceCall.isSharingScreen,
+          deafened: voiceCall.isDeafened,
+          rttMs: voiceCall.mediaStats.rttMs,
+          packetLoss: voiceCall.mediaStats.packetLoss,
+          bitrate: voiceCall.mediaStats.bitrate,
+          videoFps: voiceCall.mediaStats.videoFps,
+        }}
       />
 
       {/* Screen / Window Picker Modal */}
@@ -506,6 +516,10 @@ const safeFallbackVoiceCallContext: Partial<VoiceCallContextType> = {
   incomingInvite: null,
   pendingReconnectSession: null,
   channelConnectionStatus: "idle" as const,
+  connectionPhase: "disconnected" as const,
+  iceConnectionState: "new",
+  peerConnectionCount: 0,
+  mediaStats: { rttMs: null, packetLoss: null, bitrate: null, videoFps: null },
   mediaTransport: "none" as const,
   localStream: null,
   remoteStream: null,

@@ -52,6 +52,87 @@ export async function replaceOutgoingAudioTrack(args: {
     await Promise.all([...p2pTasks, livekitTask]);
 }
 
+/** Drops a camera sender without touching a screen-share track on the same peer connection. */
+export async function detachCameraTrackFromPeers(args: {
+    peerConnections: Iterable<PeerConnectionLike>;
+    cameraTracks: Iterable<MediaStreamTrack>;
+}): Promise<void> {
+    const cameraTracks = new Set(args.cameraTracks);
+    if (cameraTracks.size === 0) return;
+
+    const tasks: Promise<unknown>[] = [];
+    for (const pc of args.peerConnections) {
+        for (const sender of pc.getSenders()) {
+            if (sender.track && cameraTracks.has(sender.track)) {
+                tasks.push(Promise.resolve(sender.replaceTrack(null)));
+            }
+        }
+    }
+
+    await Promise.all(tasks);
+}
+
+export async function replaceOutgoingCameraTrack(args: {
+    peerConnections: Iterable<PeerConnectionLike>;
+    livekitPublication?: LocalTrackPublicationLike | null;
+    previousTrack?: MediaStreamTrack | null;
+    screenTracks?: Iterable<MediaStreamTrack>;
+    newTrack: MediaStreamTrack;
+}): Promise<void> {
+    const { peerConnections, livekitPublication, previousTrack, newTrack } = args;
+    const screenTracks = new Set(args.screenTracks || []);
+
+    const p2pTasks: Promise<unknown>[] = [];
+    for (const pc of peerConnections) {
+        const senders = pc.getSenders();
+        const explicit = previousTrack
+            ? senders.find((sender) => sender.track === previousTrack)
+            : undefined;
+        const fallback = senders.find(
+            (sender) =>
+                sender.track?.kind === "video" &&
+                sender.track &&
+                !screenTracks.has(sender.track),
+        );
+        const sender = explicit || fallback;
+        if (sender) {
+            p2pTasks.push(Promise.resolve(sender.replaceTrack(newTrack)));
+        }
+    }
+
+    const livekitTrack = livekitPublication?.track;
+    const livekitTask = livekitTrack?.replaceTrack
+        ? Promise.resolve(livekitTrack.replaceTrack(newTrack))
+        : Promise.resolve();
+
+    await Promise.all([...p2pTasks, livekitTask]);
+}
+
+export interface ScreenPeerLike extends PeerConnectionLike {
+    addTrack: (track: MediaStreamTrack, stream: MediaStream) => unknown;
+}
+
+/** Publishes screen video and desktop audio on their own senders. Never replaces the camera or microphone. */
+export async function attachScreenTracksToPeer(args: {
+    peer: ScreenPeerLike;
+    stream: MediaStream;
+    videoTrack: MediaStreamTrack;
+    audioTrack?: MediaStreamTrack | null;
+}): Promise<void> {
+    const videoSender = args.peer.getSenders().find((sender) => sender.track === args.videoTrack);
+    if (videoSender) {
+        await videoSender.replaceTrack(args.videoTrack);
+    } else {
+        args.peer.addTrack(args.videoTrack, args.stream);
+    }
+
+    if (!args.audioTrack) return;
+    const audioSender = args.peer.getSenders().find((sender) => sender.track === args.audioTrack);
+    if (!audioSender) {
+        args.peer.addTrack(args.audioTrack, args.stream);
+    }
+}
+
 export async function detachScreenTracksFromPeers(args: {
     peerConnections: Iterable<PeerConnectionLike>;
     videoTrack?: MediaStreamTrack | null;

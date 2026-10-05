@@ -62,9 +62,13 @@ const menuMusicGain: Record<SoundTheme, number> = {
 
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
-  const { musicVolume, soundTheme, lowPerformanceMode } = usePreferences();
+  const { musicVolume, soundTheme, lowPerformanceMode, performanceTier } = usePreferences();
   const prefersReduced = usePrefersReducedMotion();
-  const reducedMotionProp = lowPerformanceMode || prefersReduced ? "always" : "never";
+  const reducedMotionProp = performanceTier === "performance" || lowPerformanceMode || prefersReduced
+    ? "always"
+    : performanceTier === "balanced"
+      ? "user"
+      : "never";
   useControllerLed();
   const [isIntroVisible, setIsIntroVisible] = React.useState<boolean | null>(null);
   const [isPreloaderVisible, setIsPreloaderVisible] = React.useState<boolean>(false);

@@ -22,6 +22,7 @@ import { CreateChannelModal } from "./CreateChannelModal";
 
 // Modular Presentation Components
 import { CallHeader } from "./call-window/CallHeader";
+import { RoomTextPanel } from "./call-window/RoomTextPanel";
 import { CallStage } from "./call-window/CallStage";
 import { ParticipantFilmstrip } from "./call-window/ParticipantFilmstrip";
 import { CallControlDock } from "./call-window/CallControlDock";
@@ -152,6 +153,7 @@ interface VoiceCallWindowProps {
   onCalibrateNoise?: () => Promise<any>;
   isCalibratingNoise?: boolean;
   currentNoiseFloor?: number;
+  diagnostics?: import("../../services/voiceCall/callDiagnostics").CallDiagnosticsSnapshot | null;
 }
 
 export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
@@ -227,6 +229,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
   onChangeMicGain,
   onCalibrateNoise,
   isCalibratingNoise,
+  diagnostics,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const activeVideoElRef = useRef<HTMLVideoElement | null>(null);
@@ -234,6 +237,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [roomChatOpen, setRoomChatOpen] = useState(false);
   const [isRecordingKey, setIsRecordingKey] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
@@ -518,7 +522,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
         const remoteState = remoteStatesMap?.get(p.uid);
         const peerSharingScreen = Boolean(remoteState?.isSharingScreen || screenStream);
         const peerCameraStream = getPeerCameraStream(stream, screenStream);
-        const showPeerCamera = Boolean(remoteState?.isCameraOn || peerCameraStream);
+        const showPeerCamera = remoteState?.isCameraOn === true && Boolean(peerCameraStream);
 
         feeds.push({
           id: `remote-user:${p.uid}`,
@@ -568,7 +572,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
         remoteScreenStreams?.get(session.friendUid) ||
         (isRemoteSharingScreen ? remoteStream : null);
       const remoteCameraStream = getPeerCameraStream(remoteStream, oneToOneScreen);
-      const showRemoteCamera = Boolean(isRemoteCameraOn || remoteCameraStream);
+      const showRemoteCamera = isRemoteCameraOn === true && Boolean(remoteCameraStream);
       feeds.push({
         id: "remote-user",
         peerId: session.friendUid,
@@ -912,7 +916,15 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
               isDevMode={isDevMode}
               onAddDevMockParticipant={handleAddDevMockParticipant}
               onRemoveDevMockParticipant={handleRemoveDevMockParticipant}
+              roomChatOpen={roomChatOpen}
+              onToggleRoomChat={session.roomName ? () => setRoomChatOpen((open) => !open) : undefined}
             />
+
+            {roomChatOpen && session.roomName && session.chatId ? (
+              <div className="absolute right-0 top-14 bottom-0 z-30 h-auto">
+                <RoomTextPanel roomId={session.chatId} userId={userProfile?.uid} userName={userProfile?.displayName} />
+              </div>
+            ) : null}
 
             {/* AREA 2: MAIN STAGE */}
             <main className="relative flex-1 w-full min-h-0 overflow-hidden p-3 sm:p-4 flex flex-col items-center justify-center">
@@ -1125,6 +1137,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
               setPushToTalkKey={setPushToTalkKey}
               isRecordingKey={isRecordingKey}
               setIsRecordingKey={setIsRecordingKey}
+              diagnostics={diagnostics}
             />
 
             {/* Modal de Personalização do Orbloom */}

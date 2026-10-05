@@ -96,7 +96,7 @@ export const removeCheckpointFriend = async (uid: string) => {
 };
 
 export const updateCheckpointPresence = async (
-  status: "online" | "playing" | "offline",
+  status: "online" | "playing" | "streaming" | "in_call" | "idle" | "dnd" | "offline",
   currentGameTitle?: string,
   customDisplayName?: string,
   customPhotoURL?: string | null,
