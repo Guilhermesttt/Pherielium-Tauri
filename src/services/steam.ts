@@ -400,7 +400,12 @@ export const fetchSteamAchievementDetails = async (
       { authenticated: true },
     );
     if (!response.ok) {
-      return cached || { achievements: [], total: 0, unlocked: 0 };
+      if (cached && !options.bypassCache) {
+        return cached;
+      }
+      const err = new Error(`Falha ao buscar conquistas (HTTP ${response.status})`);
+      (err as any).status = response.status;
+      throw err;
     }
 
     const data = (await response.json()) as {
@@ -423,8 +428,11 @@ export const fetchSteamAchievementDetails = async (
     }
 
     return result;
-  } catch {
-    return cached || { achievements: [], total: 0, unlocked: 0 };
+  } catch (error) {
+    if (cached && !options.bypassCache) {
+      return cached;
+    }
+    throw error;
   }
 };
 
@@ -447,7 +455,12 @@ export const fetchSteamAchievementSchema = async (
       `/api/steam/achievement-schema?appId=${encodeURIComponent(appId)}&language=${encodeURIComponent(language)}`,
     );
     if (!response.ok) {
-      return cached || { achievements: [], total: 0, unlocked: 0 };
+      if (cached) {
+        return cached;
+      }
+      const err = new Error(`Falha ao buscar conquistas (HTTP ${response.status})`);
+      (err as any).status = response.status;
+      throw err;
     }
 
     const data = (await response.json()) as {
@@ -470,8 +483,11 @@ export const fetchSteamAchievementSchema = async (
     }
 
     return result;
-  } catch {
-    return cached || { achievements: [], total: 0, unlocked: 0 };
+  } catch (error) {
+    if (cached) {
+      return cached;
+    }
+    throw error;
   }
 };
 

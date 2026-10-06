@@ -4,6 +4,7 @@ import type { GameDetailState, GameDetailAction, GameDetailCopy } from "../types
 import { launchGame, resolveMonitorableExecutablePath } from "../services/launcher";
 import { deleteLibraryGame, updateLibraryGame } from "../services/localLibrary";
 import { MIN_LAUNCH_SCREEN_MS, wait } from "../types/gameDetail";
+import { playHapticPattern } from "../context/GamepadContext";
 
 import type { SoundEffectType } from "./useSoundEffects";
 
@@ -40,6 +41,7 @@ export function useGameDetailActions({
     if (state.isLaunching || !game) return;
     try {
       playSound?.("play");
+      playHapticPattern("launch");
     } catch { }
     dispatch({ type: "SET_LAUNCHING", payload: true });
     dispatch({ type: "SET_LAUNCH_ERROR", payload: null });

@@ -12,6 +12,9 @@ export interface GameDetailPanelProps {
   onGameHydrated?: (game: Game) => void;
   onOpenMods?: () => void;
   currentPresenceGame?: string | null;
+  friends?: import("./domain").SocialFriend[];
+  onToggleFavorite?: (game: Game) => Promise<void> | void;
+  onEditGame?: (game: Game) => void;
 }
 
 export interface GamePanelMod {

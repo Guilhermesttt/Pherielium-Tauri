@@ -29,16 +29,20 @@ export const GameDetailStats: React.FC<GameDetailStatsProps> = React.memo(({
       {/* Bloco de Métricas Principais */}
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-4 sm:gap-8">
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-              {achievementsUnlocked}
-            </span>
-            <span className="text-xs font-semibold text-white/40 uppercase tracking-wider">
-              / {achievementsTotal} {copy.achievements}
-            </span>
-          </div>
+          {achievementsTotal > 0 && (
+            <>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+                  {achievementsUnlocked}
+                </span>
+                <span className="text-xs font-semibold text-white/40 uppercase tracking-wider">
+                  / {achievementsTotal} {copy.achievements}
+                </span>
+              </div>
 
-          <div className="w-px h-10 bg-white/10 shrink-0 hidden sm:block" />
+              <div className="w-px h-10 bg-white/10 shrink-0 hidden sm:block" />
+            </>
+          )}
 
           <div className="flex flex-col gap-0.5">
             <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">

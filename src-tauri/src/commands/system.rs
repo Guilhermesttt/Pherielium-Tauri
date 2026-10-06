@@ -201,3 +201,181 @@ pub async fn system_set_open_at_login(open: bool) -> Result<serde_json::Value, S
     }
     Ok(serde_json::json!({ "openAtLogin": open, "supported": true }))
 }
+
+#[command]
+pub async fn system_is_fullscreen_active(app: AppHandle) -> Result<bool, String> {
+    #[cfg(target_os = "windows")]
+    {
+        use windows::Win32::UI::WindowsAndMessaging::{
+            GetForegroundWindow, GetWindowRect, GetDesktopWindow, GetShellWindow,
+            GetClassNameA, IsIconic, IsWindowVisible,
+        };
+        use windows::Win32::Foundation::{HWND, RECT};
+
+        let overlay_hwnd = app
+            .get_webview_window("overlay")
+            .and_then(|w| w.hwnd().ok())
+            .map(|h| HWND(h.0));
+
+        // Também excluir a janela principal do próprio Launcher
+        let main_hwnd = app
+            .get_webview_window("main")
+            .and_then(|w| w.hwnd().ok())
+            .map(|h| HWND(h.0));
+
+        unsafe {
+            let fg = GetForegroundWindow();
+            if !fg.0.is_null() {
+                let mut class_name = [0u8; 256];
+                let len = GetClassNameA(fg, &mut class_name);
+                let class_str = std::str::from_utf8(&class_name[..len as usize]).unwrap_or("");
+                let is_shell = class_str == "Progman"
+                    || class_str == "WorkerW"
+                    || class_str == "Shell_TrayWnd"
+                    || class_str == "Shell_SecondaryTrayWnd";
+
+                // Desktop, shell, janela do overlay ou janela principal do Launcher = Notch visível
+                if is_shell
+                    || fg == GetDesktopWindow()
+                    || fg == GetShellWindow()
+                    || Some(fg) == overlay_hwnd
+                    || Some(fg) == main_hwnd
+                {
+                    return Ok(false);
+                }
+
+                // Qualquer outra janela visivel e grande = Notch deve se esconder
+                if !IsIconic(fg).as_bool() && IsWindowVisible(fg).as_bool() {
+                    let mut rect = RECT::default();
+                    if GetWindowRect(fg, &mut rect).is_ok() {
+                        let w = rect.right - rect.left;
+                        let h = rect.bottom - rect.top;
+                        if w > 200 && h > 200 {
+                            return Ok(true);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok(false)
+}
+
+static LAST_MEDIA_INFO: once_cell::sync::Lazy<parking_lot::Mutex<serde_json::Value>> =
+    once_cell::sync::Lazy::new(|| parking_lot::Mutex::new(serde_json::json!({
+        "hasMedia": false,
+        "isPlaying": false
+    })));
+
+#[command]
+pub async fn system_get_media_info() -> Result<serde_json::Value, String> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+        let script = r#"
+Add-Type -AssemblyName System.Runtime.WindowsRuntime
+$asTaskGeneric = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1' })[0]
+Function Await-WinRt($WinRtTask, $ResultType) {
+    $asTask = $asTaskGeneric.MakeGenericMethod($ResultType)
+    $netTask = $asTask.Invoke($null, @($WinRtTask))
+    $netTask.Wait(-1) | Out-Null
+    $netTask.Result
+}
+try {
+    [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media, ContentType=WindowsRuntime] | Out-Null
+    $asyncOp = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()
+    $mgr = Await-WinRt $asyncOp ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])
+    $sessions = $mgr.GetSessions()
+    $found = $null
+    foreach ($session in $sessions) {
+        $info = $session.GetPlaybackInfo()
+        $propsAsync = $session.TryGetMediaPropertiesAsync()
+        $props = Await-WinRt $propsAsync ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
+        $title = $props.Title
+        if ($title -like "*PHERIELIUM*" -or $title -like "*PHELIERIUM*" -or $session.SourceAppId -like "*pherielium*") {
+            continue
+        }
+        if ($title) {
+            $status = $info.PlaybackStatus.ToString()
+            $playbackType = $props.PlaybackType.ToString()
+            $isPlay = ($status -eq "Playing")
+            $item = [PSCustomObject]@{
+                hasMedia = $true
+                title = $title
+                artist = $props.Artist
+                isPlaying = $isPlay
+                playbackType = if ($playbackType -eq "Video") { "video" } else { "music" }
+            }
+            if ($isPlay) { $found = $item; break }
+            elseif ($null -eq $found) { $found = $item }
+        }
+    }
+    if ($found) { $found | ConvertTo-Json }
+    else { [PSCustomObject]@{ hasMedia = $false; isPlaying = $false } | ConvertTo-Json }
+} catch {
+    [PSCustomObject]@{ hasMedia = $false; isPlaying = $false } | ConvertTo-Json
+}
+"#;
+
+        let output = tokio::task::spawn_blocking(move || {
+            Command::new("powershell")
+                .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output()
+        }).await.map_err(|e| e.to_string())?.map_err(|e| e.to_string())?;
+
+        if output.status.success() {
+            let text = String::from_utf8_lossy(&output.stdout);
+            if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) {
+                let mut lock = LAST_MEDIA_INFO.lock();
+                *lock = val.clone();
+                return Ok(val);
+            }
+        }
+        return Ok(LAST_MEDIA_INFO.lock().clone());
+    }
+    #[allow(unreachable_code)]
+    Ok(serde_json::json!({ "hasMedia": false, "isPlaying": false }))
+}
+
+#[command]
+pub async fn system_media_play_pause() -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    unsafe {
+        extern "system" {
+            fn keybd_event(bVk: u8, bScan: u8, dwFlags: u32, dwExtraInfo: usize);
+        }
+        keybd_event(0xB3, 0, 0, 0);
+        keybd_event(0xB3, 0, 2, 0);
+    }
+    Ok(())
+}
+
+#[command]
+pub async fn system_media_next() -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    unsafe {
+        extern "system" {
+            fn keybd_event(bVk: u8, bScan: u8, dwFlags: u32, dwExtraInfo: usize);
+        }
+        keybd_event(0xB0, 0, 0, 0);
+        keybd_event(0xB0, 0, 2, 0);
+    }
+    Ok(())
+}
+
+#[command]
+pub async fn system_media_previous() -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    unsafe {
+        extern "system" {
+            fn keybd_event(bVk: u8, bScan: u8, dwFlags: u32, dwExtraInfo: usize);
+        }
+        keybd_event(0xB1, 0, 0, 0);
+        keybd_event(0xB1, 0, 2, 0);
+    }
+    Ok(())
+}

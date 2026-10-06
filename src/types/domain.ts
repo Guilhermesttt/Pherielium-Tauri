@@ -51,6 +51,7 @@ export interface Game {
   category?: string;
   description?: string;
   isFavorite?: boolean;
+  isInstalled?: boolean;
   executablePath?: string;
   hoursPlayed?: number;
   sizeGB?: number;

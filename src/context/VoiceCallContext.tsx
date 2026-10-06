@@ -6,7 +6,6 @@ import { useNotification } from "../components/NotificationCenter";
 import { usePreferences } from "./PreferencesContext";
 import { useVoiceCall } from "../hooks/useVoiceCall";
 import { IncomingCallModal } from "../components/voice/IncomingCallModal";
-import { VoiceCallBar } from "../components/voice/VoiceCallBar";
 import { VoiceCallWindow } from "../components/voice/VoiceCallWindow";
 import { ScreenPickerModal } from "../components/voice/ScreenPickerModal";
 import { getCheckpointFriendStatuses } from "../services/checkpointFriends";
@@ -19,11 +18,14 @@ type VoiceCallContextType = ReturnType<typeof useVoiceCall>;
 
 const VoiceCallContext = createContext<VoiceCallContextType | null>(null);
 
-
-
-export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { user, userProfile } = useAuth();
-  let notify: (msg: string, type: "success" | "error" | "info") => void = () => { };
+  let notify: (
+    msg: string,
+    type: "success" | "error" | "info",
+  ) => void = () => {};
   try {
     const notificationContext = useNotification();
     if (notificationContext?.notify) {
@@ -44,7 +46,10 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [socialFriends, setSocialFriends] = useState<SocialFriend[]>([]);
 
   useEffect(() => {
-    if (!userProfile?.checkpointFriends || userProfile.checkpointFriends.length === 0) {
+    if (
+      !userProfile?.checkpointFriends ||
+      userProfile.checkpointFriends.length === 0
+    ) {
       setSocialFriends([]);
       return;
     }
@@ -53,28 +58,32 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     void getCheckpointFriendStatuses()
       .then((statuses) => {
         if (!isMounted) return;
-        const list: SocialFriend[] = (userProfile.checkpointFriends || []).map((f) => {
-          const status = statuses.find((s) => s.uid === f.uid);
-          return {
-            id: f.uid,
-            name: status?.displayName || f.displayName || "Amigo",
-            avatar: status?.photoURL || f.photoURL || undefined,
-            status: status?.status || "offline",
-            playing: status?.playing || undefined,
-            source: "checkpoint",
-          };
-        });
+        const list: SocialFriend[] = (userProfile.checkpointFriends || []).map(
+          (f) => {
+            const status = statuses.find((s) => s.uid === f.uid);
+            return {
+              id: f.uid,
+              name: status?.displayName || f.displayName || "Amigo",
+              avatar: status?.photoURL || f.photoURL || undefined,
+              status: status?.status || "offline",
+              playing: status?.playing || undefined,
+              source: "checkpoint",
+            };
+          },
+        );
         setSocialFriends(list);
       })
       .catch(() => {
         if (!isMounted) return;
-        const list: SocialFriend[] = (userProfile.checkpointFriends || []).map((f) => ({
-          id: f.uid,
-          name: f.displayName || "Amigo",
-          avatar: f.photoURL || undefined,
-          status: "offline",
-          source: "checkpoint",
-        }));
+        const list: SocialFriend[] = (userProfile.checkpointFriends || []).map(
+          (f) => ({
+            id: f.uid,
+            name: f.displayName || "Amigo",
+            avatar: f.photoURL || undefined,
+            status: "offline",
+            source: "checkpoint",
+          }),
+        );
         setSocialFriends(list);
       });
 
@@ -82,7 +91,6 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       isMounted = false;
     };
   }, [userProfile?.checkpointFriends]);
-
 
   // P2P-only remote playback. LiveKit already owns its audio elements through
   // RemoteAudioTrack.attach(), so routing the same remote MediaStream through
@@ -115,14 +123,20 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     const activeStreams = new Map<string, MediaStream>();
-    if (voiceCall.remoteStreams instanceof Map && voiceCall.remoteStreams.size > 0) {
+    if (
+      voiceCall.remoteStreams instanceof Map &&
+      voiceCall.remoteStreams.size > 0
+    ) {
       voiceCall.remoteStreams.forEach((stream: MediaStream, peerId: string) => {
         if (stream?.getAudioTracks().length > 0) {
           activeStreams.set(peerId, stream);
         }
       });
     } else if (voiceCall.remoteStream?.getAudioTracks().length) {
-      activeStreams.set(voiceCall.session?.friendUid || "main-remote", voiceCall.remoteStream);
+      activeStreams.set(
+        voiceCall.session?.friendUid || "main-remote",
+        voiceCall.remoteStream,
+      );
     }
 
     if (activeStreams.size === 0) {
@@ -140,7 +154,7 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           return;
         }
         if (ctx.state === "suspended") {
-          await ctx.resume().catch(() => { });
+          await ctx.resume().catch(() => {});
         }
         p2pAudioContextAcquiredRef.current = true;
       }
@@ -190,11 +204,7 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         : (voiceCall.peerVolumes?.[peerId] ?? voiceCall.remoteVolume ?? 100);
       node.setVolume(peerVolume);
     });
-  }, [
-    voiceCall.isDeafened,
-    voiceCall.peerVolumes,
-    voiceCall.remoteVolume,
-  ]);
+  }, [voiceCall.isDeafened, voiceCall.peerVolumes, voiceCall.remoteVolume]);
 
   // Output-device changes are applied once at the shared AudioContext level.
   React.useEffect(() => {
@@ -238,7 +248,10 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return;
     }
 
-    if (lastOverlayNotificationIdRef.current && window.electronAPI?.dismissNotificationOverlay) {
+    if (
+      lastOverlayNotificationIdRef.current &&
+      window.electronAPI?.dismissNotificationOverlay
+    ) {
       void window.electronAPI.dismissNotificationOverlay({
         id: lastOverlayNotificationIdRef.current,
       });
@@ -261,63 +274,32 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         onReject={voiceCall.rejectCall}
       />
 
-      {/* Persistent Bottom Call Bar (visible when in call and main window is closed) */}
-      {(voiceCall.callState === "active" || voiceCall.callState === "ringing-out" || voiceCall.callState === "connecting") &&
-        !voiceCall.isVoiceWindowOpen && (
-          <VoiceCallBar
-            session={voiceCall.session}
-            userProfile={userProfile}
-            duration={voiceCall.callDuration}
-            callState={voiceCall.callState}
-            isMuted={voiceCall.isMuted}
-            isDeafened={voiceCall.isDeafened}
-            isRemoteMuted={voiceCall.isRemoteMuted}
-            isRemoteDeafened={voiceCall.isRemoteDeafened}
-            isSpeakingLocal={voiceCall.isSpeakingLocal}
-            isSpeakingRemote={voiceCall.isSpeakingRemote}
-            remoteSpeakingStates={voiceCall.remoteSpeakingStates}
-            isSharingScreen={voiceCall.isSharingScreen}
-            isReconnecting={voiceCall.isReconnecting}
-            inputMode={voiceCall.inputMode}
-            pushToTalkKey={voiceCall.pushToTalkKey}
-            isPttPressed={voiceCall.isPttPressed}
-            onToggleMute={voiceCall.toggleMute}
-            onToggleDeafen={voiceCall.toggleDeafen}
-            onToggleScreenShare={() => {
-              if (voiceCall.isSharingScreen) {
-                void voiceCall.stopScreenShare();
-              } else {
-                voiceCall.setIsScreenPickerOpen(true);
-              }
-            }}
-            onOpenWindow={() => voiceCall.setIsVoiceWindowOpen(true)}
-            onHangUp={voiceCall.hangUp}
-          />
-        )}
+      {/* Bottom call bar retired in favor of DesktopNotch Dynamic Island */}
 
       <CallConnectionBanner
         status={
           voiceCall.connectionPhase === "disconnecting"
             ? "disconnecting"
             : voiceCall.channelConnectionStatus === "failed"
-            ? "error"
-            : voiceCall.channelConnectionStatus === "degraded"
-              ? "poor"
-              : voiceCall.connectionPhase === "reconnecting" ||
-                voiceCall.isReconnecting ||
-                voiceCall.channelConnectionStatus === "reconnecting"
-                ? "reconnecting"
-                : voiceCall.callState === "connecting" ||
-                voiceCall.callState === "ringing-out"
-                ? "connecting"
-                : voiceCall.callState === "active"
-                  ? "connected"
-                  : "idle"
+              ? "error"
+              : voiceCall.channelConnectionStatus === "degraded"
+                ? "poor"
+                : voiceCall.connectionPhase === "reconnecting" ||
+                    voiceCall.isReconnecting ||
+                    voiceCall.channelConnectionStatus === "reconnecting"
+                  ? "reconnecting"
+                  : voiceCall.callState === "connecting" ||
+                      voiceCall.callState === "ringing-out"
+                    ? "connecting"
+                    : voiceCall.callState === "active"
+                      ? "connected"
+                      : "idle"
         }
         onRetry={
           voiceCall.pendingReconnectSession
             ? () => void voiceCall.reconnectCall()
-            : voiceCall.channelConnectionStatus === "failed" || voiceCall.channelConnectionStatus === "degraded"
+            : voiceCall.channelConnectionStatus === "failed" ||
+                voiceCall.channelConnectionStatus === "degraded"
               ? () => void voiceCall.reconnectCall()
               : undefined
         }
@@ -325,7 +307,11 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       {/* Expanded Main Call Window */}
       <VoiceCallWindow
-        isOpen={voiceCall.isVoiceWindowOpen && voiceCall.callState !== "idle" && voiceCall.callState !== "ringing-in"}
+        isOpen={
+          voiceCall.isVoiceWindowOpen &&
+          voiceCall.callState !== "idle" &&
+          voiceCall.callState !== "ringing-in"
+        }
         onClose={() => voiceCall.setIsVoiceWindowOpen(false)}
         session={voiceCall.session}
         userProfile={userProfile}
@@ -433,47 +419,49 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }}
       />
 
-
-
       {/* Floating Reconnect Prompt */}
       <AnimatePresence>
-        {voiceCall.pendingReconnectSession && voiceCall.callState === "idle" && (
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-9999 flex max-w-md items-center gap-3.5 rounded-2xl border border-emerald-500/30 bg-[#0d1117]/95 p-3.5 pr-4 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
-              <PhoneCall className="h-5 w-5 animate-pulse" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-white truncate">
-                Chamada em andamento
-              </p>
-              <p className="text-[11px] text-white/60 truncate">
-                Você estava em chamada com <span className="font-semibold text-emerald-300">{voiceCall.pendingReconnectSession.friendName}</span>
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => void voiceCall.reconnectCall()}
-                className="rounded-xl bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-black shadow-md transition hover:bg-emerald-400 active:scale-95 cursor-pointer"
-              >
-                Voltar
-              </button>
-              <button
-                type="button"
-                onClick={() => voiceCall.dismissReconnect()}
-                className="rounded-lg p-1.5 text-white/40 hover:bg-white/10 hover:text-white transition cursor-pointer"
-                title="Fechar"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          </motion.div>
-        )}
+        {voiceCall.pendingReconnectSession &&
+          voiceCall.callState === "idle" && (
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.95 }}
+              className="fixed bottom-6 right-6 z-9999 flex max-w-md items-center gap-3.5 rounded-2xl border border-emerald-500/30 bg-[#0d1117]/95 p-3.5 pr-4 shadow-[0_12px_40px_rgba(0,0,0,0.8)] backdrop-blur-xl"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
+                <PhoneCall className="h-5 w-5 animate-pulse" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-white truncate">
+                  Chamada em andamento
+                </p>
+                <p className="text-[11px] text-white/60 truncate">
+                  Você estava em chamada com{" "}
+                  <span className="font-semibold text-emerald-300">
+                    {voiceCall.pendingReconnectSession.friendName}
+                  </span>
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void voiceCall.reconnectCall()}
+                  className="rounded-xl bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-black shadow-md transition hover:bg-emerald-400 active:scale-95 cursor-pointer"
+                >
+                  Voltar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => voiceCall.dismissReconnect()}
+                  className="rounded-lg p-1.5 text-white/40 hover:bg-white/10 hover:text-white transition cursor-pointer"
+                  title="Fechar"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </motion.div>
+          )}
       </AnimatePresence>
     </VoiceCallContext.Provider>
   );
@@ -531,53 +519,56 @@ const safeFallbackVoiceCallContext: Partial<VoiceCallContextType> = {
   roomConfig: null,
   activeCallsByFriend: new Map(),
   isCallActiveWithFriend: () => false,
-  startCall: async () => { },
-  startTestCall: async () => { },
-  answerCall: async () => { },
-  rejectCall: async () => { },
-  hangUp: async () => { },
-  endCallForEveryone: async () => { },
-  joinRoom: async () => { },
-  joinActiveCall: async () => { },
-  createAndJoinRoom: async () => { },
-  updateRoomPrivacy: async () => { },
-  updateRoomAppearance: async () => { },
-  kickParticipant: async () => { },
-  reconnectCall: async () => { },
-  dismissReconnect: () => { },
-  calibrateNoiseFloor: async () => ({ noiseFloor: 0, recommendedSensitivity: 35 }),
+  startCall: async () => {},
+  startTestCall: async () => {},
+  answerCall: async () => {},
+  rejectCall: async () => {},
+  hangUp: async () => {},
+  endCallForEveryone: async () => {},
+  joinRoom: async () => {},
+  joinActiveCall: async () => {},
+  createAndJoinRoom: async () => {},
+  updateRoomPrivacy: async () => {},
+  updateRoomAppearance: async () => {},
+  kickParticipant: async () => {},
+  reconnectCall: async () => {},
+  dismissReconnect: () => {},
+  calibrateNoiseFloor: async () => ({
+    noiseFloor: 0,
+    recommendedSensitivity: 35,
+  }),
   isCalibratingNoise: false,
   currentNoiseFloor: 0,
   isMicMonitoring: false,
-  setIsMicMonitoring: () => { },
+  setIsMicMonitoring: () => {},
   micGain: 100,
-  setMicGain: () => { },
+  setMicGain: () => {},
   noiseGateEnabled: true,
-  setNoiseGateEnabled: () => { },
+  setNoiseGateEnabled: () => {},
   autoGainControl: true,
-  setAutoGainControl: () => { },
-  refreshDevices: async () => { },
+  setAutoGainControl: () => {},
+  refreshDevices: async () => {},
   deviceError: null,
-  clearDeviceError: () => { },
-  toggleMute: () => { },
-  toggleDeafen: () => { },
-  toggleCamera: async () => { },
-  startScreenShare: async () => { },
-  stopScreenShare: async () => { },
-  setRemoteVolume: () => { },
-  setPeerVolume: () => { },
-  setInputMode: () => { },
-  setPushToTalkKey: () => { },
-  setVoiceSensitivity: () => { },
-  setEchoCancellation: () => { },
-  setNoiseSuppression: () => { },
-  setNoiseSuppressionMode: async () => { },
-  setAdvancedNoiseSuppression: async () => { },
-  changeAudioInputDevice: async () => { },
-  changeAudioOutputDevice: async () => { },
-  changeVideoInputDevice: async () => { },
-  setIsVoiceWindowOpen: () => { },
-  setIsScreenPickerOpen: () => { },
+  clearDeviceError: () => {},
+  toggleMute: () => {},
+  toggleDeafen: () => {},
+  toggleCamera: async () => {},
+  startScreenShare: async () => {},
+  stopScreenShare: async () => {},
+  setRemoteVolume: () => {},
+  setPeerVolume: () => {},
+  setInputMode: () => {},
+  setPushToTalkKey: () => {},
+  setVoiceSensitivity: () => {},
+  setEchoCancellation: () => {},
+  setNoiseSuppression: () => {},
+  setNoiseSuppressionMode: async () => {},
+  setAdvancedNoiseSuppression: async () => {},
+  changeAudioInputDevice: async () => {},
+  changeAudioOutputDevice: async () => {},
+  changeVideoInputDevice: async () => {},
+  setIsVoiceWindowOpen: () => {},
+  setIsScreenPickerOpen: () => {},
 };
 
 export const useVoiceCallContext = (): VoiceCallContextType => {
@@ -587,3 +578,4 @@ export const useVoiceCallContext = (): VoiceCallContextType => {
   }
   return context;
 };
+export { useVoiceCall };

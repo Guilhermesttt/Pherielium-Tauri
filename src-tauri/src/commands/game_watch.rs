@@ -56,14 +56,9 @@ fn emit_started(
 }
 
 pub fn ensure_overlay_fullscreen(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("overlay") {
-        if let Ok(Some(monitor)) = app.primary_monitor() {
-            let size = monitor.size();
-            let pos = monitor.position();
-            let _ = window.set_position(tauri::Position::Physical(*pos));
-            let _ = window.set_size(tauri::Size::Physical(*size));
-        }
-    }
+    // Usa o monitor do jogo (mesma lógica do overlay.rs) em vez de forçar o
+    // primário, que brigava com a escolha por título de janela.
+    super::overlay::refresh_overlay_geometry(app);
 }
 
 #[tauri::command]

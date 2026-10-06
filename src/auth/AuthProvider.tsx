@@ -3,7 +3,7 @@ import { supabase } from "../services/supabase";
 import { apiFetch, getUsableSession, refreshSupabaseSessionOnce } from "../services/api";
 import { cleanupAllChannels } from "../services/voiceCall";
 import { markCheckpointOfflineSync } from "../services/checkpointFriends";
-import type { UserProfile } from "../types/domain";
+import type { UserProfile, SocialPresenceStatus } from "../types/domain";
 
 export interface AuthUser {
   uid: string;
@@ -204,9 +204,9 @@ const loadSocialGraph = async (uid: string) => {
     const presenceUpdatedAt = Date.parse(String(profile?.presence_updated_at || ""));
     const isFresh = Number.isFinite(presenceUpdatedAt) && Date.now() - presenceUpdatedAt < 75_000;
     const rawStatus = String(profile?.status || "");
-    const resolvedStatus =
+    const resolvedStatus: SocialPresenceStatus =
       isFresh && (rawStatus === "online" || rawStatus === "playing" || rawStatus === "streaming" || rawStatus === "in_call" || rawStatus === "idle" || rawStatus === "dnd")
-        ? rawStatus as "online" | "playing" | "streaming" | "in_call" | "idle" | "dnd"
+        ? (rawStatus as SocialPresenceStatus)
         : "offline";
     const resolvedPlaying = resolvedStatus === "playing" ? (profile?.playing as any) || null : null;
     return {

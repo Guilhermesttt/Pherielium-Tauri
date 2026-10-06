@@ -40,6 +40,7 @@ export interface PreferencesStateValue {
   confirmBeforeExit: boolean;
   hapticsEnabled: boolean;
   callOverlayEnabled: boolean;
+  mascotColor: string;
   preferencesHydrated: boolean;
 }
 
@@ -65,10 +66,11 @@ export interface PreferencesActionsValue {
   setConfirmBeforeExit: (value: boolean) => void;
   setHapticsEnabled: (value: boolean) => void;
   setCallOverlayEnabled: (value: boolean) => void;
+  setMascotColor: (color: string) => void;
   t: (key: TranslationKey) => string;
 }
 
-type PreferencesContextValue = PreferencesStateValue & PreferencesActionsValue;
+export type PreferencesContextValue = PreferencesStateValue & PreferencesActionsValue;
 
 const translations = {
   "pt-BR": {
@@ -1023,6 +1025,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
   const [confirmBeforeExit, setConfirmBeforeExit] = useState(true);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [callOverlayEnabled, setCallOverlayEnabled] = useState(true);
+  const [mascotColor, setMascotColor] = useState("#FFFFFF");
   const [hydratedPreferencesUid, setHydratedPreferencesUid] = useState<string | null>(null);
 
   useEffect(() => {
@@ -1060,6 +1063,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
     const savedAchievementNotificationPosition = readPreference(user.uid, "achievement_notification_position");
     const savedHapticsEnabled = readPreference(user.uid, "haptics_enabled");
     const savedCallOverlayEnabled = readPreference(user.uid, "call_overlay_enabled");
+    const savedMascotColor = readPreference(user.uid, "mascot_color");
 
     if (savedOpenAtLogin !== null) {
       const shouldOpenAtLogin = savedOpenAtLogin === "true";
@@ -1114,6 +1118,9 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
       || savedAchievementNotificationPosition === "bottom-right"
     ) {
       setAchievementNotificationPosition(savedAchievementNotificationPosition);
+    }
+    if (savedMascotColor !== null) {
+      setMascotColor(savedMascotColor);
     }
 
     if (
@@ -1189,7 +1196,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
     writePreference(user.uid, "custom_achievement_notifications", String(customAchievementNotifications));
     writePreference(user.uid, "achievement_notification_position", achievementNotificationPosition);
     writePreference(user.uid, "call_overlay_enabled", String(callOverlayEnabled));
-  }, [achievementNotificationPosition, achievementNotificationsEnabled, achievementVolume, callOverlayEnabled, closeOnLaunch, confirmBeforeExit, customAchievementNotifications, effectsVolume, gameBootIntroEnabled, gameBootIntroSoundEnabled, hapticsEnabled, hydratedPreferencesUid, language, lowPerformanceMode, minimizeToTrayOnClose, musicVolume, notificationVolume, openAtLogin, performanceTier, restoreLastScreen, soundTheme, user?.uid, visualTheme]);
+    writePreference(user.uid, "mascot_color", mascotColor);
+  }, [achievementNotificationPosition, achievementNotificationsEnabled, achievementVolume, callOverlayEnabled, closeOnLaunch, confirmBeforeExit, customAchievementNotifications, effectsVolume, gameBootIntroEnabled, gameBootIntroSoundEnabled, hapticsEnabled, hydratedPreferencesUid, language, lowPerformanceMode, mascotColor, minimizeToTrayOnClose, musicVolume, notificationVolume, openAtLogin, performanceTier, restoreLastScreen, soundTheme, user?.uid, visualTheme]);
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -1272,9 +1280,10 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
       confirmBeforeExit,
       hapticsEnabled,
       callOverlayEnabled,
+      mascotColor,
       preferencesHydrated: hydratedPreferencesUid === user?.uid,
     }),
-    [achievementNotificationPosition, achievementNotificationsEnabled, achievementVolume, callOverlayEnabled, closeOnLaunch, confirmBeforeExit, customAchievementNotifications, effectsVolume, gameBootIntroEnabled, gameBootIntroSoundEnabled, hapticsEnabled, hydratedPreferencesUid, language, lowPerformanceMode, minimizeToTrayOnClose, musicVolume, notificationVolume, openAtLogin, performanceTier, restoreLastScreen, soundTheme, user?.uid, visualTheme],
+    [achievementNotificationPosition, achievementNotificationsEnabled, achievementVolume, callOverlayEnabled, closeOnLaunch, confirmBeforeExit, customAchievementNotifications, effectsVolume, gameBootIntroEnabled, gameBootIntroSoundEnabled, hapticsEnabled, hydratedPreferencesUid, language, lowPerformanceMode, mascotColor, minimizeToTrayOnClose, musicVolume, notificationVolume, openAtLogin, performanceTier, restoreLastScreen, soundTheme, user?.uid, visualTheme],
   );
 
   const actionsValue = useMemo<PreferencesActionsValue>(
@@ -1311,6 +1320,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
       setConfirmBeforeExit,
       setHapticsEnabled,
       setCallOverlayEnabled,
+      setMascotColor,
       t: translate,
     }),
     [translate],
@@ -1351,3 +1361,8 @@ export const usePreferences = () => {
   }
   return ctx;
 };
+
+export const useSafePreferences = (): PreferencesContextValue | null => {
+  return useContext(PreferencesContext);
+};
+

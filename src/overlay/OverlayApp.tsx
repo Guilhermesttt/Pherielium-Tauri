@@ -59,6 +59,8 @@ import type { AchievementNotificationPosition } from "../types/overlay";
 import { getOverlayThemeTokens } from "../constants/overlayTheme";
 import { resolveOverlayCallPhase } from "./overlayCallPhase";
 import { presenceLabel } from "../services/presenceStatus";
+import { DesktopNotch } from "../components/notch/DesktopNotch";
+import { PherieMascot } from "../components/notch/PherieMascot";
 
 // ─── Logger Estruturado ────────────────────────────────────────────────────────
 const overlayLogger = {
@@ -568,11 +570,29 @@ const OverlayApp: React.FC = () => {
       || t.kind === "friend-request"
       || t.kind === "achievement",
   );
-  const fullCapturesCursor = overlayMode === "full";
+  // Modo interativo (quick OU full) captura o cursor inteiro: o painel é modal
+  // enquanto aberto. Antes só o "full" capturava, e o dock "quick" ficava morto
+  // no jogo (cursor/foco continuavam com o jogo).
+  const fullCapturesCursor = overlayMode !== "passive";
   const callOverlayEnabled = panelData.settings?.callOverlayEnabled !== false;
   const hubVisible = (panelData as { hubVisible?: boolean }).hubVisible !== false;
   const [callDismissed, setCallDismissed] = useState(false);
   const [pointerInReveal, setPointerInReveal] = useState(false);
+  const [callDurationSeconds, setCallDurationSeconds] = useState(0);
+
+  // O cronômetro só corre depois de conectar (antes contava desde o toque da chamada).
+  const callConnected = Boolean(activeCall?.active) && activeCall?.connectionState !== "calling";
+  useEffect(() => {
+    if (!callConnected) {
+      setCallDurationSeconds(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setCallDurationSeconds((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [callConnected]);
+
   useEffect(() => {
     if (hubVisible || !activeCall?.active) {
       setCallDismissed(false);
@@ -588,8 +608,8 @@ const OverlayApp: React.FC = () => {
   });
   const showCallOverlayWidget = overlayCallPhase === "visible" || overlayCallPhase === "revealing";
   const showCallReveal = overlayCallPhase === "dismissed";
-  const hasHitTestTargets =
-    overlayMode === "quick" || showCallOverlayWidget || showCallReveal || hasInteractiveToasts;
+  // O DesktopNotch está sempre ativo no topo com click-through dinâmico
+  const hasHitTestTargets = true;
 
   useEffect(() => {
     if (fullCapturesCursor) {
@@ -614,24 +634,69 @@ const OverlayApp: React.FC = () => {
 
     let cancelled = false;
     let lastIgnore: boolean | null = null;
-    const setIgnore = (ignore: boolean) => {
-      if (lastIgnore === ignore) return;
+    let lastSentAt = 0;
+    const setIgnore = (ignore: boolean, force = false) => {
+      const now = Date.now();
+      if (!force && lastIgnore === ignore) return;
+      // Re-afirmação forçada (throttled): o backend pode restaurar o
+      // click-through por trás do frontend; sem reenviar periodicamente o
+      // lastIgnore dessincroniza e a notch para de capturar o cursor.
+      if (force && lastIgnore === ignore && now - lastSentAt < 600) return;
       lastIgnore = ignore;
+      lastSentAt = now;
       void invoke("overlay_set_ignore_cursor_events", { ignore }).catch(() => undefined);
     };
 
     void invoke("overlay_set_cursor_watch", { enabled: true }).catch(() => undefined);
     setIgnore(true);
 
+    // Defesa em profundidade: o comando é idempotente. Se algum caminho do
+    // backend (fechar painel, toast expirando...) desligar o watch, o notch
+    // volta a receber `overlay:cursor` em no máximo 1,5s em vez de ficar morto.
+    const rearmWatch = window.setInterval(() => {
+      void invoke("overlay_set_cursor_watch", { enabled: true }).catch(() => undefined);
+    }, 1500);
+
     let unlisten: (() => void) | undefined;
+    // Histerese anti-flicker: o hit-test por polling pode oscilar na borda por
+    // erro de arredondamento da conversão de coordenadas. Só alterna o
+    // click-through após leituras consecutivas iguais (2 p/ capturar, 3 p/ soltar),
+    // senão o WebView entra num loop captura/solta que dispara mouseenter/leave
+    // sem parar e a notch "fica querendo fechar".
+    const streak = { hit: 0, miss: 0 };
     void import("@tauri-apps/api/event").then(({ listen }) => {
       if (cancelled) return;
       void listen<{ x: number; y: number }>("overlay:cursor", (event) => {
         if (cancelled) return;
         const { x, y } = event.payload;
         const el = document.elementFromPoint(x, y);
-        const hit = Boolean(el?.closest("[data-overlay-interactive]"));
-        setIgnore(!hit);
+        // Retângulo REAL do notch (cresce ao expandir; fica fora da tela quando
+        // escondido, então não captura nada). Substitui a faixa fixa 440x24.
+        const notchRect = document
+          .querySelector<HTMLElement>("[data-notch-root]")
+          ?.getBoundingClientRect();
+        const isOnNotch = Boolean(
+          notchRect
+            && notchRect.bottom > 0
+            && x >= notchRect.left - 8
+            && x <= notchRect.right + 8
+            && y <= notchRect.bottom + 8,
+        );
+        const hit = Boolean(el?.closest("[data-overlay-interactive]")) || isOnNotch;
+        if (isOnNotch) {
+          // Notch: captura já na 1ª amostra (sem a histerese de 2) para expandir ao toque.
+          streak.hit = Math.max(streak.hit + 1, 2);
+          streak.miss = 0;
+          setIgnore(false, true);
+        } else if (hit) {
+          streak.hit += 1;
+          streak.miss = 0;
+          if (streak.hit >= 2) setIgnore(false, true);
+        } else {
+          streak.miss += 1;
+          streak.hit = 0;
+          if (streak.miss >= 3) setIgnore(true);
+        }
       }).then((fn) => {
         if (cancelled) {
           fn();
@@ -651,6 +716,7 @@ const OverlayApp: React.FC = () => {
 
     return () => {
       cancelled = true;
+      window.clearInterval(rearmWatch);
       unlisten?.();
       document.removeEventListener("pointerleave", onLeaveInteractive, true);
     };
@@ -1155,6 +1221,22 @@ const OverlayApp: React.FC = () => {
 
   const isInteractive = overlayMode !== "passive";
 
+  // Mantém o backend (captura de foco/cursor, `panel_open`) sincronizado com o
+  // modo do React, qualquer que seja a origem (atalho, gamepad, toast de
+  // conquista abrindo o painel completo, Esc). Idempotente no backend.
+  const lastSentInteractiveRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (lastSentInteractiveRef.current === null && !isInteractive) {
+      lastSentInteractiveRef.current = false;
+      return;
+    }
+    if (lastSentInteractiveRef.current === isInteractive) return;
+    lastSentInteractiveRef.current = isInteractive;
+    void invoke("overlay_set_panel_open", { open: isInteractive }).catch((err) =>
+      overlayLogger.warn("Falha ao sincronizar modo interativo:", err),
+    );
+  }, [isInteractive]);
+
   useGamepadButton("DPAD_UP", () => { setInteractionSource("gamepad"); moveSystemFocus("up"); }, isInteractive, 100);
   useGamepadButton("DPAD_DOWN", () => { setInteractionSource("gamepad"); moveSystemFocus("down"); }, isInteractive, 100);
   useGamepadButton("DPAD_LEFT", () => { setInteractionSource("gamepad"); moveSystemFocus("left"); }, isInteractive, 100);
@@ -1279,6 +1361,15 @@ const OverlayApp: React.FC = () => {
     if (hours > 0) return `${hours}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
     return `${mins}:${String(secs).padStart(2, "0")}`;
   }, [hasCurrentGame, nowMs, presenceStatus, sessionStartedAt]);
+  // Notch: só entra em "modo jogo" com sessão verificada (sessionStartedAt é
+  // descartado quando monitoring === "unverified"); antes bastava ter título,
+  // então a notch ia para o modo jogo ainda na tela de "Preparando…".
+  const sessionStartMs = sessionStartedAt ? Date.parse(sessionStartedAt) : NaN;
+  const notchGameTitle =
+    Number.isFinite(sessionStartMs) ? panelData.gameTitle || panelData.playingGame?.title || null : null;
+  const notchGameElapsed = Number.isFinite(sessionStartMs)
+    ? Math.max(0, Math.floor((nowMs - sessionStartMs) / 1000))
+    : 0;
   const progressPercent = totalCount > 0 ? Math.round((unlockedCount / totalCount) * 100) : 0;
   const onlineFriends = (panelData.friends || []).filter((f: any) => {
     const st = String(f.status || "").toLowerCase();
@@ -1440,114 +1531,28 @@ const OverlayApp: React.FC = () => {
         />
       )}
 
-      {/* ─── MINI BARRA PERSISTENTE DE CHAMADA DE VOZ ───────────────────────── */}
-      <AnimatePresence>
-        {showCallOverlayWidget && activeCall && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed top-5 left-1/2 -translate-x-1/2 z-10020 flex items-center gap-3 rounded-full border border-emerald-500/30 bg-black/90 px-4 py-2 shadow-2xl backdrop-blur-xl pointer-events-auto"
-            data-overlay-interactive
-          >
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2.5 w-2.5">
-                <span
-                  className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                    activeCall.connectionState === "calling" ? "bg-amber-400" : "bg-emerald-400"
-                  }`}
-                />
-                <span
-                  className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
-                    activeCall.connectionState === "calling" ? "bg-amber-500" : "bg-emerald-500"
-                  }`}
-                />
-              </span>
-              <span className="text-xs font-black text-white">
-                {activeCall.connectionState === "calling"
-                  ? `Chamando ${activeCall.friendName || "..."}`
-                  : activeCall.friendName || "Em Chamada"}
-              </span>
-            </div>
-
-            <div className="h-3.5 w-px bg-white/20" />
-
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={toggleMute}
-                aria-label={activeCall.muted ? "Ativar microfone" : "Desativar microfone"}
-                className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
-                  activeCall.muted ? "bg-rose-500/20 text-rose-400" : "hover:bg-white/10 text-white"
-                }`}
-                title={activeCall.muted ? "Microfone Desativado" : "Desativar Microfone"}
-              >
-                {activeCall.muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-              </button>
-              <button
-                type="button"
-                onClick={toggleCamera}
-                aria-label={activeCall.cameraOn ? "Desligar câmera" : "Ligar câmera"}
-                className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
-                  activeCall.cameraOn ? "bg-white/15 text-white" : "hover:bg-white/10 text-white/70"
-                }`}
-                title={activeCall.cameraOn ? "Desligar câmera" : "Ligar câmera"}
-              >
-                <Camera className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={toggleScreenShare}
-                aria-label={activeCall.screenSharing ? "Parar compartilhamento" : "Compartilhar tela"}
-                className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
-                  activeCall.screenSharing ? "bg-white/15 text-white" : "hover:bg-white/10 text-white/70"
-                }`}
-                title={activeCall.screenSharing ? "Parar compartilhamento" : "Compartilhar tela"}
-              >
-                <Monitor className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={openHub}
-                aria-label="Abrir Pherielium"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10"
-                title="Abrir Pherielium"
-              >
-                <AppWindow className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={toggleDeafen}
-                aria-label={activeCall.deafened ? "Ativar áudio" : "Silenciar áudio"}
-                className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
-                  activeCall.deafened ? "bg-rose-500/20 text-rose-400" : "hover:bg-white/10 text-white"
-                }`}
-                title={activeCall.deafened ? "Áudio Silenciado" : "Silenciar Áudio"}
-              >
-                {activeCall.deafened ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-              </button>
-              <button
-                type="button"
-                onClick={() => setCallDismissed(true)}
-                aria-label="Ocultar chamada"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10"
-                title="Ocultar"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={handleEndCall}
-                aria-label="Desconectar chamada"
-                className="ml-1 flex h-10 w-10 items-center justify-center rounded-full bg-rose-600 text-white transition-colors hover:bg-rose-500"
-                title="Desconectar"
-              >
-                <PhoneOff className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* ─── DESKTOP NOTCH / DYNAMIC ISLAND WIDGET (VISÍVEL NO DESKTOP) ─── */}
+      <DesktopNotch
+        isOverlay
+        overlayCall={
+          activeCall && activeCall.active
+            ? {
+                active: true,
+                friendName: activeCall.friendName,
+                friendAvatar: activeCall.friendAvatar,
+                muted: activeCall.muted,
+                deafened: activeCall.deafened,
+                speaking: activeCall.speaking,
+                durationSeconds: callDurationSeconds,
+              }
+            : null
+        }
+        onOverlayMute={toggleMute}
+        onOverlayDeafen={toggleDeafen}
+        onOverlayHangUp={handleEndCall}
+        activeGameTitle={notchGameTitle}
+        activeGameElapsedSeconds={notchGameElapsed}
+      />
 
       {/* ─── QUICK DOCK LATERAL (Assistente Compacto) ────────────────────────── */}
       <AnimatePresence>

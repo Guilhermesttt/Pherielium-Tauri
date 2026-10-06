@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { resetCachedLedDevice } from "../services/controllerLed";
 import { isLauncherInputLocked } from "../utils/launcherInputLock";
 
@@ -124,12 +124,11 @@ interface HapticStep {
 }
 
 const HAPTIC_PATTERNS: Record<HapticPatternName, HapticStep[]> = {
-  nav: [{ delay: 0, duration: 28, weakMagnitude: 0.12, strongMagnitude: 0 }],
-  action: [{ delay: 0, duration: 45, weakMagnitude: 0.22, strongMagnitude: 0.08 }],
+  nav: [{ delay: 0, duration: 25, weakMagnitude: 0.18, strongMagnitude: 0 }],
+  action: [{ delay: 0, duration: 55, weakMagnitude: 0.35, strongMagnitude: 0.15 }],
   launch: [
-    { delay: 0, duration: 60, weakMagnitude: 0.15, strongMagnitude: 0 },
-    { delay: 150, duration: 60, weakMagnitude: 0.28, strongMagnitude: 0.10 },
-    { delay: 300, duration: 260, weakMagnitude: 0.38, strongMagnitude: 0.55 },
+    { delay: 0, duration: 50, weakMagnitude: 0.25, strongMagnitude: 0.08 },
+    { delay: 100, duration: 280, weakMagnitude: 0.55, strongMagnitude: 0.70 },
   ],
 };
 
@@ -655,19 +654,31 @@ export const GamepadProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => { delete root.dataset.gamepadNavigation; };
   }, [activeInputType, isGamepadConnected]);
 
+  const contextValue = useMemo<GamepadContextValue>(
+    () => ({
+      activeInputType,
+      isGamepadConnected,
+      gamepadFamily,
+      connectedGamepadId,
+      batteryLevel: batteryState.batteryLevel,
+      batteryCharging: batteryState.isCharging,
+      connectionType: batteryState.connectionType,
+      isLowBattery: batteryState.isLowBattery,
+    }),
+    [
+      activeInputType,
+      isGamepadConnected,
+      gamepadFamily,
+      connectedGamepadId,
+      batteryState.batteryLevel,
+      batteryState.isCharging,
+      batteryState.connectionType,
+      batteryState.isLowBattery,
+    ],
+  );
+
   return (
-    <GamepadContext.Provider
-      value={{
-        activeInputType,
-        isGamepadConnected,
-        gamepadFamily,
-        connectedGamepadId,
-        batteryLevel: batteryState.batteryLevel,
-        batteryCharging: batteryState.isCharging,
-        connectionType: batteryState.connectionType,
-        isLowBattery: batteryState.isLowBattery,
-      }}
-    >
+    <GamepadContext.Provider value={contextValue}>
       {children}
     </GamepadContext.Provider>
   );

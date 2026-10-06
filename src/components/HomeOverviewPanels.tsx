@@ -1,13 +1,13 @@
 import React from "react";
-import { Flame, Users2 } from "lucide-react";
 import type { TranslationKey } from "../context/PreferencesContext";
-import type { Game } from "../types/domain";
+import type { Game, SocialPresenceStatus } from "../types/domain";
 import { motion } from "framer-motion";
+import { SfUsersIcon } from "../design-system/sf-symbols";
 
 interface FriendPresenceSnapshot {
   id: string;
   name: string;
-  status: "online" | "playing" | "offline";
+  status: SocialPresenceStatus | "online" | "playing" | "offline" | string;
   playing?: string;
   avatar?: string;
 }
@@ -55,7 +55,7 @@ export const HomeOverviewPanels = React.memo(function HomeOverviewPanels({
         >
           {/* Inner Icon: R_inner (14px) = R_outer (28px) - Padding (14px) */}
           <div className="relative w-11 h-11 rounded-[14px] bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0 group-hover:border-white/20 transition-colors">
-            <Users2 className="h-5 w-5 text-white/80 group-hover:text-white transition-colors" />
+            <SfUsersIcon className="h-5 w-5 text-white/80 group-hover:text-white transition-colors" />
             <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#1C1C1E] shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
           </div>
           <div className="flex-1 min-w-0">

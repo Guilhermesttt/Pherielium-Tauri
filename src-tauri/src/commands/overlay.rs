@@ -5,7 +5,7 @@ use parking_lot::Mutex;
 use serde_json::{json, Map, Value};
 use std::collections::VecDeque;
 use std::str::FromStr;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicIsize, Ordering};
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
@@ -73,23 +73,92 @@ fn overlay_url(_app: &AppHandle) -> Result<WebviewUrl, String> {
     Ok(WebviewUrl::App("overlay.html".into()))
 }
 
+/// HWND do jogo que tinha o foco quando o modo interativo abriu (para devolver ao fechar).
+static PREV_FOREGROUND: AtomicIsize = AtomicIsize::new(0);
+static INTERACTIVE_LOOP_RUNNING: AtomicBool = AtomicBool::new(false);
+
+#[cfg(windows)]
+fn overlay_hwnd(window: &tauri::WebviewWindow) -> Option<windows::Win32::Foundation::HWND> {
+    window
+        .hwnd()
+        .ok()
+        .map(|h| windows::Win32::Foundation::HWND(h.0))
+}
+
+/// Estado passivo = `WS_EX_NOACTIVATE`: clicar nos botões do notch (play/pause,
+/// mutar, desligar) NÃO tira o foco do jogo. Estado interativo = estilo removido,
+/// para o overlay poder receber foco e teclado (Esc, chat).
+#[cfg(windows)]
+fn set_overlay_noactivate(window: &tauri::WebviewWindow, noactivate: bool) {
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_NOACTIVATE,
+    };
+    if let Some(hwnd) = overlay_hwnd(window) {
+        unsafe {
+            let current = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+            let flag = WS_EX_NOACTIVATE.0 as isize;
+            let next = if noactivate { current | flag } else { current & !flag };
+            if next != current {
+                SetWindowLongPtrW(hwnd, GWL_EXSTYLE, next);
+            }
+        }
+    }
+}
+
+#[cfg(not(windows))]
+fn set_overlay_noactivate(_window: &tauri::WebviewWindow, _noactivate: bool) {}
+
+/// Traz `hwnd` ao primeiro plano contornando o foreground-lock do Windows:
+/// anexa a fila de entrada da thread atual à da janela em foco (o jogo) durante
+/// o `SetForegroundWindow`. Devolve se a janela realmente ficou em foco.
+#[cfg(windows)]
+fn force_foreground(hwnd: windows::Win32::Foundation::HWND) -> bool {
+    use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
+    use windows::Win32::UI::WindowsAndMessaging::{
+        BringWindowToTop, GetForegroundWindow, GetWindowThreadProcessId, SetForegroundWindow,
+    };
+    unsafe {
+        let fg = GetForegroundWindow();
+        if fg == hwnd {
+            return true;
+        }
+        let current_tid = GetCurrentThreadId();
+        let fg_tid = if fg.0.is_null() {
+            0
+        } else {
+            GetWindowThreadProcessId(fg, None)
+        };
+        let attached = fg_tid != 0
+            && fg_tid != current_tid
+            && AttachThreadInput(current_tid, fg_tid, true).as_bool();
+        let _ = BringWindowToTop(hwnd);
+        let _ = SetForegroundWindow(hwnd);
+        if attached {
+            let _ = AttachThreadInput(current_tid, fg_tid, false);
+        }
+        GetForegroundWindow() == hwnd
+    }
+}
+
 fn claim_overlay_foreground(window: &tauri::WebviewWindow) {
     let _ = window.show();
     let _ = window.set_always_on_top(true);
-    let _ = window.set_focus();
 
     #[cfg(windows)]
     {
         use windows::Win32::UI::WindowsAndMessaging::{
-            ClipCursor, SetForegroundWindow, SetWindowPos, HWND_TOPMOST, SWP_NOMOVE, SWP_NOSIZE,
+            ClipCursor, GetForegroundWindow, SetWindowPos, HWND_TOPMOST, SWP_NOMOVE, SWP_NOSIZE,
             SWP_SHOWWINDOW,
         };
 
-        if let Ok(hwnd) = window.hwnd() {
-            let hwnd = windows::Win32::Foundation::HWND(hwnd.0);
+        if let Some(hwnd) = overlay_hwnd(window) {
             unsafe {
+                let fg = GetForegroundWindow();
+                if fg != hwnd && !fg.0.is_null() {
+                    PREV_FOREGROUND.store(fg.0 as isize, Ordering::SeqCst);
+                }
                 let _ = ClipCursor(None);
-                let _ = SetWindowPos(
+                if let Err(err) = SetWindowPos(
                     hwnd,
                     HWND_TOPMOST,
                     0,
@@ -97,23 +166,127 @@ fn claim_overlay_foreground(window: &tauri::WebviewWindow) {
                     0,
                     0,
                     SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW,
-                );
-                let _ = SetForegroundWindow(hwnd);
+                ) {
+                    eprintln!("[overlay] SetWindowPos(TOPMOST) falhou: {err}");
+                }
+            }
+            if !force_foreground(hwnd) {
+                eprintln!("[overlay] Não foi possível assumir o foreground (foreground-lock do Windows).");
+            }
+        }
+    }
+    #[cfg(not(windows))]
+    let _ = window.set_focus();
+}
+
+/// Devolve o foco ao jogo que estava ativo antes do modo interativo.
+fn restore_previous_foreground() {
+    #[cfg(windows)]
+    {
+        use windows::Win32::UI::WindowsAndMessaging::IsWindow;
+        let prev = PREV_FOREGROUND.swap(0, Ordering::SeqCst);
+        if prev != 0 {
+            let hwnd = windows::Win32::Foundation::HWND(prev as *mut std::ffi::c_void);
+            if unsafe { IsWindow(hwnd) }.as_bool() {
+                let _ = force_foreground(hwnd);
             }
         }
     }
 }
 
+/// Enquanto o modo interativo está aberto, solta o cursor do jogo repetidamente:
+/// muitos jogos re-aplicam `ClipCursor` a cada frame e prendiam o ponteiro fora do painel.
+fn start_interactive_loop(app: &AppHandle) {
+    if INTERACTIVE_LOOP_RUNNING.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let app = app.clone();
+    let spawned = std::thread::Builder::new()
+        .name("overlay-interactive".into())
+        .spawn(move || {
+            while panel_is_open(&app) {
+                #[cfg(windows)]
+                unsafe {
+                    let _ = windows::Win32::UI::WindowsAndMessaging::ClipCursor(None);
+                }
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+            INTERACTIVE_LOOP_RUNNING.store(false, Ordering::SeqCst);
+        });
+    if spawned.is_err() {
+        INTERACTIVE_LOOP_RUNNING.store(false, Ordering::SeqCst);
+    }
+}
+
+/// Só alterna o click-through. A captura de foreground/cursor é exclusiva do
+/// modo interativo (`apply_panel_open`); antes cada re-afirmação do hit-test
+/// (a cada ~600ms) reassumia o foreground e brigava com o jogo.
 fn set_overlay_interactive(app: &AppHandle, interactive: bool) -> Result<(), String> {
     if let Some(window) = app.get_webview_window(OVERLAY_LABEL) {
         window
             .set_ignore_cursor_events(!interactive)
             .map_err(|e| e.to_string())?;
-        if interactive {
-            claim_overlay_foreground(&window);
-        }
     }
     Ok(())
+}
+
+/// Única porta de entrada/saída do modo interativo (atalho, gamepad, ação `close`,
+/// toasts que abrem o painel). Idempotente; devolve se o estado mudou.
+/// `notify_front` = avisar o React (quando a origem foi o backend/atalho).
+pub fn apply_panel_open(app: &AppHandle, open: bool, notify_front: bool) -> Result<bool, String> {
+    let (changed, panel_state) = {
+        let state = app
+            .try_state::<Mutex<OverlayRuntime>>()
+            .ok_or_else(|| "Estado do overlay indisponivel.".to_string())?;
+        let mut runtime = state.lock();
+        let changed = runtime.panel_open != open;
+        runtime.panel_open = open;
+        (changed, runtime.panel_state.clone())
+    };
+    if !changed {
+        return Ok(false);
+    }
+
+    if open {
+        let game_title = panel_state.get("gameTitle").and_then(|v| v.as_str());
+        update_overlay_geometry_to_game(app, game_title);
+        if let Some(window) = app.get_webview_window(OVERLAY_LABEL) {
+            set_overlay_noactivate(&window, false);
+            let _ = window.set_ignore_cursor_events(false);
+            claim_overlay_foreground(&window);
+        }
+        start_interactive_loop(app);
+        if notify_front {
+            send_overlay_event(
+                app,
+                "overlay:panel-visibility",
+                json!({ "open": true, "visible": true, "state": panel_state.clone() }),
+            );
+            send_overlay_event(app, "overlay:panel-state", panel_state);
+        }
+    } else {
+        if let Some(window) = app.get_webview_window(OVERLAY_LABEL) {
+            let _ = window.set_ignore_cursor_events(true);
+            set_overlay_noactivate(&window, true);
+            if notify_front {
+                let _ = window.emit(
+                    "overlay:panel-visibility",
+                    json!({ "open": false, "visible": false }),
+                );
+            }
+        }
+        #[cfg(windows)]
+        unsafe {
+            // Libera qualquer clip residual antes de devolver o jogo.
+            let _ = windows::Win32::UI::WindowsAndMessaging::ClipCursor(None);
+        }
+        restore_previous_foreground();
+    }
+
+    if let Some(main) = app.get_webview_window("main") {
+        let _ = main.emit("overlay:panel-toggled", json!({ "open": open }));
+    }
+    Ok(true)
 }
 
 pub fn get_game_or_primary_monitor(app: &AppHandle, game_title: Option<&str>) -> Option<tauri::Monitor> {
@@ -126,31 +299,58 @@ pub fn get_game_or_primary_monitor(app: &AppHandle, game_title: Option<&str>) ->
     app.primary_monitor().ok().flatten()
 }
 
+/// Último retângulo aplicado ao overlay (x, y, w, h em px físicos). Evita
+/// `set_position`/`set_size` repetidos — cada um força relayout do WebView2 e
+/// derruba o hover do notch (ex.: a cada "falando" durante uma chamada).
+static LAST_OVERLAY_RECT: Lazy<Mutex<Option<(i32, i32, u32, u32)>>> = Lazy::new(|| Mutex::new(None));
+
 pub fn update_overlay_geometry_to_game(app: &AppHandle, game_title: Option<&str>) {
     if let Some(target_mon) = get_game_or_primary_monitor(app, game_title) {
         if let Some(win) = app.get_webview_window(OVERLAY_LABEL) {
             let pos = target_mon.position();
             let size = target_mon.size();
+            let rect = (pos.x, pos.y, size.width, size.height);
+            {
+                let mut last = LAST_OVERLAY_RECT.lock();
+                if *last == Some(rect) {
+                    return;
+                }
+                *last = Some(rect);
+            }
             let _ = win.set_position(tauri::Position::Physical(*pos));
             let _ = win.set_size(tauri::Size::Physical(*size));
         }
     }
 }
 
-pub fn ensure_overlay(app: &AppHandle) -> Result<tauri::WebviewWindow, String> {
-    let game_title = app.try_state::<Mutex<OverlayRuntime>>().and_then(|state| {
+fn current_game_title(app: &AppHandle) -> Option<String> {
+    app.try_state::<Mutex<OverlayRuntime>>().and_then(|state| {
         state
             .lock()
             .panel_state
             .get("gameTitle")
             .and_then(|v| v.as_str())
             .map(|s| s.to_string())
-    });
+    })
+}
 
+/// Reposiciona o overlay no monitor do jogo atual (usado ao iniciar um jogo).
+/// Usa a mesma lógica de `update_overlay_geometry_to_game` — antes o game_watch
+/// forçava o monitor primário e brigava com ela.
+pub fn refresh_overlay_geometry(app: &AppHandle) {
+    let title = current_game_title(app);
+    update_overlay_geometry_to_game(app, title.as_deref());
+}
+
+pub fn ensure_overlay(app: &AppHandle) -> Result<tauri::WebviewWindow, String> {
+    // Janela já existe: NÃO recalcula geometria aqui. Este caminho roda em todo
+    // evento enviado ao overlay; a geometria é atualizada só nos pontos que
+    // realmente mudam o monitor (início de jogo, troca de gameTitle, abrir painel).
     if let Some(existing) = app.get_webview_window(OVERLAY_LABEL) {
-        update_overlay_geometry_to_game(app, game_title.as_deref());
         return Ok(existing);
     }
+
+    let game_title = current_game_title(app);
 
     let monitor = get_game_or_primary_monitor(app, game_title.as_deref())
         .ok_or_else(|| "Nenhum monitor encontrado.".to_string())?;
@@ -166,7 +366,8 @@ pub fn ensure_overlay(app: &AppHandle) -> Result<tauri::WebviewWindow, String> {
         .decorations(false)
         .always_on_top(true)
         .skip_taskbar(true)
-        .visible(false)
+        .visible(true)
+        .focused(false)
         .resizable(false)
         .shadow(false)
         .position(pos.x as f64, pos.y as f64)
@@ -187,7 +388,11 @@ pub fn ensure_overlay(app: &AppHandle) -> Result<tauri::WebviewWindow, String> {
 
     let _ = window.set_position(tauri::Position::Physical(*pos));
     let _ = window.set_size(tauri::Size::Physical(*size));
+    *LAST_OVERLAY_RECT.lock() = Some((pos.x, pos.y, size.width, size.height));
     let _ = window.set_ignore_cursor_events(true);
+    // Nasce passivo: não ativa nem rouba o foco do jogo ao ser clicado.
+    set_overlay_noactivate(&window, true);
+    let _ = window.show();
 
     Ok(window)
 }
@@ -198,21 +403,10 @@ fn panel_is_open(app: &AppHandle) -> bool {
         .unwrap_or(false)
 }
 
-fn restore_overlay_click_through(app: &AppHandle) {
-    let _ = set_overlay_interactive(app, false);
-    CURSOR_WATCH_ENABLED.store(false, Ordering::SeqCst);
-}
-
-/// Esconde o overlay quando nao ha painel aberto (toasts/atualizacoes nao mantem a janela por cima).
-fn hide_overlay_if_idle(app: &AppHandle) {
-    if panel_is_open(app) {
-        return;
-    }
-    restore_overlay_click_through(app);
-    if let Some(window) = app.get_webview_window(OVERLAY_LABEL) {
-        let _ = window.hide();
-    }
-}
+// NOTA: o cursor watch (CURSOR_WATCH_ENABLED) é controlado SÓ pelo frontend via
+// `overlay_set_cursor_watch`. Nenhum caminho do backend (toast expirando, fechar
+// painel...) pode desligá-lo — isso deixava o overlay sem eventos `overlay:cursor`,
+// a janela click-through e o notch sem hover durante chamadas.
 
 pub fn send_overlay_event(app: &AppHandle, channel: &str, mut payload: Value) {
     let _ = ensure_overlay(app);
@@ -245,7 +439,6 @@ pub fn send_overlay_event(app: &AppHandle, channel: &str, mut payload: Value) {
             .and_then(Value::as_bool)
             .unwrap_or(false);
         let call_force = channel == "overlay:panel-state" && call_active && !hub_visible && !panel_open;
-        let mut hide_forced_call = false;
         if channel == "overlay:panel-state" {
             if let Some(state) = app.try_state::<Mutex<OverlayRuntime>>() {
                 let mut runtime = state.lock();
@@ -253,32 +446,18 @@ pub fn send_overlay_event(app: &AppHandle, channel: &str, mut payload: Value) {
                     runtime.call_overlay_forced = true;
                 } else if runtime.call_overlay_forced && (!call_active || hub_visible) && !panel_open {
                     runtime.call_overlay_forced = false;
-                    hide_forced_call = true;
                 }
             }
         }
-        // Nao chamar show() em toda atualizacao de painel — isso roubava o mouse
-        // mesmo com o overlay "fechado" visualmente.
-        let should_show = match channel {
-            "overlay:panel-state" => panel_open || call_force,
-            "overlay:panel-visibility" => payload
-                .get("open")
-                .or_else(|| payload.get("visible"))
-                .and_then(Value::as_bool)
-                .unwrap_or(false),
-            "overlay:social" | "achievement:unlock" | "overlay:play-sound" => true,
-            "overlay:cursor" => false,
-            _ => false,
-        };
-
-        if should_show {
+        // NÃO força set_ignore_cursor_events(true) aqui: este caminho roda em
+        // TODA atualização de panel-state (ex.: activeCall.speaking muda a cada
+        // ~350ms durante uma chamada) e derrubava a captura de cursor enquanto o
+        // ponteiro estava sobre a Desktop Notch, impedindo-a de expandir. O
+        // click-through é de responsabilidade do hit-test do frontend
+        // (OverlayApp) e dos caminhos de ciclo de vida (init/fechar painel/idle).
+        // Só mostra se estiver oculta: show() a cada evento reordena a janela.
+        if !window.is_visible().unwrap_or(false) {
             let _ = window.show();
-            // Toasts: janela visivel mas click-through ate o frontend pedir interacao.
-            if !panel_open {
-                let _ = window.set_ignore_cursor_events(true);
-            }
-        } else if hide_forced_call {
-            let _ = window.hide();
         }
 
         let _ = window.emit(channel, payload);
@@ -352,8 +531,12 @@ pub fn overlay_dismiss_notification(app: AppHandle, payload: Option<Value>) -> R
 #[tauri::command]
 pub fn overlay_update_panel(app: AppHandle, payload: Value) -> Result<(), String> {
     let patch = payload.get("payload").cloned().unwrap_or(payload);
+    // Só reposiciona se o título mudou (o Home reenvia gameTitle em todo update,
+    // inclusive a cada flip de "falando" durante uma chamada).
     if let Some(game_title) = patch.get("gameTitle").and_then(|v| v.as_str()) {
-        update_overlay_geometry_to_game(&app, Some(game_title));
+        if current_game_title(&app).as_deref() != Some(game_title) {
+            update_overlay_geometry_to_game(&app, Some(game_title));
+        }
     }
     let merged = merge_panel_state(&app, patch);
     send_overlay_event(&app, "overlay:panel-state", merged);
@@ -436,48 +619,18 @@ pub fn overlay_get_panel_state(app: AppHandle) -> Result<Value, String> {
 
 #[tauri::command]
 pub fn overlay_toggle_panel(app: AppHandle) -> Result<Value, String> {
-    let (open, panel_state) = {
-        let state = app
-            .try_state::<Mutex<OverlayRuntime>>()
-            .ok_or_else(|| "Estado do overlay indisponivel.".to_string())?;
-        let mut runtime = state.lock();
-        runtime.panel_open = !runtime.panel_open;
-        (runtime.panel_open, runtime.panel_state.clone())
-    };
-
-    if open {
-        let game_title = panel_state.get("gameTitle").and_then(|v| v.as_str());
-        update_overlay_geometry_to_game(&app, game_title);
-        if let Some(window) = app.get_webview_window(OVERLAY_LABEL) {
-            let _ = window.show();
-        }
-        send_overlay_event(
-            &app,
-            "overlay:panel-visibility",
-            json!({ "open": true, "visible": true, "state": panel_state.clone() }),
-        );
-        send_overlay_event(
-            &app,
-            "overlay:panel-state",
-            panel_state,
-        );
-    } else {
-        restore_overlay_click_through(&app);
-        if let Some(window) = app.get_webview_window(OVERLAY_LABEL) {
-            let _ = window.emit(
-                "overlay:panel-visibility",
-                json!({ "open": false, "visible": false }),
-            );
-        }
-        // Sem toasts ativos o frontend manda toasts-cleared; se o painel fechou sem toast, libera ja.
-        hide_overlay_if_idle(&app);
-    }
-
-    if let Some(main) = app.get_webview_window("main") {
-        let _ = main.emit("overlay:panel-toggled", json!({ "open": open }));
-    }
-
+    let open = !panel_is_open(&app);
+    apply_panel_open(&app, open, true)?;
     Ok(json!({ "open": open }))
+}
+
+/// O frontend informa que entrou/saiu do modo interativo (ex.: um toast de
+/// conquista abriu o painel completo). Mantém `panel_open` do backend sincronizado
+/// para captura de foreground/cursor e para o `toasts-cleared` não derrubar o painel.
+#[tauri::command]
+pub fn overlay_set_panel_open(app: AppHandle, open: bool) -> Result<Value, String> {
+    apply_panel_open(&app, open, false)?;
+    Ok(json!({ "open": panel_is_open(&app) }))
 }
 
 #[tauri::command]
@@ -570,25 +723,14 @@ pub fn overlay_panel_action(app: AppHandle, action: Value) -> Result<Value, Stri
 
     match kind {
         "close" => {
-            if let Some(state) = app.try_state::<Mutex<OverlayRuntime>>() {
-                state.lock().panel_open = false;
-            }
-            restore_overlay_click_through(&app);
-            if let Some(window) = app.get_webview_window(OVERLAY_LABEL) {
-                let _ = window.set_ignore_cursor_events(true);
-                // Mantem a janela se ainda houver toast; o frontend manda toasts-cleared depois.
-                let _ = window.emit(
-                    "overlay:panel-visibility",
-                    json!({ "open": false, "visible": false }),
-                );
-            }
-            if let Some(main) = app.get_webview_window("main") {
-                let _ = main.emit("overlay:panel-toggled", json!({ "open": false }));
-            }
+            // Fecha o modo interativo: solta cursor/foco e devolve o jogo.
+            let _ = apply_panel_open(&app, false, true);
         }
         "toasts-cleared" => {
-            // Espelha o Electron: limpar toasts restaura passagem de cliques / esconde idle.
-            hide_overlay_if_idle(&app);
+            // Intencionalmente sem efeito: o click-through em modo passivo é do
+            // hit-test do frontend. Forçar `ignore=true` aqui derrubava a captura
+            // enquanto o cursor estava parado sobre o notch (sem eventos novos de
+            // cursor para recapturar), deixando-o preso/morto.
         }
         _ => {}
     }
@@ -723,7 +865,10 @@ pub fn overlay_set_overlay_shortcut(app: AppHandle, shortcut: String) -> Result<
 }
 
 pub fn init(app: &AppHandle) {
-    let _ = ensure_overlay(app);
+    if let Ok(window) = ensure_overlay(app) {
+        let _ = window.show();
+        let _ = window.set_ignore_cursor_events(true);
+    }
 }
 
 #[allow(dead_code)]

@@ -10,7 +10,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
+      "lucide-react": path.resolve(import.meta.dirname, "./src/design-system/sf-symbols/lucideCompat.tsx"),
     },
   },
   build: {
@@ -26,8 +27,8 @@ export default defineConfig({
     },
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, "index.html"),
-        overlay: path.resolve(__dirname, "overlay.html"),
+        main: path.resolve(import.meta.dirname, "index.html"),
+        overlay: path.resolve(import.meta.dirname, "overlay.html"),
       },
       output: {
         manualChunks(id) {

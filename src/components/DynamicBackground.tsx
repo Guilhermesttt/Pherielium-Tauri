@@ -7,18 +7,27 @@ interface DynamicBackgroundProps {
   backgroundImage: string;
   videoUrl?: string;
   reducedEffects?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
 }
 
-const DynamicBackground: React.FC<DynamicBackgroundProps> = ({ backgroundImage, videoUrl, reducedEffects = false }) => {
+const DynamicBackground: React.FC<DynamicBackgroundProps> = ({
+  backgroundImage,
+  videoUrl,
+  reducedEffects = false,
+  className,
+  style,
+}) => {
   const low = useLowPerf();
   const noFx = reducedEffects || low;
 
   return (
     <div
-      className="fixed inset-0 z-0 overflow-hidden pointer-events-none isolate"
+      className={`fixed inset-0 z-0 overflow-hidden pointer-events-none isolate ${className || ""}`}
       style={{
         background: "var(--color-bg-main, #0F0F0F)",
         transform: "translateZ(0)",
+        ...style,
       }}
     >
       {/* Video de fundo nitido com baixa opacidade e aceleracao GPU */}

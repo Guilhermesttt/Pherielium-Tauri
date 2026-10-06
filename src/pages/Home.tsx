@@ -18,9 +18,32 @@ import {
   Trophy,
   Clock,
   Compass,
+  ChevronDown,
 } from "lucide-react";
+import { SfGamepadIcon, SfComputerIcon } from "../design-system/sf-symbols";
+import { PlatformSelectorModal } from "../components/home/PlatformSelectorModal";
+import {
+  PlatformAllIcon,
+  PlatformSteamIcon,
+  PlatformEpicIcon,
+  PlatformEaIcon,
+  PlatformUbisoftIcon,
+  PlatformGogIcon,
+  PlatformXboxIcon,
+  PlatformRiotIcon,
+  PlatformBattlenetIcon,
+  PlatformRockstarIcon,
+  PlatformLocalIcon,
+} from "../components/home/PlatformIcons";
+import { TopBarClock } from "../components/home/TopBarClock";
+import { ConsoleLibraryTabs } from "../components/home/ConsoleLibraryTabs";
+import { SteamDeckControllerFooter } from "../components/home/SteamDeckControllerFooter";
+import { ControllerButtonGlyph } from "../components/ui/ControllerButtonGlyph";
 
 import DynamicBackground from "../components/DynamicBackground";
+import { GameEnvironment } from "../components/home/GameEnvironment";
+import { HeroGame } from "../components/home/HeroGame";
+import { HomeTopNav } from "../components/home/HomeTopNav";
 import { EpicConnectModal } from "../components/settings/EpicConnectModal";
 import { PlatformLibrarySkeleton } from "../components/PlatformLibrarySkeleton";
 import { fetchEpicStatus } from "../services/epic";
@@ -129,7 +152,7 @@ import {
   syncPublicLibrarySummary,
   updateLibraryGame,
 } from "../services/localLibrary";
-import { useGamepadButton, useGamepad } from "../context/GamepadContext";
+import { useGamepadButton, useGamepad, playHapticPattern } from "../context/GamepadContext";
 import { activateElementWithController } from "../utils/controllerTextInput";
 import { calculateAchievementTotals } from "../utils/achievementTotals";
 import { formatPlayedHours, getGamePlayedHours } from "../utils/playtime";
@@ -250,6 +273,8 @@ const Home: React.FC = () => {
   const { user, userProfile, signOutUser, refreshProfile } = useAuth();
   const { notify } = useNotification();
   const gamepad = useGamepad();
+  const gamepadFamily = gamepad?.gamepadFamily || "xbox";
+  const isGamepadConnected = Boolean(gamepad?.isGamepadConnected);
   const voiceCallContext = useVoiceCallContext();
   const voiceCall = voiceCallContext;
   const lastPresenceActivityRef = useRef(Date.now());
@@ -257,20 +282,25 @@ const Home: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [activeCategory, setActiveCategory] = useState("ALL");
   const isPlatformOrFavoritesPage = useMemo(() => {
-    return [
-      "ALL",
-      "FAVORITES",
-      "STEAM",
-      "EPIC",
-      "EA",
-      "UBISOFT",
-      "GOG",
-      "XBOX",
-      "RIOT",
-      "BATTLENET",
-      "ROCKSTAR",
-      "LOCAL",
-    ].includes(activeCategory);
+    return (
+      activeCategory.startsWith("custom_") ||
+      [
+        "ALL",
+        "INSTALLED",
+        "FAVORITES",
+        "RECENT",
+        "STEAM",
+        "EPIC",
+        "EA",
+        "UBISOFT",
+        "GOG",
+        "XBOX",
+        "RIOT",
+        "BATTLENET",
+        "ROCKSTAR",
+        "LOCAL",
+      ].includes(activeCategory)
+    );
   }, [activeCategory]);
   const [isLoading, setIsLoading] = useState(true);
   const loadedLibraryOwnerRef = useRef<string | null>(null);
@@ -340,6 +370,8 @@ const Home: React.FC = () => {
   const [isExitingSession, setIsExitingSession] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("general");
   const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [isPlatformModalOpen, setIsPlatformModalOpen] = useState(false);
+  const [openedViaShortcut, setOpenedViaShortcut] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isQuestsModalOpen, setIsQuestsModalOpen] = useState(false);
 
@@ -448,7 +480,7 @@ const Home: React.FC = () => {
     game: Game;
   } | null>(null);
 
-  const { activeInputType } = useGamepad();
+  const activeInputType = gamepad.activeInputType;
 
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -578,6 +610,23 @@ const Home: React.FC = () => {
     soundTheme,
     notificationVolume / 100,
   );
+
+  // Alt + Scroll to quickly open and spin the platform selector drawer
+  useEffect(() => {
+    const handleAltWheelTrigger = (e: WheelEvent) => {
+      if (e.altKey) {
+        e.preventDefault();
+        if (!isPlatformModalOpen) {
+          setIsPlatformModalOpen(true);
+          setOpenedViaShortcut(true);
+          playSound("showModal");
+        }
+      }
+    };
+
+    window.addEventListener("wheel", handleAltWheelTrigger, { capture: true, passive: false });
+    return () => window.removeEventListener("wheel", handleAltWheelTrigger, { capture: true });
+  }, [isPlatformModalOpen, playSound]);
   const userDisplay =
     userProfile?.displayName || user?.email?.split("@")[0] || "Jogador";
   const legacySteamId = (userProfile as unknown as { steam_id?: string })?.steam_id;
@@ -1309,8 +1358,41 @@ const Home: React.FC = () => {
     currentGame?.cardImage || currentGame?.image,
   );
 
+  const activePlatformConfig = useMemo(() => {
+    switch (activeCategory) {
+      case "STEAM":
+        return { label: "Steam", icon: <PlatformSteamIcon className="w-3.5 h-3.5" /> };
+      case "EPIC":
+        return { label: "Epic Games", icon: <PlatformEpicIcon className="w-3.5 h-3.5" /> };
+      case "EA":
+        return { label: "EA App", icon: <PlatformEaIcon className="w-3.5 h-3.5" /> };
+      case "UBISOFT":
+        return { label: "Ubisoft", icon: <PlatformUbisoftIcon className="w-3.5 h-3.5" /> };
+      case "GOG":
+        return { label: "GOG Galaxy", icon: <PlatformGogIcon className="w-3.5 h-3.5" /> };
+      case "XBOX":
+        return { label: "Xbox", icon: <PlatformXboxIcon className="w-3.5 h-3.5" /> };
+      case "RIOT":
+        return { label: "Riot Games", icon: <PlatformRiotIcon className="w-3.5 h-3.5" /> };
+      case "BATTLENET":
+        return { label: "Battle.net", icon: <PlatformBattlenetIcon className="w-3.5 h-3.5" /> };
+      case "ROCKSTAR":
+        return { label: "Rockstar", icon: <PlatformRockstarIcon className="w-3.5 h-3.5" /> };
+      case "LOCAL":
+        return { label: "Jogos Locais", icon: <PlatformLocalIcon className="w-3.5 h-3.5" /> };
+      case "FAVORITES":
+        return { label: "Favoritos", icon: <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> };
+      case "INSTALLED":
+        return { label: "Instalados", icon: <PlatformAllIcon className="w-3.5 h-3.5" /> };
+      case "RECENT":
+        return { label: "Recentes", icon: <Clock className="w-3.5 h-3.5" /> };
+      default:
+        return { label: "Todas as Plataformas", icon: <PlatformAllIcon className="w-3.5 h-3.5" /> };
+    }
+  }, [activeCategory]);
 
   const isAnyModalOpen =
+    isPlatformModalOpen ||
     isAddModalOpen ||
     isDetailOpen ||
     Boolean(contextMenu) ||
@@ -1334,10 +1416,35 @@ const Home: React.FC = () => {
       [displayGames],
     ),
   );
+  const initialRecentSyncedRef = useRef(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (activeCategory === "ALL" && continuePlayingGames.length > 0) {
+      const firstRecent = continuePlayingGames[0];
+      const matchIdx = displayGames.findIndex((g) => g.id === firstRecent.id);
+      if (matchIdx !== -1) {
+        setSelectedIndex(matchIdx);
+        return;
+      }
+    }
     setSelectedIndex(0);
   }, [activeCategory]);
+
+  useEffect(() => {
+    if (
+      !initialRecentSyncedRef.current &&
+      activeCategory === "ALL" &&
+      continuePlayingGames.length > 0 &&
+      displayGames.length > 0
+    ) {
+      initialRecentSyncedRef.current = true;
+      const firstRecent = continuePlayingGames[0];
+      const matchIdx = displayGames.findIndex((g) => g.id === firstRecent.id);
+      if (matchIdx !== -1) {
+        setSelectedIndex(matchIdx);
+      }
+    }
+  }, [activeCategory, continuePlayingGames, displayGames]);
 
   useEffect(() => {
     if (displayGames.length === 0 && selectedIndex !== 0) {
@@ -1375,6 +1482,11 @@ const Home: React.FC = () => {
   });
 
   const closeTopGamepadSurface = useCallback(() => {
+    if (isPlatformModalOpen) {
+      setIsPlatformModalOpen(false);
+      playSound("back");
+      return;
+    }
     if (friendProfileModal) {
       setFriendProfileModal(null);
       playSound("back");
@@ -1456,6 +1568,7 @@ const Home: React.FC = () => {
     epicConnectModalOpen,
     friendProfileModal,
     isAddFriendModalOpen,
+    isPlatformModalOpen,
     pendingDeleteGame,
     pendingFriendRemoval,
     playSound,
@@ -1505,7 +1618,10 @@ const Home: React.FC = () => {
 
     setSelectedIndex((p) => {
       const prev = Math.max(p - 1, 0);
-      if (prev !== p) playSound("navigate");
+      if (prev !== p) {
+        playSound("navigate");
+        playHapticPattern("nav");
+      }
       return prev;
     });
   });
@@ -1520,7 +1636,10 @@ const Home: React.FC = () => {
 
     setSelectedIndex((p) => {
       const next = Math.min(p + 1, displayGames.length - 1);
-      if (next !== p) playSound("navigate");
+      if (next !== p) {
+        playSound("navigate");
+        playHapticPattern("nav");
+      }
       return next;
     });
   });
@@ -1554,6 +1673,63 @@ const Home: React.FC = () => {
     }
   });
 
+  const toggleFavoriteGame = useCallback(
+    async (game: Game) => {
+      if (!user?.uid || !game) return;
+      playSound(game.isFavorite ? "favoriteOff" : "favoriteOn");
+      try {
+        await updateLibraryGame(user.uid, game.id, {
+          isFavorite: !game.isFavorite,
+        });
+        await refreshLibrary();
+      } catch (err) {
+        console.error("Error toggling favorite", err);
+      }
+    },
+    [user?.uid, playSound, refreshLibrary],
+  );
+
+  const cycleLibraryTab = useCallback(
+    (direction: -1 | 1) => {
+      let customIds: string[] = [];
+      try {
+        const stored = localStorage.getItem("checkpoint_custom_library_filters");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            customIds = parsed.map((f: any) => f.id);
+          }
+        }
+      } catch {
+        // ignore
+      }
+      const tabs = ["ALL", "FAVORITES", ...customIds];
+      const currentIdx = tabs.indexOf(activeCategory);
+      let nextIdx: number;
+      if (currentIdx === -1) {
+        nextIdx = direction === 1 ? 0 : tabs.length - 1;
+      } else {
+        nextIdx = (currentIdx + direction + tabs.length) % tabs.length;
+      }
+      selectCategory(tabs[nextIdx]);
+      playSound("navigate");
+    },
+    [activeCategory, selectCategory, playSound],
+  );
+
+  useGamepadButton("L1", () => {
+    if (isAnyModalOpen || searchOpen) return;
+    cycleLibraryTab(-1);
+    playHapticPattern("nav");
+  });
+
+  useGamepadButton("R1", () => {
+    if (isAnyModalOpen || searchOpen) return;
+    cycleLibraryTab(1);
+    playHapticPattern("nav");
+  });
+
+  // SQUARE (PS) / X (Xbox): Open Game Context Menu (Options)
   useGamepadButton("SQUARE", async () => {
     if (isAnyModalOpen || searchOpen) return;
     // FRIENDS: open chat with focused friend
@@ -1571,21 +1747,18 @@ const Home: React.FC = () => {
       return;
     }
     if (isSystemCategory) return;
-    const game = displayGames[selectedIndex];
-    if (game && user?.uid) {
-      playSound(game.isFavorite ? "favoriteOff" : "favoriteOn");
-      try {
-        await updateLibraryGame(user.uid, game.id, {
-          isFavorite: !game.isFavorite,
-        });
-        await refreshLibrary();
-      } catch (err) {
-        console.error("Error toggling favorite via gamepad", err);
-      }
+    const triggerBtn = document.querySelector<HTMLButtonElement>("[data-context-menu-trigger='true']");
+    if (triggerBtn) {
+      triggerBtn.click();
+      playSound("select");
+      playHapticPattern("action");
+    } else if (currentGame) {
+      handleMenuAction("edit", currentGame);
     }
   });
 
-  useGamepadButton("TRIANGLE", () => {
+  // TRIANGLE (PS) / Y (Xbox): Toggle Favorite for focused game directly
+  useGamepadButton("TRIANGLE", async () => {
     if (isAnyModalOpen || searchOpen) return;
     // FRIENDS: start call with focused friend
     if (activeCategory === "FRIENDS") {
@@ -1601,24 +1774,29 @@ const Home: React.FC = () => {
       }
       return;
     }
+    if (isSystemCategory) return;
+    if (currentGame) {
+      await toggleFavoriteGame(currentGame);
+      playHapticPattern("action");
+    }
   });
 
+  // L2 (PS) / LT (Xbox): Platform Wheel Selector Modal
   useGamepadButton("L2", () => {
     if (isAnyModalOpen || searchOpen) return;
-    const previousCategory = getAdjacentSidebarCategory(activeCategory, -1);
-    if (previousCategory) {
-      selectCategory(previousCategory);
-      playSound("navigate");
-    }
+    if (isSystemCategory) return;
+    setIsPlatformModalOpen(true);
+    playSound("showModal");
+    playHapticPattern("action");
   });
 
+  // R2 (PS) / RT (Xbox): Library Filter Modal
   useGamepadButton("R2", () => {
     if (isAnyModalOpen || searchOpen) return;
-    const nextCategory = getAdjacentSidebarCategory(activeCategory, 1);
-    if (nextCategory) {
-      selectCategory(nextCategory);
-      playSound("navigate");
-    }
+    if (isSystemCategory) return;
+    setFilterModalOpen(true);
+    playSound("showModal");
+    playHapticPattern("action");
   });
 
   const categoryToLauncherType = useCallback((cat: string): LauncherType | undefined => {
@@ -1676,38 +1854,28 @@ const Home: React.FC = () => {
     return () => window.removeEventListener("keydown", handleAddGameShortcut);
   }, [openAddGameModal]);
 
-  useGamepadButton("TRIANGLE", () => {
-    if (isAnyModalOpen || searchOpen) return;
-    // FRIENDS: call focused friend
-    if (activeCategory === "FRIENDS") {
-      const focused = document.querySelector<HTMLElement>("[data-gamepad-focused='true']");
-      if (focused) {
-        const card = focused.closest<HTMLElement>("[data-friend-id]");
-        const friendId = card?.dataset.friendId;
-        if (friendId) {
-          const friend = socialFriends.find((f) => f.id === friendId);
-          if (friend) {
-            playSound("select");
-            void startCall(friend, false);
-          }
-        }
-      }
-      return;
-    }
-    if (isSystemCategory) return;
-    openAddGameModal(categoryToLauncherType(activeCategory));
-  });
 
+  // OPTIONS (PS) / MENU (Xbox): Toggle Sidebar open/close
   useGamepadButton("OPTIONS", () => {
-    if (isAnyModalOpen || searchOpen) return;
-    selectCategory("SETTINGS");
-    playSound("select");
+    if (isAnyModalOpen) return;
+    window.dispatchEvent(
+      new CustomEvent("checkpoint:sidebar-toggle", {
+        detail: { expanded: !isSidebarExpanded },
+      }),
+    );
+    playSound("navigate");
+    playHapticPattern("action");
   });
 
+  // SHARE (PS) / VIEW (Xbox): Quick Game Search
   useGamepadButton("SHARE", () => {
-    if (isAnyModalOpen || searchOpen) return;
-    selectCategory("FRIENDS");
+    if (isAnyModalOpen) return;
+    setSearchOpen(true);
     playSound("select");
+    playHapticPattern("action");
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 60);
   });
 
   useEffect(() => {
@@ -1748,6 +1916,27 @@ const Home: React.FC = () => {
           searchInputRef.current?.select();
           playSound("search");
         }
+      } else if (e.key.toLowerCase() === "q") {
+        if (!isAnyModalOpen && isPlatformOrFavoritesPage) {
+          e.preventDefault();
+          cycleLibraryTab(-1);
+        }
+      } else if (e.key.toLowerCase() === "e") {
+        if (!isAnyModalOpen && isPlatformOrFavoritesPage) {
+          e.preventDefault();
+          cycleLibraryTab(1);
+        }
+      } else if (e.key.toLowerCase() === "p" || e.key.toLowerCase() === "x") {
+        if (!isAnyModalOpen && isPlatformOrFavoritesPage) {
+          e.preventDefault();
+          setIsPlatformModalOpen(true);
+          playSound("showModal");
+        }
+      } else if (e.key.toLowerCase() === "f") {
+        if (!isAnyModalOpen && displayGames[selectedIndex]) {
+          e.preventDefault();
+          void toggleFavoriteGame(displayGames[selectedIndex]);
+        }
       }
     };
 
@@ -1756,7 +1945,7 @@ const Home: React.FC = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isAnyModalOpen, displayGames, selectedIndex, openDetails, playSound, searchOpen]);
+  }, [isAnyModalOpen, displayGames, selectedIndex, openDetails, playSound, searchOpen, isPlatformOrFavoritesPage, cycleLibraryTab, toggleFavoriteGame]);
 
   const handleGameRailWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
     if (isAnyModalOpen || searchOpen || displayGames.length === 0) return;
@@ -2258,13 +2447,13 @@ const Home: React.FC = () => {
         if (voiceCallContext.isSharingScreen) {
           void voiceCallContext.stopScreenShare();
         } else {
-          void window.electronAPI?.showMainWindow?.();
+          void (window.electronAPI as any)?.showMainWindow?.();
           voiceCallContext.setIsScreenPickerOpen(true);
         }
         return;
       }
       if (action.kind === "voice-open-hub") {
-        void window.electronAPI?.showMainWindow?.();
+        void (window.electronAPI as any)?.showMainWindow?.();
         return;
       }
       if (action.kind === "retry-message" && (action as any).text && overlayChatFriendUid) {
@@ -2433,18 +2622,141 @@ const Home: React.FC = () => {
 
   const currentGamePlatformInfo = useMemo(() => {
     if (!currentGame) return null;
-    const launcher = currentGame.launcherType || currentGame.source;
-    if (launcher === "steam") return { icon: SteamBrandIcon, label: "Steam" };
-    if (launcher === "epic") return { icon: EpicBrandIcon, label: "Epic Games" };
-    if (launcher === "ea") return { icon: EaBrandIcon, label: "EA App" };
-    if (launcher === "ubisoft") return { icon: UbisoftBrandIcon, label: "Ubisoft" };
-    if (launcher === "gog") return { icon: GogBrandIcon, label: "GOG" };
-    if (launcher === "xbox") return { icon: XboxBrandIcon, label: "Xbox" };
-    if (launcher === "riot") return { icon: RiotBrandIcon, label: "Riot Games" };
-    if (launcher === "battlenet") return { icon: BattlenetBrandIcon, label: "Battle.net" };
-    if (launcher === "rockstar") return { icon: RockstarBrandIcon, label: "Rockstar" };
-    return { icon: Gamepad2, label: "Executável Local" };
+    const launcher = (currentGame.launcherType || currentGame.source || "").toLowerCase();
+    if (launcher === "steam") return { icon: PlatformSteamIcon, label: "Steam" };
+    if (launcher === "epic") return { icon: PlatformEpicIcon, label: "Epic Games" };
+    if (launcher === "ea") return { icon: PlatformEaIcon, label: "EA App" };
+    if (launcher === "ubisoft") return { icon: PlatformUbisoftIcon, label: "Ubisoft" };
+    if (launcher === "gog") return { icon: PlatformGogIcon, label: "GOG Galaxy" };
+    if (launcher === "xbox") return { icon: PlatformXboxIcon, label: "Xbox" };
+    if (launcher === "riot") return { icon: PlatformRiotIcon, label: "Riot Games" };
+    if (launcher === "battlenet") return { icon: PlatformBattlenetIcon, label: "Battle.net" };
+    if (launcher === "rockstar") return { icon: PlatformRockstarIcon, label: "Rockstar" };
+    return { icon: PlatformLocalIcon, label: "Executável Local" };
   }, [currentGame]);
+
+  const isCurrentGameRunning = useMemo(() => {
+    if (!currentGame) return false;
+    const running = resolveGameFromPresence(games, currentPresenceGame, currentPresenceExecutablePath);
+    return running?.id === currentGame.id;
+  }, [currentGame, games, currentPresenceGame, currentPresenceExecutablePath]);
+
+  const handleSelectContinuePlaying = useCallback((game: Game) => {
+    const idx = displayGames.findIndex((g) => g.id === game.id);
+    if (idx !== -1) {
+      setSelectedIndex(idx);
+    }
+  }, [displayGames]);
+
+  const handlePlayContinuePlaying = useCallback((game: Game) => {
+    openDetails(game);
+    playSound("select");
+  }, [openDetails, playSound]);
+
+  const handleOpenDetailsContinuePlaying = useCallback((game: Game) => {
+    openDetails(game);
+    playSound("select");
+  }, [openDetails, playSound]);
+
+  const handleHeroPlay = useCallback((game: Game) => {
+    openDetails(game);
+  }, [openDetails]);
+
+  const handleHeroOpenDetails = useCallback((game: Game) => {
+    openDetails(game);
+  }, [openDetails]);
+
+  const handleHeroToggleFavorite = useCallback((game: Game) => {
+    void toggleFavoriteGame(game);
+  }, [toggleFavoriteGame]);
+
+  const renderedContinuePlaying = useMemo(() => {
+    if (activeCategory !== "ALL" || continuePlayingGames.length === 0) return null;
+    return (
+      <div className="shrink-0 mb-1">
+        <DashboardContinuePlaying
+          continuePlayingGames={continuePlayingGames}
+          selectedGameId={currentGame?.id}
+          onSelectGame={handleSelectContinuePlaying}
+          onPlayGame={handlePlayContinuePlaying}
+          onOpenDetails={handleOpenDetailsContinuePlaying}
+          playSound={playSound}
+        />
+      </div>
+    );
+  }, [
+    activeCategory,
+    continuePlayingGames,
+    currentGame?.id,
+    handleSelectContinuePlaying,
+    handlePlayContinuePlaying,
+    handleOpenDetailsContinuePlaying,
+    playSound,
+  ]);
+
+  const renderedHeroGame = useMemo(() => {
+    if (!currentGame) return null;
+    return (
+      <HeroGame
+        game={currentGame}
+        isRunning={isCurrentGameRunning}
+        platformInfo={currentGamePlatformInfo}
+        isGamepadConnected={isGamepadConnected}
+        gamepadFamily={gamepadFamily}
+        onPlay={handleHeroPlay}
+        onOpenDetails={handleHeroOpenDetails}
+        onToggleFavorite={handleHeroToggleFavorite}
+        playSound={playSound}
+        playNowLabel={t("playNow")}
+        runningLabel="Em execução"
+      />
+    );
+  }, [
+    currentGame,
+    isCurrentGameRunning,
+    currentGamePlatformInfo,
+    isGamepadConnected,
+    gamepadFamily,
+    handleHeroPlay,
+    handleHeroOpenDetails,
+    handleHeroToggleFavorite,
+    playSound,
+    t,
+  ]);
+
+  const renderedGameShelf = useMemo(() => {
+    return (
+      <div
+        className="shrink-0 pb-3 hub-scroll transform-gpu flex flex-col gap-2.5"
+        onWheel={handleGameRailWheel}
+      >
+        <div className="px-8 sm:px-12 flex items-center justify-between">
+          <h2 className="text-xs font-bold tracking-widest uppercase text-white/50 font-display">
+            {activeCategory === "ALL" ? "Biblioteca" : activePlatformConfig.label}
+          </h2>
+          <span className="text-[11px] font-medium text-white/30">
+            {displayGames.length} {displayGames.length === 1 ? "jogo" : "jogos"}
+          </span>
+        </div>
+        <GameRow
+          games={displayGames}
+          selectedIndex={selectedIndex}
+          onSelect={onSelectHandler}
+          onContextMenu={handleMenuAction}
+          playSound={playSound}
+        />
+      </div>
+    );
+  }, [
+    handleGameRailWheel,
+    activeCategory,
+    activePlatformConfig.label,
+    displayGames,
+    selectedIndex,
+    onSelectHandler,
+    handleMenuAction,
+    playSound,
+  ]);
 
   return (
     <div
@@ -2456,21 +2768,18 @@ const Home: React.FC = () => {
         } as React.CSSProperties
       }
     >
-      <DynamicBackground
-        backgroundImage={
+      <GameEnvironment
+        artwork={
           currentGame?.backgroundImage ||
           currentGame?.image ||
           currentGame?.cardImage ||
           ""
         }
+        dominantColor={dominantColor}
         videoUrl={activeCategory === "ALL" && !isAnyModalOpen ? currentGame?.trailerUrl : undefined}
         reducedEffects={isAnyModalOpen}
-      />
-
-      {/* Hero Section Gradient */}
-      <div
-        className="pointer-events-none absolute inset-0 z-0 bg-linear-to-t from-background via-background/70 to-transparent"
-        style={{ left: 96 }}
+        className="left-0"
+        style={{ left: 0 }}
       />
 
       {/* Widgets flutuantes (Pulso, Amigos) com animação sincronizada ao jogo */}
@@ -2511,294 +2820,65 @@ const Home: React.FC = () => {
       />
 
       <div
-        className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden transition-[margin-left] duration-400ms ease-[cubic-bezier(0.16,1,0.3,1)]"
+        className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden"
         style={{
-          marginLeft: isSidebarExpanded ? 328 : 104,
+          marginLeft: 0,
           contain: "layout paint style",
         }}
       >
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.42, delay: 0.06, ease: [0.32, 0.72, 0, 1] }}
-          className="shrink-0 flex items-center justify-between pl-4 pr-10 pt-8 relative will-change-transform"
-        >
-          <div className="flex items-center gap-2">
-            {/* Clean Pill Search Bar - Only in Platform & Favorites views */}
-            {isPlatformOrFavoritesPage && (
-              <div className="relative flex items-center gap-2">
-                <motion.div
-                  initial={false}
-                  animate={{
-                    width: searchOpen || searchTerm ? 224 : 36,
-                    borderColor: searchOpen || searchTerm ? "#2A2A2A" : "#161616",
-                  }}
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
-                  className="relative flex items-center h-9 rounded-full bg-[#0F0F0F] overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] border backdrop-blur-md"
-                >
-                  <button
-                    onClick={() => {
-                      if (!searchOpen) {
-                        setSearchOpen(true);
-                        setTimeout(() => searchInputRef.current?.focus(), 50);
-                        playSound("select");
-                      }
-                    }}
-                    className={`group absolute left-0 w-9 h-9 flex items-center justify-center transition-colors z-10 ${searchOpen || searchTerm ? "pointer-events-none" : "hover:bg-white/[0.07] cursor-pointer"
-                      }`}
-                    aria-label="Abrir pesquisa"
-                  >
-                    <Search className={`w-3.5 h-3.5 transition-colors ${searchOpen || searchTerm ? "text-[#6C6C6C]" : "text-[#6C6C6C] group-hover:text-white"}`} />
-                  </button>
-                  <input
-                    ref={searchInputRef}
-                    id="home-library-search"
-                    aria-label="Pesquisar jogos na biblioteca"
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onFocus={() => setSearchOpen(true)}
-                    onBlur={() => {
-                      if (!searchTerm) setSearchOpen(false);
-                    }}
-                    placeholder={t("searchPlaceholder") || "Pesquisar jogo... (S)"}
-                    className={`absolute left-0 top-0 h-full w-full pl-9 pr-8 text-xs text-[#D2D2D2] placeholder:text-[#6C6C6C] bg-transparent outline-none transition-opacity duration-300 ${searchOpen || searchTerm ? "opacity-100" : "opacity-0 pointer-events-none"
-                      }`}
-                  />
-                  {searchTerm && (
-                    <button
-                      type="button"
-                      aria-label="Limpar pesquisa"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSearchTerm("");
-                        searchInputRef.current?.focus();
-                        playSound("back");
-                      }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-full transition-all z-10"
-                    >
-                      <X className="w-3 h-3 text-[#6C6C6C] hover:text-white" />
-                    </button>
-                  )}
-                </motion.div>
-                {/* Filter Button */}
-                <button
-                  onClick={() => {
-                    setFilterModalOpen(true);
-                    playSound("select");
-                  }}
-                  className={`flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-all ${libraryFilters.launchers.length > 0 || libraryFilters.favoritesOnly || libraryFilters.withAchievements
-                    ? "border-[#2A2A2A] bg-[#161616] text-white"
-                    : "bg-[#0F0F0F] border-[#161616] shadow-[0_8px_32px_rgba(0,0,0,0.6)] text-[#6C6C6C] hover:bg-[#161616] hover:text-white"
-                    }`}
-                >
-                  <Filter className="h-3.5 w-3.5" />
-                  Filtros
-                </button>
-              </div>
-            )}
-          </div>
+        {/* HomeTopNav replaces old header */}
+        <HomeTopNav
+          activeCategory={activeCategory}
+          onSelectCategory={selectCategory}
+          games={games}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchOpen={searchOpen}
+          onToggleSearch={setSearchOpen}
+          onOpenAddGame={() => openAddGameModal()}
+          onOpenFilterModal={() => setFilterModalOpen(true)}
+          onToggleSidebar={() => {
+            window.dispatchEvent(
+              new CustomEvent("checkpoint:sidebar-toggle", {
+                detail: { expanded: !isSidebarExpanded },
+              }),
+            );
+            playSound("navigate");
+          }}
+          hasActiveFilters={
+            libraryFilters.launchers.length > 0 ||
+            libraryFilters.favoritesOnly ||
+            libraryFilters.withAchievements
+          }
+          showTabsAndSearch={isPlatformOrFavoritesPage}
+          isGamepadConnected={isGamepadConnected}
+          gamepadFamily={gamepadFamily}
+          userDisplay={userDisplay}
+          userEmail={user?.email || undefined}
+          userAvatarUrl={
+            userProfile?.photoURL ||
+            user?.photoURL ||
+            userProfile?.discordAvatar ||
+            userProfile?.steamAvatar ||
+            undefined
+          }
+          userLevel={playerLevel}
+          language={launcherLanguage}
+          playSound={playSound}
+          onOpenProfile={() => {
+            selectCategory("PROFILE");
+            playSound("select");
+          }}
+          onOpenSettings={() => {
+            selectCategory("SETTINGS");
+            playSound("select");
+          }}
+          onLogout={() => {
+            playSound("back");
+            setSignOutModalOpen(true);
+          }}
+        />
 
-          <div className="flex items-center gap-4">
-            {/* Borda via casca sólida: o clip-path do Squircle recortaria uma
-                border CSS, então o anel de 1px é o próprio fundo do Squircle externo */}
-            {isPlatformOrFavoritesPage && (
-              <Squircle
-                cornerRadius={18}
-                cornerSmoothing={0.65}
-                className="p-px rounded-2xl bg-[#161616]"
-              >
-            <Squircle
-              cornerRadius={17}
-              cornerSmoothing={0.65}
-              className="flex items-center gap-1 p-2 rounded-2xl bg-[#0F0F0F]/80"
-            >
-              <Squircle
-                as="button"
-                cornerRadius={10}
-                cornerSmoothing={0.65}
-                type="button"
-                aria-label={t("new") || "Adicionar novo jogo"}
-                onClick={() => {
-                  openAddGameModal();
-                  playSound("showModal");
-                }}
-                onMouseEnter={() => playSound("hover")}
-                className="cursor-pointer flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-all duration-200 hover:scale-105 hover:bg-[#161616] active:scale-95 group"
-              >
-                <Plus className="w-4 h-4 text-[#6C6C6C] group-hover:text-white transition-colors" />
-                <span className="text-xs font-semibold text-[#6C6C6C] group-hover:text-white transition-colors">
-                  {t("new")}
-                </span>
-              </Squircle>
-
-              <div
-                className="w-px h-5 self-center mx-1.5"
-                style={{
-                  background:
-                    "linear-gradient(to bottom, transparent, rgba(108,108,108,0.35) 25%, rgba(108,108,108,0.35) 75%, transparent)",
-                }}
-              />
-
-              {/* STEAM PILL */}
-              {resolvedSteamId ? (
-                <Squircle
-                  as="button"
-                  cornerRadius={12}
-                  cornerSmoothing={0.65}
-                  type="button"
-                  aria-label="Sincronizar jogos da Steam"
-                  onClick={handleSyncSteam}
-                  onMouseEnter={() => playSound("hover")}
-                  disabled={steamSyncing}
-                  className="cursor-pointer relative flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-200 hover:scale-105 hover:bg-[#161616] active:scale-95 disabled:opacity-80 group/steam"
-                  title="Sincronizar jogos da Steam"
-                >
-                  {steamSyncing ? (
-                    <span className="flex items-center gap-2 py-1">
-                      <ThinkingOrbLoader size={20} preset="sync" label={t("syncing") || "Sincronizando..."} />
-                      <span className="t-shimmer text-xs font-medium text-[#D2D2D2]" data-text={t("syncing") || "Sincronizando..."}>
-                        {t("syncing") || "Sincronizando..."}
-                      </span>
-                    </span>
-                  ) : (
-                    <>
-                      <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.75)] group-hover/steam:scale-110 transition-all" />
-                      <span className="text-xs font-medium text-[#6C6C6C] group-hover/steam:text-white transition-colors">
-                        Steam
-                      </span>
-                      <RefreshCw className="w-3 h-3 text-[#6C6C6C]/60 group-hover/steam:text-white transition-colors" />
-                    </>
-                  )}
-                </Squircle>
-              ) : (
-                <Squircle
-                  as="button"
-                  cornerRadius={12}
-                  cornerSmoothing={0.65}
-                  type="button"
-                  aria-label={steamConnecting ? "Cancelar conexão Steam" : (t("connectSteam") || "Conectar Steam")}
-                  onClick={steamConnecting ? cancelSteamConnect : connectSteam}
-                  onMouseEnter={() => playSound("hover")}
-                  className="cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-200 hover:scale-105 hover:bg-[#161616] active:scale-95 group"
-                  title={steamConnecting ? "Clique para cancelar a tentativa de conexão" : (t("connectSteam") || "Conectar Steam")}
-                >
-                  {steamConnecting ? (
-                    <span className="flex items-center gap-2 py-1">
-                      <ThinkingOrbLoader size={20} preset="connecting" label={t("connecting") || "Conectando..."} />
-                      <span className="t-shimmer text-xs font-medium text-[#D2D2D2]" data-text={t("connecting") || "Conectando..."}>
-                        {t("connecting") || "Conectando..."}
-                      </span>
-                      <X className="w-3.5 h-3.5 text-white/50 group-hover:text-red-400 transition-colors ml-1" />
-                    </span>
-                  ) : (
-                    <>
-                      <div className="w-2 h-2 rounded-full bg-[#6C6C6C]/60" />
-                      <span className="text-xs font-medium text-[#6C6C6C] group-hover:text-white transition-colors">
-                        {t("connectSteam")}
-                      </span>
-                    </>
-                  )}
-                </Squircle>
-              )}
-
-              <div
-                className="w-px h-5 self-center mx-1.5"
-                style={{
-                  background:
-                    "linear-gradient(to bottom, transparent, rgba(108,108,108,0.35) 25%, rgba(108,108,108,0.35) 75%, transparent)",
-                }}
-              />
-
-              {/* EPIC GAMES PILL */}
-              {epicAuthConnected ? (
-                <Squircle
-                  as="button"
-                  cornerRadius={12}
-                  cornerSmoothing={0.65}
-                  type="button"
-                  aria-label="Sincronizar jogos da Epic Games"
-                  onClick={async () => {
-                    await handleSyncEpic();
-                    await checkEpicStatus();
-                  }}
-                  onMouseEnter={() => playSound("hover")}
-                  disabled={epicSyncing}
-                  className="cursor-pointer relative flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-200 hover:scale-105 hover:bg-[#161616] active:scale-95 disabled:opacity-80 group/epic"
-                  title="Sincronizar jogos da Epic Games"
-                >
-                  {epicSyncing ? (
-                    <span className="flex items-center gap-2 py-1">
-                      <ThinkingOrbLoader size={20} preset="sync" label={t("syncing") || "Sincronizando..."} />
-                      <span className="t-shimmer text-xs font-medium text-[#D2D2D2]" data-text={t("syncing") || "Sincronizando..."}>
-                        {t("syncing") || "Sincronizando..."}
-                      </span>
-                    </span>
-                  ) : (
-                    <>
-                      <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.75)] group-hover/epic:scale-110 transition-all" />
-                      <span className="text-xs font-medium text-[#6C6C6C] group-hover/epic:text-white transition-colors">
-                        Epic
-                      </span>
-                      <RefreshCw className="w-3 h-3 text-[#6C6C6C]/60 group-hover/epic:text-white transition-colors" />
-                    </>
-                  )}
-                </Squircle>
-              ) : (
-                <Squircle
-                  as="button"
-                  cornerRadius={12}
-                  cornerSmoothing={0.65}
-                  type="button"
-                  aria-label={t("connectEpic") || "Conectar Epic Games"}
-                  onClick={() => setEpicConnectModalOpen(true)}
-                  onMouseEnter={() => playSound("hover")}
-                  disabled={epicConnecting}
-                  className="cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-200 hover:scale-105 hover:bg-[#161616] active:scale-95 disabled:opacity-70 group"
-                >
-                  {epicConnecting ? (
-                    <span className="flex items-center gap-2 py-1">
-                      <ThinkingOrbLoader size={20} preset="connecting" label={t("connecting") || "Conectando..."} />
-                      <span className="t-shimmer text-xs font-medium text-[#D2D2D2]" data-text={t("connecting") || "Conectando..."}>
-                        {t("connecting") || "Conectando..."}
-                      </span>
-                    </span>
-                  ) : (
-                    <>
-                      <div className="w-2 h-2 rounded-full bg-[#6C6C6C]/60" />
-                      <span className="text-xs font-medium text-[#6C6C6C] group-hover:text-white transition-colors">
-                        {t("connectEpic") || "Conectar Epic"}
-                      </span>
-                    </>
-                  )}
-                </Squircle>
-              )}
-              </Squircle>
-            </Squircle>
-            )}
-            <ProfileDropdown
-              userDisplay={userDisplay}
-              email={user?.email || undefined}
-              avatarUrl={userProfile?.photoURL || user?.photoURL || userProfile?.discordAvatar || userProfile?.steamAvatar || undefined}
-              userLevel={playerLevel}
-              language={launcherLanguage}
-              playSound={playSound}
-              onOpenProfile={() => {
-                selectCategory("PROFILE");
-                playSound("select");
-              }}
-              onOpenSettings={() => {
-                selectCategory("SETTINGS");
-                playSound("select");
-              }}
-              onLogout={() => {
-                playSound("back");
-                setSignOutModalOpen(true);
-              }}
-            />
-          </div>
-
-        </motion.div>
         <div className="flex-1 flex flex-col justify-end min-h-0 hub-60fps will-change-transform" style={{ contain: "layout paint" }}>
           <AnimatePresence mode="wait" custom={activeCategory}>
             <motion.div
@@ -3065,137 +3145,63 @@ const Home: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {/* Dashboard: Continuar Jogando + Favoritos */}
-                  {activeCategory === "ALL" && displayGames.length > 0 && (
-                    <DashboardContinuePlaying
-                      continuePlayingGames={continuePlayingGames}
-                      onPlayGame={(game) => {
-                        openDetails(game);
+                  {/* B. Continue Playing / Jogos Recentes (EM CIMA) */}
+                  {renderedContinuePlaying}
+
+                  {/* C. Cinematic Hero / Nome do Jogo (EM BAIXO) */}
+                  {renderedHeroGame}
+
+                  {/* D. Library / Recent Games Shelf */}
+                  {renderedGameShelf}
+
+                  {/* Steam Deck / PS5 Controller Footer Hints */}
+                  <SteamDeckControllerFooter
+                    isGamepadConnected={isGamepadConnected}
+                    gamepadFamily={gamepadFamily}
+                    onOpenPlatforms={() => {
+                      setIsPlatformModalOpen(true);
+                      playSound("showModal");
+                      playHapticPattern("action");
+                    }}
+                    onOpenFilters={() => {
+                      setFilterModalOpen(true);
+                      playSound("select");
+                      playHapticPattern("action");
+                    }}
+                    onOpenOptions={() => {
+                      const triggerBtn = document.querySelector<HTMLButtonElement>("[data-context-menu-trigger='true']");
+                      if (triggerBtn) {
+                        triggerBtn.click();
                         playSound("select");
-                      }}
-                      onOpenDetails={(game) => {
-                        openDetails(game);
-                        playSound("select");
-                      }}
-                      playSound={playSound}
-                    />
-                  )}
-
-                  <motion.div
-                    className="px-10 pb-4 shrink-0 transform-gpu"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.35, delay: 0.08, ease: [0.32, 0.72, 0, 1] }}
-                  >
-                    <motion.div
-                      initial={{ opacity: 0, y: 14 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.26, ease: [0.32, 0.72, 0, 1] }}
-                      className="flex flex-col transform-gpu mt-4"
-                    >
-                      {/* Integrated Hero Action Block */}
-                      <div className="flex flex-col gap-4 max-w-4xl mb-8">
-                        {/* Title */}
-                        <div className="t-stagger-line t-stagger-line--1 min-w-0">
-                          <h1
-                            className="tracking-tight font-display font-black text-3xl sm:text-5xl md:text-6xl bg-gradient-to-b from-[#FFFFFF] to-[#9A9A9A] bg-clip-text text-transparent leading-[1.08] drop-shadow-[0_8px_32px_rgba(0,0,0,0.85)] line-clamp-2"
-                            style={{ maxWidth: "800px" }}
-                          >
-                            {currentGame?.title}
-                          </h1>
-                        </div>
-
-                        {/* Action Button & Co-located Metadata Row */}
-                        <div className="t-stagger-line t-stagger-line--2 flex items-center gap-4 sm:gap-5 flex-wrap">
-                          {(() => {
-                            const isCurrentGameRunning = Boolean(
-                              currentGame &&
-                              resolveGameFromPresence(games, currentPresenceGame, currentPresenceExecutablePath)?.id
-                                === currentGame.id,
-                            );
-
-                            return (
-                              <ShinyButton
-                                onClick={() => currentGame && openDetails(currentGame)}
-                                onMouseEnter={() => playSound("hover")}
-                                className={`shrink-0! flex! items-center! gap-2.5 shadow-[0_4px_24px_rgba(255,255,255,0.18)] px-7 py-3.5 text-[14px] cursor-pointer ${
-                                  isCurrentGameRunning ? "border-emerald-500/40! shadow-[0_0_24px_rgba(16,185,129,0.3)]! bg-emerald-950/30!" : ""
-                                }`}
-                              >
-                                {isCurrentGameRunning ? (
-                                  <span className="relative flex h-3 w-3 shrink-0">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 shadow-[0_0_10px_#10b981]" />
-                                  </span>
-                                ) : (
-                                  <svg
-                                    viewBox="0 0 24 24"
-                                    className="w-4.5 h-4.5 fill-white text-white shrink-0 transition-transform duration-300 group-hover:scale-110"
-                                  >
-                                    <path d="M8 5v14l11-7z" />
-                                  </svg>
-                                )}
-                                <span className={`font-bold tracking-wider uppercase ${isCurrentGameRunning ? "text-emerald-300" : ""}`}>
-                                  {isCurrentGameRunning ? "Em execução" : t("playNow")}
-                                </span>
-                              </ShinyButton>
-                            );
-                          })()}
-
-                          <div className="flex items-center gap-2.5 flex-wrap font-body">
-                            {currentGamePlatformInfo && (
-                              <span className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3.5 text-xs font-medium text-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-md">
-                                <currentGamePlatformInfo.icon className="w-3.5 h-3.5 text-white/90 shrink-0" />
-                                <span>{currentGamePlatformInfo.label}</span>
-                              </span>
-                            )}
-
-                            {currentGame && (
-                              <span className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3.5 text-xs font-medium text-white/90 shadow-[0_4px_16px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-md">
-                                <Clock className="w-3.5 h-3.5 text-white/70 shrink-0" />
-                                <DigitPopIn
-                                  value={formatPlayedHours(getGamePlayedHours(currentGame))}
-                                  suffix="h jogadas"
-                                  className="items-center"
-                                />
-                              </span>
-                            )}
-
-                            {currentGame?.isFavorite && (
-                              <span className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-amber-400/30 bg-amber-500/10 px-3.5 text-xs font-medium text-amber-300 shadow-[0_4px_16px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(251,191,36,0.15)] backdrop-blur-md">
-                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
-                                <span>Favorito</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </motion.div>
-
-                  <div
-                    className="shrink-0 pb-8 hub-scroll transform-gpu"
-                    onWheel={handleGameRailWheel}
-                  >
-
-                    <AnimatePresence mode="wait" initial={false}>
-                      <motion.div
-                        key={activeCategory}
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        transition={{ duration: 0.26, ease: [0.32, 0.72, 0, 1] }}
-                      >
-                        <GameRow
-                          games={displayGames}
-                          selectedIndex={selectedIndex}
-                          onSelect={onSelectHandler}
-                          onContextMenu={handleMenuAction}
-                          playSound={playSound}
-                        />
-                      </motion.div>
-                    </AnimatePresence>
-                  </div>
+                        playHapticPattern("action");
+                      } else if (currentGame) {
+                        handleMenuAction("edit", currentGame);
+                      }
+                    }}
+                    onOpenSearch={() => {
+                      setSearchOpen(true);
+                      playSound("select");
+                      playHapticPattern("action");
+                      setTimeout(() => {
+                        searchInputRef.current?.focus();
+                      }, 60);
+                    }}
+                    onToggleSidebar={() => {
+                      window.dispatchEvent(
+                        new CustomEvent("checkpoint:sidebar-toggle", {
+                          detail: { expanded: !isSidebarExpanded },
+                        }),
+                      );
+                      playSound("navigate");
+                      playHapticPattern("action");
+                    }}
+                    onToggleFavorite={() => {
+                      if (currentGame) {
+                        void toggleFavoriteGame(currentGame);
+                      }
+                    }}
+                    isFavorite={currentGame?.isFavorite}
+                  />
                 </>
               )}
             </motion.div>
@@ -3219,6 +3225,13 @@ const Home: React.FC = () => {
             selectCategory("MODS");
           }}
           currentPresenceGame={currentPresenceGame}
+          friends={socialFriends}
+          onToggleFavorite={(game) => {
+            void toggleFavoriteGame(game);
+          }}
+          onEditGame={(game) => {
+            openAddGameModal(game);
+          }}
         />
       </React.Suspense>
 
@@ -3547,6 +3560,20 @@ const Home: React.FC = () => {
           currentFilters={libraryFilters}
         />
       </React.Suspense>
+
+      {/* Platform Selector Modal / Drawer */}
+      <PlatformSelectorModal
+        isOpen={isPlatformModalOpen}
+        onClose={() => {
+          setIsPlatformModalOpen(false);
+          setOpenedViaShortcut(false);
+        }}
+        activePlatform={activeCategory}
+        onSelectPlatform={(platformId) => selectCategory(platformId)}
+        games={games}
+        playSound={playSound}
+        openedViaShortcut={openedViaShortcut}
+      />
 
       {/* Welcome Tour Modal */}
       <React.Suspense fallback={null}>

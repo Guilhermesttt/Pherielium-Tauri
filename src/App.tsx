@@ -26,6 +26,7 @@ import { setLauncherInputLocked } from "./utils/launcherInputLock";
 // import TrophyUnlockToast from "./components/TrophyUnlockToast";
 const TrophyUnlockToast = React.lazy(() => import("./components/TrophyUnlockToast"));
 import { LevelUpModal } from "./components/LevelUpModal";
+import { DesktopNotch } from "./components/notch/DesktopNotch";
 import type { SoundTheme } from "./context/PreferencesContext";
 
 const menuMusicLoaders: Record<SoundTheme, () => Promise<string | null>> = {
@@ -412,6 +413,9 @@ const AppContent: React.FC = () => {
         </React.Suspense>
         <div className="absolute inset-0">
           <Home />
+          {!(typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) && (
+            <DesktopNotch />
+          )}
           <GamepadStatusOverlay />
           <LevelUpModal />
           <ControllerVirtualKeyboard />

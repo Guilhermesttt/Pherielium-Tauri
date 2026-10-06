@@ -73,8 +73,43 @@ export function useGameLibraryView({
         ? ordered
         : activeCategory === "FAVORITES"
           ? ordered.filter((g) => g.isFavorite)
-          : activeCategory === "STEAM"
-            ? ordered.filter((g) => g.launcherType === "steam")
+          : activeCategory.startsWith("custom_")
+            ? (() => {
+                try {
+                  const stored = localStorage.getItem("checkpoint_custom_library_filters");
+                  if (stored) {
+                    const filters = JSON.parse(stored);
+                    const found = Array.isArray(filters) ? filters.find((f: any) => f.id === activeCategory) : null;
+                    if (found && Array.isArray(found.gameIds)) {
+                      const idSet = new Set(found.gameIds);
+                      return ordered.filter((g) => idSet.has(g.id));
+                    }
+                  }
+                } catch {
+                  // ignore
+                }
+                return ordered;
+              })()
+          : activeCategory === "RECENT"
+            ? (() => {
+                const playedGames = [...ordered].filter((g) => Boolean(
+                  g.lastPlayedAt ||
+                  g.steamLastPlayedAt ||
+                  (g as any).lastPlayed ||
+                  (g.hoursPlayed && g.hoursPlayed > 0) ||
+                  (g.steamPlaytimeMinutes && g.steamPlaytimeMinutes > 0) ||
+                  (g.locallyTrackedMinutes && g.locallyTrackedMinutes > 0)
+                ));
+                const pool = playedGames.length > 0 ? playedGames : ordered;
+                return pool.sort((a, b) => {
+                  const aPlayed = safeTimestamp(a.lastPlayedAt || a.steamLastPlayedAt || (a as any).lastPlayed || a.updatedAt || a.createdAt);
+                  const bPlayed = safeTimestamp(b.lastPlayedAt || b.steamLastPlayedAt || (b as any).lastPlayed || b.updatedAt || b.createdAt);
+                  if (aPlayed !== bPlayed) return bPlayed - aPlayed;
+                  return getGamePlayedHours(b) - getGamePlayedHours(a);
+                });
+              })()
+              : activeCategory === "STEAM"
+                ? ordered.filter((g) => g.launcherType === "steam")
             : activeCategory === "LOCAL"
               ? ordered.filter(
                 (g) => g.launcherType === "local" || !g.launcherType,
@@ -165,16 +200,35 @@ export function useGameLibraryView({
   }, [activeCategory, games, searchTerm, libraryFilters]);
 
   const continuePlayingGames = useMemo(
-    () =>
-      games
-        .filter((game) => Boolean(game.lastPlayedAt || game.steamLastPlayedAt || game.hoursPlayed))
+    () => {
+      const played = games
+        .filter((game) => Boolean(
+          game.lastPlayedAt ||
+          game.steamLastPlayedAt ||
+          (game as any).lastPlayed ||
+          (game.hoursPlayed && game.hoursPlayed > 0) ||
+          (game.steamPlaytimeMinutes && game.steamPlaytimeMinutes > 0) ||
+          (game.locallyTrackedMinutes && game.locallyTrackedMinutes > 0)
+        ))
         .sort((a, b) => {
-          const aPlayed = safeTimestamp(a.lastPlayedAt || a.steamLastPlayedAt);
-          const bPlayed = safeTimestamp(b.lastPlayedAt || b.steamLastPlayedAt);
+          const aPlayed = safeTimestamp(a.lastPlayedAt || a.steamLastPlayedAt || (a as any).lastPlayed);
+          const bPlayed = safeTimestamp(b.lastPlayedAt || b.steamLastPlayedAt || (b as any).lastPlayed);
           if (aPlayed !== bPlayed) return bPlayed - aPlayed;
           return getGamePlayedHours(b) - getGamePlayedHours(a);
+        });
+
+      if (played.length > 0) {
+        return played.slice(0, 10);
+      }
+
+      return [...games]
+        .sort((a, b) => {
+          const aTime = safeTimestamp(a.updatedAt || a.createdAt);
+          const bTime = safeTimestamp(b.updatedAt || b.createdAt);
+          return bTime - aTime;
         })
-        .slice(0, 3),
+        .slice(0, 6);
+    },
     [games],
   );
 

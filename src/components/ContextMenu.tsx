@@ -3,6 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, Edit3 } from "lucide-react";
 import { usePreferences } from "../context/PreferencesContext";
 import { FavoriteParticleButton } from "./ui/FavoriteParticleButton";
+import {
+  useGamepad,
+  useGamepadButton,
+  playHapticPattern,
+} from "../context/GamepadContext";
+import { ControllerButtonGlyph } from "./ui/ControllerButtonGlyph";
 
 export interface ContextMenuTriggerProps {
   openMenu: (e: React.MouseEvent) => void;
@@ -35,6 +41,80 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   const [side, setSide] = useState<"right" | "left">("right");
   const wrapperRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const { isGamepadConnected, gamepadFamily } = useGamepad();
+  const [focusedIndex, setFocusedIndex] = useState(0);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFocusedIndex(0);
+    }
+  }, [isOpen]);
+
+  useGamepadButton(
+    "DPAD_UP",
+    () => {
+      playSound?.("navigate");
+      playHapticPattern("nav");
+      setFocusedIndex((p) => (p - 1 + 3) % 3);
+    },
+    isOpen,
+    280,
+  );
+
+  useGamepadButton(
+    "DPAD_DOWN",
+    () => {
+      playSound?.("navigate");
+      playHapticPattern("nav");
+      setFocusedIndex((p) => (p + 1) % 3);
+    },
+    isOpen,
+    280,
+  );
+
+  useGamepadButton(
+    "X",
+    () => {
+      playHapticPattern("action");
+      if (focusedIndex === 0) {
+        playSound?.("edit");
+        setIsOpen(false);
+        onAction("edit");
+      } else if (focusedIndex === 1) {
+        setIsOpen(false);
+        onAction("favorite");
+      } else if (focusedIndex === 2) {
+        playSound?.("delete");
+        setIsOpen(false);
+        onAction("delete");
+      }
+    },
+    isOpen,
+    280,
+  );
+
+  useGamepadButton(
+    "O",
+    () => {
+      playSound?.("back");
+      playHapticPattern("nav");
+      setIsOpen(false);
+    },
+    isOpen,
+    280,
+  );
+
+  useGamepadButton(
+    "SQUARE",
+    () => {
+      playSound?.("back");
+      playHapticPattern("nav");
+      setIsOpen(false);
+    },
+    isOpen,
+    280,
+  );
 
   useEffect(() => {
     if (!isOpen) return;
@@ -162,7 +242,11 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                   onAction("edit");
                 }}
                 onMouseEnter={() => playSound?.("hover")}
-                className="w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[11.5px] font-bold uppercase tracking-wider text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition-colors text-left outline-none"
+                className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[11.5px] font-bold uppercase tracking-wider transition-colors text-left outline-none ${
+                  isGamepadConnected && focusedIndex === 0
+                    ? "bg-white/15 text-white ring-1 ring-white/40"
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                }`}
               >
                 <Edit3 className="w-4 h-4 text-white/70" />
                 <span>{t("editMetadata")}</span>
@@ -179,7 +263,11 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                   size={16}
                   showLabel={true}
                   label={isFavorite ? t("removeFavorite") : t("addFavorite")}
-                  className="w-full flex items-center justify-start gap-3.5 px-3.5 py-2.5 rounded-xl text-[11.5px] font-bold uppercase tracking-wider text-white/70 hover:bg-white/10 hover:text-white cursor-pointer transition-colors text-left outline-none"
+                  className={`w-full flex items-center justify-start gap-3.5 px-3.5 py-2.5 rounded-xl text-[11.5px] font-bold uppercase tracking-wider transition-colors text-left outline-none ${
+                    isGamepadConnected && focusedIndex === 1
+                      ? "bg-white/15 text-white ring-1 ring-white/40"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                  }`}
                 />
               </div>
 
@@ -194,11 +282,32 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                   onAction("delete");
                 }}
                 onMouseEnter={() => playSound?.("hover")}
-                className="w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[11.5px] font-bold uppercase tracking-wider text-red-500 hover:bg-red-500/10 hover:text-red-400 cursor-pointer transition-colors text-left outline-none"
+                className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[11.5px] font-bold uppercase tracking-wider transition-colors text-left outline-none ${
+                  isGamepadConnected && focusedIndex === 2
+                    ? "bg-red-500/20 text-red-300 ring-1 ring-red-400/50"
+                    : "text-red-500 hover:bg-red-500/10 hover:text-red-400"
+                }`}
               >
                 <Trash2 className="w-4 h-4 text-red-500" />
                 <span>{t("removeFromLibrary")}</span>
               </motion.button>
+
+              {isGamepadConnected && (
+                <div className="mt-1 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-white/50 px-1 select-none">
+                  <div className="flex items-center gap-1">
+                    <ControllerButtonGlyph button="DPAD" gamepadFamily={gamepadFamily} size={14} />
+                    <span>Navegar</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-white/80">
+                    <ControllerButtonGlyph button="A" gamepadFamily={gamepadFamily} size={14} />
+                    <span className="font-semibold text-white">OK</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <ControllerButtonGlyph button="B" gamepadFamily={gamepadFamily} size={14} />
+                    <span>Fechar</span>
+                  </div>
+                </div>
+              )}
             </motion.div>
         )}
       </AnimatePresence>

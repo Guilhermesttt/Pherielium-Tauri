@@ -86,6 +86,7 @@ windows = { version = "0.58", features = [
   "Win32_Graphics_Dwm",
   "Win32_Media_Audio",
   "Win32_System_Com",
+  "Win32_System_Threading",
 ] }
 
 # ── Build optimizations ──────────────────────────────────────────────────────

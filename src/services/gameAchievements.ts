@@ -272,7 +272,7 @@ async function loadSteamAchievements(
     return {
       items: [],
       sourceAppId: "",
-      error: "Este jogo não possui Steam App ID.",
+      error: null,
     };
   }
 
@@ -400,11 +400,7 @@ async function loadSteamAchievements(
   return {
     items: mergedAchievements,
     sourceAppId: resolvedAppId,
-    error: mergedAchievements.length === 0 && !localDefs
-      ? (!options.steamId && game.launcherType !== "local"
-        ? "Conecte sua conta Steam para carregar conquistas."
-        : "Nenhuma conquista encontrada.")
-      : null,
+    error: null,
     libraryPatch: mergedAchievements.length > 0 || !game.totalAchievements
       ? {
         totalAchievements: mergedAchievements.length || game.totalAchievements || 0,
@@ -471,7 +467,7 @@ export async function loadGameAchievements(
       return {
         items: localItems,
         sourceAppId: "epic-online",
-        error: localItems.length || game.totalAchievements ? null : "Nenhuma conquista encontrada.",
+        error: null,
         libraryPatch: {
           totalAchievements: localItems.length || game.totalAchievements || 0,
           completedAchievements: localItems.length
@@ -482,12 +478,12 @@ export async function loadGameAchievements(
     }
 
     return await loadSteamAchievements(game, { ...options, language }, localDefs, localSteamAppId);
-  } catch {
+  } catch (error: any) {
     return {
       items: cached?.achievements || [],
       sourceAppId: resolvedAppId || localSteamAppId,
       error: !localDefs && !cached?.achievements.length
-        ? "Nenhuma conquista encontrada."
+        ? (error?.message || "Falha ao buscar conquistas. Verifique sua conexão e tente novamente.")
         : null,
     };
   }

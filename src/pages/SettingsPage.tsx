@@ -76,6 +76,7 @@ import { LinearProgress } from "../components/ui/LinearProgress";
 import { ThinkingOrbLoader } from "../components/ThinkingOrbLoader";
 import { saveOverlayPrefs } from "../lib/overlayPrefs";
 import { formatRamGb, usePerfMonitor } from "../hooks/usePerfMonitor";
+import { MASCOT_MOODS, PherieMascot, getMascotBaseMood, setMascotBaseMood, type MascotMood } from "../components/notch/PherieMascot";
 
 type TranslationFn = ReturnType<typeof usePreferences>["t"];
 type BrandIcon = React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
@@ -114,12 +115,12 @@ const DIAGNOSTICS_COPY = {
 } as const;
 
 const SETTINGS_SHELL_COPY = {
-  "pt-BR": { preferences: "Preferências do Launcher", general: "Geral", personalization: "Personalização", performance: "Desempenho", account: "Sua conta", connections: "Conexões e privacidade", controller: "Controles e dispositivos", voice: "Voz e vídeo", notifications: "Notificações & Overlay", quit: "Sair do Aplicativo", encrypted: "Autenticação da sessão", encryptedHint: "Credenciais e token de sessão autenticados com segurança neste dispositivo.", privacy: "Privacidade do Perfil", privacyHint: "Escolha o que outros jogadores podem ver ao encontrar seu perfil.", public: "Perfil Público", publicHint: "Todos podem abrir seus detalhes, jogos e atividade.", private: "Perfil Privado", privateHint: "Somente você e amigos aceitos veem os detalhes.", saving: "Salvando privacidade...", saved: "Privacidade atualizada.", controllerHint: "Status da navegação e iluminação do controle conectado." },
-  "en-US": { preferences: "Launcher preferences", general: "General", personalization: "Personalization", performance: "Performance", account: "Your account", connections: "Connections & Privacy", controller: "Controllers & Devices", voice: "Voice & Video", notifications: "Notifications & Overlay", quit: "Quit Application", encrypted: "Session Authentication", encryptedHint: "Session credentials and token securely authenticated on this device.", privacy: "Profile Privacy", privacyHint: "Choose what other players can see when they find your profile.", public: "Public Profile", publicHint: "Anyone can open your details, games, and activity.", private: "Private Profile", privateHint: "Only you and accepted friends can see the details.", saving: "Saving privacy...", saved: "Privacy updated.", controllerHint: "Navigation and lighting status for the connected controller." },
-  "es-ES": { preferences: "Preferencias del launcher", general: "General", personalization: "Personalización", performance: "Rendimiento", account: "Tu cuenta", connections: "Conexiones y privacidad", controller: "Mandos y dispositivos", voice: "Voz y vídeo", notifications: "Notificaciones y overlay", quit: "Salir de la aplicación", encrypted: "Autenticación de sesión", encryptedHint: "Credenciales y token de sesión autenticados de forma segura en este dispositivo.", privacy: "Privacidad del perfil", privacyHint: "Elige qué pueden ver otros jugadores al encontrar tu perfil.", public: "Perfil público", publicHint: "Todos pueden abrir tus detalles, juegos y actividad.", private: "Perfil privado", privateHint: "Solo tú y tus amigos aceptados pueden ver los detalles.", saving: "Guardando privacidad...", saved: "Privacidad actualizada.", controllerHint: "Estado de navegación e iluminación del mando conectado." },
-  "fr-FR": { preferences: "Préférences du launcher", general: "Général", personalization: "Personnalisation", performance: "Performances", account: "Votre compte", connections: "Connexions et confidentialité", controller: "Manettes et périphériques", voice: "Voix et vidéo", notifications: "Notifications et overlay", quit: "Quitter l'application", encrypted: "Authentification de session", encryptedHint: "Identifiants et jeton de session authentifiés en toute sécurité sur cet appareil.", privacy: "Confidentialité du profil", privacyHint: "Choisissez ce que les autres joueurs voient en trouvant votre profil.", public: "Profil public", publicHint: "Tout le monde peut ouvrir vos détails, jeux et activité.", private: "Profil privé", privateHint: "Seuls vous et vos amis acceptés voyez les détails.", saving: "Enregistrement...", saved: "Confidentialité mise à jour.", controllerHint: "État de navigation et d'éclairage de la manette connectée." },
-  "de-DE": { preferences: "Launcher-Einstellungen", general: "Allgemein", personalization: "Personnalierung", performance: "Leistung", account: "Dein Konto", connections: "Verbindungen und Datenschutz", controller: "Controller und Geräte", voice: "Sprache und Video", notifications: "Benachrichtigungen und Overlay", quit: "Anwendung beenden", encrypted: "Sitzungsauthentifizierung", encryptedHint: "Sitzungsanmeldedaten und Token auf diesem Gerät sicher authentifiziert.", privacy: "Profil-Datenschutz", privacyHint: "Lege fest, was andere Spieler in deinem Profil sehen.", public: "Öffentliches Profil", publicHint: "Alle können Details, Spiele und Aktivitäten öffnen.", private: "Privates Profil", privateHint: "Nur du und bestätigte Freunde sehen die Details.", saving: "Datenschutz wird gespeichert...", saved: "Datenschutz aktualisiert.", controllerHint: "Navigations- und Beleuchtungsstatus des verbundenen Controllers." },
-  "it-IT": { preferences: "Preferenze del launcher", general: "Generale", personalization: "Personalizzazione", performance: "Prestazioni", account: "Il tuo account", connections: "Connessioni e privacy", controller: "Controller e dispositivi", voice: "Voce e video", notifications: "Notifiche e overlay", quit: "Esci dall'applicazione", encrypted: "Autenticazione della sessione", encryptedHint: "Credenziali e token di sessione autenticati in modo sicuro su questo dispositivo.", privacy: "Privacy del profilo", privacyHint: "Scegli cosa possono vedere gli altri giocatori nel tuo profilo.", public: "Profilo pubblico", publicHint: "Tutti possono aprire dettagli, giochi e attività.", private: "Profilo privato", privateHint: "Solo tu e gli amici accettati vedete i dettagli.", saving: "Salvataggio privacy...", saved: "Privacy aggiornata.", controllerHint: "Stato di navigazione e illuminazione del controller collegato." },
+  "pt-BR": { preferences: "Preferências do Launcher", general: "Geral", personalization: "Personalização", performance: "Desempenho", account: "Sua conta", connections: "Conexões e privacidade", controller: "Controles e dispositivos", voice: "Voz e vídeo", notifications: "Notificações & Overlay", mascot: "Mascote e Notch", quit: "Sair do Aplicativo", encrypted: "Autenticação da sessão", encryptedHint: "Credenciais e token de sessão autenticados com segurança neste dispositivo.", privacy: "Privacidade do Perfil", privacyHint: "Escolha o que outros jogadores podem ver ao encontrar seu perfil.", public: "Perfil Público", publicHint: "Todos podem abrir seus detalhes, jogos e atividade.", private: "Perfil Privado", privateHint: "Somente você e amigos aceitos veem os detalhes.", saving: "Salvando privacidade...", saved: "Privacidade atualizada.", controllerHint: "Status da navegação e iluminação do controle conectado." },
+  "en-US": { preferences: "Launcher preferences", general: "General", personalization: "Personalization", performance: "Performance", account: "Your account", connections: "Connections & Privacy", controller: "Controllers & Devices", voice: "Voice & Video", notifications: "Notifications & Overlay", mascot: "Mascot & Notch", quit: "Quit Application", encrypted: "Session Authentication", encryptedHint: "Session credentials and token securely authenticated on this device.", privacy: "Profile Privacy", privacyHint: "Choose what other players can see when they find your profile.", public: "Public Profile", publicHint: "Anyone can open your details, games, and activity.", private: "Private Profile", privateHint: "Only you and accepted friends can see the details.", saving: "Saving privacy...", saved: "Privacy updated.", controllerHint: "Navigation and lighting status for the connected controller." },
+  "es-ES": { preferences: "Preferencias del launcher", general: "General", personalization: "Personalización", performance: "Rendimiento", account: "Tu cuenta", connections: "Conexiones y privacidad", controller: "Mandos y dispositivos", voice: "Voz y vídeo", notifications: "Notificaciones y overlay", mascot: "Mascota y Notch", quit: "Salir de la aplicación", encrypted: "Autenticación de sesión", encryptedHint: "Credenciales y token de sesión autenticados de forma segura en este dispositivo.", privacy: "Privacidad del perfil", privacyHint: "Elige qué pueden ver otros jugadores al encontrar tu perfil.", public: "Perfil público", publicHint: "Todos pueden abrir tus detalles, juegos y actividad.", private: "Perfil privado", privateHint: "Solo tú y tus amigos aceptados pueden ver los detalles.", saving: "Guardando privacidad...", saved: "Privacidad actualizada.", controllerHint: "Estado de navegación e iluminación del mando conectado." },
+  "fr-FR": { preferences: "Préférences du launcher", general: "Général", personalization: "Personnalisation", performance: "Performances", account: "Votre compte", connections: "Connexions et confidentialité", controller: "Manettes et périphériques", voice: "Voix et vidéo", notifications: "Notifications et overlay", mascot: "Mascotte et Notch", quit: "Quitter l'application", encrypted: "Authentification de session", encryptedHint: "Identifiants et jeton de session authentifiés en toute sécurité sur cet appareil.", privacy: "Confidentialité du profil", privacyHint: "Choisissez ce que les autres joueurs voient en trouvant votre profil.", public: "Profil public", publicHint: "Tout le monde peut ouvrir vos détails, jeux et activité.", private: "Profil privé", privateHint: "Seuls vous et vos amis acceptés voyez les détails.", saving: "Enregistrement...", saved: "Confidentialité mise à jour.", controllerHint: "État de navigation et d'éclairage de la manette connectée." },
+  "de-DE": { preferences: "Launcher-Einstellungen", general: "Allgemein", personalization: "Personnalierung", performance: "Leistung", account: "Dein Konto", connections: "Verbindungen und Datenschutz", controller: "Controller und Geräte", voice: "Sprache und Video", notifications: "Benachrichtigungen und Overlay", mascot: "Maskottchen & Notch", quit: "Anwendung beenden", encrypted: "Sitzungsauthentifizierung", encryptedHint: "Sitzungsanmeldedaten und Token auf diesem Gerät sicher authentifiziert.", privacy: "Profil-Datenschutz", privacyHint: "Lege fest, was andere Spieler in deinem Profil sehen.", public: "Öffentliches Profil", publicHint: "Alle können Details, Spiele und Aktivitäten öffnen.", private: "Privates Profil", privateHint: "Nur du und bestätigte Freunde sehen die Details.", saving: "Datenschutz wird gespeichert...", saved: "Datenschutz aktualisiert.", controllerHint: "Navigations- und Beleuchtungsstatus des verbundenen Controllers." },
+  "it-IT": { preferences: "Preferenze del launcher", general: "Generale", personalization: "Personalizzazione", performance: "Prestazioni", account: "Il tuo account", connections: "Connessioni e privacy", controller: "Controller e dispositivi", voice: "Voce e video", notifications: "Notifiche e overlay", mascot: "Mascotte e Notch", quit: "Esci dall'applicazione", encrypted: "Autenticazione della sessione", encryptedHint: "Credenziali e token di sessione autenticati in modo sicuro su questo dispositivo.", privacy: "Privacy del profilo", privacyHint: "Scegli cosa possono vedere gli altri giocatori nel tuo profilo.", public: "Profilo pubblico", publicHint: "Tutti possono aprire dettagli, giochi e attività.", private: "Profilo privato", privateHint: "Solo tu e gli amici accettati vedete i dettagli.", saving: "Salvataggio privacy...", saved: "Privacy aggiornata.", controllerHint: "Stato di navigazione e illuminazione del controller collegato." },
 } as const;
 
 const PERF_SETTINGS_COPY = {
@@ -1249,6 +1250,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
     setAchievementNotificationPosition,
     callOverlayEnabled,
     setCallOverlayEnabled,
+    mascotColor,
+    setMascotColor,
   } = usePreferences();
 
   const { user, userProfile } = useAuth();
@@ -1277,6 +1280,9 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
   const [isQuitHovered, setIsQuitHovered] = React.useState(false);
   const [isSettingsTitleHovered, setIsSettingsTitleHovered] = React.useState(false);
   const [perfSubTab, setPerfSubTab] = React.useState<"general" | "monitor">("general");
+  const [mascotPreviewHovered, setMascotPreviewHovered] = React.useState(false);
+  const [mascotPreviewMood, setMascotPreviewMood] = React.useState<MascotMood>(() => getMascotBaseMood() ?? "idle");
+  const [mascotAppliedMood, setMascotAppliedMood] = React.useState<MascotMood | null>(() => getMascotBaseMood());
   const perfHud = usePerfMonitor({ sample: activeTab === "performance" });
 
   React.useEffect(() => {
@@ -1707,6 +1713,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
               { id: "controller" as const, icon: AnimatedGamepad2, label: shellCopy.controller },
               { id: "voice" as const, icon: AnimatedMic, label: shellCopy.voice },
               { id: "notifications" as const, icon: AnimatedBell, label: shellCopy.notifications },
+              { id: "mascot" as const, icon: Sparkles as any, label: (shellCopy as any).mascot || "Mascote e Notch" },
             ].map(({ id, icon: IconComponent, label }) => {
               const isActive = activeTab === id;
               const isHovered = hoveredTab === id;
@@ -3002,6 +3009,101 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                       <span className="block text-[13px] font-medium text-sky-300">{detailCopy.testPlatinum}</span>
                       <span className="block text-[11px] text-sky-300/50 mt-0.5">{detailCopy.testPlatinumHint}</span>
                     </button>
+                  </div>
+                </section>
+              </div>
+            )}
+
+            {/* ABA MASCOTE (PHERIE) */}
+            {activeTab === "mascot" && (
+              <div className="space-y-8 animate-in fade-in duration-300">
+                <section>
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <Sparkles className="h-4 w-4 text-white/70 shrink-0" />
+                    <h2 className="text-[17px] font-semibold text-white tracking-wide">{(shellCopy as any).mascot || "Mascote e Notch"}</h2>
+                  </div>
+
+                  <div className="mb-6 rounded-2xl border border-white/[0.08] bg-white/[0.025] overflow-hidden">
+                    <div className="flex flex-col md:flex-row">
+                      <div className="p-6 md:w-1/2 border-b md:border-b-0 md:border-r border-white/[0.06]">
+                        <h3 className="text-white text-[14px] font-semibold mb-2">Conheça o Pherie</h3>
+                        <p className="text-[12px] text-white/50 leading-relaxed mb-4">
+                          O Pherie é o mascote que habita a sua Notch. Ele reage ao que você está fazendo,
+                          como ouvir música, jogar ou falar em uma chamada, de forma animada e orgânica!
+                        </p>
+                        
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          {["#FFFFFF", "#10B981", "#3B82F6", "#8B5CF6", "#F43F5E", "#F59E0B"].map(color => (
+                            <button
+                              key={color}
+                              onClick={() => { setMascotColor(color); playSound("hover"); }}
+                              className={cn(
+                                "h-8 w-8 rounded-full border-2 transition-all cursor-pointer",
+                                mascotColor === color ? "border-white scale-110 shadow-lg shadow-white/10" : "border-transparent hover:scale-105"
+                              )}
+                              style={{ backgroundColor: color }}
+                              title={`Cor: ${color}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="p-6 md:w-1/2 flex items-center justify-center bg-black/20">
+                        <div
+                          className="relative shrink-0 w-[100px] h-[100px] rounded-[28px] bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/[0.12] shadow-inner flex items-center justify-center overflow-hidden cursor-pointer"
+                          onMouseEnter={() => setMascotPreviewHovered(true)}
+                          onMouseLeave={() => setMascotPreviewHovered(false)}
+                        >
+                           {/* Brilho dinâmico na cor do mascote */}
+                           <div className="absolute inset-0 rounded-[28px] blur-[16px] -z-10 opacity-30" style={{ backgroundColor: mascotColor }} />
+                            <PherieMascot
+                              size={72}
+                              mood={mascotPreviewHovered ? "happy" : mascotPreviewMood}
+                              isHovered={mascotPreviewHovered}
+                              color={mascotColor}
+                            />
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+
+                  <div className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6">
+                    <h3 className="text-white text-[14px] font-semibold mb-2">Expressões do Pherie</h3>
+                    <p className="text-[12px] text-white/50 leading-relaxed mb-4">
+                      Clique em uma expressão para aplicar no mascote da Notch. Passe o mouse sobre o Pherie para animá-lo.
+                    </p>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => { setMascotPreviewMood("idle"); setMascotBaseMood(null); setMascotAppliedMood(null); playSound("hover"); }}
+                        className={cn(
+                          "flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 transition-all cursor-pointer",
+                          mascotAppliedMood === null
+                            ? "border-white/40 bg-white/[0.08]"
+                            : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:scale-[1.03]"
+                        )}
+                        title="Automático"
+                      >
+                        <span className="text-lg leading-none">✨</span>
+                        <span className="text-[10px] font-medium text-white/60 leading-none">Automático</span>
+                      </button>
+                      {MASCOT_MOODS.map(({ id, label }) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => { setMascotPreviewMood(id); setMascotBaseMood(id); setMascotAppliedMood(id); playSound("hover"); }}
+                          className={cn(
+                            "flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 transition-all cursor-pointer",
+                            mascotAppliedMood === id
+                              ? "border-white/40 bg-white/[0.08]"
+                              : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:scale-[1.03]"
+                          )}
+                          title={label}
+                        >
+                          <PherieMascot size={40} mood={id} color={mascotColor} />
+                          <span className="text-[10px] font-medium text-white/60 leading-none">{label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </section>
               </div>

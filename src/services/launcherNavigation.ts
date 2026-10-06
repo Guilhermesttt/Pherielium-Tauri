@@ -38,12 +38,12 @@ export const SETTINGS_TABS = [
   "controller",
   "voice",
   "notifications",
+  "mascot",
 ] as const;
 
 export const SIDEBAR_NAVIGATION_GROUPS = [
   { key: "filters", ids: ["ALL", "FAVORITES"] },
-  { key: "platforms", ids: ["STEAM", "EPIC", "EA", "UBISOFT", "GOG", "XBOX", "RIOT", "BATTLENET", "ROCKSTAR", "LOCAL"] },
-  { key: "community", ids: ["FRIENDS", "FEED", "PROFILE", "TROPHIES"] },
+  { key: "community", ids: ["FRIENDS", "FEED", "TROPHIES", "PROFILE"] },
   { key: "mods", ids: ["MODS"] },
 ] as const;
 

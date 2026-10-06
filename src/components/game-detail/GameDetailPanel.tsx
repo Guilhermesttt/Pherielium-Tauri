@@ -16,12 +16,14 @@ import { useGameDetailState } from "../../hooks/useGameDetailState";
 import { useGameDetailAsync } from "../../hooks/useGameDetailAsync";
 import { useGameDetailActions } from "../../hooks/useGameDetailActions";
 
-import { GameDetailHeader } from "./GameDetailHeader";
-import { GameDetailActions } from "./GameDetailActions";
+import { GameDetailSteamHero } from "./GameDetailSteamHero";
+import { GameDetailSteamActionBar } from "./GameDetailSteamActionBar";
+import { GameDetailFriends } from "./GameDetailFriends";
 import { GameDetailStats } from "./GameDetailStats";
 import { GameDetailAchievements } from "./GameDetailAchievements";
 import { GameDetailSocialMods } from "./GameDetailSocialMods";
 import { FramerCarouselThumbnails } from "../ui/framer-thumbnails";
+import { ControllerButtonGlyph } from "../ui/ControllerButtonGlyph";
 
 export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
   game,
@@ -32,6 +34,9 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
   onGameHydrated,
   onOpenMods,
   currentPresenceGame,
+  friends = [],
+  onToggleFavorite,
+  onEditGame,
 }) => {
   const { user, userProfile } = useAuth();
   const { language, closeOnLaunch } = usePreferences();
@@ -43,6 +48,24 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
       ? language
       : "en-US";
   const copy = DETAIL_PANEL_COPY[detailLanguage] || DETAIL_PANEL_COPY["en-US"];
+
+  const steamLogoUrl = React.useMemo(() => {
+    if (!game) return null;
+    if (game.steamAppId) {
+      return `https://cdn.akamai.steamstatic.com/steam/apps/${game.steamAppId}/logo.png`;
+    }
+    return (game as any).logoImage || null;
+  }, [game]);
+
+  const friendsPlayingCount = React.useMemo(() => {
+    if (!game || !friends) return 0;
+    const title = game.title.trim().toLowerCase();
+    return friends.filter((f) => {
+      if (!f.playing) return false;
+      const p = f.playing.trim().toLowerCase();
+      return p.includes(title) || title.includes(p) || f.status === "playing";
+    }).length;
+  }, [game, friends]);
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -96,6 +119,27 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
       resetForGame(copy.tabPlay);
     }
   }, [game?.id, isOpen, copy.tabPlay, resetForGame]);
+
+  // Monitora movimento do mouse para ocultar as legendas de controle quando o mouse for usado
+  const [isMouseActive, setIsMouseActive] = React.useState(false);
+  const mouseTimerRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleMouseMove = () => {
+      setIsMouseActive(true);
+      if (mouseTimerRef.current) window.clearTimeout(mouseTimerRef.current);
+      mouseTimerRef.current = window.setTimeout(() => {
+        setIsMouseActive(false);
+      }, 2500);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      if (mouseTimerRef.current) window.clearTimeout(mouseTimerRef.current);
+    };
+  }, [isOpen]);
 
   const tabs = React.useMemo(
     () => [copy.tabPlay, copy.tabAbout, copy.tabAchievements, copy.tabCaptures, copy.tabMods, copy.tabManage],
@@ -313,129 +357,127 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
   return (
     <div className="fixed inset-0 z-100 overflow-hidden pointer-events-none">
       <div
-        className="t-panel-slide w-full h-full bg-black overflow-y-auto detail-panel-scrollbar"
+        className="t-panel-slide w-full h-full bg-[#0C0D10] overflow-y-auto detail-panel-scrollbar select-none"
         data-open={isOpen ? "true" : "false"}
         ref={scrollRef}
         role="dialog"
         aria-modal="true"
         aria-label={`Detalhes de ${game.title}`}
       >
-          {/* Botão Fechar fixo */}
-          <button
-            onClick={onClose}
-            aria-label={copy.close}
-            className="fixed top-8 right-8 z-150 p-4 bg-[#0F0F0F]  border border-[#161616] rounded-full hover:bg-white/10 transition-all hover:rotate-90 active:scale-90 cursor-pointer shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-          >
-            <X className="w-5 h-5 text-white" />
-          </button>
+        {/* 1. Grand Widescreen Horizontal Wallpaper Hero Box */}
+        <GameDetailSteamHero
+          game={game}
+          heroImage={heroImage}
+          steamLogoUrl={steamLogoUrl}
+          isRunning={asyncData.isRunning}
+          friendsPlayingCount={friendsPlayingCount}
+          onClose={onClose}
+          userAvatar={userProfile?.photoURL || user?.photoURL || undefined}
+        />
 
-          {/* Fundo Hero fixo */}
-          <div
-            className="fixed top-0 left-0 h-[58vh] pointer-events-none z-0"
-            style={{ right: "var(--scrollbar-w, 10px)" }}
-          >
-            <motion.img
-              initial={{ scale: 1.05, opacity: 0 }}
-              animate={{ scale: 1, opacity: 0.8 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.2, ease: "easeOut" }}
-              src={heroImage || undefined}
-              alt=""
-              className="w-full h-full object-cover"
-              loading="eager"
-              decoding="async"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#070707] via-[#070707]/35 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#070707]/70 via-transparent to-transparent" />
+        {/* 2. Spacious Content Container (Generous padding 2rem to 4rem, Apple Design Guidelines + Steam Big Picture) */}
+        <div className="max-w-6xl w-full mx-auto px-6 sm:px-12 md:px-16 py-8 pb-8 flex flex-col gap-8">
+          {/* Action Bar (Play button, last session, playtime, cloud status, controller & settings tools) */}
+          <GameDetailSteamActionBar
+            game={game}
+            isLaunching={state.isLaunching}
+            isRunning={asyncData.isRunning}
+            launchError={state.launchError}
+            formattedHours={formattedHours}
+            lastSession={lastSession}
+            isFavorite={game.isFavorite}
+            isGamepadConnected={isGamepadConnected}
+            gamepadFamily={gamepadFamily}
+            copy={copy}
+            onLaunch={actions.handleLaunch}
+            onToggleFavorite={() => onToggleFavorite?.(game)}
+            onEditGame={() => onEditGame?.(game)}
+            playSound={playSound}
+          />
+
+          {/* Centered Capsule Pill Navigation Tabs */}
+          <div className="flex justify-center w-full my-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-md shadow-inner">
+              {tabs.map((tabKey) => {
+                const isActive = state.activeTab === tabKey;
+                return (
+                  <button
+                    key={tabKey}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(tabKey);
+                      playSound("navigate");
+                    }}
+                    className={`px-5 sm:px-7 py-2 rounded-full text-xs font-display font-bold tracking-wider uppercase transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-white/15 text-white shadow-md ring-1 ring-white/25"
+                        : "text-white/50 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    {tabKey}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Container de Conteúdo */}
-          <div className="relative z-10 w-full min-h-screen flex flex-col pt-[26vh]">
-            <motion.div
-              initial={{ y: 60, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-              className="flex-1 w-full pb-24 rounded-t-[36px] border-t border-white/10 shadow-[0_-16px_60px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.12)] bg-[#0C0D10]"
-            >
-              <div className="max-w-5xl w-full mx-auto px-4 sm:px-8 md:px-12 py-10">
-                {/* Header (Capa + Título + Badges + Botão Jogar na direita) */}
-                <GameDetailHeader
+          {/* Dynamic Tab Content */}
+          <AnimatePresence mode="wait" initial={false}>
+            {state.activeTab === copy.tabPlay && (
+              <motion.div
+                key="panel-play"
+                role="tabpanel"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.24 }}
+                className="w-full flex flex-col gap-10"
+              >
+                {/* Amigos jogando o jogo agora ou recentemente (Steam Big Picture pattern) */}
+                <GameDetailFriends
                   game={game}
-                  coverImage={coverImage}
-                  platformLabel={platformLabel}
-                  localizedCategory={localizedCategory}
-                  isRunning={asyncData.isRunning}
-                  activeTab={state.activeTab}
-                  tabs={tabs}
-                  copy={copy}
-                  actionsSlot={
-                    <GameDetailActions
-                      isLaunching={state.isLaunching}
-                      isRunning={asyncData.isRunning}
-                      launchError={state.launchError}
-                      activeInputType={activeInputType}
-                      isGamepadConnected={isGamepadConnected}
-                      gamepadFamily={gamepadFamily}
-                      copy={copy}
-                      onLaunch={actions.handleLaunch}
-                      playSound={playSound}
-                    />
-                  }
-                  onTabChange={setActiveTab}
+                  friends={friends}
                   playSound={playSound}
                 />
 
-                {/* Conteúdo Dinâmico por Aba */}
-                <AnimatePresence mode="wait" initial={false}>
-                  {state.activeTab === copy.tabPlay && (
-                    <motion.div
-                      key="panel-play"
-                      role="tabpanel"
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.24 }}
-                      className="w-full flex flex-col gap-10"
-                    >
-                      <GameDetailStats
-                        game={game}
-                        achievementsUnlocked={asyncData.achievements.data.filter((a) => a.achieved).length}
-                        achievementsTotal={asyncData.achievements.data.length || game.totalAchievements || 0}
-                        formattedHours={formattedHours}
-                        lastSession={lastSession}
-                        hasEpicLaunchShortcut={hasEpicLaunchShortcut}
-                        copy={copy}
-                      />
+                {/* Métricas e Progresso */}
+                <GameDetailStats
+                  game={game}
+                  achievementsUnlocked={asyncData.achievements.data.filter((a) => a.achieved).length}
+                  achievementsTotal={asyncData.achievements.data.length || game.totalAchievements || 0}
+                  formattedHours={formattedHours}
+                  lastSession={lastSession}
+                  hasEpicLaunchShortcut={hasEpicLaunchShortcut}
+                  copy={copy}
+                />
 
-                      {/* Photo Wall rápido na aba Jogar */}
-                      {galleryItems.length > 0 && (
-                        <div className="w-full">
-                          <h3 className="text-[10px] font-black tracking-[0.28em] text-white/35 uppercase mb-4 flex items-center gap-2">
-                            <Camera className="w-3.5 h-3.5" /> {copy.photoWall}
-                            <span className="ml-1 px-2 py-0.5 rounded-md bg-[#0F0F0F] border border-[#161616] text-[9px] font-black text-white/40">
-                              {galleryItems.length}
-                            </span>
-                          </h3>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            {galleryItems.slice(0, 4).map((item, idx) => (
-                              
-                              <button
-                                key={idx}
-                                onClick={() => {
-                                  openGallery(idx);
-                                  playSound("select");
-                                }}
-                                
-                                className="group relative rounded-xl overflow-hidden aspect-video border border-[#161616] bg-[#0F0F0F] hover:border-white/30 hover:bg-white/10 transition-all cursor-pointer"
-                              >
-                                <img src={item.url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
+                {/* Photo Wall rápido na aba Jogar */}
+                {galleryItems.length > 0 && (
+                  <div className="w-full">
+                    <h3 className="text-[10px] font-black tracking-[0.28em] text-white/35 uppercase mb-4 flex items-center gap-2">
+                      <Camera className="w-3.5 h-3.5" /> {copy.photoWall}
+                      <span className="ml-1 px-2 py-0.5 rounded-md bg-[#0F0F0F] border border-[#161616] text-[9px] font-black text-white/40">
+                        {galleryItems.length}
+                      </span>
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {galleryItems.slice(0, 4).map((item, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            openGallery(idx);
+                            playSound("select");
+                          }}
+                          className="group relative rounded-xl overflow-hidden aspect-video border border-[#161616] bg-[#0F0F0F] hover:border-white/30 hover:bg-white/10 transition-all cursor-pointer"
+                        >
+                          <img src={item.url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
 
                   {state.activeTab === copy.tabAchievements && (
                     <motion.div
@@ -509,9 +551,39 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                       </motion.div>
                     )}
                 </AnimatePresence>
+        </div>
+
+        {/* Steam Big Picture Controller Legend Bar at bottom of scroll (follows page scroll, hides on mouse) */}
+        {isGamepadConnected && !isMouseActive && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2 }}
+            className="w-full max-w-6xl mx-auto px-6 sm:px-12 md:px-16 pt-6 pb-12 flex items-center justify-between text-xs text-white/60 select-none border-t border-white/[0.06]"
+          >
+            <div className="flex items-center gap-2">
+              <ControllerButtonGlyph button="OPTIONS" gamepadFamily={gamepadFamily} size={18} />
+              <span className="font-bold tracking-wide">Menu</span>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-1.5">
+                <ControllerButtonGlyph button="LB" gamepadFamily={gamepadFamily} size={16} />
+                <span className="text-white/30">/</span>
+                <ControllerButtonGlyph button="RB" gamepadFamily={gamepadFamily} size={16} />
+                <span className="ml-1">Abas</span>
               </div>
-            </motion.div>
-          </div>
+              <div className="flex items-center gap-1.5 text-white/90">
+                <ControllerButtonGlyph button="A" gamepadFamily={gamepadFamily} size={18} />
+                <span className="font-semibold text-white">Iniciar / Selecionar</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <ControllerButtonGlyph button="B" gamepadFamily={gamepadFamily} size={18} />
+                <span>Voltar</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
           {/* ============================================================
               MODAL DE GALERIA / LIGHTBOX
@@ -537,7 +609,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                     closeGallery();
                     playSound("modalClose");
                   }}
-                  className="absolute top-4 right-4 p-3 rounded-full bg-black/60 border border-white/20 text-white hover:bg-black/90 transition-colors z-50  shadow-lg"
+                  className="absolute top-4 right-4 w-10 h-10 aspect-square rounded-full shrink-0 flex items-center justify-center p-0 bg-black/60 border border-white/20 text-white hover:bg-black/90 transition-colors z-50 shadow-lg"
                   aria-label={copy.close}
                 >
                   <X className="w-5 h-5" />

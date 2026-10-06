@@ -1539,6 +1539,7 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
       isOpen={isOpen}
       onClose={handleClose}
       maxWidthClassName="max-w-6xl"
+      zIndexClassName="z-[150]"
       ariaLabel={gameToEdit ? copy.editInfo : copy.addGame}
     >
       <div

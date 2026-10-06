@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
-import { motion, useReducedMotion, useMotionValue, useMotionTemplate } from "framer-motion";
-import { Gamepad2, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence, useReducedMotion, useMotionValue, useMotionTemplate } from "framer-motion";
+import { Gamepad2, ArrowRight, ArrowLeft } from "lucide-react";
 import type { Game } from "../types/domain";
 import { formatPlayedHours, getGamePlayedHours } from "../utils/playtime";
 import {
@@ -18,6 +18,8 @@ import { useGameColor } from "../hooks/useGameColor";
 
 interface DashboardContinuePlayingProps {
   continuePlayingGames: Game[];
+  selectedGameId?: string;
+  onSelectGame?: (game: Game) => void;
   onPlayGame: (game: Game) => void;
   onOpenDetails?: (game: Game) => void;
   playSound?: (sound: any) => void;
@@ -65,13 +67,26 @@ const getPlatformInfo = (launcherType?: string) => {
   }
 };
 
-const ContinueCard: React.FC<{
+interface ContinueCardProps {
   game: Game;
   index: number;
+  cardWidthClass: string;
+  isSelected?: boolean;
+  onSelectGame?: () => void;
   onPlay: () => void;
   onOpenDetails: () => void;
   playSound?: (sound: any) => void;
-}> = ({ game, index, onPlay, playSound }) => {
+}
+
+const ContinueCard = React.memo<ContinueCardProps>(({
+  game,
+  index,
+  cardWidthClass,
+  isSelected = false,
+  onSelectGame,
+  onPlay,
+  playSound,
+}) => {
   const prefersReducedMotion = useReducedMotion();
   const hours = getGamePlayedHours(game);
   const platform = useMemo(() => getPlatformInfo(game.launcherType), [game.launcherType]);
@@ -93,9 +108,11 @@ const ContinueCard: React.FC<{
   const cardBackground = accentColor
     ? `linear-gradient(145deg, color-mix(in srgb, ${accentColor} 26%, #242424) 0%, #0A0A0A 100%)`
     : "linear-gradient(145deg, #242424 0%, #0A0A0A 100%)";
-  const cardBorderColor = accentColor
-    ? `color-mix(in srgb, ${accentColor} 35%, rgba(255, 255, 255, 0.08))`
-    : "rgba(255, 255, 255, 0.08)";
+  const cardBorderColor = isSelected
+    ? "rgba(255, 255, 255, 0.45)"
+    : accentColor
+      ? `color-mix(in srgb, ${accentColor} 35%, rgba(255, 255, 255, 0.08))`
+      : "rgba(255, 255, 255, 0.08)";
 
   // Glow no card todo, com coordenadas da superfície visual (a barra
   // horizontal): o handler resolve o alvo, então pairar sobre texto
@@ -109,18 +126,28 @@ const ContinueCard: React.FC<{
     mouseY.set(e.clientY - rect.top);
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isSelected) {
+      onPlay();
+    } else {
+      onSelectGame?.();
+      playSound?.("select");
+    }
+  };
+
   return (
     <motion.article
       initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 15 }}
       animate={{ opacity: 1, x: 0 }}
-      whileHover={prefersReducedMotion ? undefined : { x: 4 }}
+      whileHover={prefersReducedMotion ? undefined : { y: -2 }}
       whileTap={{ scale: 0.98 }}
       transition={enterTransition}
-      onClick={onPlay}
+      onClick={handleClick}
       onMouseMove={handleCardGlow}
       onPointerEnter={() => playSound?.("hover")}
-      className="group relative w-[320px] shrink-0 cursor-pointer"
-      style={{ height: COVER_HEIGHT }}
+      className={`group relative shrink-0 cursor-pointer ${cardWidthClass}`}
+      style={{ height: COVER_HEIGHT, scrollSnapAlign: "start" }}
       aria-label={`Continuar jogando ${game.title}`}
     >
       {/* Card background — cor do jogo + spotlight segue o cursor */}
@@ -131,6 +158,9 @@ const ContinueCard: React.FC<{
           background: cardBackground,
           borderRadius: 22, /* Squircle */
           borderColor: cardBorderColor,
+          boxShadow: isSelected
+            ? "0 0 24px rgba(255,255,255,0.12), inset 0 1px 0 rgba(255,255,255,0.25)"
+            : "inset 0 1px 0 rgba(255,255,255,0.08)",
         }}
       >
         <motion.div
@@ -149,16 +179,16 @@ const ContinueCard: React.FC<{
 
       {/* Text — reserved offset guarantees it never sits under the cover and never truncates */}
       <div
-        className="absolute bottom-0 right-4 flex flex-col justify-center gap-1"
+        className="absolute bottom-0 right-4 flex flex-col justify-center gap-1 overflow-hidden"
         style={{ height: CARD_HEIGHT, left: TEXT_OFFSET }}
       >
-        <h3 className="truncate text-[16px] font-semibold leading-tight tracking-tight text-white/90 drop-shadow-sm transition-colors group-hover:text-white">
+        <h3 className="truncate text-[15px] font-semibold leading-tight tracking-tight text-white/90 drop-shadow-sm transition-colors group-hover:text-white">
           {game.title}
         </h3>
         <p className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[11px] font-medium text-white/50">
           <span className="shrink-0">{hours > 0 ? `${formatPlayedHours(hours)}h` : "Recente"}</span>
           <span className="h-1 w-1 shrink-0 rounded-full bg-white/20" />
-          <span className="flex shrink-0 items-center gap-1">{platform.label}</span>
+          <span className="flex shrink-0 items-center gap-1 truncate max-w-[80px]">{platform.label}</span>
           <span className="h-1 w-1 shrink-0 rounded-full bg-white/20" />
           <span
             className="shrink-0 text-[rgb(var(--launcher-accent))]"
@@ -184,28 +214,102 @@ const ContinueCard: React.FC<{
       </motion.div>
     </motion.article>
   );
-};
+});
 
 export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> = ({
   continuePlayingGames,
+  selectedGameId,
+  onSelectGame,
   onPlayGame,
   onOpenDetails,
   playSound,
 }) => {
   const prefersReducedMotion = useReducedMotion();
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
+  const [canScrollRight, setCanScrollRight] = React.useState(false);
 
-  if (continuePlayingGames.length === 0) return null;
+  const checkScroll = React.useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollLeft(scrollLeft > 12);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 12);
+  }, []);
+
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    checkScroll();
+
+    el.addEventListener("scroll", checkScroll, { passive: true });
+    window.addEventListener("resize", checkScroll);
+
+    const ro = new ResizeObserver(() => checkScroll());
+    ro.observe(el);
+
+    return () => {
+      el.removeEventListener("scroll", checkScroll);
+      window.removeEventListener("resize", checkScroll);
+      ro.disconnect();
+    };
+  }, [checkScroll, continuePlayingGames]);
 
   const handleScrollRight = () => {
     if (scrollRef.current) {
-      playSound?.("hover");
-      scrollRef.current.scrollBy({ left: 850, behavior: "smooth" });
+      playSound?.("navigate");
+      const step = scrollRef.current.clientWidth;
+      scrollRef.current.scrollBy({ left: step, behavior: "smooth" });
+      setTimeout(checkScroll, 400);
     }
   };
 
+  const handleScrollLeft = () => {
+    if (scrollRef.current) {
+      playSound?.("navigate");
+      const step = scrollRef.current.clientWidth;
+      scrollRef.current.scrollBy({ left: -step, behavior: "smooth" });
+      setTimeout(checkScroll, 400);
+    }
+  };
+
+  const cardWidthClass =
+    continuePlayingGames.length >= 5
+      ? "w-[calc((100%-80px)/5)] min-w-[270px] max-w-[350px]"
+      : "w-[300px]";
+
+  const maskStyle = React.useMemo(() => {
+    if (canScrollLeft && canScrollRight) {
+      return {
+        maskImage:
+          "linear-gradient(to right, transparent 0%, black 64px, black calc(100% - 64px), transparent 100%)",
+        WebkitMaskImage:
+          "linear-gradient(to right, transparent 0%, black 64px, black calc(100% - 64px), transparent 100%)",
+      };
+    }
+    if (canScrollRight) {
+      return {
+        maskImage:
+          "linear-gradient(to right, black 0%, black calc(100% - 64px), transparent 100%)",
+        WebkitMaskImage:
+          "linear-gradient(to right, black 0%, black calc(100% - 64px), transparent 100%)",
+      };
+    }
+    if (canScrollLeft) {
+      return {
+        maskImage:
+          "linear-gradient(to right, transparent 0%, black 64px, black 100%)",
+        WebkitMaskImage:
+          "linear-gradient(to right, transparent 0%, black 64px, black 100%)",
+      };
+    }
+    return {};
+  }, [canScrollLeft, canScrollRight]);
+
+  if (continuePlayingGames.length === 0) return null;
+
   return (
-    <section aria-label="Continuar jogando" className="px-10 pb-4 mb-8 relative group/section">
+    <section aria-label="Continuar jogando" className="px-10 pb-2 mb-2 sm:mb-3 relative group/section">
       <div className="mb-3 flex flex-col">
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/34">
           Retomar
@@ -220,37 +324,100 @@ export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> =
         </div>
       </div>
 
-      {/* No pt- hack needed: the cover's overhang is inside each article's own
-          height, so overflow-x-auto here never clips it top or bottom. */}
-      <motion.div
-        ref={scrollRef}
-        className="no-scrollbar -ml-[12px] flex gap-[24px] overflow-x-auto overscroll-x-contain pb-4 pl-[12px] pr-10"
-        style={{ scrollSnapType: "x proximity" }}
-        initial={false}
-        animate={{ opacity: 1 }}
-        transition={prefersReducedMotion ? { duration: 0.12 } : STANDARD_SPRING}
-      >
-        {continuePlayingGames.map((game, index) => (
-          <ContinueCard
-            key={game.id}
-            game={game}
-            index={index}
-            onPlay={() => onPlayGame(game)}
-            onOpenDetails={() => onOpenDetails?.(game) ?? onPlayGame(game)}
-            playSound={playSound}
-          />
-        ))}
+      <div className="relative w-full">
+        {/* Cortina de Desfoque e Gradiente à Esquerda (suaviza o corte seco) */}
+        <AnimatePresence>
+          {canScrollLeft && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="pointer-events-none absolute left-0 top-0 bottom-0 w-28 bg-gradient-to-r from-[#070707] via-[#070707]/80 to-transparent backdrop-blur-[2px] z-10"
+            />
+          )}
+        </AnimatePresence>
 
-      </motion.div>
+        {/* Cortina de Desfoque e Gradiente à Direita (suaviza o corte seco) */}
+        <AnimatePresence>
+          {canScrollRight && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="pointer-events-none absolute right-0 top-0 bottom-0 w-28 bg-gradient-to-l from-[#070707] via-[#070707]/80 to-transparent backdrop-blur-[2px] z-10"
+            />
+          )}
+        </AnimatePresence>
 
-      {continuePlayingGames.length > 5 && (
-        <button
-          onClick={handleScrollRight}
-          className="absolute right-8 top-[60%] z-10 flex h-12 w-12 items-center justify-center rounded-full bg-[#1A1A1A]/90 border border-white/[0.1] text-white/70 backdrop-blur-xl shadow-2xl transition-all hover:bg-white/[0.1] hover:scale-105 hover:text-white"
+        {/* Seta Voltar (Esquerda) */}
+        <AnimatePresence>
+          {canScrollLeft && (
+            <motion.button
+              type="button"
+              initial={{ opacity: 0, scale: 0.8, x: -8 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.8, x: -8 }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
+              onClick={handleScrollLeft}
+              aria-label="Voltar aos jogos anteriores"
+              className="absolute -left-3 sm:-left-4 top-[56%] -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-[#161616]/90 hover:bg-[#262626] border border-white/15 hover:border-white/30 text-white shadow-[0_8px_30px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.15)] backdrop-blur-2xl transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* Seta Avançar (Direita) */}
+        <AnimatePresence>
+          {canScrollRight && (
+            <motion.button
+              type="button"
+              initial={{ opacity: 0, scale: 0.8, x: 8 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.8, x: 8 }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
+              onClick={handleScrollRight}
+              aria-label="Ver mais jogos recentes"
+              className="absolute -right-3 sm:-right-4 top-[56%] -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-[#161616]/90 hover:bg-[#262626] border border-white/15 hover:border-white/30 text-white shadow-[0_8px_30px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.15)] backdrop-blur-2xl transition-colors cursor-pointer"
+            >
+              <ArrowRight className="h-5 w-5" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* Container Horizontal com Scroll Suave e Snap */}
+        <motion.div
+          ref={scrollRef}
+          className="no-scrollbar flex gap-5 overflow-x-auto overscroll-x-contain pt-2 pb-4 px-1"
+          style={{
+            scrollSnapType: "x mandatory",
+            ...maskStyle,
+          }}
+          initial={false}
+          animate={{ opacity: 1 }}
+          transition={prefersReducedMotion ? { duration: 0.12 } : STANDARD_SPRING}
         >
-          <ArrowRight className="h-6 w-6" />
-        </button>
-      )}
+          {continuePlayingGames.map((game, index) => (
+            <ContinueCard
+              key={game.id}
+              game={game}
+              index={index}
+              cardWidthClass={cardWidthClass}
+              isSelected={Boolean(selectedGameId && selectedGameId === game.id)}
+              onSelectGame={() => onSelectGame?.(game)}
+              onPlay={() => onPlayGame(game)}
+              onOpenDetails={() => onOpenDetails?.(game) ?? onPlayGame(game)}
+              playSound={playSound}
+            />
+          ))}
+        </motion.div>
+      </div>
     </section>
   );
 };

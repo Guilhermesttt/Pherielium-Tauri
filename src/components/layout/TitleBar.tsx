@@ -167,7 +167,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         className={`select-none items-center justify-between font-sans text-xs tracking-tight text-white/70 ${
           isFullscreen
             ? "fixed top-0 left-0 right-0 z-50 flex h-9 px-3 border-b border-white/[0.08] bg-[#070707]/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.06)]"
-            : "relative z-50 flex h-9 w-full shrink-0 px-3 border-b border-white/[0.04] bg-[#070707] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+            : "relative z-50 flex h-9 w-full shrink-0 px-3 border-b border-white/[0.08] bg-[#070707] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
         }`}
         style={{
           WebkitAppRegion: isFullscreen ? "no-drag" : "drag",

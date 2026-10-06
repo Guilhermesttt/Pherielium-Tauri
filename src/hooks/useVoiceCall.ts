@@ -55,6 +55,7 @@ import {
   type ScreenShareOptions,
 } from "../services/voiceCall/screenShare";
 import { startDesktopAudioCapture } from "../services/voiceCall/desktopAudioCapture";
+import { publishVoiceLevel } from "../services/voiceCall/voiceLevelBridge";
 import { emptyCallMediaStats, summarizeRtcStats, type ByteSample, type CallMediaStats } from "../services/voiceCall/mediaStats";
 import { createVoiceRoom, joinVoiceRoom, leaveVoiceRoom } from "../services/voiceRooms";
 import {
@@ -840,6 +841,17 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
               : currentlySpeaking
                 ? rawVolume >= closeThreshold
                 : rawVolume >= openThreshold;
+
+          // Boca do mascote no overlay: volume normalizado do microfone local.
+          // Mudo/surdo/PTT solto = 0. Curva levemente comprimida (^0.8) para a
+          // boca abrir já em fala baixa e não saturar em fala alta.
+          if (isLocal) {
+            const silent = isMutedLocally || (isPtt && !isPttActive);
+            const normalized = silent
+              ? 0
+              : Math.min(1, Math.max(0, (rawVolume - closeThreshold * 0.6) / 32));
+            publishVoiceLevel(Math.pow(normalized, 0.8), isAboveThreshold);
+          }
 
           if (isAboveThreshold) {
             if (targetPipeline.holdTimer) {
