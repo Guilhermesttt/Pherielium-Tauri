@@ -18,9 +18,9 @@ export const TopBarClock: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#121212]/80 border border-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-md select-none">
-      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-      <span className="font-mono text-xs font-semibold tracking-wider text-white/80">
+    <div className="ctl-pill gap-[var(--gap-stack)] px-[var(--space-4)] select-none">
+      <span className="h-[0.5em] w-[0.5em] rounded-full bg-emerald-400 animate-pulse text-[length:var(--fs-caption)]" />
+      <span className="font-mono text-[length:var(--fs-caption)] font-semibold tracking-wider text-white/80">
         {time}
       </span>
     </div>

@@ -32,7 +32,7 @@ export const SteamDeckControllerFooter: React.FC<SteamDeckControllerFooterProps>
 
   return (
     <footer
-      className="shrink-0 flex items-center justify-between px-6 sm:px-10 py-2.5 bg-[#0A0A0A]/95 backdrop-blur-2xl border-t border-white/[0.08] shadow-[0_-8px_32px_rgba(0,0,0,0.7)] select-none text-[12px] z-20"
+      className="shrink-0 flex items-center justify-between px-[var(--safe-x)] py-2.5 bg-[#0A0A0A]/95 backdrop-blur-2xl border-t border-white/[0.08] shadow-[0_-8px_32px_rgba(0,0,0,0.7)] select-none text-[12px] z-20"
       role="navigation"
       aria-label="Atalhos do Controle"
     >

@@ -2689,7 +2689,7 @@ const Home: React.FC = () => {
   const renderedContinuePlaying = useMemo(() => {
     if (activeCategory !== "ALL" || continuePlayingGames.length === 0) return null;
     return (
-      <div className="shrink-0 mb-1">
+      <div className="shrink-0 [@media(max-height:799px)]:hidden">
         <DashboardContinuePlaying
           continuePlayingGames={continuePlayingGames}
           selectedGameId={currentGame?.id}
@@ -2743,14 +2743,14 @@ const Home: React.FC = () => {
   const renderedGameShelf = useMemo(() => {
     return (
       <div
-        className="shrink-0 pb-3 hub-scroll transform-gpu flex flex-col gap-2.5"
+        className="shrink-0 pb-[var(--gap-stack)] hub-scroll transform-gpu flex flex-col gap-[var(--gap-stack)]"
         onWheel={handleGameRailWheel}
       >
-        <div className="px-8 sm:px-12 flex items-center justify-between">
-          <h2 className="text-xs font-bold tracking-widest uppercase text-white/50 font-display">
+        <div className="px-[var(--safe-x)] flex items-center justify-between">
+          <h2 className="text-[length:var(--fs-label)] font-bold tracking-[var(--tracking-label)] uppercase text-white/60 font-display">
             {activeCategory === "ALL" ? "Biblioteca" : activePlatformConfig.label}
           </h2>
-          <span className="text-[11px] font-medium text-white/30">
+          <span className="text-[length:var(--fs-caption)] font-medium text-white/55">
             {displayGames.length} {displayGames.length === 1 ? "jogo" : "jogos"}
           </span>
         </div>
@@ -3160,7 +3160,7 @@ const Home: React.FC = () => {
                   )}
                 </div>
               ) : (
-                <>
+                <div className="flex min-h-0 flex-1 flex-col gap-[var(--gap-section)]">
                   {/* B. Continue Playing / Jogos Recentes (EM CIMA) */}
                   {renderedContinuePlaying}
 
@@ -3218,7 +3218,7 @@ const Home: React.FC = () => {
                     }}
                     isFavorite={currentGame?.isFavorite}
                   />
-                </>
+                </div>
               )}
             </motion.div>
           </AnimatePresence>

@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { motion } from "framer-motion";
 import { Search, Plus, SlidersHorizontal, X } from "lucide-react";
 import { PHERIELIUM_LOGO_PATH } from "../../constants/assets";
+import { FOCUS_TRANSITION } from "../../styles/motion";
 import { ConsoleLibraryTabs } from "./ConsoleLibraryTabs";
 import { TopBarClock } from "./TopBarClock";
 import { ProfileDropdown } from "../ui/ProfileDropdown";
@@ -72,71 +73,74 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
     }
   };
 
+  const searchExpanded = searchOpen || Boolean(searchTerm);
+
   return (
     <motion.header
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      className="shrink-0 flex items-center justify-between px-8 sm:px-12 pt-7 pb-4 relative z-30 select-none will-change-transform"
+      transition={FOCUS_TRANSITION}
+      className="shrink-0 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-[var(--gap-inline)] px-[var(--safe-x)] pt-[var(--safe-y)] pb-[var(--gap-stack)] relative z-30 select-none will-change-transform"
       role="banner"
     >
       {/* 1. Left: Pherielium Brand Identity */}
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center justify-self-start">
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="flex items-center gap-3 group cursor-pointer focus-visible:outline-none"
+          className="flex items-center gap-[var(--gap-inline)] group cursor-pointer focus-visible:outline-none"
           title="Abrir menu lateral"
           aria-label="Menu principal Pherielium"
         >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] border border-white/10 group-hover:border-white/25 group-hover:bg-white/[0.09] shadow-sm transition-all active:scale-95">
+          <div className="flex h-[var(--control-h)] w-[var(--control-h)] shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-white/[0.05] border border-[color:var(--edge-subtle)] group-hover:border-[color:var(--edge-strong)] group-hover:bg-white/[0.09] transition-[background-color,border-color,transform] duration-[var(--dur-focus)] ease-[var(--ease-focus)] active:scale-95">
             <img
               src={PHERIELIUM_LOGO_PATH}
               alt=""
-              className="h-5 w-5 object-contain grayscale brightness-200 opacity-90 group-hover:opacity-100 transition-opacity"
+              className="ctl-icon object-contain grayscale brightness-200 opacity-90 group-hover:opacity-100 transition-opacity"
             />
           </div>
-          <span className="font-display font-bold text-lg sm:text-xl tracking-tight bg-gradient-to-b from-[#FFFFFF] to-[#999999] bg-clip-text text-transparent">
+          <span className="font-display font-bold text-[length:var(--fs-heading)] leading-none tracking-tight bg-gradient-to-b from-[#FFFFFF] to-[#999999] bg-clip-text text-transparent">
             Pherielium
           </span>
         </button>
       </div>
 
-      {/* 2. Center: Console Library Tabs (TODOS OS JOGOS, FAVORITOS, Custom Filters, +) */}
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center">
+      {/* 2. Center: Console Library Tabs (TODOS OS JOGOS, FAVORITOS, Custom Filters, +).
+          Coluna central do grid (1fr auto 1fr) => centralizada em relacao a tela;
+          max-width impede que muitas abas invadam os grupos laterais. */}
+      <div
+        className="relative z-10 flex w-max min-w-0 items-center justify-center justify-self-center"
+        style={{ maxWidth: "calc(100vw - 2 * var(--safe-x) - 2 * var(--header-side-reserve))" }}
+      >
         {showTabsAndSearch && (
-          <div className="pointer-events-auto">
-            <ConsoleLibraryTabs
-              activeCategory={activeCategory}
-              onSelectTab={onSelectCategory}
-              gamepadFamily={gamepadFamily}
-              isGamepadConnected={isGamepadConnected}
-              playSound={playSound}
-              games={games}
-            />
-          </div>
+          <ConsoleLibraryTabs
+            activeCategory={activeCategory}
+            onSelectTab={onSelectCategory}
+            gamepadFamily={gamepadFamily}
+            isGamepadConnected={isGamepadConnected}
+            playSound={playSound}
+            games={games}
+          />
         )}
       </div>
 
       {/* 3. Right: Secondary Actions (Search, Add, Filters, Clock, Profile) */}
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center justify-end gap-[var(--gap-inline)] justify-self-end">
         {showTabsAndSearch && (
           <>
             {/* Expandable Search Pill */}
-            <motion.div
-              initial={false}
-              animate={{
-                width: searchOpen || searchTerm ? 220 : 36,
-                borderColor: searchOpen || searchTerm ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)",
-              }}
-              transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
-              className="relative flex items-center h-9 rounded-full bg-black/50 overflow-hidden border backdrop-blur-xl shadow-inner"
+            <div
+              className={`ctl-circle justify-start overflow-hidden transition-[width,border-color] duration-[var(--dur-focus)] ease-[var(--ease-focus)] ${
+                searchExpanded
+                  ? "!w-[var(--search-w)] !border-[color:var(--edge-selected)]"
+                  : ""
+              }`}
             >
               <button
                 type="button"
                 onClick={handleSearchClick}
-                className={`group absolute left-0 w-9 h-9 flex items-center justify-center transition-colors z-10 ${
-                  searchOpen || searchTerm
+                className={`group absolute left-0 top-0 flex h-full w-[var(--control-h)] items-center justify-center transition-colors z-10 ${
+                  searchExpanded
                     ? "pointer-events-none"
                     : "hover:bg-white/[0.08] cursor-pointer"
                 }`}
@@ -144,8 +148,8 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                 title="Pesquisar"
               >
                 <Search
-                  className={`w-4 h-4 transition-colors ${
-                    searchOpen || searchTerm
+                  className={`ctl-icon transition-colors ${
+                    searchExpanded
                       ? "text-white/40"
                       : "text-white/60 group-hover:text-white"
                   }`}
@@ -162,8 +166,8 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                   if (!searchTerm) onToggleSearch(false);
                 }}
                 placeholder="Buscar jogos..."
-                className={`absolute left-0 top-0 h-full w-full pl-9 pr-8 text-xs text-white placeholder:text-white/35 bg-transparent outline-none transition-opacity duration-200 ${
-                  searchOpen || searchTerm
+                className={`absolute left-0 top-0 h-full w-full pl-[var(--control-h)] pr-[var(--control-h)] text-[length:var(--fs-caption)] text-white placeholder:text-white/35 bg-transparent outline-none transition-opacity duration-[var(--dur-focus)] ${
+                  searchExpanded
                     ? "opacity-100"
                     : "opacity-0 pointer-events-none"
                 }`}
@@ -179,12 +183,12 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                     searchInputRef.current?.focus();
                     playSound("back");
                   }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded-full transition-all z-10"
+                  className="absolute right-1 top-1/2 flex h-[calc(var(--control-h)-8px)] w-[calc(var(--control-h)-8px)] -translate-y-1/2 items-center justify-center rounded-full hover:bg-white/10 transition-colors z-10"
                 >
-                  <X className="w-3.5 h-3.5 text-white/50 hover:text-white" />
+                  <X className="h-[45%] w-[45%] text-white/50 hover:text-white" />
                 </button>
               )}
-            </motion.div>
+            </div>
 
             {/* Add Game Button (+) */}
             <button
@@ -195,9 +199,9 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
               }}
               title="Adicionar Jogo"
               aria-label="Adicionar jogo"
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-black/40 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white/70 hover:text-white backdrop-blur-xl transition-all cursor-pointer shadow-sm active:scale-95"
+              className="ctl-circle"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="ctl-icon" />
             </button>
 
             {/* Filter / Context Menu Button */}
@@ -209,19 +213,18 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
               }}
               title="Filtros da biblioteca"
               aria-label="Filtros"
-              className={`flex items-center justify-center w-9 h-9 rounded-full border backdrop-blur-xl transition-all cursor-pointer shadow-sm active:scale-95 ${
-                hasActiveFilters
-                  ? "bg-white/20 border-white/40 text-white shadow-[0_0_12px_rgba(255,255,255,0.2)]"
-                  : "bg-black/40 hover:bg-white/10 border-white/10 hover:border-white/20 text-white/70 hover:text-white"
-              }`}
+              data-active={hasActiveFilters}
+              className="ctl-circle"
             >
-              <SlidersHorizontal className="w-4 h-4" />
+              <SlidersHorizontal className="ctl-icon" />
             </button>
           </>
         )}
 
-        {/* Live Clock */}
-        <TopBarClock />
+        {/* Live Clock (omitido em janelas estreitas para nao invadir a pill de abas) */}
+        <div className="hidden min-[1360px]:block">
+          <TopBarClock />
+        </div>
 
         {/* User Profile */}
         <ProfileDropdown

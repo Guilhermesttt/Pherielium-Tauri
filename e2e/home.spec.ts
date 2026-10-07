@@ -1,11 +1,35 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { installHarness, VIEWPORTS } from "./fixtures";
 
 // SHOTS_LABEL=before|after define a subpasta de saída.
 const label = process.env.SHOTS_LABEL ?? "after";
 const outDir = path.resolve(import.meta.dirname, "screenshots", label);
+
+const LONG_TABS = [
+  "RPG de Ação",
+  "Jogos para jogar com os amigos no fim de semana",
+  "Indies",
+  "Souls-like",
+  "Cooperativo local",
+  "Retrô",
+  "Backlog que nunca vou terminar de jogar",
+].map((name, i) => ({ id: `custom_${i}`, name, gameIds: [], createdAt: i }));
+
+async function openHome(page: Page) {
+  await page.goto("/");
+  await page.waitForSelector("[data-game-card]", { timeout: 45_000 });
+  await page.waitForTimeout(2500);
+}
+
+/** Nenhum elemento principal pode vazar do viewport horizontalmente. */
+async function expectNoHorizontalOverflow(page: Page) {
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+}
 
 for (const vp of VIEWPORTS) {
   test(`home ${vp.name}`, async ({ browser }) => {
@@ -13,13 +37,48 @@ for (const vp of VIEWPORTS) {
     const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
     await installHarness(context);
     const page = await context.newPage();
-    const errors: string[] = [];
-    page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto("/");
-    await page.waitForSelector("[data-game-card]", { timeout: 45_000 });
-    await page.waitForTimeout(2500);
+    await openHome(page);
     await page.screenshot({ path: path.join(outDir, `home-${vp.name}.png`) });
-    if (errors.length) console.log("pageerrors:", errors.slice(0, 5));
+    await expectNoHorizontalOverflow(page);
+    await context.close();
+  });
+
+  test(`home many tabs ${vp.name}`, async ({ browser }) => {
+    mkdirSync(outDir, { recursive: true });
+    const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
+    await installHarness(context, {
+      localStorage: { checkpoint_custom_library_filters: JSON.stringify(LONG_TABS) },
+    });
+    const page = await context.newPage();
+    await openHome(page);
+    await page.screenshot({ path: path.join(outDir, `home-tabs-${vp.name}.png`) });
+
+    // A pill de abas deve ficar centralizada na tela e sem invadir os grupos laterais.
+    const tablist = page.getByRole("tablist");
+    const box = await tablist.boundingBox();
+    expect(box).not.toBeNull();
+    const centerX = box!.x + box!.width / 2;
+    expect(Math.abs(centerX - vp.width / 2)).toBeLessThanOrEqual(24);
+    const search = await page.getByRole("button", { name: "Abrir pesquisa" }).boundingBox();
+    expect(box!.x + box!.width).toBeLessThanOrEqual(search!.x);
+    await expectNoHorizontalOverflow(page);
     await context.close();
   });
 }
+
+test("home 1920x1080 tema alternativo", async ({ browser }) => {
+  mkdirSync(outDir, { recursive: true });
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  await installHarness(context);
+  const page = await context.newPage();
+  await page.addInitScript(() => {
+    document.documentElement.setAttribute("data-launcher-theme", "playstation");
+  });
+  await openHome(page);
+  await page.evaluate(() =>
+    document.documentElement.setAttribute("data-launcher-theme", "playstation"),
+  );
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: path.join(outDir, "home-theme-1920x1080.png") });
+  await context.close();
+});

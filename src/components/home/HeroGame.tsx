@@ -62,7 +62,7 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
   }, [game.title]);
 
   return (
-    <div className="relative w-full px-8 sm:px-12 pt-2 sm:pt-4 pb-4 sm:pb-6 select-none flex flex-col justify-end min-h-[190px] sm:min-h-[230px]">
+    <div className="relative w-full flex-1 px-[var(--safe-x)] select-none flex flex-col justify-end min-h-[190px]">
       <AnimatePresence mode="wait">
         <motion.div
           key={game.id}

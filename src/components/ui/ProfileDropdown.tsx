@@ -85,24 +85,24 @@ export function ProfileDropdown({
           <button
             onPointerEnter={() => playSound("hover")}
             onClick={() => playSound("select")}
-            className="group flex cursor-pointer items-center gap-3 rounded-xl p-1.5 transition-all hover:bg-white/10 active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-white/20"
+            className="group flex cursor-pointer items-center gap-[var(--gap-inline)] rounded-[var(--radius-control)] p-1 -m-1 transition-[background-color,transform] duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:bg-white/10 active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-white/20"
           >
-            <div className="flex flex-col items-end pl-2">
+            <div className="flex flex-col items-end pl-2 whitespace-nowrap">
               <div className="flex items-center gap-1.5">
-                <span className="text-[9px] font-black uppercase tracking-widest text-white/40 group-hover:text-white/60 transition-colors">
+                <span className="text-[length:var(--fs-label)] leading-tight font-black uppercase tracking-widest text-white/55 group-hover:text-white/75 transition-colors">
                   {copy.identity}
                 </span>
                 {levelNum != null && (
-                  <span className={`text-[9px] font-black uppercase tracking-wider ${tierInfo.color}`}>
+                  <span className={`text-[length:var(--fs-label)] leading-tight font-black uppercase tracking-wider ${tierInfo.color}`}>
                     • Nv. {levelNum}
                   </span>
                 )}
               </div>
-              <span className="text-xs font-black uppercase text-white transition-colors">
+              <span className="text-[length:var(--fs-caption)] leading-tight font-black uppercase text-white transition-colors">
                 {userDisplay}
               </span>
             </div>
-            <Squircle cornerRadius={12} cornerSmoothing={1} className="relative h-11 w-11 shrink-0 aspect-square overflow-hidden border border-white/20 bg-white/10 ring-2 ring-white/10 group-hover:ring-white/30 group-hover:scale-105 transition-all shadow-md">
+            <Squircle cornerRadius={12} cornerSmoothing={1} className="relative h-[var(--control-h)] w-[var(--control-h)] shrink-0 aspect-square overflow-hidden border border-white/20 bg-white/10 ring-2 ring-white/10 group-hover:ring-white/30 group-hover:scale-105 transition-all shadow-md">
               {avatarUrl ? (
                 <img src={avatarUrl} alt={userDisplay} className="h-full w-full object-cover object-center aspect-square" />
               ) : (

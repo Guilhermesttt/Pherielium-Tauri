@@ -147,6 +147,10 @@ html[data-launcher-theme="checkpoint"] {
   /* Alturas de controles (botoes circulares, pills, CTAs) */
   --control-h: clamp(40px, 2.5vw, 64px);
   --cta-h: clamp(48px, 2.9vw, 76px);
+  --search-w: clamp(200px, 12vw, 340px);
+  /* Largura aproximada do grupo de acoes (busca/+/filtros/relogio/perfil):
+     limita a coluna central do header para a pill de abas nunca invadi-lo */
+  --header-side-reserve: 28vw;
 
   /* Cards da Biblioteca (2:3) e espaco reservado ao foco */
   --card-w: clamp(132px, 8.75vw, 280px);
@@ -185,6 +189,58 @@ html[data-launcher-theme="checkpoint"] {
   --dur-focus: 280ms;
   --ease-focus: cubic-bezier(0.22, 1, 0.36, 1);
   --transition-focus: var(--dur-focus) var(--ease-focus);
+}
+
+/* Controles do header: mesma altura, borda, sombra e transicao */
+@layer components {
+  .ctl-circle {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    height: var(--control-h);
+    width: var(--control-h);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--edge-subtle);
+    background: color-mix(in srgb, var(--surface-base) 55%, transparent);
+    color: color-mix(in srgb, var(--color-text-main) 70%, transparent);
+    box-shadow: var(--elev-pill);
+    backdrop-filter: blur(24px);
+    cursor: pointer;
+    transition:
+      background-color var(--transition-focus),
+      border-color var(--transition-focus),
+      color var(--transition-focus),
+      transform var(--transition-focus);
+  }
+  .ctl-circle:hover {
+    background: color-mix(in srgb, var(--color-text-main) 10%, transparent);
+    border-color: var(--edge-strong);
+    color: var(--color-text-main);
+  }
+  .ctl-circle:active {
+    transform: scale(0.95);
+  }
+  .ctl-circle[data-active="true"] {
+    background: color-mix(in srgb, var(--color-text-main) 20%, transparent);
+    border-color: var(--edge-selected);
+    color: var(--color-text-main);
+  }
+  .ctl-icon {
+    width: calc(var(--control-h) * 0.4);
+    height: calc(var(--control-h) * 0.4);
+  }
+  .ctl-pill {
+    display: inline-flex;
+    align-items: center;
+    height: var(--control-h);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--edge-subtle);
+    background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+    box-shadow: var(--elev-pill);
+    backdrop-filter: blur(24px);
+  }
 }
 
 /* ========================================================
