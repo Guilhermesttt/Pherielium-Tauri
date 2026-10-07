@@ -13,6 +13,8 @@ export const LAUNCH_INTRO_TIMELINE = {
   headphonesSnap: 1000,
   /** o hub começa a se recolher e o mascote é entregue ao overlay */
   fold: 1900,
+  /** o jogo só é iniciado aqui: antes disso ele tomaria o primeiro plano e cortaria a intro */
+  launch: 2500,
   /** o launcher esconde (depois do mascote já estar voando no overlay) */
   hideHub: 2600,
 } as const;

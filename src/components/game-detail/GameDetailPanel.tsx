@@ -13,6 +13,7 @@ import { activateElementWithController } from "../../utils/controllerTextInput";
 import { sanitizeStoreHtml } from "../../utils/sanitizeStoreHtml";
 import ModalShell from "../ui/ModalShell";
 import { useGameDetailState } from "../../hooks/useGameDetailState";
+import { useGameColor } from "../../hooks/useGameColor";
 import { useGameDetailAsync } from "../../hooks/useGameDetailAsync";
 import { useGameDetailActions } from "../../hooks/useGameDetailActions";
 
@@ -250,6 +251,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
     }
     return game.backgroundImage || game.image || "";
   }, [game, asyncData.isSteamGame, asyncData.isEpicGame, asyncData.steamDetails.data, asyncData.epicDetails.data]);
+  const gameColor = useGameColor(heroImage || undefined);
 
   const coverImage = React.useMemo(() => {
     if (!game) return "";
@@ -380,6 +382,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
         {/* 2. Spacious Content Container (Generous padding 2rem to 4rem, Apple Design Guidelines + Steam Big Picture) */}
         <div className="max-w-6xl w-full mx-auto px-6 sm:px-12 md:px-16 py-8 pb-8 flex flex-col gap-8">
           {/* Action Bar (Play button, last session, playtime, cloud status, controller & settings tools) */}
+          <div style={{ "--game-color": gameColor.hex } as React.CSSProperties}>
           <GameDetailSteamActionBar
             game={game}
             isLaunching={state.isLaunching}
@@ -396,6 +399,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
             onEditGame={() => onEditGame?.(game)}
             playSound={playSound}
           />
+          </div>
 
           {/* Centered Capsule Pill Navigation Tabs */}
           <div className="flex justify-center w-full my-2">

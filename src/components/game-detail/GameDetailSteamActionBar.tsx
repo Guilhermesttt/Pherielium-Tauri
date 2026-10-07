@@ -59,9 +59,7 @@ export const GameDetailSteamActionBar: React.FC<GameDetailSteamActionBarProps> =
             className={`group relative overflow-hidden flex items-center gap-3 px-8 sm:px-10 py-3.5 rounded-2xl font-display font-black text-sm sm:text-base tracking-wider uppercase transition-all cursor-pointer ${
               isRunning
                 ? "bg-emerald-600/80 text-emerald-100 border border-emerald-400/50 shadow-[0_0_28px_rgba(16,185,129,0.4)]"
-                : isLaunching
-                  ? "bg-white/90 text-black shadow-lg"
-                  : "bg-white text-black hover:bg-[#F2F2F2] shadow-[0_8px_30px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.4)] hover:shadow-[0_12px_36px_rgba(255,255,255,0.2),inset_0_1px_0_rgba(255,255,255,0.6)]"
+                : "btn-play"
             }`}
           >
             {/* Luminous Shimmer Sheen Effect */}
@@ -78,10 +76,10 @@ export const GameDetailSteamActionBar: React.FC<GameDetailSteamActionBarProps> =
               </span>
             ) : isLaunching ? (
               <span className="relative flex h-3 w-3 shrink-0">
-                <span className="animate-spin inline-flex h-3 w-3 rounded-full border-2 border-black border-t-transparent" />
+                <span className="animate-spin inline-flex h-3 w-3 rounded-full border-2 border-white border-t-transparent" />
               </span>
             ) : (
-              <Play className="w-4 h-4 fill-black text-black shrink-0" />
+              <Play className="w-4 h-4 fill-current shrink-0" />
             )}
             <span className="relative z-10 font-black">
               {isLaunching ? copy.launching : isRunning ? copy.running : (copy.launch || "JOGAR AGORA")}

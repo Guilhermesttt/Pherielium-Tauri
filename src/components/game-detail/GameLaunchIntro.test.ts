@@ -12,6 +12,11 @@ describe("linha do tempo da intro de lançamento", () => {
     expect(t.fold).toBeLessThan(t.hideHub);
   });
 
+  it("o jogo só abre depois do hub começar a dobrar e antes de o launcher esconder", () => {
+    expect(t.launch).toBeGreaterThan(t.fold);
+    expect(t.launch).toBeLessThanOrEqual(t.hideHub);
+  });
+
   it("o launcher só esconde depois do mascote já estar voando (>= 500ms após o handoff)", () => {
     expect(t.hideHub - t.fold).toBeGreaterThanOrEqual(500);
   });

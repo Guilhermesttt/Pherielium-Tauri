@@ -4,6 +4,7 @@ import type { GameDetailState, GameDetailAction, GameDetailCopy } from "../types
 import { launchGame, resolveMonitorableExecutablePath } from "../services/launcher";
 import { deleteLibraryGame, updateLibraryGame } from "../services/localLibrary";
 import { MIN_LAUNCH_SCREEN_MS, wait } from "../types/gameDetail";
+import { LAUNCH_INTRO_TIMELINE } from "../components/game-detail/GameLaunchIntro";
 import { playHapticPattern } from "../context/GamepadContext";
 
 import type { SoundEffectType } from "./useSoundEffects";
@@ -49,10 +50,13 @@ export function useGameDetailActions({
     dispatch({ type: "SET_LAUNCHING", payload: true });
     dispatch({ type: "SET_LAUNCH_ERROR", payload: null });
     try {
-      const [result] = await Promise.allSettled([
-        launchGame(game, { hideLauncher: closeOnLaunch && !launchIntroEnabled, ...launchProfile }),
-        wait(MIN_LAUNCH_SCREEN_MS),
-      ]);
+      // Com a intro ligada, ela toca inteira ANTES do jogo abrir (senão o jogo toma o
+      // primeiro plano e a animação é cortada); o hub só esconde depois (onHideHub).
+      const launchAfterIntro = async () => {
+        if (launchIntroEnabled) await wait(LAUNCH_INTRO_TIMELINE.launch);
+        await launchGame(game, { hideLauncher: closeOnLaunch && !launchIntroEnabled, ...launchProfile });
+      };
+      const [result] = await Promise.allSettled([launchAfterIntro(), wait(MIN_LAUNCH_SCREEN_MS)]);
       if (result.status === "rejected") throw result.reason;
       if (user?.uid) {
         updateLibraryGame(user.uid, game.id, { lastPlayedAt: new Date().toISOString() })
