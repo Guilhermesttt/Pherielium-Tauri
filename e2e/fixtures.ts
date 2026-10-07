@@ -113,6 +113,8 @@ export interface HarnessOptions {
   games?: ReturnType<typeof makeGames>;
   /** Pares chave/valor extras para o localStorage (ex.: abas de filtros). */
   localStorage?: Record<string, string>;
+  /** false = sem mock do Tauri (o notch renderiza na própria janela, como no dev em navegador). */
+  tauri?: boolean;
 }
 
 const CORS = { "access-control-allow-origin": "*" };
@@ -132,7 +134,7 @@ export async function installHarness(context: BrowserContext, opts: HarnessOptio
   await context.addInitScript((list) => {
     (window as unknown as { __E2E_GAMES__: unknown[] }).__E2E_GAMES__ = list;
   }, games.map((row) => row.data));
-  await context.addInitScript(await getTauriMock());
+  if (opts.tauri !== false) await context.addInitScript(await getTauriMock());
   await context.addInitScript((entries) => {
     for (const [k, v] of Object.entries(entries)) localStorage.setItem(k, v);
   }, storage);

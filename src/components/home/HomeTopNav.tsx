@@ -128,12 +128,14 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
       <div className="flex min-w-0 items-center justify-end gap-[var(--gap-inline)] justify-self-end">
         {showTabsAndSearch && (
           <>
-            {/* Expandable Search Pill */}
+            {/* Search: o slot mantém o tamanho de um botão; a pílula se expande para a
+                direita, por cima de +/filtros/relógio (que somem), sem empurrar o layout
+                nem invadir a pill de abas. */}
+            <div className="relative z-20 h-[var(--control-h)] w-[var(--control-h)] shrink-0">
             <div
-              className={`ctl-circle justify-start overflow-hidden transition-[width,border-color] duration-[var(--dur-focus)] ease-[var(--ease-focus)] ${
-                searchExpanded
-                  ? "!w-[var(--search-w)] !border-[color:var(--edge-selected)]"
-                  : ""
+              style={searchExpanded ? { width: "var(--search-open-w)" } : undefined}
+              className={`ctl-circle !absolute left-0 top-0 justify-start overflow-hidden transition-[width,border-color] duration-[var(--dur-focus)] ease-[var(--ease-focus)] ${
+                searchExpanded ? "!border-[color:var(--edge-selected)] !bg-[color:var(--surface-raised)]" : ""
               }`}
             >
               <button
@@ -165,8 +167,8 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                 onBlur={() => {
                   if (!searchTerm) onToggleSearch(false);
                 }}
-                placeholder="Buscar jogos..."
-                className={`absolute left-0 top-0 h-full w-full pl-[var(--control-h)] pr-[var(--control-h)] text-[length:var(--fs-caption)] text-white placeholder:text-white/35 bg-transparent outline-none transition-opacity duration-[var(--dur-focus)] ${
+                placeholder="Buscar..."
+                className={`absolute left-0 top-0 h-full w-full pl-[var(--control-h)] ${searchTerm ? "pr-[var(--control-h)]" : "pr-3"} text-[length:var(--fs-caption)] text-white placeholder:text-white/35 bg-transparent outline-none transition-opacity duration-[var(--dur-focus)] ${
                   searchExpanded
                     ? "opacity-100"
                     : "opacity-0 pointer-events-none"
@@ -189,6 +191,15 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                 </button>
               )}
             </div>
+            </div>
+
+            {/* Controles cobertos pela busca aberta */}
+            <div
+              className={`flex items-center gap-[var(--gap-inline)] transition-opacity duration-[var(--dur-focus)] ease-[var(--ease-focus)] ${
+                searchExpanded ? "pointer-events-none opacity-0" : ""
+              }`}
+              aria-hidden={searchExpanded}
+            >
 
             {/* Add Game Button (+) */}
             <button
@@ -218,13 +229,19 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
             >
               <SlidersHorizontal className="ctl-icon" />
             </button>
+
+            {/* Live Clock (omitido em janelas estreitas para nao invadir a pill de abas) */}
+            <div className="hidden min-[1360px]:block">
+              <TopBarClock />
+            </div>
+            </div>
           </>
         )}
-
-        {/* Live Clock (omitido em janelas estreitas para nao invadir a pill de abas) */}
-        <div className="hidden min-[1360px]:block">
-          <TopBarClock />
-        </div>
+        {!showTabsAndSearch && (
+          <div className="hidden min-[1360px]:block">
+            <TopBarClock />
+          </div>
+        )}
 
         {/* User Profile */}
         <ProfileDropdown

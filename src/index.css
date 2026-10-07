@@ -147,7 +147,9 @@ html[data-launcher-theme="checkpoint"] {
   /* Alturas de controles (botoes circulares, pills, CTAs) */
   --control-h: clamp(40px, 2.5vw, 64px);
   --cta-h: clamp(48px, 2.9vw, 76px);
-  --search-w: clamp(200px, 12vw, 340px);
+  --clock-w: clamp(104px, 6.8vw, 170px);
+  /* Busca aberta = slot da busca + (+) + (filtros) [+ relogio >=1360px]; sem relogio abaixo disso */
+  --search-open-w: calc(3 * var(--control-h) + 2 * var(--gap-inline));
   /* Largura aproximada do grupo de acoes (busca/+/filtros/relogio/perfil):
      limita a coluna central do header para a pill de abas nunca invadi-lo */
   --header-side-reserve: 28vw;
@@ -189,6 +191,12 @@ html[data-launcher-theme="checkpoint"] {
   --dur-focus: 280ms;
   --ease-focus: cubic-bezier(0.22, 1, 0.36, 1);
   --transition-focus: var(--dur-focus) var(--ease-focus);
+}
+
+@media (min-width: 1360px) {
+  :root {
+    --search-open-w: calc(3 * var(--control-h) + 3 * var(--gap-inline) + var(--clock-w));
+  }
 }
 
 /* Controles do header: mesma altura, borda, sombra e transicao */
