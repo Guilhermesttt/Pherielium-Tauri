@@ -806,6 +806,9 @@ declare global {
         processStartTimeMs?: number | null;
       }) => void) => () => void;
       onGameWatchEnded?: (callback: (payload: { executable?: string | null }) => void) => () => void;
+      hideMainWindow?: () => Promise<void>;
+      launcherHideMain?: () => Promise<void>;
+      showMainWindow?: () => Promise<void>;
     };
   }
 

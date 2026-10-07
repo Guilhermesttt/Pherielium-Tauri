@@ -9,7 +9,7 @@
  */
 import { invoke } from "@tauri-apps/api/core";
 import { parseEpicAppName } from "../services/launcher";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { makeListen } from "./tauriListen";
 import { getVersion } from "@tauri-apps/api/app";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import {
@@ -23,12 +23,6 @@ import {
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
-/** Wraps a listen() call and returns a cleanup function */
-function makeListen<T>(event: string, cb: (payload: T) => void): () => void {
-  let unlisten: UnlistenFn | null = null;
-  listen<T>(event, (e) => cb(e.payload)).then((u) => { unlisten = u; });
-  return () => unlisten?.();
-}
 
 // ── tauriAPI object ───────────────────────────────────────────────────────────
 
@@ -739,7 +733,10 @@ export const tauriAPI = {
     makeListen("game-watch:ended", callback),
 
   hideMainWindow: () =>
-    invoke<void>("window_minimize"),
+    invoke<void>("launcher_hide_main"),
+
+  launcherHideMain: () =>
+    invoke<void>("launcher_hide_main"),
 
   showMainWindow: () =>
     invoke<void>("window_show"),

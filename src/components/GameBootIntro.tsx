@@ -6,6 +6,8 @@ import bgVideo from "../assets/karavanbraam_pindown.io.webm";
 
 interface GameBootIntroProps {
   onFinish?: () => void;
+  /** Toca o áudio da intro (preferência `gameBootIntroSoundEnabled`). */
+  soundEnabled?: boolean;
 }
 
 const SVG_PATH_1 =
@@ -385,7 +387,7 @@ const SkipHint = React.memo(function SkipHint({
 
 // --- Main component ----------------------------------------------------------
 
-const GameBootIntro: React.FC<GameBootIntroProps> = ({ onFinish }) => {
+const GameBootIntro: React.FC<GameBootIntroProps> = ({ onFinish, soundEnabled = true }) => {
   const finishedRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -468,6 +470,8 @@ const GameBootIntro: React.FC<GameBootIntroProps> = ({ onFinish }) => {
     const audio = new Audio(bootAudioSrc);
     audio.preload = "auto";
     audio.volume = 0.35;
+    // preferência "som da intro": mudo mantém o evento `ended` que encerra a intro
+    audio.muted = !soundEnabled;
     audioRef.current = audio;
 
     audio.play().catch((err) => {

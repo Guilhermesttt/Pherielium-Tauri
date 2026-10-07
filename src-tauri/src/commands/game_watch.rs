@@ -11,8 +11,8 @@ use std::time::{Duration, Instant};
 use sysinfo::{ProcessesToUpdate, ProcessRefreshKind, RefreshKind, System};
 use tauri::{AppHandle, Emitter, Manager, State};
 
-/// After launch, only exact-path matches are accepted for this long (Steam updates/helpers).
-pub const LAUNCH_DIRECTORY_GRACE_SECS: u64 = 45;
+/// After launch, exact-path is prioritized for this long before directory scan.
+pub const LAUNCH_DIRECTORY_GRACE_SECS: u64 = 3;
 
 #[derive(Default)]
 pub struct GameWatchState {
@@ -117,8 +117,8 @@ pub fn reveal_main_window(app: &AppHandle) {
 }
 
 pub fn conceal_main_window(app: &AppHandle) {
-    if !should_restore_launcher(app) {
-        return;
+    if let Some(state) = app.try_state::<GameWatchState>() {
+        *state.restore_launcher.lock() = true;
     }
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.hide();
@@ -270,9 +270,9 @@ pub fn start_game_watch(app: AppHandle) {
                 continue;
             }
 
-            // Launcher helpers die before the real game exe. Wait ~20s before ending,
-            // matching the old hub's handoff grace so the window is not revealed early.
-            if target_dir.is_some() && handoff_grace_ticks < 20 {
+            // Launcher helpers/bootstrappers die before the real game exe. Wait ~15s before ending,
+            // preventing the window from bouncing open/shut prematurely while the game loads.
+            if handoff_grace_ticks < 15 {
                 handoff_grace_ticks += 1;
                 continue;
             }

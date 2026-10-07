@@ -15,6 +15,8 @@ interface UseGameDetailActionsProps {
   launchProfile: GameLaunchProfile;
   user: { uid: string } | null;
   closeOnLaunch: boolean;
+  /** Intro de lançamento ligada: o launcher esconde só depois dela (via `launcher_hide_main`). */
+  launchIntroEnabled?: boolean;
   copy: GameDetailCopy;
   notify: (message: string, type: "success" | "error" | "info" | "warning") => void;
   onClose: () => void;
@@ -30,6 +32,7 @@ export function useGameDetailActions({
   launchProfile,
   user,
   closeOnLaunch,
+  launchIntroEnabled = false,
   copy,
   notify,
   onClose,
@@ -47,7 +50,7 @@ export function useGameDetailActions({
     dispatch({ type: "SET_LAUNCH_ERROR", payload: null });
     try {
       const [result] = await Promise.allSettled([
-        launchGame(game, { hideLauncher: closeOnLaunch, ...launchProfile }),
+        launchGame(game, { hideLauncher: closeOnLaunch && !launchIntroEnabled, ...launchProfile }),
         wait(MIN_LAUNCH_SCREEN_MS),
       ]);
       if (result.status === "rejected") throw result.reason;
@@ -81,7 +84,7 @@ export function useGameDetailActions({
     } finally {
       dispatch({ type: "SET_LAUNCHING", payload: false });
     }
-  }, [closeOnLaunch, copy.launchGenericError, dispatch, game, launchProfile, onLibraryChanged, playSound, state.isLaunching, user?.uid]);
+  }, [closeOnLaunch, launchIntroEnabled, copy.launchGenericError, dispatch, game, launchProfile, onLibraryChanged, playSound, state.isLaunching, user?.uid]);
 
   const handleDeleteGame = React.useCallback(async () => {
     if (!user?.uid) {

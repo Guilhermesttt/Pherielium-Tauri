@@ -20,7 +20,7 @@
   width: var(--overlay-width);
   max-width: calc(100vw - 32px);
   pointer-events: none;
-  z-index: 10000;
+  z-index: 10028; /* acima do painel (10025), abaixo do notch (10030) */
 }
 
 .overlay-toast-stack[data-position="top-right"] {
@@ -834,4 +834,9 @@
     transform: scale(1) rotate(0deg);
     filter: brightness(1);
   }
+}
+
+/* Intro de lançamento: o mascote da barra do notch some enquanto o outro voa até ele. */
+body[data-launch-handoff] [data-notch-mascot] {
+  opacity: 0 !important;
 }

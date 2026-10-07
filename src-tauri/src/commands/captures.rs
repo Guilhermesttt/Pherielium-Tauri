@@ -246,6 +246,105 @@ pub fn capture_screen(
     })
 }
 
+/// Arquivos acima disso são ignorados (a dropzone é para imagens, não para vídeos/ISOs).
+const MAX_IMPORT_BYTES: u64 = 64 * 1024 * 1024;
+
+/// Nome de pasta seguro a partir do título do jogo (mesma regra das capturas).
+fn safe_folder_name(title: &str) -> String {
+    title
+        .trim()
+        .chars()
+        .map(|c| if r#"\/:*?"<>|"#.contains(c) { '_' } else { c })
+        .collect()
+}
+
+/// Caminho livre dentro de `dir`: se `name` já existe, usa "nome (2).ext", "nome (3).ext"...
+fn unique_destination(dir: &Path, name: &str) -> PathBuf {
+    let first = dir.join(name);
+    if !first.exists() {
+        return first;
+    }
+    let path = Path::new(name);
+    let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("imagem");
+    let ext = path.extension().and_then(|e| e.to_str());
+    for n in 2..10_000 {
+        let candidate = match ext {
+            Some(ext) => format!("{stem} ({n}).{ext}"),
+            None => format!("{stem} ({n})"),
+        };
+        let full = dir.join(candidate);
+        if !full.exists() {
+            return full;
+        }
+    }
+    dir.join(format!("{stem}-{}", std::process::id()))
+}
+
+/// Copia para `dir` só as imagens válidas de `paths`. Devolve `(copiados, ignorados)`.
+/// Ignora: pastas, não-imagens, arquivos inexistentes/grandes demais. Nunca sobrescreve.
+fn import_images_into(dir: &Path, paths: &[String]) -> (Vec<PathBuf>, u32) {
+    let mut copied = Vec::new();
+    let mut skipped = 0u32;
+    for raw in paths {
+        let src = PathBuf::from(raw);
+        let valid = src.is_file()
+            && is_image(&src)
+            && fs::metadata(&src).map(|m| m.len() <= MAX_IMPORT_BYTES).unwrap_or(false);
+        if !valid {
+            skipped += 1;
+            continue;
+        }
+        let name = src.file_name().and_then(|n| n.to_str()).unwrap_or("imagem.png");
+        let dest = unique_destination(dir, name);
+        match fs::copy(&src, &dest) {
+            Ok(_) => copied.push(dest),
+            Err(_) => skipped += 1,
+        }
+    }
+    (copied, skipped)
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportResult {
+    pub imported: Vec<CaptureItem>,
+    pub skipped: u32,
+}
+
+/// Dropzone do notch: copia as imagens soltas para Pictures/Phelierium Captures (na pasta do
+/// jogo atual, se houver). A cópia é feita aqui no Rust: a capability do overlay é mínima.
+#[tauri::command]
+pub fn capture_import_files(paths: Vec<String>, game_title: Option<String>) -> Result<ImportResult, String> {
+    let folder = match game_title.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        Some(title) => captures_dir()?.join(safe_folder_name(title)),
+        None => captures_dir()?,
+    };
+    fs::create_dir_all(&folder).map_err(|e| format!("Falha ao criar pasta das capturas: {e}"))?;
+
+    let (copied, skipped) = import_images_into(&folder, &paths);
+    let imported = copied
+        .into_iter()
+        .map(|path| {
+            let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("imagem.png").to_string();
+            let stamp = SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .map(|d| d.as_millis())
+                .unwrap_or(0);
+            let path_str = path.to_string_lossy().to_string();
+            let url = thumbnail_data_url(&path).unwrap_or_else(|| path_str.clone());
+            CaptureItem {
+                id: format!("{stamp}:{name}"),
+                name,
+                path: path_str,
+                url,
+                created_at: stamp.to_string(),
+                game_title: game_title.clone(),
+            }
+        })
+        .collect();
+    Ok(ImportResult { imported, skipped })
+}
+
 #[tauri::command]
 pub fn get_capture_full_image(path: String) -> Result<String, String> {
     let p = PathBuf::from(path.trim());
@@ -296,4 +395,69 @@ pub fn delete_capture(path: String) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod import_tests {
+    use super::*;
+
+    fn temp_dir(tag: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "pherielium-import-{tag}-{}-{}",
+            std::process::id(),
+            SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)
+        ));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn folder_names_drop_forbidden_characters() {
+        assert_eq!(safe_folder_name("  Hades II: Remake?  "), "Hades II_ Remake_");
+        assert_eq!(safe_folder_name(r"A/B\C"), "A_B_C");
+    }
+
+    #[test]
+    fn unique_destination_never_overwrites() {
+        let dir = temp_dir("unique");
+        fs::write(dir.join("foto.png"), b"x").unwrap();
+        fs::write(dir.join("foto (2).png"), b"x").unwrap();
+        assert_eq!(unique_destination(&dir, "foto.png"), dir.join("foto (3).png"));
+        assert_eq!(unique_destination(&dir, "nova.png"), dir.join("nova.png"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn imports_only_valid_images_and_counts_the_rest() {
+        let src = temp_dir("src");
+        let dst = temp_dir("dst");
+        fs::write(src.join("a.PNG"), b"png").unwrap();
+        fs::write(src.join("b.jpg"), b"jpg").unwrap();
+        fs::write(src.join("nota.txt"), b"txt").unwrap();
+        fs::create_dir_all(src.join("pasta.png")).unwrap(); // pasta com nome de imagem
+        let paths: Vec<String> = ["a.PNG", "b.jpg", "nota.txt", "pasta.png", "nao-existe.png"]
+            .iter()
+            .map(|n| src.join(n).to_string_lossy().to_string())
+            .collect();
+
+        let (copied, skipped) = import_images_into(&dst, &paths);
+        assert_eq!(copied.len(), 2);
+        assert_eq!(skipped, 3);
+        assert!(dst.join("a.PNG").exists() && dst.join("b.jpg").exists());
+        let _ = fs::remove_dir_all(&src);
+        let _ = fs::remove_dir_all(&dst);
+    }
+
+    #[test]
+    fn importing_the_same_file_twice_keeps_both() {
+        let src = temp_dir("dup-src");
+        let dst = temp_dir("dup-dst");
+        fs::write(src.join("a.png"), b"1").unwrap();
+        let paths = vec![src.join("a.png").to_string_lossy().to_string()];
+        import_images_into(&dst, &paths);
+        let (copied, _) = import_images_into(&dst, &paths);
+        assert_eq!(copied, vec![dst.join("a (2).png")]);
+        let _ = fs::remove_dir_all(&src);
+        let _ = fs::remove_dir_all(&dst);
+    }
 }

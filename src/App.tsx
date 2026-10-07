@@ -26,7 +26,7 @@ import { setLauncherInputLocked } from "./utils/launcherInputLock";
 // import TrophyUnlockToast from "./components/TrophyUnlockToast";
 const TrophyUnlockToast = React.lazy(() => import("./components/TrophyUnlockToast"));
 import { LevelUpModal } from "./components/LevelUpModal";
-import { DesktopNotch } from "./components/notch/DesktopNotch";
+import { ConfiguredDesktopNotch } from "./components/notch/DesktopNotch";
 import type { SoundTheme } from "./context/PreferencesContext";
 
 const menuMusicLoaders: Record<SoundTheme, () => Promise<string | null>> = {
@@ -63,7 +63,14 @@ const menuMusicGain: Record<SoundTheme, number> = {
 
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
-  const { musicVolume, soundTheme, lowPerformanceMode, performanceTier } = usePreferences();
+  const {
+    musicVolume,
+    soundTheme,
+    lowPerformanceMode,
+    performanceTier,
+    gameBootIntroEnabled,
+    gameBootIntroSoundEnabled,
+  } = usePreferences();
   const prefersReduced = usePrefersReducedMotion();
   const reducedMotionProp = performanceTier === "performance" || lowPerformanceMode || prefersReduced
     ? "always"
@@ -414,7 +421,7 @@ const AppContent: React.FC = () => {
         <div className="absolute inset-0">
           <Home />
           {!(typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) && (
-            <DesktopNotch />
+            <ConfiguredDesktopNotch />
           )}
           <GamepadStatusOverlay />
           <LevelUpModal />
@@ -434,13 +441,21 @@ const AppContent: React.FC = () => {
               preload={[() => import("./components/TrophyUnlockToast")]}
               onFinish={() => {
                 setIsPreloaderVisible(false);
-                setIsIntroVisible(true);
+                if (gameBootIntroEnabled) {
+                  setIsIntroVisible(true);
+                } else {
+                  // preferência "animação de abertura" desligada: pula direto para o hub
+                  completedIntroUserRef.current = user.uid;
+                  setIsIntroVisible(false);
+                  finishBootSequence();
+                }
               }}
             />
           ) : isIntroVisible ? (
             <MotionConfig key="boot-intro-config" reducedMotion="never">
               <GameBootIntro
                 key="boot-intro"
+                soundEnabled={gameBootIntroSoundEnabled}
                 onFinish={() => {
                   completedIntroUserRef.current = user.uid;
                   setIsIntroVisible(false);

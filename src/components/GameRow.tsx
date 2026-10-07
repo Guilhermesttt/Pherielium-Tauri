@@ -14,7 +14,7 @@ interface GameRowProps {
 }
 
 const MAX_VISIBLE_DOTS = 15;
-const VIRTUAL_WINDOW = 6;
+const VIRTUAL_WINDOW = 9;
 
 const GameCardSlot = React.memo(
   ({

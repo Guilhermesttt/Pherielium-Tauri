@@ -53,28 +53,15 @@ export const GameEnvironment: React.FC<GameEnvironmentProps> = ({
       </div>
 
       {/* 2. Artwork Atmospheric Canvas (Game as Environment) */}
-      <AnimatePresence mode="popLayout">
+      <AnimatePresence mode="sync" initial={false}>
         {artwork && (
           <motion.div
             key={artwork}
-            initial={{ opacity: 0, scale: 1.08 }}
-            animate={{
-              opacity: 0.65,
-              scale: noFx ? 1.04 : [1.04, 1.06, 1.04],
-            }}
-            exit={{ opacity: 0, scale: 1.02 }}
-            transition={
-              noFx
-                ? { duration: 0.5, ease: "easeOut" }
-                : {
-                    opacity: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
-                    scale: {
-                      duration: 22,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    },
-                  }
-            }
+            // só opacidade: animar escala sobre uma imagem com blur de 22px obriga a re-rasterizar o blur a cada frame
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.65 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
             className="absolute inset-0 w-full h-full transform-gpu will-change-transform"
           >
             <img
@@ -97,7 +84,7 @@ export const GameEnvironment: React.FC<GameEnvironmentProps> = ({
             animate={{ opacity: intensity, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute -top-32 left-1/4 w-[80vw] h-[75vh] rounded-full pointer-events-none blur-[140px] transform-gpu will-change-transform"
+            className="absolute -top-32 left-1/4 w-[80vw] h-[75vh] rounded-full pointer-events-none transform-gpu"
             style={{
               background: `radial-gradient(circle, ${ambientColorHex} 0%, transparent 72%)`,
             }}
@@ -108,7 +95,7 @@ export const GameEnvironment: React.FC<GameEnvironmentProps> = ({
       {/* 4. Second Subtle Glow for Depth (Lower Right) */}
       {ambientColorHex && !noFx && (
         <div
-          className="absolute bottom-0 right-10 w-[50vw] h-[45vh] rounded-full pointer-events-none blur-[130px] opacity-20 transform-gpu"
+          className="absolute bottom-0 right-10 w-[50vw] h-[45vh] rounded-full pointer-events-none opacity-20 transform-gpu"
           style={{
             background: `radial-gradient(circle, ${ambientColorHex} 0%, transparent 70%)`,
           }}

@@ -20,6 +20,7 @@ import { GameDetailSteamHero } from "./GameDetailSteamHero";
 import { GameDetailSteamActionBar } from "./GameDetailSteamActionBar";
 import { GameDetailFriends } from "./GameDetailFriends";
 import { GameDetailStats } from "./GameDetailStats";
+import { GameLaunchIntro } from "./GameLaunchIntro";
 import { GameDetailAchievements } from "./GameDetailAchievements";
 import { GameDetailSocialMods } from "./GameDetailSocialMods";
 import { FramerCarouselThumbnails } from "../ui/framer-thumbnails";
@@ -39,7 +40,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
   onEditGame,
 }) => {
   const { user, userProfile } = useAuth();
-  const { language, closeOnLaunch } = usePreferences();
+  const { language, closeOnLaunch, gameBootIntroEnabled, gameBootIntroSoundEnabled, effectsVolume } = usePreferences();
   const { notify } = useNotification();
   const { isGamepadConnected, gamepadFamily, activeInputType } = useGamepad();
 
@@ -105,6 +106,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
     launchProfile: asyncData.launchProfile,
     user,
     closeOnLaunch,
+    launchIntroEnabled: gameBootIntroEnabled,
     copy,
     notify,
     onClose,
@@ -716,8 +718,29 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
           {/* ============================================================
               TELA CINEMATOGRÁFICA DE LAUNCH
               ============================================================ */}
+          {/* Intro nova: mascote põe os fones, o hub se recolhe e ele voa até o notch (overlay) */}
           <AnimatePresence>
-            {state.isLaunching && (
+            {state.isLaunching && gameBootIntroEnabled && game && (
+              <GameLaunchIntro
+                key="launch-intro"
+                title={game.title}
+                heroImage={heroImage}
+                launchingLabel={copy.launching}
+                willHideHub={closeOnLaunch}
+                soundEnabled={gameBootIntroSoundEnabled}
+                effectsVolume={effectsVolume / 100}
+                onHideHub={() => {
+                  if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+                    void import("@tauri-apps/api/core").then(({ invoke }) => invoke("launcher_hide_main")).catch(() => undefined);
+                  }
+                }}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* Tela de lançamento antiga (intro desligada nas configurações) */}
+          <AnimatePresence>
+            {state.isLaunching && !gameBootIntroEnabled && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

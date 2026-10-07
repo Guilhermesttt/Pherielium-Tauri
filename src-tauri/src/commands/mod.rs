@@ -1,5 +1,6 @@
 pub mod achievement_watcher;
 pub mod achievements;
+pub mod audio_analysis;
 pub mod auth;
 pub mod captures;
 pub mod emulator_detector;

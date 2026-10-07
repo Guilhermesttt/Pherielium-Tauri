@@ -59,7 +59,16 @@ import type { AchievementNotificationPosition } from "../types/overlay";
 import { getOverlayThemeTokens } from "../constants/overlayTheme";
 import { resolveOverlayCallPhase } from "./overlayCallPhase";
 import { presenceLabel } from "../services/presenceStatus";
-import { DesktopNotch } from "../components/notch/DesktopNotch";
+import { DesktopNotch, NotchIconButton, NOTCH_SPRING, SectionLabel } from "../components/notch/DesktopNotch";
+import { Avatar } from "./components/panel/Avatar";
+import { PanelRow } from "./components/panel/PanelRow";
+import { PillButton } from "./components/panel/PillButton";
+import { ProgressBar } from "./components/panel/ProgressBar";
+import { FOCUS_RING, PANEL_SHADOW, PANEL_SURFACE_CLASS, PANEL_Z, panelSurfaceStyle } from "./components/panel/panelTokens";
+import { CallPill } from "./components/CallPill";
+import { FlyingMascot, type LaunchHandoff } from "./components/FlyingMascot";
+import { MascotCustomizer } from "../mascot/MascotCustomizer";
+import { useOverlayAppearance } from "../mascot/useNotchConfig";
 import { PherieMascot } from "../components/notch/PherieMascot";
 
 // ─── Logger Estruturado ────────────────────────────────────────────────────────
@@ -80,7 +89,7 @@ type OverlayCapture = {
 
 type ShortcutRecording = null | "capture" | "overlay";
 export type OverlayMode = "passive" | "quick" | "full";
-export type OverlayView = "home" | "friends" | "chat" | "achievements" | "call" | "media" | "settings";
+export type OverlayView = "home" | "friends" | "chat" | "achievements" | "call" | "media" | "mascot" | "settings";
 export type InteractionSource = "keyboard" | "gamepad" | "mouse";
 export type CallConnectionState = "calling" | "connected" | "degraded" | "reconnecting" | "failed";
 
@@ -316,6 +325,17 @@ const playOverlaySound = (
 // ─── Componente Principal ──────────────────────────────────────────────────────
 const OverlayApp: React.FC = () => {
   const [overlayMode, setOverlayMode] = useState<OverlayMode>("passive");
+  // Intro de lançamento: o mascote vindo da janela principal voa até o notch.
+  const [launchHandoff, setLaunchHandoff] = useState<LaunchHandoff | null>(null);
+  useEffect(() => {
+    if (launchHandoff) document.body.setAttribute("data-launch-handoff", "true");
+    else document.body.removeAttribute("data-launch-handoff");
+    return () => document.body.removeAttribute("data-launch-handoff");
+  }, [launchHandoff]);
+  // Configuração do notch (Configurações → Mascote e Notch), ao vivo via overlay:prefs.
+  const appearance = useOverlayAppearance();
+  const notchConfig = appearance.config;
+  const panelStyle = panelSurfaceStyle(appearance.style);
   const [activeView, setActiveView] = useState<OverlayView>("home");
   const [interactionSource, setInteractionSource] = useState<InteractionSource>("mouse");
   const [panelData, setPanelData] = useState<CommandPanelState>(() => {
@@ -608,8 +628,10 @@ const OverlayApp: React.FC = () => {
   });
   const showCallOverlayWidget = overlayCallPhase === "visible" || overlayCallPhase === "revealing";
   const showCallReveal = overlayCallPhase === "dismissed";
-  // O DesktopNotch está sempre ativo no topo com click-through dinâmico
-  const hasHitTestTargets = true;
+  // Com o notch desativado e sem toast interativo/pílula de chamada não há alvo de
+  // clique: o hit-test (e o polling de cursor de 12ms no Rust) fica desligado.
+  const showCallPill = !notchConfig.enabled && Boolean(activeCall?.active);
+  const hasHitTestTargets = notchConfig.enabled || hasInteractiveToasts || showCallPill;
 
   useEffect(() => {
     if (fullCapturesCursor) {
@@ -1007,7 +1029,14 @@ const OverlayApp: React.FC = () => {
       }
     });
 
+    const unbindHandoff = api.onLaunchHandoff?.((payload: any) => {
+      if (payload && Number.isFinite(payload.x) && Number.isFinite(payload.y) && Number.isFinite(payload.size)) {
+        setLaunchHandoff({ x: payload.x, y: payload.y, size: Math.max(16, payload.size), id: String(payload.id ?? Date.now()) });
+      }
+    });
+
     return () => {
+      unbindHandoff?.();
       unbindUnlock?.();
       unbindPlaySound?.();
       unbindWelcome?.();
@@ -1532,8 +1561,22 @@ const OverlayApp: React.FC = () => {
       )}
 
       {/* ─── DESKTOP NOTCH / DYNAMIC ISLAND WIDGET (VISÍVEL NO DESKTOP) ─── */}
+      {launchHandoff && (
+        <FlyingMascot
+          key={launchHandoff.id}
+          handoff={launchHandoff}
+          config={notchConfig}
+          onDone={() => setLaunchHandoff(null)}
+        />
+      )}
+
+      {notchConfig.enabled && (
       <DesktopNotch
         isOverlay
+        config={notchConfig}
+        soundVolume={
+          typeof panelData.settings?.effectsVolume === "number" ? panelData.settings.effectsVolume : undefined
+        }
         overlayCall={
           activeCall && activeCall.active
             ? {
@@ -1553,151 +1596,134 @@ const OverlayApp: React.FC = () => {
         activeGameTitle={notchGameTitle}
         activeGameElapsedSeconds={notchGameElapsed}
       />
+      )}
+
+      {showCallPill && (
+        <CallPill
+          friendName={activeCall?.friendName}
+          durationSeconds={callDurationSeconds}
+          muted={Boolean(activeCall?.muted)}
+          deafened={Boolean(activeCall?.deafened)}
+          onMute={toggleMute}
+          onDeafen={toggleDeafen}
+          onHangUp={handleEndCall}
+        />
+      )}
 
       {/* ─── QUICK DOCK LATERAL (Assistente Compacto) ────────────────────────── */}
       <AnimatePresence>
         {overlayMode === "quick" && (
           <motion.div
-            initial={{ opacity: 0, x: -80 }}
+            initial={{ opacity: 0, x: 56 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -80 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed right-6 top-1/2 z-10040 flex max-h-[calc(100vh-40px)] w-[min(320px,calc(100vw-40px))] -translate-y-1/2 flex-col justify-between rounded-3xl border border-white/15 bg-[#08090c] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.88)] pointer-events-auto"
+            exit={{ opacity: 0, x: 56 }}
+            transition={NOTCH_SPRING}
+            style={{ zIndex: PANEL_Z, ...panelStyle }}
+            className={`fixed right-3 top-1/2 flex max-h-[calc(100vh-24px)] w-[min(340px,calc(100vw-24px))] -translate-y-1/2 flex-col gap-4 rounded-[28px] p-4 text-white pointer-events-auto ${PANEL_SURFACE_CLASS} ${PANEL_SHADOW}`}
             data-overlay-interactive
             onPointerOver={playHoverIfButton}
           >
-            {/* Header: Usuário & Nível */}
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 rounded-xl bg-white/10 border border-white/10 overflow-hidden flex items-center justify-center">
-                    {(panelData.userAvatar || panelData.profile?.avatar) ? (
-                      <img src={panelData.userAvatar || panelData.profile?.avatar} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <Gamepad2 className="h-5 w-5 text-white/70" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-black text-white">{panelData.userDisplay || panelData.profile?.name || "Jogador"}</h3>
-                    <span className={`text-[10px] font-bold flex items-center gap-1 ${hasCurrentGame ? "text-emerald-400" : "text-white/55"}`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${hasCurrentGame ? "bg-emerald-400 animate-pulse" : "bg-white/40"}`} />
-                      {hasCurrentGame ? "Em jogo" : "Online"}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={closeOverlay}
-                  aria-label="Fechar overlay"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white/60 transition-colors hover:bg-white/15 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              {/* Game Card Resumo */}
-              <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/4">
-                {gameArt ? (
-                  <img src={gameArt} alt="" className="absolute inset-0 h-full w-full object-cover opacity-35" />
-                ) : null}
-                <div className="relative flex flex-col gap-2 p-3.5">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Jogo Atual</span>
-                  <h4 className="truncate text-sm font-black text-white">{panelData.gameTitle || "Nenhum jogo em execução"}</h4>
-                  {hasCurrentGame ? (
-                    <p className="text-[11px] font-semibold tabular-nums text-white/70">
-                      {sessionStartedAt ? `Sessão ${sessionClock}` : sessionClock}
-                    </p>
-                  ) : (
-                    <p className="text-[11px] leading-relaxed text-white/60">
-                      Abra um jogo pela biblioteca para acompanhar a sessão e suas conquistas.
-                    </p>
-                  )}
-                  {totalCount > 0 && (
-                    <div className="mt-1">
-                      <div className="flex justify-between text-[10px] font-bold text-white/60 mb-1">
-                        <span>Troféus: {unlockedCount} / {totalCount}</span>
-                        <span>{progressPercent}%</span>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10" aria-label={`${progressPercent}% das conquistas desbloqueadas`}>
-                        <div
-                          className="h-full bg-linear-to-r from-sky-400 to-emerald-400 rounded-full transition-all duration-500"
-                          style={{ width: `${progressPercent}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Quick Actions Pills */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[9px] font-black uppercase tracking-widest text-white/40 px-1">Menu Rápido</span>
-                <button
-                  type="button"
-                  onClick={() => { goView("achievements"); goMode("full"); }}
-                  className="flex min-h-10 items-center justify-between rounded-xl border border-white/6 bg-white/3 px-3 py-2.5 text-xs font-bold text-white/80 transition-all hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Trophy className="h-4 w-4" style={{ color: accentColor }} /> Conquistas
-                  </div>
-                  <span className="text-[10px] font-black text-white/40">
-                    {hasCurrentGame && (totalCount > 0 || unlockedCount > 0)
-                      ? `${unlockedCount}/${totalCount || "?"}`
-                      : "—"}
+            {/* Cabeçalho: usuário + fechar */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Avatar
+                  src={panelData.userAvatar || panelData.profile?.avatar}
+                  size={40}
+                  fallback={<Gamepad2 className="h-5 w-5" />}
+                />
+                <div className="min-w-0">
+                  <h3 className="truncate text-[13px] font-semibold text-white">
+                    {panelData.userDisplay || panelData.profile?.name || "Jogador"}
+                  </h3>
+                  <span className={`flex items-center gap-1.5 text-[11px] font-medium ${hasCurrentGame ? "text-emerald-300" : "text-white/50"}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${hasCurrentGame ? "bg-emerald-400 animate-pulse" : "bg-white/40"}`} />
+                    {hasCurrentGame ? "Em jogo" : "Online"}
                   </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { goView("friends"); goMode("full"); }}
-                  className="flex min-h-10 items-center justify-between rounded-xl border border-white/6 bg-white/3 px-3 py-2.5 text-xs font-bold text-white/80 transition-all hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Users className="h-4 w-4" style={{ color: accentColor }} /> Amigos
+                </div>
+              </div>
+              <NotchIconButton onClick={closeOverlay} title="Fechar overlay">
+                <X className="h-4 w-4" />
+              </NotchIconButton>
+            </div>
+
+            {/* Jogo atual */}
+            <div className="relative overflow-hidden rounded-[22px] bg-white/[0.06]">
+              {gameArt ? (
+                <>
+                  <img src={gameArt} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#050506]/90 via-[#050506]/45 to-transparent" />
+                </>
+              ) : null}
+              <div className="relative flex flex-col gap-1 p-4">
+                <SectionLabel>Jogo atual</SectionLabel>
+                <h4 className="truncate text-[15px] font-semibold text-white">
+                  {panelData.gameTitle || "Nenhum jogo em execução"}
+                </h4>
+                {hasCurrentGame ? (
+                  <p className="text-[11px] font-medium tabular-nums text-white/65">
+                    {sessionStartedAt ? `Sessão ${sessionClock}` : sessionClock}
+                  </p>
+                ) : (
+                  <p className="text-[11px] leading-relaxed text-white/55">
+                    Abra um jogo pela biblioteca para acompanhar a sessão e suas conquistas.
+                  </p>
+                )}
+                {totalCount > 0 && (
+                  <div className="mt-2">
+                    <div className="mb-1.5 flex justify-between text-[10px] font-medium tabular-nums text-white/55">
+                      <span>Troféus {unlockedCount} / {totalCount}</span>
+                      <span>{progressPercent}%</span>
+                    </div>
+                    <ProgressBar percent={progressPercent} label={`${progressPercent}% das conquistas desbloqueadas`} />
                   </div>
-                  <span className="text-[10px] font-black" style={{ color: accentColor }}>{onlineFriends.length} online</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { goView("chat"); goMode("full"); }}
-                  className="flex min-h-10 items-center justify-between rounded-xl border border-white/6 bg-white/3 px-3 py-2.5 text-xs font-bold text-white/80 transition-all hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <MessageSquare className="h-4 w-4" style={{ color: accentColor }} /> Bate-papo
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { goView("media"); goMode("full"); }}
-                  className="flex min-h-10 items-center justify-between rounded-xl border border-white/6 bg-white/3 px-3 py-2.5 text-xs font-bold text-white/80 transition-all hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Camera className="h-4 w-4" style={{ color: accentColor }} /> Capturas
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { void takeCapture(); }}
-                  className="flex min-h-10 items-center justify-between rounded-xl border border-white/6 bg-white/3 px-3 py-2.5 text-xs font-bold text-white/80 transition-all hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Camera className="h-4 w-4" style={{ color: accentColor }} /> Capturar tela
-                  </div>
-                  <span className="text-[10px] font-black text-white/40">{formatShortcutLabel(captureShortcut)}</span>
-                </button>
+                )}
               </div>
             </div>
 
-            {/* Footer do Quick Dock */}
-            <div className="pt-3 border-t border-white/10 flex flex-col gap-2">
-              <Button
-                type="button"
-                onClick={() => goMode("full")}
-                className="mt-3 min-h-10 w-full rounded-xl bg-white text-xs font-black text-black hover:bg-white/90"
-              >
-                <Maximize2 className="h-3.5 w-3.5 mr-1.5" />
+            {/* Menu rápido */}
+            <div className="flex flex-col gap-1.5">
+              <SectionLabel>Menu rápido</SectionLabel>
+              <PanelRow
+                icon={<Trophy className="h-4 w-4" style={{ color: accentColor }} />}
+                label="Conquistas"
+                trailing={
+                  hasCurrentGame && (totalCount > 0 || unlockedCount > 0)
+                    ? `${unlockedCount}/${totalCount || "?"}`
+                    : "—"
+                }
+                onClick={() => { goView("achievements"); goMode("full"); }}
+              />
+              <PanelRow
+                icon={<Users className="h-4 w-4" style={{ color: accentColor }} />}
+                label="Amigos"
+                trailing={`${onlineFriends.length} online`}
+                onClick={() => { goView("friends"); goMode("full"); }}
+              />
+              <PanelRow
+                icon={<MessageSquare className="h-4 w-4" style={{ color: accentColor }} />}
+                label="Bate-papo"
+                onClick={() => { goView("chat"); goMode("full"); }}
+              />
+              <PanelRow
+                icon={<Camera className="h-4 w-4" style={{ color: accentColor }} />}
+                label="Capturas"
+                onClick={() => { goView("media"); goMode("full"); }}
+              />
+              <PanelRow
+                icon={<Camera className="h-4 w-4" style={{ color: accentColor }} />}
+                label="Capturar tela"
+                trailing={formatShortcutLabel(captureShortcut)}
+                onClick={() => { void takeCapture(); }}
+              />
+            </div>
+
+            {/* Rodapé */}
+            <div className="flex flex-col gap-2">
+              <PillButton variant="primary" onClick={() => goMode("full")} className="w-full">
+                <Maximize2 className="h-3.5 w-3.5" />
                 Expandir overlay
-              </Button>
-              <div className="flex items-center justify-between px-1 text-[10px] text-white/40">
+              </PillButton>
+              <div className="flex items-center justify-between gap-2 px-1 text-[10px] text-white/40">
                 <span>{formatShortcutLabel(overlayShortcut)} ou Esc para sair</span>
                 <button
                   type="button"
@@ -1709,7 +1735,7 @@ const OverlayApp: React.FC = () => {
                       return next;
                     });
                   }}
-                  className="min-h-10 rounded-xl px-2 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
+                  className={`min-h-9 rounded-full px-2.5 transition-colors hover:bg-white/[0.08] hover:text-white ${FOCUS_RING}`}
                 >
                   Contraste: {autoContrast ? "Alto" : "Padrão"}
                 </button>
@@ -1719,7 +1745,7 @@ const OverlayApp: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* ─── FULL COMMAND CENTER OVERLAY ────────────────────────────────────── */}
+      {/* ─── COMMAND CENTER: GAVETA LATERAL TRANSLÚCIDA ──────────────────────── */}
       <AnimatePresence>
         {overlayMode === "full" && (
           <motion.div
@@ -1729,135 +1755,96 @@ const OverlayApp: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-label="Central de comando do overlay"
-            className="fixed inset-0 z-10050 flex items-center justify-center bg-[#030405]/95 p-6 backdrop-blur-md pointer-events-auto md:p-10"
+            style={{ zIndex: PANEL_Z }}
+            className="pointer-events-none fixed inset-0"
           >
+            {/* degradê leve na borda direita: legibilidade sem escurecer o jogo */}
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-[640px] max-w-full bg-gradient-to-l from-black/55 via-black/20 to-transparent" />
             <motion.div
-              initial={{ scale: 0.97, opacity: 0, y: 15 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.97, opacity: 0, y: 15 }}
-              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-              className="relative flex h-[min(760px,calc(100vh-80px))] w-[min(1180px,calc(100vw-80px))] max-w-none overflow-hidden rounded-3xl border border-white/[0.14] bg-[#08090c] shadow-[0_30px_100px_rgba(0,0,0,0.92)]"
+              initial={{ opacity: 0, x: 72 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 72 }}
+              transition={NOTCH_SPRING}
+              style={panelStyle}
+              className={`pointer-events-auto absolute bottom-3 right-3 top-3 flex w-[min(460px,calc(100vw-24px))] flex-col overflow-hidden rounded-[28px] text-white ${PANEL_SURFACE_CLASS} ${PANEL_SHADOW}`}
               data-system-page="true"
+              data-overlay-interactive
               onPointerOver={playHoverIfButton}
             >
-              {/* Sidebar do Full Panel */}
-              <div className="flex w-[216px] flex-col border-r border-white/[0.08] bg-white/[0.025] p-4 shrink-0">
-                <div className="flex items-center justify-between pb-5 border-b border-white/[0.08]">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/10 border border-white/10">
-                      {(panelData.userAvatar || panelData.profile?.avatar) ? (
-                        <img src={panelData.userAvatar || panelData.profile?.avatar} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <Gamepad2 className="h-4 w-4 text-white/70" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="truncate text-xs font-black text-white">{panelData.userDisplay || panelData.profile?.name || "Jogador"}</h3>
-                      <p className={`truncate text-[10px] font-bold ${hasCurrentGame ? "text-emerald-400" : "text-white/55"}`}>
-                        {hasCurrentGame ? "Em jogo" : "Online"}
-                      </p>
-                    </div>
+              {/* Cabeçalho */}
+              <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-5">
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar
+                    src={panelData.userAvatar || panelData.profile?.avatar}
+                    size={40}
+                    fallback={<Gamepad2 className="h-5 w-5" />}
+                  />
+                  <div className="min-w-0">
+                    <h3 className="truncate text-[14px] font-semibold text-white">
+                      {panelData.userDisplay || panelData.profile?.name || "Jogador"}
+                    </h3>
+                    <p className={`flex items-center gap-1.5 text-[11px] font-medium ${hasCurrentGame ? "text-emerald-300" : "text-white/50"}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${hasCurrentGame ? "bg-emerald-400 animate-pulse" : "bg-white/40"}`} />
+                      {hasCurrentGame ? "Em jogo" : "Online"}
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => goMode("quick")}
-                    aria-label="Recolher para o dock rápido"
-                    className="flex h-10 w-10 items-center justify-center rounded-xl text-white/50 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
-                    title="Recolher para Dock Lateral"
-                  >
-                    <Minimize2 className="h-4 w-4" />
-                  </button>
                 </div>
-
-                <nav className="mt-5 flex flex-col gap-1 flex-1">
-                  <button
-                    type="button"
-                    onClick={() => goView("home")}
-                    aria-current={activeView === "home" ? "page" : undefined}
-                    className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all focus-visible:outline-2 focus-visible:outline-white ${
-                      activeView === "home" ? "bg-white text-black shadow-md" : "text-white/60 hover:bg-white/5 hover:text-white"
-                    }`}
-                  >
-                    <Gamepad2 className="h-4 w-4" /> Visão Geral
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => goView("achievements")}
-                    aria-current={activeView === "achievements" ? "page" : undefined}
-                    className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all focus-visible:outline-2 focus-visible:outline-white ${
-                      activeView === "achievements" ? "bg-white text-black shadow-md" : "text-white/60 hover:bg-white/5 hover:text-white"
-                    }`}
-                  >
-                    <Trophy className="h-4 w-4" /> Conquistas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => goView("friends")}
-                    aria-current={activeView === "friends" ? "page" : undefined}
-                    className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all focus-visible:outline-2 focus-visible:outline-white ${
-                      activeView === "friends" ? "bg-white text-black shadow-md" : "text-white/60 hover:bg-white/5 hover:text-white"
-                    }`}
-                  >
-                    <Users className="h-4 w-4" /> Amigos
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => goView("chat")}
-                    aria-current={activeView === "chat" ? "page" : undefined}
-                    className={`flex min-h-10 items-center justify-between rounded-xl px-3 py-2 text-[13px] font-semibold transition-all focus-visible:outline-2 focus-visible:outline-white ${
-                      activeView === "chat" ? "bg-white text-black shadow-md" : "text-white/60 hover:bg-white/5 hover:text-white"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <MessageSquare className="h-4 w-4" /> Bate-papo
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => goView("media")}
-                    aria-current={activeView === "media" ? "page" : undefined}
-                    className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all focus-visible:outline-2 focus-visible:outline-white ${
-                      activeView === "media" ? "bg-white text-black shadow-md" : "text-white/60 hover:bg-white/5 hover:text-white"
-                    }`}
-                  >
-                    <Camera className="h-4 w-4" /> Capturas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => goView("settings")}
-                    aria-current={activeView === "settings" ? "page" : undefined}
-                    className={`flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all focus-visible:outline-2 focus-visible:outline-white ${
-                      activeView === "settings" ? "bg-white text-black shadow-md" : "text-white/60 hover:bg-white/5 hover:text-white"
-                    }`}
-                  >
-                    <Settings className="h-4 w-4" /> Ajustes
-                  </button>
-                </nav>
-
-                <div className="pt-3 border-t border-white/[0.08] flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={closeOverlay}
-                    className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white/70 transition-all hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
-                  >
-                    <X className="h-4 w-4" /> Fechar Overlay (Esc)
-                  </button>
+                <div className="flex items-center gap-1.5">
+                  <NotchIconButton onClick={() => goMode("quick")} title="Recolher para o dock rápido">
+                    <Minimize2 className="h-4 w-4" />
+                  </NotchIconButton>
+                  <NotchIconButton onClick={closeOverlay} title="Fechar overlay (Esc)">
+                    <X className="h-4 w-4" />
+                  </NotchIconButton>
                 </div>
               </div>
 
-              {/* Área Central de Conteúdo */}
-              <div className="flex min-w-0 flex-1 flex-col overflow-y-auto p-6 md:p-8 thin-scrollbar">
+              {/* Abas em pílulas: a ativa mostra o rótulo, as demais só o ícone */}
+              <nav className="flex items-center gap-1.5 px-5 pb-3" aria-label="Seções do overlay">
+                {([
+                  { id: "home", label: "Início", icon: Gamepad2 },
+                  { id: "achievements", label: "Conquistas", icon: Trophy },
+                  { id: "friends", label: "Amigos", icon: Users },
+                  { id: "chat", label: "Chat", icon: MessageSquare },
+                  { id: "media", label: "Capturas", icon: Camera },
+                  { id: "mascot", label: "Mascote", icon: Sparkles },
+                  { id: "settings", label: "Ajustes", icon: Settings },
+                ] as const).map((tab) => {
+                  const active = activeView === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => goView(tab.id)}
+                      aria-current={active ? "page" : undefined}
+                      aria-label={tab.label}
+                      title={tab.label}
+                      className={`flex h-10 items-center justify-center gap-2 rounded-full text-[12px] font-semibold transition-all duration-200 active:scale-95 ${FOCUS_RING} ${
+                        active
+                          ? "bg-white px-4 text-black"
+                          : "w-10 bg-white/[0.06] text-white/60 hover:bg-white/[0.14] hover:text-white"
+                      }`}
+                    >
+                      <tab.icon className="h-4 w-4 shrink-0" />
+                      {active && <span>{tab.label}</span>}
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {/* Área de conteúdo */}
+              <div className="flex min-w-0 flex-1 flex-col overflow-y-auto px-5 pb-5 pt-1 thin-scrollbar">
                 {activeView === "home" && (
                   <div className="flex flex-col gap-6">
-                    <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.03]">
+                    <div className="relative overflow-hidden rounded-[24px] bg-white/[0.06]">
                       {gameArt ? (
                         <img src={gameArt} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30" />
                       ) : null}
-                      <div className="relative p-6">
-                        <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/45">
+                      <div className="relative p-5">
+                        <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/35">
                           {hasCurrentGame ? "Jogo ativo" : "Nenhuma sessão ativa"}
                         </span>
-                        <h2 className="mt-1 truncate text-2xl font-bold tracking-tight text-white md:text-3xl">
+                        <h2 className="mt-1 truncate text-xl font-semibold tracking-tight text-white">
                           {panelData.gameTitle || "Nenhum jogo em execução"}
                         </h2>
                         {!hasCurrentGame && (
@@ -1871,33 +1858,33 @@ const OverlayApp: React.FC = () => {
                       <Button
                         type="button"
                         onClick={closeOverlay}
-                        className="min-h-10 w-fit rounded-xl bg-white px-4 text-xs font-black text-black hover:bg-white/90"
+                        className="min-h-10 w-fit rounded-full bg-white px-4 text-xs font-semibold text-black hover:bg-white/90"
                       >
                         Voltar à biblioteca
                       </Button>
                     )}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4">
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Sessão atual</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="rounded-2xl bg-white/[0.06] p-3">
+                        <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/35">Sessão atual</span>
                         <p className="mt-2 text-base font-semibold tabular-nums text-white">
                           {hasCurrentGame ? sessionClock : "—"}
                         </p>
                       </div>
-                      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4">
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Conquistas</span>
+                      <div className="rounded-2xl bg-white/[0.06] p-3">
+                        <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/35">Conquistas</span>
                         <p className="mt-2 text-base font-semibold text-white">
                           {hasCurrentGame && totalCount > 0 ? `${unlockedCount} / ${totalCount}` : "—"}
                         </p>
                       </div>
-                      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-4">
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Amigos online</span>
+                      <div className="rounded-2xl bg-white/[0.06] p-3">
+                        <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/35">Amigos online</span>
                         <p className="mt-2 text-base font-semibold text-white">{onlineFriends.length}</p>
                       </div>
                     </div>
                     <Button
                       type="button"
                       onClick={() => { void takeCapture(); }}
-                      className="min-h-10 w-fit rounded-xl bg-white px-4 text-xs font-black text-black hover:bg-white/90"
+                      className="min-h-10 w-fit rounded-full bg-white px-4 text-xs font-semibold text-black hover:bg-white/90"
                     >
                       <Camera className="mr-1.5 h-3.5 w-3.5" /> Capturar tela ({formatShortcutLabel(captureShortcut)})
                     </Button>
@@ -1907,17 +1894,18 @@ const OverlayApp: React.FC = () => {
                 {activeView === "achievements" && (
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-base font-black text-white">Conquistas do Jogo</h3>
+                      <h3 className="text-base font-semibold text-white">Conquistas do Jogo</h3>
                       <span className="text-xs font-bold text-white/60">{unlockedCount} de {totalCount} desbloqueadas</span>
                     </div>
+                    {totalCount > 0 && <ProgressBar percent={progressPercent} />}
 
                     {achievementsLoading ? (
-                      <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/[0.02] py-16 text-center" aria-busy="true">
+                      <div className="flex flex-col items-center justify-center rounded-2xl bg-white/[0.04] py-16 text-center" aria-busy="true">
                         <Loader2 className="mb-3 h-8 w-8 animate-spin text-white/60" aria-hidden="true" />
                         <p className="text-sm font-bold text-white/70">Carregando conquistas…</p>
                       </div>
                     ) : achievementList.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/[0.02] py-16 text-center">
+                      <div className="flex flex-col items-center justify-center rounded-2xl bg-white/[0.04] py-16 text-center">
                         <Trophy className="h-10 w-10 text-white/20 mb-2" />
                         <p className="text-sm font-bold text-white/70">
                           {hasCurrentGame ? "Nenhuma conquista disponível" : "Inicie um jogo para ver conquistas"}
@@ -1935,9 +1923,9 @@ const OverlayApp: React.FC = () => {
                             <div
                               key={achKey}
                               onClick={() => setExpandedAchId((prev) => (prev === achKey ? null : achKey))}
-                              className="flex items-start gap-3.5 rounded-2xl border border-white/6 bg-white/[0.035] p-3.5 cursor-pointer hover:bg-white/[0.06] transition-colors"
+                              className="flex items-start gap-3.5 rounded-2xl bg-white/[0.06] p-3.5 cursor-pointer hover:bg-white/[0.06] transition-colors"
                             >
-                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 overflow-hidden border border-white/10 mt-0.5">
+                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 overflow-hidden mt-0.5">
                                 {ach.icon ? (
                                   <img src={ach.icon} alt="" className="h-full w-full object-cover" />
                                 ) : (
@@ -1951,10 +1939,10 @@ const OverlayApp: React.FC = () => {
                                 </p>
                               </div>
                               <span
-                                className={`rounded-lg px-2.5 py-1 text-[9px] font-black uppercase tracking-wider shrink-0 mt-0.5 ${
+                                className={`rounded-full px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider shrink-0 mt-0.5 ${
                                   ach.achieved
-                                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
-                                    : "bg-white/5 text-white/40 border border-white/10"
+                                    ? "bg-emerald-500/20 text-emerald-300"
+                                    : "bg-white/5 text-white/40"
                                 }`}
                               >
                                 {ach.achieved ? "Desbloqueada" : "Bloqueada"}
@@ -1969,9 +1957,9 @@ const OverlayApp: React.FC = () => {
 
                 {activeView === "friends" && (
                   <div className="flex flex-col gap-4">
-                    <h3 className="text-base font-black text-white">Amigos</h3>
+                    <h3 className="text-base font-semibold text-white">Amigos</h3>
                     {(panelData.friends || []).length === 0 ? (
-                      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/[0.02] py-14 px-6 text-center">
+                      <div className="flex flex-col items-center justify-center rounded-2xl bg-white/[0.04] py-14 px-6 text-center">
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-white/40 mb-3">
                           <Users className="h-6 w-6" aria-hidden="true" />
                         </div>
@@ -1984,21 +1972,21 @@ const OverlayApp: React.FC = () => {
                           onClick={() => {
                             (window as any).achievementOverlay?.panelAction?.({ kind: "open-launcher-friends" });
                           }}
-                          className="mt-4 min-h-10 rounded-xl bg-white px-5 text-xs font-bold text-black hover:bg-white/90"
+                          className="mt-4 min-h-10 rounded-full bg-white px-5 text-xs font-bold text-black hover:bg-white/90"
                         >
                           <UserPlus className="mr-2 h-4 w-4" />
                           Adicionar amigo
                         </Button>
                       </div>
                     ) : (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-2">
                       {(panelData.friends || []).map((friend: any, idx: number) => (
                         <div
                           key={idx}
-                          className="flex items-center justify-between rounded-2xl border border-white/6 bg-white/[0.035] p-3.5"
+                          className="flex items-center justify-between rounded-2xl bg-white/[0.06] p-3.5"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="relative h-10 w-10 rounded-xl bg-white/10 shrink-0 overflow-hidden">
+                            <div className="relative h-10 w-10 rounded-full bg-white/10 shrink-0 overflow-hidden">
                               {friend.avatar ? (
                                 <img src={friend.avatar} alt="" className="h-full w-full object-cover" />
                               ) : (
@@ -2028,7 +2016,7 @@ const OverlayApp: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleVoiceCall(friend.id, friend.name, friend.avatar)}
-                                className="flex items-center gap-1.5 rounded-xl border border-emerald-400/30 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 px-2.5 py-1.5 text-xs font-bold transition-all"
+                                className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 px-2.5 py-1.5 text-xs font-bold transition-all"
                                 title="Ligar para amigo"
                               >
                                 <Phone className="h-3.5 w-3.5" /> Ligar
@@ -2036,7 +2024,7 @@ const OverlayApp: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={() => handleSelectChat(friend.id)}
-                                className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-white/15 transition-all"
+                                className="flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-white/15 transition-all"
                               >
                                 <MessageSquare className="h-3.5 w-3.5" /> Chat
                               </button>
@@ -2053,17 +2041,17 @@ const OverlayApp: React.FC = () => {
                   <div className="flex flex-col h-full gap-4">
                     {panelData.chat ? (
                       <div className="flex flex-col h-full">
-                        <div className="flex items-center justify-between pb-3.5 border-b border-white/[0.08] mb-4">
+                        <div className="flex items-center justify-between pb-3.5 mb-4">
                           <div className="flex items-center gap-3">
                             <button
                               type="button"
                               onClick={handleCloseChat}
                               aria-label="Voltar para amigos"
-                              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white/70 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
+                              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 text-white/70 hover:bg-white/10 hover:text-white focus-visible:outline-2 focus-visible:outline-white"
                             >
                               <ChevronLeft className="h-4 w-4" />
                             </button>
-                            <div className="h-9 w-9 rounded-xl bg-white/10 overflow-hidden shrink-0">
+                            <div className="h-9 w-9 rounded-full bg-white/10 overflow-hidden shrink-0">
                               {panelData.chat.friendAvatar ? (
                                 <img src={panelData.chat.friendAvatar} alt="" className="h-full w-full object-cover" />
                               ) : (
@@ -2088,7 +2076,7 @@ const OverlayApp: React.FC = () => {
                                 panelData.chat?.friendAvatar
                               )
                             }
-                            className="flex items-center gap-1.5 rounded-xl border border-emerald-400/30 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 px-3 py-1.5 text-xs font-bold transition-all"
+                            className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 px-3 py-1.5 text-xs font-bold transition-all"
                           >
                             <Phone className="h-3.5 w-3.5" /> Ligar
                           </button>
@@ -2105,21 +2093,21 @@ const OverlayApp: React.FC = () => {
                             panelData.chat.messages.map((msg) => (
                               <div key={msg.id} className={`flex ${msg.mine ? "justify-end" : "justify-start"}`}>
                                 <div
-                                  className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-xs shadow-md ${
+                                  className={`max-w-[84%] rounded-2xl px-4 py-2.5 text-xs shadow-md ${
                                     msg.mine
                                       ? "bg-white text-black font-medium"
-                                      : "bg-white/[0.07] border border-white/10 text-white"
+                                      : "bg-white/[0.07] text-white"
                                   }`}
                                 >
                                   {msg.attachmentUrl && (
-                                    <div className="mb-2 overflow-hidden rounded-xl border border-black/10">
+                                    <div className="mb-2 overflow-hidden rounded-2xl">
                                       <button
                                         type="button"
                                         onClick={() => setViewingCapture({ id: msg.attachmentUrl!, url: msg.attachmentUrl! })}
                                         className="relative group block w-full cursor-pointer"
                                       >
-                                        <img src={msg.attachmentUrl} alt="Anexo" className="max-h-48 w-full object-cover rounded-xl" />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-xl transition-opacity">
+                                        <img src={msg.attachmentUrl} alt="Anexo" className="max-h-48 w-full object-cover rounded-2xl" />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-2xl transition-opacity">
                                           <ZoomIn className="h-6 w-6 text-white" />
                                         </div>
                                       </button>
@@ -2171,13 +2159,13 @@ const OverlayApp: React.FC = () => {
                             onChange={(e) => setInputText(e.target.value)}
                             placeholder={`Enviar mensagem para ${panelData.chat.friendName}...`}
                             aria-label={`Mensagem para ${panelData.chat.friendName}`}
-                            className="min-h-10 flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-white placeholder-white/30 focus:border-white/30 focus:outline-none"
+                            className="min-h-10 flex-1 rounded-full bg-white/5 px-4 py-2.5 text-xs text-white placeholder-white/30 focus:border-white/30 focus:outline-none"
                           />
                           <button
                             type="submit"
                             disabled={!inputText.trim() || panelData.chat.sending}
                             aria-label={panelData.chat.sending ? "Enviando mensagem" : "Enviar mensagem"}
-                            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-black hover:bg-white/90 disabled:opacity-40"
+                            className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black hover:bg-white/90 disabled:opacity-40"
                           >
                             {panelData.chat.sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                           </button>
@@ -2185,15 +2173,15 @@ const OverlayApp: React.FC = () => {
                       </div>
                     ) : (
                       <div className="flex flex-col gap-3">
-                        <h3 className="text-base font-black text-white">Selecione um Amigo para Conversar</h3>
+                        <h3 className="text-base font-semibold text-white">Selecione um Amigo para Conversar</h3>
                         {(panelData.friends || []).filter((f: any) => f.canChat).length === 0 ? (
-                          <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/[0.02] py-16 text-center">
+                          <div className="flex flex-col items-center justify-center rounded-2xl bg-white/[0.04] py-16 text-center">
                             <MessageSquare className="mb-3 h-9 w-9 text-white/20" aria-hidden="true" />
                             <p className="text-sm font-bold text-white/70">Nenhuma conversa disponível</p>
                             <p className="mt-1 max-w-xs text-xs text-white/50">Quando um amigo estiver disponível, você poderá iniciar um chat aqui.</p>
                           </div>
                         ) : (
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 gap-2">
                           {(panelData.friends || [])
                             .filter((f: any) => f.canChat)
                             .map((friend: any, idx: number) => (
@@ -2201,9 +2189,9 @@ const OverlayApp: React.FC = () => {
                                 key={idx}
                                 type="button"
                                 onClick={() => handleSelectChat(friend.id)}
-                                className="flex min-h-16 items-center gap-3 rounded-2xl border border-white/6 bg-white/[0.035] p-4 text-left transition-all hover:bg-white/[0.07] focus-visible:outline-2 focus-visible:outline-white"
+                                className="flex min-h-16 items-center gap-3 rounded-2xl bg-white/[0.06] p-4 text-left transition-all hover:bg-white/[0.07] focus-visible:outline-2 focus-visible:outline-white"
                               >
-                                <div className="h-9 w-9 rounded-xl bg-white/10 overflow-hidden shrink-0">
+                                <div className="h-9 w-9 rounded-full bg-white/10 overflow-hidden shrink-0">
                                   {friend.avatar ? (
                                     <img src={friend.avatar} alt="" className="h-full w-full object-cover" />
                                   ) : (
@@ -2228,7 +2216,7 @@ const OverlayApp: React.FC = () => {
                 {activeView === "media" && (
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center justify-between gap-3">
-                      <h3 className="text-base font-black text-white">Capturas de Tela</h3>
+                      <h3 className="text-base font-semibold text-white">Capturas de Tela</h3>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
@@ -2236,7 +2224,7 @@ const OverlayApp: React.FC = () => {
                             uiSound();
                             void loadCaptures();
                           }}
-                          className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/70 hover:bg-white/10"
+                          className="rounded-full bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/70 hover:bg-white/10"
                         >
                           Atualizar
                         </button>
@@ -2248,7 +2236,7 @@ const OverlayApp: React.FC = () => {
                               overlayLogger.warn("Abrir pasta falhou:", err),
                             );
                           }}
-                          className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/70 hover:bg-white/10"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white/70 hover:bg-white/10"
                         >
                           <FolderOpen className="h-3.5 w-3.5" />
                           Pasta
@@ -2260,7 +2248,7 @@ const OverlayApp: React.FC = () => {
                         <Loader2 className="h-6 w-6 animate-spin" />
                       </div>
                     ) : captures.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/[0.02] py-16 text-center">
+                      <div className="flex flex-col items-center justify-center rounded-2xl bg-white/[0.04] py-16 text-center">
                         <Camera className="mb-3 h-9 w-9 text-white/20" aria-hidden="true" />
                         <p className="text-sm font-bold text-white/70">Nenhuma captura ainda</p>
                         <p className="mt-1 max-w-xs text-xs text-white/50">
@@ -2268,11 +2256,11 @@ const OverlayApp: React.FC = () => {
                         </p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                      <div className="grid grid-cols-2 gap-2.5">
                         {captures.map((cap) => (
                           <div
                             key={cap.id}
-                            className="group relative h-32 overflow-hidden rounded-xl border border-white/10"
+                            className="group relative h-32 overflow-hidden rounded-2xl"
                           >
                             <button
                               type="button"
@@ -2300,7 +2288,7 @@ const OverlayApp: React.FC = () => {
                                   setViewingCapture(cap);
                                   setConfirmDeleteCapture(true);
                                 }}
-                                className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white opacity-0 transition-opacity hover:bg-rose-500 group-hover:opacity-100 focus-visible:opacity-100"
+                                className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity hover:bg-rose-500 group-hover:opacity-100 focus-visible:opacity-100"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </button>
@@ -2312,10 +2300,17 @@ const OverlayApp: React.FC = () => {
                   </div>
                 )}
 
+                {activeView === "mascot" && (
+                  <div className="flex flex-col gap-4">
+                    <h3 className="text-base font-semibold text-white">Mascote</h3>
+                    <MascotCustomizer compact />
+                  </div>
+                )}
+
                 {activeView === "settings" && (
-                  <div className="flex flex-col gap-4 max-w-lg">
-                    <h3 className="text-base font-black text-white">Ajustes do Overlay</h3>
-                    <div className="rounded-2xl border border-white/6 bg-white/[0.035] p-4 space-y-4">
+                  <div className="flex flex-col gap-4">
+                    <h3 className="text-base font-semibold text-white">Ajustes do Overlay</h3>
+                    <div className="rounded-2xl bg-white/[0.06] p-4 space-y-4">
                       {([
                         {
                           key: "achievements",
@@ -2418,7 +2413,7 @@ const OverlayApp: React.FC = () => {
                             overlaySfx("select");
                             setRecordingShortcut((prev) => (prev === "capture" ? null : "capture"));
                           }}
-                          className="min-h-10 rounded-xl bg-white/10 px-3 py-1 text-xs font-bold text-white transition-colors hover:bg-white/16 focus-visible:outline-2 focus-visible:outline-white"
+                          className="min-h-10 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white transition-colors hover:bg-white/16 focus-visible:outline-2 focus-visible:outline-white"
                         >
                           {recordingShortcut === "capture" ? "Cancelar" : "Alterar"}
                         </button>
@@ -2438,7 +2433,7 @@ const OverlayApp: React.FC = () => {
                             overlaySfx("select");
                             setRecordingShortcut((prev) => (prev === "overlay" ? null : "overlay"));
                           }}
-                          className="min-h-10 rounded-xl bg-white/10 px-3 py-1 text-xs font-bold text-white transition-colors hover:bg-white/16 focus-visible:outline-2 focus-visible:outline-white"
+                          className="min-h-10 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white transition-colors hover:bg-white/16 focus-visible:outline-2 focus-visible:outline-white"
                         >
                           {recordingShortcut === "overlay" ? "Cancelar" : "Alterar"}
                         </button>
@@ -2469,7 +2464,7 @@ const OverlayApp: React.FC = () => {
             }}
           >
             <div
-              className="relative max-w-5xl max-h-[85vh] overflow-hidden rounded-2xl border border-white/15 bg-black/80 shadow-2xl p-2"
+              className="relative max-w-5xl max-h-[85vh] overflow-hidden rounded-[28px] bg-black/70 shadow-[0_24px_80px_rgba(0,0,0,0.6)] p-2"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -2479,25 +2474,25 @@ const OverlayApp: React.FC = () => {
                   setViewingCapture(null);
                 }}
                 aria-label="Fechar imagem"
-                className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white transition-all hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white"
+                className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white transition-all hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white"
               >
                 <X className="h-5 w-5" />
               </button>
               {viewingCapture.path ? (
                 confirmDeleteCapture ? (
-                  <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-xl border border-white/10 bg-black/80 px-3 py-2">
+                  <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-2xl bg-black/80 px-3 py-2">
                     <span className="text-[11px] font-bold text-white">Excluir esta foto?</span>
                     <button
                       type="button"
                       onClick={() => void deleteCapture(viewingCapture)}
-                      className="rounded-lg bg-rose-500 px-2.5 py-1 text-[10px] font-black uppercase text-white hover:bg-rose-400"
+                      className="rounded-full bg-rose-500 px-2.5 py-1 text-[10px] font-semibold uppercase text-white hover:bg-rose-400"
                     >
                       Excluir
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirmDeleteCapture(false)}
-                      className="rounded-lg bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase text-white hover:bg-white/20"
+                      className="rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase text-white hover:bg-white/20"
                     >
                       Cancelar
                     </button>
@@ -2510,7 +2505,7 @@ const OverlayApp: React.FC = () => {
                       setConfirmDeleteCapture(true);
                     }}
                     aria-label="Excluir captura"
-                    className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/70 text-white transition-all hover:bg-rose-500 focus-visible:outline-2 focus-visible:outline-white"
+                    className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white transition-all hover:bg-rose-500 focus-visible:outline-2 focus-visible:outline-white"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -2520,7 +2515,7 @@ const OverlayApp: React.FC = () => {
                 <img
                   src={fullResImageUrl || viewingCapture.url}
                   alt="Captura ampliada"
-                  className="max-h-[80vh] max-w-full rounded-xl object-contain transition-opacity duration-300"
+                  className="max-h-[80vh] max-w-full rounded-2xl object-contain transition-opacity duration-300"
                 />
                 {fullResLoading && (
                   <div className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-black/70 px-2.5 py-1 text-[10px] font-bold text-white/70 backdrop-blur-md">

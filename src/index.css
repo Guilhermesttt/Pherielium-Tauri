@@ -13,6 +13,15 @@
 }
 
 /* Accessible, gentle transitions for users who prefer reduced motion */
+/* Fones RGB da Pherie: o matiz gira continuamente */
+@keyframes pherie-rgb {
+  from { filter: hue-rotate(0deg) saturate(1.5); }
+  to { filter: hue-rotate(360deg) saturate(1.5); }
+}
+.pherie-rgb {
+  animation: pherie-rgb 4s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
 
   *,

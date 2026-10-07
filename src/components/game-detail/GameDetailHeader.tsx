@@ -51,7 +51,10 @@ export const GameDetailHeader: React.FC<GameDetailHeaderProps> = React.memo(({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <h1 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold tracking-tight text-white mb-3 leading-[1.05] line-clamp-2">
+            <h1
+              title={game.title}
+              className="text-2xl sm:text-4xl md:text-5xl font-display font-bold tracking-tight text-white mb-3 leading-[1.1] whitespace-nowrap truncate"
+            >
               {game.title}
             </h1>
             <div className="flex items-center gap-2 flex-wrap">

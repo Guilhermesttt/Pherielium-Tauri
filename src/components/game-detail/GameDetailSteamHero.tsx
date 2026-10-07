@@ -82,7 +82,7 @@ export const GameDetailSteamHero: React.FC<GameDetailSteamHeroProps> = React.mem
       </div>
 
       {/* 4. Game Logo / Title (Over the Banner, matching CS2 & Arena Breakout) */}
-      <div className="absolute bottom-8 left-8 sm:left-14 max-w-[55%] z-20 pointer-events-none">
+      <div className="absolute bottom-8 left-8 sm:left-14 max-w-[78%] z-20 pointer-events-none">
         {steamLogoUrl && !logoFailed ? (
           <img
             src={steamLogoUrl}
@@ -91,7 +91,10 @@ export const GameDetailSteamHero: React.FC<GameDetailSteamHeroProps> = React.mem
             className="max-h-24 sm:max-h-32 md:max-h-40 object-contain drop-shadow-[0_12px_36px_rgba(0,0,0,0.9)]"
           />
         ) : (
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-extrabold tracking-tight text-white leading-none drop-shadow-[0_8px_32px_rgba(0,0,0,0.95)]">
+          <h1
+            title={game.title}
+            className="text-3xl sm:text-5xl md:text-6xl font-display font-extrabold tracking-tight text-white leading-none whitespace-nowrap truncate drop-shadow-[0_8px_32px_rgba(0,0,0,0.95)]"
+          >
             {game.title}
           </h1>
         )}

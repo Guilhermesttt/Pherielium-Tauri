@@ -93,7 +93,7 @@ export const MOOD_SPECS: Record<MascotMood, MoodSpec> = {
   music: { state: "idle", expression: "heureux", mouth: "smile", blush: 0.35, bounce: "bouncy", headphones: true },
   calling: { state: "idle", expression: "listen", mouth: "smile", blush: 0.3, bounce: "gentle", headphones: true },
   muted: { state: "idle", expression: "muted", mouth: "flat", blush: 0.2, bounce: "gentle", headphones: true },
-  gaming: { state: "idle", expression: "gamer", mouth: "smirk", blush: 0.2, bounce: "gentle" },
+  gaming: { state: "idle", expression: "gamer", mouth: "smirk", blush: 0.2, bounce: "gentle", headphones: true },
   happy: { state: "idle", expression: "heureux", mouth: "grin", blush: 0.45, bounce: "bouncy" },
   surprised: { state: "idle", expression: "surpris", mouth: "o", blush: 0.2, bounce: "bouncy" },
   excited: { state: "idle", expression: "excite", mouth: "grin", blush: 0.55, bounce: "bouncy" },

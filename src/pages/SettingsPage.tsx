@@ -76,7 +76,7 @@ import { LinearProgress } from "../components/ui/LinearProgress";
 import { ThinkingOrbLoader } from "../components/ThinkingOrbLoader";
 import { saveOverlayPrefs } from "../lib/overlayPrefs";
 import { formatRamGb, usePerfMonitor } from "../hooks/usePerfMonitor";
-import { MASCOT_MOODS, PherieMascot, getMascotBaseMood, setMascotBaseMood, type MascotMood } from "../components/notch/PherieMascot";
+import { NotchSettingsTab } from "../components/settings/NotchSettingsTab";
 
 type TranslationFn = ReturnType<typeof usePreferences>["t"];
 type BrandIcon = React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
@@ -1250,8 +1250,6 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
     setAchievementNotificationPosition,
     callOverlayEnabled,
     setCallOverlayEnabled,
-    mascotColor,
-    setMascotColor,
   } = usePreferences();
 
   const { user, userProfile } = useAuth();
@@ -1280,9 +1278,6 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
   const [isQuitHovered, setIsQuitHovered] = React.useState(false);
   const [isSettingsTitleHovered, setIsSettingsTitleHovered] = React.useState(false);
   const [perfSubTab, setPerfSubTab] = React.useState<"general" | "monitor">("general");
-  const [mascotPreviewHovered, setMascotPreviewHovered] = React.useState(false);
-  const [mascotPreviewMood, setMascotPreviewMood] = React.useState<MascotMood>(() => getMascotBaseMood() ?? "idle");
-  const [mascotAppliedMood, setMascotAppliedMood] = React.useState<MascotMood | null>(() => getMascotBaseMood());
   const perfHud = usePerfMonitor({ sample: activeTab === "performance" });
 
   React.useEffect(() => {
@@ -1540,6 +1535,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
     "controller",
     "voice",
     "notifications",
+    "mascot",
   ], []);
 
   useGamepadNavigation({
@@ -3014,100 +3010,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
               </div>
             )}
 
-            {/* ABA MASCOTE (PHERIE) */}
-            {activeTab === "mascot" && (
-              <div className="space-y-8 animate-in fade-in duration-300">
-                <section>
-                  <div className="flex items-center gap-2.5 mb-4">
-                    <Sparkles className="h-4 w-4 text-white/70 shrink-0" />
-                    <h2 className="text-[17px] font-semibold text-white tracking-wide">{(shellCopy as any).mascot || "Mascote e Notch"}</h2>
-                  </div>
-
-                  <div className="mb-6 rounded-2xl border border-white/[0.08] bg-white/[0.025] overflow-hidden">
-                    <div className="flex flex-col md:flex-row">
-                      <div className="p-6 md:w-1/2 border-b md:border-b-0 md:border-r border-white/[0.06]">
-                        <h3 className="text-white text-[14px] font-semibold mb-2">Conheça o Pherie</h3>
-                        <p className="text-[12px] text-white/50 leading-relaxed mb-4">
-                          O Pherie é o mascote que habita a sua Notch. Ele reage ao que você está fazendo,
-                          como ouvir música, jogar ou falar em uma chamada, de forma animada e orgânica!
-                        </p>
-                        
-                        <div className="flex items-center gap-2.5 flex-wrap">
-                          {["#FFFFFF", "#10B981", "#3B82F6", "#8B5CF6", "#F43F5E", "#F59E0B"].map(color => (
-                            <button
-                              key={color}
-                              onClick={() => { setMascotColor(color); playSound("hover"); }}
-                              className={cn(
-                                "h-8 w-8 rounded-full border-2 transition-all cursor-pointer",
-                                mascotColor === color ? "border-white scale-110 shadow-lg shadow-white/10" : "border-transparent hover:scale-105"
-                              )}
-                              style={{ backgroundColor: color }}
-                              title={`Cor: ${color}`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <div className="p-6 md:w-1/2 flex items-center justify-center bg-black/20">
-                        <div
-                          className="relative shrink-0 w-[100px] h-[100px] rounded-[28px] bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/[0.12] shadow-inner flex items-center justify-center overflow-hidden cursor-pointer"
-                          onMouseEnter={() => setMascotPreviewHovered(true)}
-                          onMouseLeave={() => setMascotPreviewHovered(false)}
-                        >
-                           {/* Brilho dinâmico na cor do mascote */}
-                           <div className="absolute inset-0 rounded-[28px] blur-[16px] -z-10 opacity-30" style={{ backgroundColor: mascotColor }} />
-                            <PherieMascot
-                              size={72}
-                              mood={mascotPreviewHovered ? "happy" : mascotPreviewMood}
-                              isHovered={mascotPreviewHovered}
-                              color={mascotColor}
-                            />
-                           </div>
-                         </div>
-                       </div>
-                     </div>
-
-                  <div className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6">
-                    <h3 className="text-white text-[14px] font-semibold mb-2">Expressões do Pherie</h3>
-                    <p className="text-[12px] text-white/50 leading-relaxed mb-4">
-                      Clique em uma expressão para aplicar no mascote da Notch. Passe o mouse sobre o Pherie para animá-lo.
-                    </p>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => { setMascotPreviewMood("idle"); setMascotBaseMood(null); setMascotAppliedMood(null); playSound("hover"); }}
-                        className={cn(
-                          "flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 transition-all cursor-pointer",
-                          mascotAppliedMood === null
-                            ? "border-white/40 bg-white/[0.08]"
-                            : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:scale-[1.03]"
-                        )}
-                        title="Automático"
-                      >
-                        <span className="text-lg leading-none">✨</span>
-                        <span className="text-[10px] font-medium text-white/60 leading-none">Automático</span>
-                      </button>
-                      {MASCOT_MOODS.map(({ id, label }) => (
-                        <button
-                          key={id}
-                          type="button"
-                          onClick={() => { setMascotPreviewMood(id); setMascotBaseMood(id); setMascotAppliedMood(id); playSound("hover"); }}
-                          className={cn(
-                            "flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 transition-all cursor-pointer",
-                            mascotAppliedMood === id
-                              ? "border-white/40 bg-white/[0.08]"
-                              : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:scale-[1.03]"
-                          )}
-                          title={label}
-                        >
-                          <PherieMascot size={40} mood={id} color={mascotColor} />
-                          <span className="text-[10px] font-medium text-white/60 leading-none">{label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </section>
-              </div>
-            )}
+            {/* ABA MASCOTE E NOTCH */}
+            {activeTab === "mascot" && <NotchSettingsTab />}
           </div>
         </main>
       </div>

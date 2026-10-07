@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { sanitizeNotchConfig, type NotchConfig } from "../mascot/notchConfig";
 
 export type OverlayPrefs = {
   achievements: boolean;
@@ -10,7 +11,18 @@ export type OverlayPrefs = {
   perfMonitor: boolean;
   captureShortcut: string;
   overlayShortcut: string;
+  /**
+   * Configuração do notch/mascote. `null` = nunca configurada (o padrão vale e a
+   * cor do mascote é migrada da preferência antiga) — por isso o Rust NÃO
+   * preenche esta chave nos padrões.
+   */
+  notch: NotchConfig | null;
+  /** Tema visual do launcher (espelhado pelo launcher): o notch e o painel se adaptam a ele. */
+  visualTheme: string;
 };
+
+/** Patch aceito por `saveOverlayPrefs`: o Rust faz merge profundo, então `notch` pode ser parcial. */
+export type OverlayPrefsPatch = Partial<Omit<OverlayPrefs, "notch">> & { notch?: Partial<NotchConfig> };
 
 export const DEFAULT_OVERLAY_PREFS: OverlayPrefs = {
   achievements: true,
@@ -21,6 +33,8 @@ export const DEFAULT_OVERLAY_PREFS: OverlayPrefs = {
   perfMonitor: false,
   captureShortcut: "F8",
   overlayShortcut: "Ctrl+Shift+O",
+  notch: null,
+  visualTheme: "phelierium",
 };
 
 const LS_KEY = "pherielium-overlay-prefs";
@@ -37,6 +51,8 @@ function fromUnknown(raw: unknown): OverlayPrefs {
     perfMonitor: value.perfMonitor === true,
     captureShortcut: readShortcut(value.captureShortcut, DEFAULT_OVERLAY_PREFS.captureShortcut),
     overlayShortcut: readShortcut(value.overlayShortcut, DEFAULT_OVERLAY_PREFS.overlayShortcut),
+    notch: value.notch && typeof value.notch === "object" ? sanitizeNotchConfig(value.notch) : null,
+    visualTheme: typeof value.visualTheme === "string" && value.visualTheme.trim() ? value.visualTheme.trim() : DEFAULT_OVERLAY_PREFS.visualTheme,
   };
 }
 
@@ -44,7 +60,8 @@ function readShortcut(raw: unknown, fallback: string): string {
   return typeof raw === "string" && raw.trim() ? raw.trim() : fallback;
 }
 
-function readLocal(): OverlayPrefs {
+/** Leitura síncrona do espelho em localStorage: semeia o estado inicial e evita o "flash" do padrão. */
+export function readLocalOverlayPrefs(): OverlayPrefs {
   try {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return DEFAULT_OVERLAY_PREFS;
@@ -78,20 +95,21 @@ export async function loadOverlayPrefs(): Promise<OverlayPrefs> {
     writeLocal(prefs);
     return prefs;
   } catch {
-    return readLocal();
+    return readLocalOverlayPrefs();
   }
 }
 
-export async function saveOverlayPrefs(patch: Partial<OverlayPrefs>): Promise<OverlayPrefs> {
-  const current = await loadOverlayPrefs();
-  const next = { ...current, ...patch };
+export async function saveOverlayPrefs(patch: OverlayPrefsPatch): Promise<OverlayPrefs> {
   try {
-    const remote = await invoke<unknown>("overlay_prefs_set", { prefs: next });
+    // Só o patch: o Rust faz o merge profundo contra o que está no disco. Antes
+    // lia tudo, mesclava aqui e reenviava o objeto inteiro — duas gravações
+    // concorrentes (ex.: arrastar o seletor de cor) perdiam atualizações.
+    const remote = await invoke<unknown>("overlay_prefs_set", { prefs: patch });
     const merged = fromUnknown(remote);
     notifyLocal(merged);
     return merged;
   } catch {
-    return current;
+    return readLocalOverlayPrefs();
   }
 }
 

@@ -53,6 +53,14 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
     onOpenDetails(game);
   };
 
+  // Escala óptica para títulos longos caberem integralmente em uma única linha sem quebra
+  const titleSizeClass = React.useMemo(() => {
+    const len = game.title?.length || 0;
+    if (len > 34) return "text-2xl sm:text-3xl md:text-4xl lg:text-5xl";
+    if (len > 22) return "text-2xl sm:text-4xl md:text-5xl lg:text-6xl";
+    return "text-3xl sm:text-5xl md:text-6xl lg:text-7xl";
+  }, [game.title]);
+
   return (
     <div className="relative w-full px-8 sm:px-12 pt-2 sm:pt-4 pb-4 sm:pb-6 select-none flex flex-col justify-end min-h-[190px] sm:min-h-[230px]">
       <AnimatePresence mode="wait">
@@ -62,13 +70,14 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col gap-3.5 max-w-4xl"
+          className="flex flex-col gap-3.5 w-full max-w-[92vw] lg:max-w-[85vw]"
         >
-          {/* 1. Cinematic Title Card */}
-          <div className="flex flex-col">
+          {/* 1. Cinematic Title Card (uma linha só sem quebra) */}
+          <div className="flex flex-col min-w-0">
             <h1
               onClick={handleDetailsClick}
-              className="cursor-pointer tracking-tight font-display font-black text-3xl sm:text-5xl md:text-6xl lg:text-7xl bg-gradient-to-b from-[#FFFFFF] via-[#F4F4F6] to-[#A0A0A5] bg-clip-text text-transparent leading-[1.05] line-clamp-2 drop-shadow-[0_8px_30px_rgba(0,0,0,0.85)] hover:opacity-95 transition-opacity"
+              title={game.title}
+              className={`cursor-pointer tracking-tight font-display font-black ${titleSizeClass} bg-gradient-to-b from-[#FFFFFF] via-[#F4F4F6] to-[#A0A0A5] bg-clip-text text-transparent leading-[1.1] whitespace-nowrap truncate drop-shadow-[0_8px_30px_rgba(0,0,0,0.85)] hover:opacity-95 transition-opacity`}
             >
               {game.title}
             </h1>

@@ -368,6 +368,26 @@ pub fn desktop_audio_start(app: AppHandle) -> Result<Value, String> {
     }
 }
 
+/// Liga o medidor de nível do áudio do PC (headbang do mascote no overlay). Idempotente.
+#[tauri::command]
+pub fn overlay_audio_level_start(app: AppHandle) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        return win_loopback::start_level_meter(app);
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        Ok(())
+    }
+}
+
+#[tauri::command]
+pub fn overlay_audio_level_stop() {
+    #[cfg(windows)]
+    win_loopback::stop_level_meter();
+}
+
 #[tauri::command]
 pub fn desktop_audio_stop() -> Result<Value, String> {
     #[cfg(windows)]

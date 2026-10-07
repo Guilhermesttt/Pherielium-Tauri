@@ -7,6 +7,7 @@ import React, {
   useRef,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import {
   Plus,
   RefreshCw,
@@ -1354,8 +1355,12 @@ const Home: React.FC = () => {
       : 0;
   const currentGame = displayGames[canonicalIndex];
 
+  // Passar rápido pelos cards não pode redesenhar o ambiente (blur grande + cor + trailer) a cada passo:
+  // o fundo só troca quando a seleção assenta.
+  const settledGame = useDebouncedValue(currentGame, 170);
+  const settledTrailer = useDebouncedValue(currentGame?.trailerUrl, 450);
   const dominantColor = useGameColor(
-    currentGame?.cardImage || currentGame?.image,
+    settledGame?.cardImage || settledGame?.image,
   );
 
   const activePlatformConfig = useMemo(() => {
@@ -2342,9 +2347,20 @@ const Home: React.FC = () => {
     effectsVolume,
   ]);
 
+  // Última ação de voz vinda do overlay (defesa contra entrega duplicada).
+  const lastOverlayVoiceActionRef = useRef<{ kind: string; at: number }>({ kind: "", at: 0 });
+
   useEffect(() => {
     if (!window.electronAPI?.onOverlayPanelAction) return;
     return window.electronAPI.onOverlayPanelAction((action) => {
+      // Mutar/silenciar/desligar repetidos em <300ms são a MESMA ação entregue duas
+      // vezes (listener duplicado); um humano não alterna mute 2x em 300ms.
+      if (action.kind === "voice-mute" || action.kind === "voice-deafen" || action.kind === "voice-hangup") {
+        const now = performance.now();
+        const last = lastOverlayVoiceActionRef.current;
+        if (last.kind === action.kind && now - last.at < 300) return;
+        lastOverlayVoiceActionRef.current = { kind: action.kind, at: now };
+      }
       if (action.kind === "open-launcher-chat" || action.kind === "open-launcher-friends") {
         selectCategory("FRIENDS");
         setIsDetailOpen(false);
@@ -2770,13 +2786,13 @@ const Home: React.FC = () => {
     >
       <GameEnvironment
         artwork={
-          currentGame?.backgroundImage ||
-          currentGame?.image ||
-          currentGame?.cardImage ||
+          settledGame?.backgroundImage ||
+          settledGame?.image ||
+          settledGame?.cardImage ||
           ""
         }
         dominantColor={dominantColor}
-        videoUrl={activeCategory === "ALL" && !isAnyModalOpen ? currentGame?.trailerUrl : undefined}
+        videoUrl={activeCategory === "ALL" && !isAnyModalOpen ? settledTrailer : undefined}
         reducedEffects={isAnyModalOpen}
         className="left-0"
         style={{ left: 0 }}

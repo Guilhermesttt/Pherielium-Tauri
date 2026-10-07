@@ -12,12 +12,32 @@ import {
   SkipBack,
   SkipForward,
   Sparkles,
-  Music,
+  Camera,
 } from "../../design-system/sf-symbols/lucideCompat";
 import { useVoiceCallContext } from "../../context/VoiceCallContext";
-import { useSafePreferences } from "../../context/PreferencesContext";
 import { PherieMascot, getMascotBaseMood, type MascotMood, type PherieMascotProps } from "./PherieMascot";
 import { hasTauriRuntime, useVoiceLevelRef } from "../../mascot/useVoiceLevel";
+import { useNotchConfig, useOverlayAppearance } from "../../mascot/useNotchConfig";
+import {
+  EXPANDED_RADIUS_BONUS,
+  chamferClipPath,
+  notchBoxShadow,
+  resolveNotchStyle,
+  surfaceColor,
+} from "../../mascot/notchTheme";
+import { playNotchSound, type NotchSoundId } from "./notchSounds";
+import { useNotchDropzone } from "./useNotchDropzone";
+import { RetroBubble } from "./RetroBubble";
+import { useAudioReactiveRef } from "../../mascot/useAudioReactive";
+import { equalizerHeights, isAudioLive, type AudioReactive } from "../../mascot/headbang";
+import { subscribeTicker } from "../../mascot/ticker";
+import {
+  DIZZY_DURATION_MS,
+  distanceToRect,
+  isCursorAtTop,
+  isMouseShake,
+} from "../../mascot/cursorReactions";
+import type { NotchConfig } from "../../mascot/notchConfig";
 
 export interface DesktopNotchOverlayCall {
   active: boolean;
@@ -38,6 +58,10 @@ export interface DesktopNotchProps {
   onOverlayMute?: () => void;
   onOverlayDeafen?: () => void;
   onOverlayHangUp?: () => void;
+  /** Configuração do notch (o overlay passa a sua; sem ela o notch lê a gravada). */
+  config?: NotchConfig;
+  /** Volume dos efeitos do launcher (0..1) para os sons do notch. */
+  soundVolume?: number;
 }
 
 export interface DetectedMediaState {
@@ -74,8 +98,7 @@ export function resolveMascotMood(params: {
 }
 
 /** Preto "de notch": levemente quente para não parecer um buraco no wallpaper. */
-const NOTCH_BG = "#050506";
-const NOTCH_SPRING = { type: "spring", stiffness: 420, damping: 34, mass: 0.7 } as const;
+export const NOTCH_SPRING = { type: "spring", stiffness: 420, damping: 34, mass: 0.7 } as const;
 const NOTCH_EXPANDED_WIDTH = 392;
 const NOTCH_BAR_HEIGHT = 40;
 
@@ -120,34 +143,11 @@ export function shouldAutoHide(params: {
   disabled: boolean;
 }): boolean {
   if (params.disabled) return false;
-  if (params.isCallActive || params.isGameRunning) return false;
+  // Chamada de voz ativa: mantém sempre visível (único controle de mute/hang-up).
+  // Jogo em andamento não é mais exceção — o notch segue o auto-hide normal;
+  // o cursor no topo da tela sempre o revela.
+  if (params.isCallActive) return false;
   return params.isWindowOverlapping;
-}
-
-/** Cor do mascote gravada pelas Preferências (o overlay não tem PreferencesProvider). */
-function readStoredMascotColor(): string | null {
-  try {
-    const session = localStorage.getItem("phelierium_auth_session");
-    const uid = session ? (JSON.parse(session)?.uid as string | undefined) : undefined;
-    if (!uid) return null;
-    const value = localStorage.getItem(`checkpoint_mascot_color_${uid}`);
-    return value && /^#[0-9a-f]{3,8}$/i.test(value) ? value : null;
-  } catch {
-    return null;
-  }
-}
-
-function useMascotColor(): string {
-  const preferences = useSafePreferences();
-  const [stored, setStored] = useState<string | null>(() => (preferences ? null : readStoredMascotColor()));
-  useEffect(() => {
-    if (preferences) return;
-    const sync = () => setStored(readStoredMascotColor());
-    sync();
-    window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
-  }, [preferences]);
-  return preferences?.mascotColor ?? stored ?? "#FFFFFF";
 }
 
 /** Largura da barra compacta conforme o que está acontecendo. */
@@ -162,30 +162,79 @@ export function resolveNotchCompactWidth(params: {
   return 164;
 }
 
-/** Equalizador de 4 barras (Bloom). Fica baixo e parado quando não há reprodução. */
-const EQ_FRAMES = [
-  [0.25, 0.9, 0.4, 0.8, 0.25],
-  [0.8, 0.3, 1, 0.45, 0.8],
-  [0.45, 0.95, 0.25, 0.85, 0.45],
-  [0.9, 0.4, 0.8, 0.25, 0.9],
-];
-const Equalizer: React.FC<{ playing: boolean; height?: number }> = ({ playing, height = 16 }) => (
-  <div className="flex items-center gap-[2.5px] shrink-0" style={{ height }} aria-hidden>
-    {EQ_FRAMES.map((frames, i) => (
-      <motion.span
-        key={i}
-        className="w-[2.5px] rounded-full bg-white"
-        initial={false}
-        animate={{ height: playing ? frames.map((v) => Math.round(v * height)) : Math.round(height * 0.25) }}
-        transition={
-          playing ? { repeat: Infinity, duration: 0.6 + i * 0.07, ease: "easeInOut" } : { duration: 0.2 }
-        }
-      />
-    ))}
-  </div>
-);
+/** Equalizador de 4 barras com dinâmica de molas e física contínua.
+ * Reage a frequências de áudio reais (WASAPI loopback) quando disponíveis,
+ * ou anima de forma orgânica e rítmica quando há música reproduzindo. */
+const Equalizer: React.FC<{
+  playing: boolean;
+  height?: number;
+  audioRef?: { current: AudioReactive };
+}> = ({ playing, height = 16, audioRef }) => {
+  const barRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const smoothRef = useRef<[number, number, number, number]>([0.25, 0.25, 0.25, 0.25]);
 
-const NotchIconButton: React.FC<{
+  useEffect(() => {
+    const smooth = smoothRef.current;
+    return subscribeTicker((dt, now) => {
+      const audio = audioRef?.current;
+      const energy = audio ? Math.max(audio.rms, audio.low, audio.mid, audio.high) : 0;
+      const isLive = Boolean(audio && isAudioLive(audio, now) && energy > 0.003);
+
+      let target: [number, number, number, number];
+
+      if (!playing) {
+        // Pausado ou sem reprodução: recolhe suavemente para o mínimo de repouso
+        target = [0.22, 0.22, 0.22, 0.22];
+      } else if (isLive && audio) {
+        // Áudio ao vivo do sistema (graves → médios → agudos)
+        target = equalizerHeights(audio);
+      } else {
+        // Tocando música no PC: ondulação rítmica e dinâmica estilo equalizador Apple Music
+        const t = now * 0.006;
+        target = [
+          0.25 + 0.65 * Math.abs(Math.sin(t * 1.35)),
+          0.25 + 0.72 * Math.abs(Math.sin(t * 1.95 + 1.1)),
+          0.25 + 0.70 * Math.abs(Math.sin(t * 1.55 + 2.3)),
+          0.25 + 0.60 * Math.abs(Math.sin(t * 2.25 + 0.6)),
+        ];
+      }
+
+      // Amortecimento de mola contínua (interrompível e sem saltos)
+      const k = 1 - Math.exp(-22 * Math.max(0.001, dt));
+      for (let i = 0; i < 4; i++) {
+        smooth[i] += (target[i] - smooth[i]) * k;
+        const el = barRefs.current[i];
+        if (el) {
+          const barHeight = Math.max(3, Math.round(smooth[i] * height));
+          el.style.height = `${barHeight}px`;
+        }
+      }
+    });
+  }, [audioRef, height, playing]);
+
+  const minH = Math.max(3, Math.round(height * 0.25));
+
+  return (
+    <div
+      className="flex items-end gap-[2.5px] shrink-0"
+      style={{ height }}
+      aria-hidden
+    >
+      {[0, 1, 2, 3].map((i) => (
+        <span
+          key={i}
+          ref={(el) => {
+            barRefs.current[i] = el;
+          }}
+          className="w-[2.5px] rounded-full bg-white transition-[height] duration-75 ease-out"
+          style={{ height: minH }}
+        />
+      ))}
+    </div>
+  );
+};
+
+export const NotchIconButton: React.FC<{
   onClick: (e: React.MouseEvent) => void;
   title: string;
   active?: boolean;
@@ -239,21 +288,32 @@ export function setNotchAutoHideDisabled(disabled: boolean): void {
   } catch {}
 }
 
+/** Cursor fora do alcance: o mascote volta ao olhar do humor (quando `followCursor` está desligado). */
+const NO_CURSOR_T0 = 0;
+
 export interface CursorPos {
   x: number;
   y: number;
   t: number;
+  /** px/s recentes (thread de cursor do Rust; 0 no mousemove do DOM) */
+  speed?: number;
+  /** inversões de direção em ~0,6 s */
+  reversals?: number;
+  /** botão esquerdo pressionado */
+  dragging?: boolean;
 }
+
+const NO_CURSOR: CursorPos = { x: -9999, y: -9999, t: NO_CURSOR_T0 };
 
 /** Posição do cursor (mousemove + evento do overlay, que funciona com click-through). */
 export function useCursorPos(): CursorPos {
   const [pos, setPos] = useState<CursorPos>({ x: -9999, y: -9999, t: 0 });
   useEffect(() => {
-    const push = (x: number, y: number) => {
+    const push = (x: number, y: number, extra?: Partial<CursorPos>) => {
       setPos((prev) =>
-        Math.abs(x - prev.x) < 6 && Math.abs(y - prev.y) < 6
+        Math.abs(x - prev.x) < 6 && Math.abs(y - prev.y) < 6 && !extra?.dragging && !prev.dragging
           ? prev
-          : { x, y, t: Date.now() },
+          : { x, y, t: Date.now(), ...extra },
       );
     };
     const onMove = (e: MouseEvent) => push(e.clientX, e.clientY);
@@ -261,9 +321,13 @@ export function useCursorPos(): CursorPos {
     let unlisten: (() => void) | undefined;
     if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
       void import("@tauri-apps/api/event").then(({ listen }) => {
-        void listen<{ x: number; y: number }>("overlay:cursor", (event) => {
-          push(event.payload.x, event.payload.y);
-        }).then((fn) => {
+        void listen<{ x: number; y: number; speed?: number; reversals?: number; dragging?: boolean }>(
+          "overlay:cursor",
+          (event) => {
+            const { x, y, speed, reversals, dragging } = event.payload;
+            push(x, y, { speed, reversals, dragging });
+          },
+        ).then((fn) => {
           unlisten = fn;
         });
       });
@@ -309,7 +373,7 @@ const CallAvatar: React.FC<{ src?: string; name?: string; size: number; speaking
   </span>
 );
 
-const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+export const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/35 leading-none mb-2">
     {children}
   </p>
@@ -324,11 +388,31 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   onOverlayMute,
   onOverlayDeafen,
   onOverlayHangUp,
+  config: configProp,
+  soundVolume,
 }) => {
   const voiceCall = useVoiceCallContext();
-  // No overlay (overlay/main.tsx) não há PreferencesProvider: lê a cor gravada
-  // pelo launcher no localStorage (mesma origem) e cai no branco se não houver.
-  const mascotColor = useMascotColor();
+  // Configuração viva (Configurações → Mascote e Notch). O overlay não tem
+  // PreferencesProvider; ela chega de overlay-prefs.json + evento `overlay:prefs`.
+  const appearance = useOverlayAppearance();
+  const config = configProp ?? appearance.config;
+  // Estilo = tema visual do launcher (cyberpunk, ps5...) + ajustes do usuário.
+  const notchStyle = useMemo(
+    () => resolveNotchStyle(appearance.visualTheme, config),
+    [appearance.visualTheme, config],
+  );
+  const mascotBodyColor = config.bodyColor;
+  const mascotShape = config.shape;
+
+  // Sons de interação do notch (cada ação tem o seu; mutar/desligar tocam no hook de voz).
+  const notchSound = useCallback(
+    (id: NotchSoundId) => {
+      if (config.sounds) playNotchSound(id, soundVolume);
+    },
+    [config.sounds, soundVolume],
+  );
+  const notchSoundRef = useRef(notchSound);
+  notchSoundRef.current = notchSound;
 
   // Estados de visualização do Notch
   const [isExpanded, setIsExpanded] = useState(false);
@@ -363,6 +447,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   // Cursor global (olhos do mascote seguem) + expressão base escolhida nas configs
   const cursor = useCursorPos();
+  const gazeCursor = config.followCursor ? cursor : NO_CURSOR;
   const [baseMood, setBaseMood] = useState<MascotMood | null>(() => getMascotBaseMood());
   useEffect(() => {
     const syncMood = () => setBaseMood(getMascotBaseMood());
@@ -409,7 +494,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     isWindowOverlapping,
     isCallActive,
     isGameRunning: Boolean(activeGameTitle),
-    disabled: autoHideDisabled,
+    disabled: autoHideDisabled || !config.autoHide,
   });
 
   const handleToggleMute = () => {
@@ -458,6 +543,11 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   // Detector de multimídia do PC via Windows GSMTC
   useEffect(() => {
+    // Sem mídia no notch: não consulta o Windows (PowerShell a cada 1,5s) e limpa o estado.
+    if (!config.showMedia) {
+      applyMedia(EMPTY_MEDIA);
+      return;
+    }
     let active = true;
 
     const pollPcMedia = async () => {
@@ -507,7 +597,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
       active = false;
       clearInterval(interval);
     };
-  }, [applyMedia]);
+  }, [applyMedia, config.showMedia]);
 
   // Detector de programas abertos / janelas sobrepostas ao Notch
   useEffect(() => {
@@ -591,8 +681,12 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   );
 
   // Controles de reprodução de multimídia do PC
+  const mediaPlayingRef = useRef(false);
+  mediaPlayingRef.current = mediaState.isPlaying;
+
   const handleTogglePlayPause = useCallback(async (e?: React.MouseEvent) => {
     e?.stopPropagation();
+    notchSoundRef.current(mediaPlayingRef.current ? "mediaPause" : "mediaPlay");
     if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
       try {
         const { invoke } = await import("@tauri-apps/api/core");
@@ -604,6 +698,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   const handleSkipPrev = useCallback(async (e?: React.MouseEvent) => {
     e?.stopPropagation();
+    notchSoundRef.current("mediaSkip");
     if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
       try {
         const { invoke } = await import("@tauri-apps/api/core");
@@ -614,6 +709,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   const handleSkipNext = useCallback(async (e?: React.MouseEvent) => {
     e?.stopPropagation();
+    notchSoundRef.current("mediaSkip");
     if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
       try {
         const { invoke } = await import("@tauri-apps/api/core");
@@ -622,14 +718,22 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     }
   }, []);
 
+  // Ref do cursor para verificação de posição no callback do timer (sem stale closure)
+  const cursorPosRef = useRef({ x: cursor.x, y: cursor.y });
+  cursorPosRef.current = { x: cursor.x, y: cursor.y };
+
   // EXPANSÃO E RECOLHIMENTO SEQUENCIAL
   const handleMouseEnter = () => {
     if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     // Só espera a animação de descida se o notch estava de fato escondido.
     const wasHidden = autoHideActive && !isRevealed && !isHovered;
 
     setIsHovered(true);
     revealNotch();
+
+    // Sem "expandir ao passar o mouse": só revela; o clique expande.
+    if (!config.expandOnHover) return;
 
     if (wasHidden) {
       // Espera a animação de descer (translate-y) terminar antes de expandir
@@ -645,29 +749,112 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     setIsHovered(false);
     if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
 
-    // Atraso anti-flicker: um mouseleave espúrio (hit-test do overlay alternando
-    // o click-through na borda) não derruba o painel; um re-enter cancela.
+    // Anti-flicker baseado em posição: quando o timer dispara, verifica se o cursor
+    // ainda está dentro do bounding rect do notch (inclui margem de tolerância de 8px).
+    // Isso é mais confiável que relatedTarget, que tem race conditions com motion.div.
     collapseTimerRef.current = setTimeout(() => {
+      const notchRoot = document.querySelector<HTMLElement>("[data-notch-root]");
+      if (notchRoot) {
+        const rect = notchRoot.getBoundingClientRect();
+        const { x: cx, y: cy } = cursorPosRef.current;
+        const margin = 8;
+        if (cx >= rect.left - margin && cx <= rect.right + margin &&
+            cy >= rect.top - 4 && cy <= rect.bottom + margin) {
+          // Cursor ainda dentro — cancela o colapso e restaura hover
+          setIsHovered(true);
+          return;
+        }
+      }
       setIsExpanded(false);
-    }, 160);
+    }, 300);
 
     if (autoHideActive) {
       // Espera o encolhimento para só depois subir a notch
       hideTimerRef.current = setTimeout(() => {
         setIsRevealed(false);
-      }, 220);
+      }, 380);
     }
   };
 
   const isPcMediaPlaying = mediaState.hasMedia && mediaState.isPlaying;
 
   // Humor dinâmico do mascote Pherie quando aparece (Coucou-style)
+  // Áudio do PC: headbang no ritmo e equalizador real (medidor só liga com música tocando).
+  const audioRef = useAudioReactiveRef(isPcMediaPlaying && config.showMedia);
+
+  // Tontura: chacoalhar o mouse perto do notch (métricas calculadas no Rust).
+  const [dizzy, setDizzy] = useState(false);
+  const dizzyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Curiosidade: cursor chegou ao topo, na altura do notch.
+  const [curious, setCurious] = useState(false);
+  const curiousTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (cursor.t === 0) return;
+    const rect = document.querySelector<HTMLElement>("[data-notch-root]")?.getBoundingClientRect() ?? null;
+    const distance = distanceToRect(cursor.x, cursor.y, rect, window.innerWidth);
+    if (isMouseShake({ speed: cursor.speed ?? 0, reversals: cursor.reversals ?? 0 }, distance)) {
+      setDizzy(true);
+      if (dizzyTimer.current) clearTimeout(dizzyTimer.current);
+      dizzyTimer.current = setTimeout(() => setDizzy(false), DIZZY_DURATION_MS);
+    }
+    if (isCursorAtTop(cursor, rect, window.innerWidth)) {
+      setCurious(true);
+      if (curiousTimer.current) clearTimeout(curiousTimer.current);
+      curiousTimer.current = setTimeout(() => setCurious(false), 1400);
+    }
+  }, [cursor]);
+  useEffect(
+    () => () => {
+      if (dizzyTimer.current) clearTimeout(dizzyTimer.current);
+      if (curiousTimer.current) clearTimeout(curiousTimer.current);
+    },
+    [],
+  );
+
+  // Dropzone: arrastar imagens até o notch as salva nas capturas.
+  const [digested, setDigested] = useState(false);
+  const digestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dropzone = useNotchDropzone({
+    enabled: config.enabled,
+    cursor: { x: cursor.x, y: cursor.y, dragging: Boolean(cursor.dragging), t: cursor.t },
+    gameTitle: activeGameTitle,
+    onImported: () => {
+      setDigested(true);
+      if (digestTimer.current) clearTimeout(digestTimer.current);
+      digestTimer.current = setTimeout(() => setDigested(false), 1800);
+    },
+  });
+  useEffect(
+    () => () => {
+      if (digestTimer.current) clearTimeout(digestTimer.current);
+    },
+    [],
+  );
+  // o painel "Solte aqui" abre sozinho e fecha quando a dropzone termina
+  const dropForcedOpen = useRef(false);
+  useEffect(() => {
+    if (dropzone.active) {
+      if (!isExpanded) {
+        dropForcedOpen.current = true;
+        setIsExpanded(true);
+      }
+    } else if (dropForcedOpen.current) {
+      dropForcedOpen.current = false;
+      setIsExpanded(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dropzone.active]);
+
   const mascotMood: MascotMood = useMemo(() => {
+    if (dizzy) return "dizzy"; // chacoalharam o mouse
+    if (dropzone.armed || dropzone.over || dropzone.importing) return "surprised"; // boca aberta
+    if (digested) return "happy"; // "digeriu" o arquivo
     if (isCallActive) return isMuted ? "muted" : "calling";
     if (activeGameTitle) return "gaming";
     if (isPcMediaPlaying) return "music";
+    if (curious && !baseMood) return "curious";
     return baseMood ?? "idle";
-  }, [isCallActive, isMuted, activeGameTitle, isPcMediaPlaying, baseMood]);
+  }, [dizzy, dropzone.armed, dropzone.over, dropzone.importing, digested, isCallActive, isMuted, activeGameTitle, isPcMediaPlaying, curious, baseMood]);
 
   // Boca do mascote: no Tauri o volume do microfone chega por evento dedicado
   // (overlay:voice-level, ref sem re-render). Fora do Tauri (dev no navegador) cai
@@ -680,10 +867,10 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   // Frases do balão no painel ocioso (rotacionam enquanto o painel está aberto).
   const [bubbleIndex, setBubbleIndex] = useState(0);
   useEffect(() => {
-    if (!isExpanded) return;
+    if (!isExpanded || !config.showBubbleTips) return;
     const id = window.setInterval(() => setBubbleIndex((i) => i + 1), 6000);
     return () => window.clearInterval(id);
-  }, [isExpanded]);
+  }, [isExpanded, config.showBubbleTips]);
 
   const compactWidth = useMemo(
     () => resolveNotchCompactWidth({ isCallActive, activeGameTitle, isPcMediaPlaying }),
@@ -693,6 +880,35 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   // Oculta o Notch no topo se houver janela sobreposta e o cursor não estiver na área
   // (nunca durante chamada ou jogo — ver shouldAutoHide).
   const isHiddenByWindow = autoHideActive && !isRevealed && !isHovered;
+
+  // Sons: abrir/fechar o painel e o notch "descendo" do auto-hide.
+  const prevExpandedRef = useRef(false);
+  useEffect(() => {
+    if (prevExpandedRef.current === isExpanded) return;
+    prevExpandedRef.current = isExpanded;
+    notchSound(isExpanded ? "expand" : "collapse");
+  }, [isExpanded, notchSound]);
+
+  const prevHiddenRef = useRef(isHiddenByWindow);
+  useEffect(() => {
+    // se o mouse já está em cima o painel vai expandir em seguida: só o som de expandir
+    if (prevHiddenRef.current && !isHiddenByWindow && !isHovered) notchSound("reveal");
+    prevHiddenRef.current = isHiddenByWindow;
+  }, [isHiddenByWindow, isHovered, notchSound]);
+
+  // Cutucar a Pherie: pop a cada clique, som próprio no 3º clique seguido (ela fica tonta).
+  const pokeClicksRef = useRef<number[]>([]);
+  const handleMascotPoke = useCallback(() => {
+    const now = Date.now();
+    const recent = [...pokeClicksRef.current.filter((t) => now - t < 800), now];
+    pokeClicksRef.current = recent;
+    if (recent.length >= 3) {
+      pokeClicksRef.current = [];
+      notchSound("mascotDizzy");
+    } else {
+      notchSound("mascotPoke");
+    }
+  }, [notchSound]);
 
   const openNotch = () => {
     revealNotch();
@@ -704,7 +920,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   // Quem "hospeda" o mascote quando o painel abre (a barra cede o lugar): a chamada,
   // o slot da capa (música sem capa) ou o balão ocioso. Jogo sozinho não hospeda.
-  const mascotHost: "call" | "media" | "idle" | null = !isExpanded
+  const mascotHost: "call" | "media" | "idle" | null = !isExpanded || !config.showMascot
     ? null
     : isCallActive
     ? "call"
@@ -718,16 +934,19 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     const h = new Date().getHours();
     return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
   })();
-  const bubbleLines = [
+  const allBubbleLines = [
     `${greeting}! Pronto para sua próxima jogatina?`,
     "Clique em mim — eu reajo!",
     "Ctrl+Shift+O abre o painel do overlay.",
     "Eu sigo o seu cursor, sabia?",
   ];
+  // Sem dicas: fica só a saudação
+  const bubbleLines = config.showBubbleTips ? allBubbleLines : allBubbleLines.slice(0, 1);
   const bubbleText = bubbleLines[bubbleIndex % bubbleLines.length];
 
   const openOverlayPanel = useCallback(async () => {
     if (!hasTauriRuntime()) return;
+    notchSoundRef.current("panelOpen");
     try {
       const { invoke } = await import("@tauri-apps/api/core");
       await invoke("overlay_toggle_panel");
@@ -736,8 +955,9 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   // ── Barra superior (sempre visível; vira o "cabeçalho" quando expande) ──
   // Mascote sempre à esquerda (também ocioso): é o ponto de interação do notch.
-  const barMascot = (size: number) => (
+  const barMascot = (size: number) => !config.showMascot ? null : (
     <div
+      data-notch-mascot="true"
       className="shrink-0"
       style={{
         width: size,
@@ -747,15 +967,21 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
       }}
     >
       <GazingMascot
-        cursor={cursor}
+        cursor={gazeCursor}
         size={size}
         mood={mascotMood}
         isHovered={isHovered}
-        color={mascotColor}
+        bodyColor={mascotBodyColor}
+        shape={mascotShape}
+        ears={config.ears}
+        items={config.items}
+        earAccent={notchStyle.accent}
         inCall={isCallActive}
         isMusicPlaying={isPcMediaPlaying}
         levelRef={voiceLevelRef}
+        audioRef={audioRef}
         isSpeaking={mouthSpeaking}
+        onClick={handleMascotPoke}
       />
     </div>
   );
@@ -769,15 +995,21 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
       transition={{ type: "spring", stiffness: 420, damping: 18, delay: 0.05 }}
     >
       <GazingMascot
-        cursor={cursor}
+        cursor={gazeCursor}
         size={size}
         mood={mascotMood}
         isHovered={isHovered}
-        color={mascotColor}
+        bodyColor={mascotBodyColor}
+        shape={mascotShape}
+        ears={config.ears}
+        items={config.items}
+        earAccent={notchStyle.accent}
         inCall={isCallActive}
         isMusicPlaying={isPcMediaPlaying}
         levelRef={voiceLevelRef}
+        audioRef={audioRef}
         isSpeaking={mouthSpeaking}
+        onClick={handleMascotPoke}
       />
     </motion.div>
   );
@@ -807,7 +1039,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
       return (
         <>
           <div className="flex-1 flex items-center gap-2">{barMascot(26)}</div>
-          <span className="text-[13px] font-semibold tracking-tight text-white tabular-nums">{currentTime}</span>
+          <span className="text-[13px] font-semibold tracking-tight text-white tabular-nums">{config.showClock ? currentTime : ""}</span>
           <div className="flex-1 flex items-center justify-end gap-1.5 text-white/55">
             <Gamepad2 size={12} />
             <span className="text-[10px] font-mono tabular-nums">{formatSeconds(activeGameElapsedSeconds)}</span>
@@ -818,13 +1050,20 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     return (
       <>
         <div className="flex-1 flex items-center">{barMascot(26)}</div>
-        <span className="text-[13px] font-semibold tracking-tight text-white tabular-nums">{currentTime}</span>
+        <span className="text-[13px] font-semibold tracking-tight text-white tabular-nums">{config.showClock ? currentTime : ""}</span>
         <div className="flex-1 flex items-center justify-end">
-          {isPcMediaPlaying && <Equalizer playing height={14} />}
+          {isPcMediaPlaying && <Equalizer playing height={14} audioRef={audioRef} />}
         </div>
       </>
     );
   };
+
+  const notchBg = surfaceColor(notchStyle);
+  const chamferCut = Math.max(6, Math.round(notchStyle.cornerRadius * 1.2));
+  // borda neon + cantos chanfrados: o recorte não aceita box-shadow, então a borda é uma
+  // camada de fundo recortada e o conteúdo fica num bloco recortado 1px para dentro.
+  const chamferBorder = notchStyle.chamfer && Boolean(notchStyle.borderColor);
+  const frosted = notchStyle.surfaceOpacity < 1;
 
   return (
     <>
@@ -841,6 +1080,12 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         data-overlay-interactive="true"
         data-notch-root="true"
         data-notch-expanded={isExpanded ? "true" : "false"}
+        data-notch-theme={appearance.visualTheme}
+        style={
+          notchStyle.chamfer && notchStyle.glow > 0
+            ? { filter: `drop-shadow(0 0 ${Math.round(5 + notchStyle.glow * 12)}px ${notchStyle.glowColor})` }
+            : undefined
+        }
         className={`fixed top-0 left-1/2 -translate-x-1/2 z-[10030] pointer-events-auto select-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
           isHiddenByWindow ? "-translate-y-[64px]" : "translate-y-0"
         } ${className}`}
@@ -852,16 +1097,26 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
           initial={false}
           animate={{
             width: isExpanded ? NOTCH_EXPANDED_WIDTH : compactWidth,
-            borderBottomLeftRadius: isExpanded ? 28 : 18,
-            borderBottomRightRadius: isExpanded ? 28 : 18,
-            boxShadow: isExpanded
-              ? "0 14px 34px rgba(0,0,0,0.38), 0 2px 8px rgba(0,0,0,0.3)"
-              : "0 4px 14px rgba(0,0,0,0.22)",
+            borderBottomLeftRadius: notchStyle.chamfer ? 0 : notchStyle.cornerRadius + (isExpanded ? EXPANDED_RADIUS_BONUS : 0),
+            borderBottomRightRadius: notchStyle.chamfer ? 0 : notchStyle.cornerRadius + (isExpanded ? EXPANDED_RADIUS_BONUS : 0),
+            boxShadow: notchBoxShadow(notchStyle, isExpanded),
           }}
           transition={NOTCH_SPRING}
-          style={{ backgroundColor: NOTCH_BG }}
+          style={{
+            backgroundColor: chamferBorder ? (notchStyle.borderColor as string) : notchBg,
+            clipPath: notchStyle.chamfer ? chamferClipPath(chamferCut) : undefined,
+            backdropFilter: frosted ? "blur(18px)" : undefined,
+            WebkitBackdropFilter: frosted ? "blur(18px)" : undefined,
+          }}
           className="relative text-white"
         >
+          <div
+            style={
+              chamferBorder
+                ? { margin: 1, clipPath: chamferClipPath(Math.max(0, chamferCut - 1)), backgroundColor: notchBg }
+                : undefined
+            }
+          >
           {/* Orelhas côncavas: a ilha "nasce" da borda da tela (sem traço, sem emenda) */}
           <svg
             width="14"
@@ -869,7 +1124,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             viewBox="0 0 14 14"
             aria-hidden
             className="absolute top-0 -left-[13.5px] pointer-events-none"
-            style={{ fill: NOTCH_BG }}
+            style={{ fill: notchBg, display: notchStyle.chamfer ? "none" : undefined }}
           >
             <path d="M 0 0 C 7.73 0 14 6.27 14 14 L 14 0 Z" />
           </svg>
@@ -879,7 +1134,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             viewBox="0 0 14 14"
             aria-hidden
             className="absolute top-0 -right-[13.5px] pointer-events-none"
-            style={{ fill: NOTCH_BG }}
+            style={{ fill: notchBg, display: notchStyle.chamfer ? "none" : undefined }}
           >
             <path d="M 14 0 C 6.27 0 0 6.27 0 14 L 0 0 Z" />
           </svg>
@@ -905,18 +1160,33 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                 className="overflow-hidden"
               >
                 <div className="px-4 pb-4 pt-1 flex flex-col gap-3.5">
+                  {/* ── Dropzone: arraste imagens até aqui para salvá-las nas capturas ── */}
+                  {dropzone.active && (
+                    <section className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-white/25 bg-white/[0.05] px-4 py-5 text-center">
+                      <Camera size={20} className="text-white/70" />
+                      <p className="text-[13px] font-semibold text-white">
+                        {dropzone.importing
+                          ? "Salvando…"
+                          : dropzone.message ?? (dropzone.over ? "Solte para salvar" : "Solte imagens aqui")}
+                      </p>
+                      {!dropzone.message && !dropzone.importing && (
+                        <p className="text-[11px] text-white/45">Elas vão para as suas capturas</p>
+                      )}
+                    </section>
+                  )}
+                  <div className={dropzone.active ? "hidden" : "contents"}>
                   {/* ── Chamada de voz ── */}
                   {isCallActive && (
                     <section>
                       <SectionLabel>Chamada de voz</SectionLabel>
                       <div className="flex items-center gap-3">
-                        {panelMascot(52)}
+                        {config.showMascot && panelMascot(52)}
                         <div className="min-w-0 flex-1">
                           <p className="flex items-center gap-1.5 text-[13px] font-semibold text-white leading-tight min-w-0">
                             <CallAvatar src={callFriendAvatar} name={callFriendName} size={18} speaking={isSpeaking && !isMuted} />
                             <span className="truncate">{callFriendName || "Sala de Voz"}</span>
                           </p>
-                          <p className="text-[11px] text-white/50 leading-snug tabular-nums">
+                          <p className="mt-1 pl-[26px] text-[11px] text-white/50 leading-snug tabular-nums">
                             {formatSeconds(callDuration)} • {isSpeaking && !isMuted ? "Falando" : "Conectado"}
                           </p>
                         </div>
@@ -965,7 +1235,13 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                     <section>
                       <SectionLabel>{sourceLabel ? `Tocando · ${sourceLabel}` : "Tocando no PC"}</SectionLabel>
                       <div className="flex items-center gap-3">
-                        <div className="relative w-14 h-14 rounded-2xl shrink-0 bg-gradient-to-br from-white/[0.14] to-white/[0.04] flex items-center justify-center text-white/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
+                        <div
+                          className={`relative w-14 h-14 shrink-0 flex items-center justify-center text-white/60 ${
+                            mascotHost === "media" && !mediaState.thumbnail
+                              ? "" // a Pherie ocupa o lugar da capa SEM caixa em volta
+                              : "rounded-2xl bg-gradient-to-br from-white/[0.14] to-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
+                          }`}
+                        >
                           {mediaState.thumbnail ? (
                             <>
                               <img
@@ -974,29 +1250,37 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                                 className="w-full h-full rounded-2xl object-cover"
                                 draggable={false}
                               />
-                              <div className="absolute -bottom-1.5 -right-1.5 rounded-full bg-[#050506] p-0.5">
+                              <div className={`absolute -bottom-1.5 -right-1.5 rounded-full bg-[#050506] p-0.5 ${config.showMascot ? "" : "hidden"}`}>
                                 <GazingMascot
-                                  cursor={cursor}
+                                  cursor={gazeCursor}
                                   size={22}
                                   mood={mascotMood}
                                   isHovered={isHovered}
-                                  color={mascotColor}
+                                  bodyColor={mascotBodyColor}
+        shape={mascotShape}
+        ears={config.ears}
+        items={config.items}
+        earAccent={notchStyle.accent}
                                   isMusicPlaying={isPcMediaPlaying}
                                 />
                               </div>
                             </>
                           ) : mascotHost === "media" ? (
                             // sem capa: a Pherie ocupa o lugar dela, de fone, no ritmo da música
-                            panelMascot(46)
+                            panelMascot(56)
                           ) : (
-                            <Music size={22} />
+                            // sem capa e sem mascote no slot: o equalizador animado (o mesmo da direita)
+                            <Equalizer playing={isPcMediaPlaying} height={26} audioRef={audioRef} />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-[13px] font-semibold text-white truncate leading-tight">{mediaState.title}</p>
                           <p className="text-[11px] text-white/55 truncate leading-snug">{mediaState.artist}</p>
                         </div>
-                        <Equalizer playing={isPcMediaPlaying} height={18} />
+                        {/* o equalizador vai no slot da capa quando ele está livre; senão fica aqui */}
+                        {(mediaState.thumbnail || mascotHost === "media") && (
+                          <Equalizer playing={isPcMediaPlaying} height={18} audioRef={audioRef} />
+                        )}
                       </div>
                       <div className="flex items-center justify-center gap-5 mt-3">
                         <button
@@ -1038,22 +1322,31 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                   {!hasAnySection && (
                     <section className="flex flex-col gap-2.5">
                       <div className="flex items-center gap-3">
-                        {panelMascot(60)}
-                        <div className="relative flex-1 min-w-0 rounded-2xl bg-white/[0.07] px-3.5 py-2.5">
-                          <span className="absolute -left-1 top-1/2 -mt-1.5 h-3 w-3 rotate-45 rounded-[2px] bg-white/[0.07]" />
-                          <AnimatePresence mode="wait" initial={false}>
-                            <motion.p
-                              key={bubbleIndex % bubbleLines.length}
-                              initial={{ opacity: 0, y: 4 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -4 }}
-                              transition={{ duration: 0.18 }}
-                              className="text-[12px] leading-snug text-white/80"
-                            >
-                              {bubbleText}
-                            </motion.p>
-                          </AnimatePresence>
-                        </div>
+                        {config.showMascot && panelMascot(60)}
+                        {(() => {
+                          const tip = (
+                            <AnimatePresence mode="wait" initial={false}>
+                              <motion.p
+                                key={bubbleIndex % bubbleLines.length}
+                                initial={{ opacity: 0, y: 4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -4 }}
+                                transition={{ duration: 0.18 }}
+                                className="text-[12px] leading-snug text-white/80"
+                              >
+                                {bubbleText}
+                              </motion.p>
+                            </AnimatePresence>
+                          );
+                          return config.bubbleStyle === "retro" ? (
+                            <RetroBubble accent={notchStyle.accent}>{tip}</RetroBubble>
+                          ) : (
+                            <div className="relative flex-1 min-w-0 rounded-2xl bg-white/[0.07] px-3.5 py-2.5">
+                              <span className="absolute -left-1 top-1/2 -mt-1.5 h-3 w-3 rotate-45 rounded-[2px] bg-white/[0.07]" />
+                              {tip}
+                            </div>
+                          );
+                        })()}
                       </div>
                       {isOverlay && hasTauriRuntime() && (
                         <div className="flex items-center gap-2">
@@ -1069,12 +1362,20 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                       )}
                     </section>
                   )}
+                  </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
+          </div>
         </motion.div>
       </aside>
     </>
   );
+};
+
+/** Notch respeitando "Ativar o notch" das configurações (usado fora do overlay, ex.: dev no navegador). */
+export const ConfiguredDesktopNotch: React.FC = () => {
+  const config = useNotchConfig();
+  return config.enabled ? <DesktopNotch config={config} /> : null;
 };

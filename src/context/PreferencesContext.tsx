@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
+import { saveOverlayPrefs } from "../lib/overlayPrefs";
 
 export type LauncherLanguage =
   | "pt-BR"
@@ -1202,6 +1203,14 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
+
+  // O overlay é outra janela, sem este provider: espelha o tema visual em overlay-prefs.json
+  // para o notch e o painel se adaptarem a ele (cyberpunk, ps5...).
+  useEffect(() => {
+    if (!user?.uid || hydratedPreferencesUid !== user.uid) return;
+    if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
+    void saveOverlayPrefs({ visualTheme });
+  }, [hydratedPreferencesUid, user?.uid, visualTheme]);
 
   useEffect(() => {
     document.documentElement.dataset.launcherTheme = visualTheme;

@@ -304,6 +304,24 @@ pub fn get_game_or_primary_monitor(app: &AppHandle, game_title: Option<&str>) ->
 /// derruba o hover do notch (ex.: a cada "falando" durante uma chamada).
 static LAST_OVERLAY_RECT: Lazy<Mutex<Option<(i32, i32, u32, u32)>>> = Lazy::new(|| Mutex::new(None));
 
+/// Cobre o monitor dado com o overlay (mesmo cache de retângulo de `update_overlay_geometry_to_game`).
+fn place_overlay_on_monitor(app: &AppHandle, monitor: &tauri::Monitor) {
+    if let Some(win) = app.get_webview_window(OVERLAY_LABEL) {
+        let pos = monitor.position();
+        let size = monitor.size();
+        let rect = (pos.x, pos.y, size.width, size.height);
+        {
+            let mut last = LAST_OVERLAY_RECT.lock();
+            if *last == Some(rect) {
+                return;
+            }
+            *last = Some(rect);
+        }
+        let _ = win.set_position(tauri::Position::Physical(*pos));
+        let _ = win.set_size(tauri::Size::Physical(*size));
+    }
+}
+
 pub fn update_overlay_geometry_to_game(app: &AppHandle, game_title: Option<&str>) {
     if let Some(target_mon) = get_game_or_primary_monitor(app, game_title) {
         if let Some(win) = app.get_webview_window(OVERLAY_LABEL) {
@@ -562,6 +580,8 @@ fn ensure_cursor_watch(app: &AppHandle) {
                 use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
 
                 let mut last = (i32::MIN, i32::MIN);
+                let started = std::time::Instant::now();
+                let mut trail: Vec<(f64, f64, f64)> = Vec::with_capacity(64);
                 loop {
                     std::thread::sleep(std::time::Duration::from_millis(12));
                     if !CURSOR_WATCH_ENABLED.load(Ordering::Relaxed) {
@@ -587,7 +607,23 @@ fn ensure_cursor_watch(app: &AppHandle) {
                     };
                     let x = (f64::from(pt.x) - f64::from(pos.x)) / scale;
                     let y = (f64::from(pt.y) - f64::from(pos.y)) / scale;
-                    let _ = win.emit("overlay:cursor", json!({ "x": x, "y": y }));
+                    // movimento recente: velocidade e inversões (tontura ao chacoalhar o mouse)
+                    let now_ms = started.elapsed().as_secs_f64() * 1000.0;
+                    trail.push((now_ms, x, y));
+                    trail.retain(|s| now_ms - s.0 <= 600.0);
+                    let (speed, reversals) = motion_metrics(&trail);
+                    // botão esquerdo pressionado = possível arrasto de arquivo (dropzone do notch)
+                    let dragging = unsafe {
+                        (windows::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState(
+                            i32::from(windows::Win32::UI::Input::KeyboardAndMouse::VK_LBUTTON.0),
+                        ) as u16
+                            & 0x8000)
+                            != 0
+                    };
+                    let _ = win.emit(
+                        "overlay:cursor",
+                        json!({ "x": x, "y": y, "speed": speed, "reversals": reversals, "dragging": dragging }),
+                    );
                 }
             }
             #[cfg(not(windows))]
@@ -601,6 +637,113 @@ fn ensure_cursor_watch(app: &AppHandle) {
 
 /// When enabled, emits `overlay:cursor` with CSS-pixel coords relative to the overlay window.
 /// Used for selective click-through: only capture cursor over interactive toast hitboxes.
+/// Métricas de movimento do cursor numa janela curta de amostras `(t_ms, x, y)` (px CSS).
+/// - velocidade (px/s) média nos últimos ~150 ms;
+/// - inversões de direção ("chacoalhar"): quantas vezes o movimento mudou de sentido
+///   (em x ou em y, o maior) ignorando tremidas menores que `MIN_STEP_PX`.
+pub fn motion_metrics(samples: &[(f64, f64, f64)]) -> (f64, u32) {
+    const SPEED_WINDOW_MS: f64 = 150.0;
+    const MIN_STEP_PX: f64 = 4.0;
+    if samples.len() < 2 {
+        return (0.0, 0);
+    }
+
+    let t_last = samples[samples.len() - 1].0;
+    let mut dist = 0.0;
+    let mut t_first = t_last;
+    for pair in samples.windows(2).rev() {
+        if t_last - pair[0].0 > SPEED_WINDOW_MS {
+            break;
+        }
+        dist += ((pair[1].1 - pair[0].1).powi(2) + (pair[1].2 - pair[0].2).powi(2)).sqrt();
+        t_first = pair[0].0;
+    }
+    let dt = (t_last - t_first) / 1000.0;
+    let speed = if dt > 0.0 { dist / dt } else { 0.0 };
+
+    let flips = |axis: fn(&(f64, f64, f64)) -> f64| -> u32 {
+        let mut last_sign = 0.0_f64;
+        let mut count = 0;
+        for pair in samples.windows(2) {
+            let step = axis(&pair[1]) - axis(&pair[0]);
+            if step.abs() < MIN_STEP_PX {
+                continue;
+            }
+            let sign = step.signum();
+            if last_sign != 0.0 && sign != last_sign {
+                count += 1;
+            }
+            last_sign = sign;
+        }
+        count
+    };
+    (speed, flips(|s| s.1).max(flips(|s| s.2)))
+}
+
+/// Converte um ponto em px CSS da área cliente da janela principal para px CSS do overlay.
+/// px de tela (físicos) = origem da área cliente + px CSS × escala; depois divide-se pela
+/// escala do overlay e subtrai-se a origem dele. Retorna `(x, y, size)`.
+fn client_to_overlay_css(
+    client: (f64, f64),
+    size: f64,
+    main_inner_pos: (f64, f64),
+    main_scale: f64,
+    overlay_pos: (f64, f64),
+    overlay_scale: f64,
+) -> (f64, f64, f64) {
+    let screen_x = main_inner_pos.0 + client.0 * main_scale;
+    let screen_y = main_inner_pos.1 + client.1 * main_scale;
+    (
+        (screen_x - overlay_pos.0) / overlay_scale,
+        (screen_y - overlay_pos.1) / overlay_scale,
+        size * main_scale / overlay_scale,
+    )
+}
+
+/// Intro de lançamento: a janela principal informa onde está o mascote (px CSS da área
+/// cliente dela). Convertemos para as coordenadas do overlay (que pode estar em outro
+/// monitor/escala) e emitimos `overlay:launch-handoff`; o overlay desenha o mascote nesse
+/// ponto e o faz voar até o notch. Também posiciona o overlay no monitor da janela principal.
+#[tauri::command]
+pub fn overlay_launch_handoff(app: AppHandle, payload: Value) -> Result<Value, String> {
+    let num = |key: &str| payload.get(key).and_then(Value::as_f64).unwrap_or(0.0);
+    let (client_x, client_y, size) = (num("x"), num("y"), num("size"));
+
+    let main = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Janela principal indisponivel.".to_string())?;
+    let main_scale = main.scale_factor().map_err(|e| e.to_string())?;
+    let inner = main.inner_position().map_err(|e| e.to_string())?;
+
+    // o overlay precisa cobrir o monitor onde o mascote está
+    if let Ok(Some(monitor)) = main.current_monitor() {
+        place_overlay_on_monitor(&app, &monitor);
+    }
+    let overlay = ensure_overlay(&app)?;
+    let overlay_scale = overlay.scale_factor().map_err(|e| e.to_string())?;
+    let overlay_pos = overlay.outer_position().map_err(|e| e.to_string())?;
+
+    let (x, y, css_size) = client_to_overlay_css(
+        (client_x, client_y),
+        size,
+        (f64::from(inner.x), f64::from(inner.y)),
+        main_scale,
+        (f64::from(overlay_pos.x), f64::from(overlay_pos.y)),
+        overlay_scale,
+    );
+    let out = json!({
+        "x": x,
+        "y": y,
+        "size": css_size,
+        "id": format!("{}", std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis())
+            .unwrap_or(0)),
+    });
+    send_overlay_event(&app, "overlay:launch-handoff", out.clone());
+    Ok(out)
+}
+
 #[tauri::command]
 pub fn overlay_set_cursor_watch(app: AppHandle, enabled: bool) -> Result<(), String> {
     ensure_cursor_watch(&app);
@@ -1019,4 +1162,88 @@ pub fn overlay_prefs_set(app: AppHandle, prefs: Value) -> Result<Value, String> 
 #[allow(dead_code)]
 fn empty_object() -> Map<String, Value> {
     Map::new()
+}
+
+#[cfg(test)]
+mod handoff_tests {
+    use super::client_to_overlay_css;
+
+    #[test]
+    fn same_monitor_same_scale_is_a_plain_offset() {
+        // janela principal em (100,50) e overlay em (0,0), ambos escala 1
+        let (x, y, size) = client_to_overlay_css((640.0, 400.0), 176.0, (100.0, 50.0), 1.0, (0.0, 0.0), 1.0);
+        assert_eq!((x, y, size), (740.0, 450.0, 176.0));
+    }
+
+    #[test]
+    fn overlay_origin_is_subtracted() {
+        // overlay num monitor secundário que começa em x=1920
+        let (x, y, _) = client_to_overlay_css((100.0, 100.0), 100.0, (2000.0, 40.0), 1.0, (1920.0, 0.0), 1.0);
+        assert_eq!((x, y), (180.0, 140.0));
+    }
+
+    #[test]
+    fn different_dpi_scales_are_normalised_to_overlay_css_pixels() {
+        // principal a 150% (1.5) e overlay a 100%: 100 px CSS = 150 px físicos = 150 px CSS do overlay
+        let (x, _, size) = client_to_overlay_css((100.0, 0.0), 100.0, (0.0, 0.0), 1.5, (0.0, 0.0), 1.0);
+        assert_eq!(x, 150.0);
+        assert_eq!(size, 150.0);
+        // overlay a 200%: os mesmos 150 físicos = 75 px CSS
+        let (x2, _, size2) = client_to_overlay_css((100.0, 0.0), 100.0, (0.0, 0.0), 1.5, (0.0, 0.0), 2.0);
+        assert_eq!(x2, 75.0);
+        assert_eq!(size2, 75.0);
+    }
+}
+
+#[cfg(test)]
+mod motion_tests {
+    use super::motion_metrics;
+
+    #[test]
+    fn still_or_single_sample_has_no_motion() {
+        assert_eq!(motion_metrics(&[]), (0.0, 0));
+        assert_eq!(motion_metrics(&[(0.0, 10.0, 10.0)]), (0.0, 0));
+        let (speed, flips) = motion_metrics(&[(0.0, 10.0, 10.0), (100.0, 10.0, 10.0)]);
+        assert_eq!((speed, flips), (0.0, 0));
+    }
+
+    #[test]
+    fn straight_line_has_speed_and_no_reversals() {
+        // 100 px em 100 ms = 1000 px/s, sempre para a direita
+        let samples: Vec<_> = (0..11).map(|i| (i as f64 * 10.0, i as f64 * 10.0, 50.0)).collect();
+        let (speed, flips) = motion_metrics(&samples);
+        assert!((speed - 1000.0).abs() < 1.0, "speed {speed}");
+        assert_eq!(flips, 0);
+    }
+
+    #[test]
+    fn shaking_the_mouse_counts_direction_changes() {
+        // vai e volta 60 px a cada 40 ms: 6 meias-voltas = 5 inversões
+        let mut samples = Vec::new();
+        for i in 0..7 {
+            let x = if i % 2 == 0 { 100.0 } else { 160.0 };
+            samples.push((i as f64 * 40.0, x, 50.0));
+        }
+        let (speed, flips) = motion_metrics(&samples);
+        assert_eq!(flips, 5);
+        assert!(speed > 1000.0, "speed {speed}");
+    }
+
+    #[test]
+    fn tiny_jitter_is_ignored() {
+        let samples: Vec<_> = (0..10)
+            .map(|i| (i as f64 * 10.0, 100.0 + if i % 2 == 0 { 0.0 } else { 2.0 }, 50.0))
+            .collect();
+        assert_eq!(motion_metrics(&samples).1, 0);
+    }
+
+    #[test]
+    fn reversals_on_the_y_axis_count_too() {
+        let mut samples = Vec::new();
+        for i in 0..5 {
+            let y = if i % 2 == 0 { 20.0 } else { 80.0 };
+            samples.push((i as f64 * 50.0, 100.0, y));
+        }
+        assert_eq!(motion_metrics(&samples).1, 3);
+    }
 }

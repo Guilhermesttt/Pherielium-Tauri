@@ -219,6 +219,9 @@ export const launchGame = async (
       } else {
         window.location.assign(epicLaunchUri);
       }
+      if (hideLauncher) {
+        void window.electronAPI?.launcherHideMain?.();
+      }
       return;
     }
 
@@ -227,6 +230,9 @@ export const launchGame = async (
         await window.electronAPI.openExternalUrl(game.epicStoreUrl);
       } else {
         window.open(game.epicStoreUrl, "_blank", "noopener,noreferrer");
+      }
+      if (hideLauncher) {
+        void window.electronAPI?.launcherHideMain?.();
       }
       return;
     }
@@ -270,6 +276,9 @@ export const launchGame = async (
       await window.electronAPI.openExternalUrl(steamLaunchUri);
     } else {
       window.location.assign(steamLaunchUri);
+    }
+    if (hideLauncher) {
+      void window.electronAPI?.launcherHideMain?.();
     }
     return;
   }

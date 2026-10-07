@@ -108,6 +108,17 @@ pub async fn launcher_open_executable(
     Ok(())
 }
 
+/// Esconde o launcher DEPOIS da intro de lançamento (o fluxo antigo escondia na hora, dentro
+/// de `launcher_open_executable`). Arma a restauração: ao fechar o jogo o hub reaparece.
+#[command]
+pub fn launcher_hide_main(app: AppHandle) -> Result<(), String> {
+    crate::commands::game_watch::set_restore_launcher(&app, true);
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.hide();
+    }
+    Ok(())
+}
+
 #[command]
 pub async fn launcher_select_executable(app: AppHandle) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
