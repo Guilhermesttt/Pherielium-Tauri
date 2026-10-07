@@ -106,12 +106,12 @@ const CONTROLLER_COPY = {
 } as const;
 
 const DIAGNOSTICS_COPY = {
-  "pt-BR": { title: "Diagnóstico do Controle", connection: "Conexão", battery: "Bateria", family: "Família", close: "Fechar", unknown: "Bateria não informada pelo dispositivo" },
-  "en-US": { title: "Controller Diagnostics", connection: "Connection", battery: "Battery", family: "Family", close: "Close", unknown: "Battery not reported by device" },
-  "es-ES": { title: "Diagnóstico del Mando", connection: "Conexión", battery: "Batería", family: "Familia", close: "Cerrar", unknown: "Batería no informada por el dispositivo" },
-  "fr-FR": { title: "Diagnostic de la Manette", connection: "Connexion", battery: "Batterie", family: "Famille", close: "Fermer", unknown: "Batterie non signalée par l'appareil" },
-  "de-DE": { title: "Controller-Diagnose", connection: "Verbindung", battery: "Batterie", family: "Familie", close: "Schließen", unknown: "Batterie nicht vom Gerät gemeldet" },
-  "it-IT": { title: "Diagnostica Controller", connection: "Connessione", battery: "Batteria", family: "Famiglia", close: "Chiudi", unknown: "Batteria non segnalata dal dispositivo" },
+  "pt-BR": { title: "Diagnóstico do Controle", connection: "Conexão", connected: "Conectado", battery: "Bateria", family: "Família", close: "Fechar", unknown: "Bateria não informada pelo dispositivo" },
+  "en-US": { title: "Controller Diagnostics", connection: "Connection", connected: "Connected", battery: "Battery", family: "Family", close: "Close", unknown: "Battery not reported by device" },
+  "es-ES": { title: "Diagnóstico del Mando", connection: "Conexión", connected: "Conectado", battery: "Batería", family: "Familia", close: "Cerrar", unknown: "Batería no informada por el dispositivo" },
+  "fr-FR": { title: "Diagnostic de la Manette", connection: "Connexion", connected: "Connectée", battery: "Batterie", family: "Famille", close: "Fermer", unknown: "Batterie non signalée par l'appareil" },
+  "de-DE": { title: "Controller-Diagnose", connection: "Verbindung", connected: "Verbunden", battery: "Batterie", family: "Familie", close: "Schließen", unknown: "Batterie nicht vom Gerät gemeldet" },
+  "it-IT": { title: "Diagnostica Controller", connection: "Connessione", connected: "Collegato", battery: "Batteria", family: "Famiglia", close: "Chiudi", unknown: "Batteria non segnalata dal dispositivo" },
 } as const;
 
 const SETTINGS_SHELL_COPY = {
@@ -1220,7 +1220,14 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
     soundTheme,
     notificationVolume / 100,
   );
-  const { isGamepadConnected, gamepadFamily, connectedGamepadId } = useGamepad();
+  const {
+    isGamepadConnected,
+    gamepadFamily,
+    connectedGamepadId,
+    batteryLevel,
+    batteryCharging,
+    batteryApproximate,
+  } = useGamepad();
   const {
     openAtLogin,
     setOpenAtLogin,
@@ -1271,8 +1278,6 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
   const [isVideoPreviewOn, setIsVideoPreviewOn] = React.useState(false);
   const videoPreviewRef = React.useRef<HTMLVideoElement | null>(null);
   const videoPreviewStreamRef = React.useRef<MediaStream | null>(null);
-  const [batteryLevel, setBatteryLevel] = React.useState<number | null>(null);
-  const [batteryCharging, setBatteryCharging] = React.useState(false);
   const [showControllerStatusModal, setShowControllerStatusModal] = React.useState(false);
   const [hoveredTab, setHoveredTab] = React.useState<string | null>(null);
   const [isQuitHovered, setIsQuitHovered] = React.useState(false);
@@ -1423,46 +1428,6 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
       }
     };
   }, [activeTab, isVideoPreviewOn, voiceCallContext?.selectedVideoInput]);
-
-  React.useEffect(() => {
-    let cancelled = false;
-    let bat: any = null;
-    const update = (b: any) => {
-      if (cancelled) return;
-      setBatteryLevel(Math.round(b.level * 100));
-      setBatteryCharging(!!b.charging);
-    };
-    const poll = async () => {
-      try {
-        const nav: any = navigator as any;
-        if (nav.getBattery) {
-          bat = await nav.getBattery();
-          update(bat);
-          bat.addEventListener("levelchange", () => update(bat));
-          bat.addEventListener("chargingchange", () => update(bat));
-        }
-      } catch { }
-    };
-    if (isGamepadConnected) void poll();
-    else { setBatteryLevel(null); setBatteryCharging(false); }
-    return () => {
-      cancelled = true;
-      try { bat?.removeEventListener("levelchange", update); bat?.removeEventListener("chargingchange", update); } catch { }
-    };
-  }, [isGamepadConnected]);
-
-  React.useEffect(() => {
-    if (!isGamepadConnected || batteryLevel === null || batteryCharging) return;
-    if (batteryLevel > 20) return;
-    const key = `checkpoint_low_bat_${batteryLevel}`;
-    if (sessionStorage.getItem(key)) return;
-    sessionStorage.setItem(key, "1");
-    window.setTimeout(() => sessionStorage.removeItem(key), 600000);
-    if (window.electronAPI?.updateOverlayPanel) {
-      try { window.electronAPI?.showBatteryWarning?.(batteryLevel); } catch { }
-    }
-    window.dispatchEvent(new CustomEvent("checkpoint:low-battery", { detail: { level: batteryLevel } }));
-  }, [batteryLevel, batteryCharging, isGamepadConnected]);
 
   React.useEffect(() => {
     setProfileVisibility(userProfile?.profileVisibility ?? "public");
@@ -2523,7 +2488,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
                           {!isGamepadConnected ? (
                             <span className="text-white/45 italic">Conecte um controle</span>
                           ) : batteryLevel !== null ? (
-                            `${batteryLevel}%`
+                            `${batteryApproximate ? "≈ " : ""}${batteryLevel}%`
                           ) : (
                             <span className="text-white/50">Não informada</span>
                           )}
@@ -3036,11 +3001,11 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-[13px]">
                   <span className="text-white/50">{diagnosticsCopy.connection}</span>
-                  <span className="text-white">{isGamepadConnected ? (connectedGamepadId?.toLowerCase().includes("bluetooth") ? "Bluetooth" : "USB") : "--"}</span>
+                  <span className="text-white">{isGamepadConnected ? diagnosticsCopy.connected : "--"}</span>
                 </div>
                 <div className="flex justify-between text-[13px]">
                   <span className="text-white/50">{diagnosticsCopy.battery}</span>
-                  <span className="text-white">{batteryLevel !== null ? `${batteryLevel}%` : diagnosticsCopy.unknown}</span>
+                  <span className="text-white tabular-nums">{batteryLevel !== null ? `${batteryApproximate ? "≈ " : ""}${batteryLevel}%${batteryCharging ? " ⚡" : ""}` : diagnosticsCopy.unknown}</span>
                 </div>
                 <div className="flex justify-between text-[13px]">
                   <span className="text-white/50">{diagnosticsCopy.family}</span>

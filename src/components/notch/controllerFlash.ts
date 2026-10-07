@@ -21,10 +21,11 @@ const FLASH_KINDS: readonly ControllerFlashKind[] = [
 
 export interface ControllerFlash {
   kind: ControllerFlashKind;
-  /** "BLUETOOTH", "USB"... quando conhecido */
-  link?: string | null;
   /** 0..100 quando o controle informa */
   battery?: number | null;
+  /** nível estimado (Xbox/XInput só tem 4 degraus) */
+  approximate?: boolean;
+  charging?: boolean;
   /** timestamp: reinicia a animação se o mesmo tipo chegar duas vezes */
   at: number;
 }
@@ -44,8 +45,9 @@ export function parseControllerFlash(raw: unknown): ControllerFlash | null {
     : null;
   return {
     kind: value.kind as ControllerFlashKind,
-    link: typeof value.link === "string" && value.link ? value.link : null,
     battery,
+    approximate: value.approximate === true,
+    charging: value.charging === true,
     at: typeof value.at === "number" ? value.at : Date.now(),
   };
 }
@@ -60,11 +62,16 @@ export function controllerFlashCopy(flash: ControllerFlash): { title: string; su
   if (flash.kind === "batteryLow") {
     return {
       title: "Bateria baixa",
-      subtitle: flash.battery != null ? `${flash.battery}% • conecte o cabo` : "Conecte o cabo",
+      subtitle: flash.battery != null ? `${flash.approximate ? "≈ " : ""}${flash.battery}% • conecte o cabo` : "Conecte o cabo",
     };
   }
-  const parts = [flash.link, flash.battery != null ? `${flash.battery}%` : null].filter(Boolean);
-  return { title: "Controle conectado", subtitle: parts.join(" • ") || "Pronto para jogar" };
+  // O Windows não diz se é USB ou Bluetooth: só "Conectado" + a bateria real.
+  const parts = [
+    "Conectado",
+    flash.battery != null ? `${flash.approximate ? "≈ " : ""}${flash.battery}%` : null,
+    flash.charging ? "Carregando" : null,
+  ].filter(Boolean);
+  return { title: "Controle conectado", subtitle: parts.join(" • ") };
 }
 
 /** Largura da barra compacta enquanto o aviso está aberto. */

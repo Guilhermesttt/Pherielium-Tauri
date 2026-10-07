@@ -393,12 +393,14 @@ export const tauriAPI = {
 
   // ─── Hardware ──────────────────────────────────────────────────────────────
   getControllerBattery: () =>
-    Promise.resolve({
-      batteryLevel: null,
-      isCharging: false,
-      connectionType: "unknown",
-      deviceName: null,
-    }),
+    invoke<{
+      batteryLevel: number | null;
+      isCharging: boolean;
+      connectionType: string;
+      deviceName: string | null;
+      approximate: boolean;
+      source: string;
+    }>("controller_get_battery"),
 
   showBatteryWarning: (_level: number) =>
     invoke<void>("system_show_battery_warning", { level: _level }),

@@ -2,9 +2,12 @@ import React, { createContext, useContext, useEffect, useState, useRef, useCallb
 import { resetCachedLedDevice } from "../services/controllerLed";
 import { isLauncherInputLocked } from "../utils/launcherInputLock";
 
-import {
-  type ControllerConnectionType,
-} from "../services/controllerBatteryService";
+/** O Windows não distingue USB de Bluetooth de forma confiável: sempre "unknown". */
+export type ControllerConnectionType = "bluetooth" | "usb" | "unknown";
+
+/** Intervalo da leitura de bateria do controle (Rust: XInput / HID). */
+const BATTERY_POLL_MS = 20_000;
+const LOW_BATTERY_PERCENT = 20;
 
 export type InputType = "mouse" | "keyboard" | "gamepad";
 export type GamepadFamily = "playstation" | "xbox" | "generic";
@@ -17,6 +20,8 @@ interface GamepadContextValue {
   connectedGamepadId: string | null;
   batteryLevel: number | null;
   batteryCharging: boolean;
+  /** nível estimado (Xbox/XInput só informa 4 degraus) */
+  batteryApproximate: boolean;
   connectionType: ControllerConnectionType;
   isLowBattery: boolean;
 }
@@ -209,9 +214,48 @@ export const GamepadProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [batteryState, setBatteryState] = useState({
     batteryLevel: null as number | null,
     isCharging: false,
+    approximate: false,
     connectionType: "unknown" as ControllerConnectionType,
     isLowBattery: false,
   });
+
+  // Bateria real do controle (o Web Gamepad API não a expõe): comando Rust.
+  useEffect(() => {
+    if (!isGamepadConnected) {
+      setBatteryState((prev) =>
+        prev.batteryLevel === null && !prev.isCharging && !prev.approximate
+          ? prev
+          : { batteryLevel: null, isCharging: false, approximate: false, connectionType: "unknown", isLowBattery: false },
+      );
+      return;
+    }
+    let cancelled = false;
+    const read = async () => {
+      const readBattery = window.electronAPI?.getControllerBattery;
+      if (!readBattery) return;
+      try {
+        const result = await readBattery();
+        if (cancelled) return;
+        const level = typeof result.batteryLevel === "number" ? result.batteryLevel : null;
+        const charging = Boolean(result.isCharging);
+        setBatteryState({
+          batteryLevel: level,
+          isCharging: charging,
+          approximate: Boolean(result.approximate),
+          connectionType: "unknown",
+          isLowBattery: level !== null && level <= LOW_BATTERY_PERCENT && !charging,
+        });
+      } catch {
+        // sem dado: a UI mostra só "Conectado"
+      }
+    };
+    void read();
+    const id = window.setInterval(read, BATTERY_POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [isGamepadConnected]);
 
   const [overlayHasFocus, setOverlayHasFocus] = useState(false);
   const overlayFocusRef = useRef(false); // CORREÇÃO: Ref para manter o valor atualizado no pollGamepads
@@ -662,6 +706,7 @@ export const GamepadProvider: React.FC<{ children: React.ReactNode }> = ({ child
       connectedGamepadId,
       batteryLevel: batteryState.batteryLevel,
       batteryCharging: batteryState.isCharging,
+      batteryApproximate: batteryState.approximate,
       connectionType: batteryState.connectionType,
       isLowBattery: batteryState.isLowBattery,
     }),
@@ -672,6 +717,7 @@ export const GamepadProvider: React.FC<{ children: React.ReactNode }> = ({ child
       connectedGamepadId,
       batteryState.batteryLevel,
       batteryState.isCharging,
+      batteryState.approximate,
       batteryState.connectionType,
       batteryState.isLowBattery,
     ],

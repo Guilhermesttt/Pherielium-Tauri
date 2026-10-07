@@ -12,10 +12,11 @@ interface OverlayState {
   kind: OverlayKind;
   batteryLevel?: number | null;
   batteryCharging?: boolean;
+  batteryApproximate?: boolean;
 }
 
 export const GamepadStatusOverlay: React.FC = () => {
-  const { isGamepadConnected, connectedGamepadId, batteryLevel, batteryCharging, connectionType, isLowBattery } = useGamepad();
+  const { isGamepadConnected, batteryLevel, batteryCharging, batteryApproximate } = useGamepad();
   const { hapticsEnabled } = usePreferences();
   // Com o notch ligado, conectar/desconectar vira animação nele (sem popup no hub).
   const notchEnabled = useNotchConfig().enabled;
@@ -24,14 +25,6 @@ export const GamepadStatusOverlay: React.FC = () => {
   const prevConnectedRef = useRef<boolean | null>(null);
   const prevHapticsRef = useRef<boolean | null>(null);
   const hideTimerRef = useRef<number | null>(null);
-
-  const linkLabel = (): string | null => {
-    if (!isGamepadConnected) return null;
-    const id = (connectedGamepadId || "").toLowerCase();
-    if (connectionType === "bluetooth" || id.includes("bluetooth") || id.includes("bth")) return "BLUETOOTH";
-    if (connectionType === "usb" || id.includes("wired") || id.includes("cabo")) return "USB";
-    return null;
-  };
 
   const scheduleHide = (ms = 3000) => {
     if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
@@ -42,8 +35,9 @@ export const GamepadStatusOverlay: React.FC = () => {
     if (notchEnabled && state.kind !== "batteryStatus") {
       announceControllerFlash({
         kind: state.kind,
-        link: linkLabel(),
         battery: state.kind === "connected" || state.kind === "batteryLow" ? (state.batteryLevel ?? null) : null,
+        approximate: state.batteryApproximate ?? batteryApproximate,
+        charging: state.kind === "connected" ? Boolean(state.batteryCharging) : false,
       });
       return;
     }
@@ -80,7 +74,25 @@ export const GamepadStatusOverlay: React.FC = () => {
       return;
     }
     if (isGamepadConnected && prevConnectedRef.current !== true) {
-      showOverlay({ kind: "connected", batteryLevel, batteryCharging }, 3000);
+      // O contexto ainda não leu a bateria neste instante: pergunta ao Rust agora,
+      // para o aviso já sair com a % real.
+      void (async () => {
+        let state: OverlayState = { kind: "connected", batteryLevel, batteryCharging, batteryApproximate };
+        try {
+          const fresh = await window.electronAPI?.getControllerBattery?.();
+          if (fresh && typeof fresh.batteryLevel === "number") {
+            state = {
+              kind: "connected",
+              batteryLevel: fresh.batteryLevel,
+              batteryCharging: Boolean(fresh.isCharging),
+              batteryApproximate: Boolean(fresh.approximate),
+            };
+          }
+        } catch {
+          // segue sem %: mostra só "Conectado"
+        }
+        showOverlay(state, 3000);
+      })();
     } else if (!isGamepadConnected && prevConnectedRef.current !== false) {
       showOverlay({ kind: "disconnected" }, 3000);
     }
@@ -161,17 +173,6 @@ export const GamepadStatusOverlay: React.FC = () => {
   const isBatteryLow = kind === "batteryLow";
   const isBatteryStatus = kind === "batteryStatus";
 
-  const connectionLabel = (() => {
-    if (!isGamepadConnected) return "SEM SINAL";
-    if (connectionType === "bluetooth") return "BLUETOOTH";
-    if (connectionType === "usb") return batteryCharging ? "USB • CARREGANDO" : "USB";
-
-    const id = (connectedGamepadId || "").toLowerCase();
-    if (id.includes("bluetooth") || id.includes("bth")) return "BLUETOOTH";
-    if (id.includes("wired") || id.includes("cabo")) return batteryCharging ? "USB • CARREGANDO" : "USB";
-    return "CONECTADO";
-  })();
-
   const title = (() => {
     if (kind === "hapticsOn") return "Vibração ligada";
     if (kind === "hapticsOff") return "Vibração desligada";
@@ -188,33 +189,8 @@ export const GamepadStatusOverlay: React.FC = () => {
 
     if (kind === "batteryStatus" || kind === "connected") {
       if (!isGamepadConnected) return "SEM SINAL";
-
-      // 1. Se estiver conectado via USB
-      if (connectionType === "usb") {
-        const lvl = batteryLevel !== null ? ` • ${batteryLevel}%` : "";
-        return batteryCharging ? `USB • CARREGANDO${lvl}` : `USB • CONECTADO${lvl}`;
-      }
-
-      // 2. Se estiver conectado via Bluetooth
-      if (connectionType === "bluetooth") {
-        const lvl = batteryLevel !== null ? `${batteryLevel}%` : "--%";
-        const chg = batteryCharging ? " • CARREGANDO" : "";
-        return `BLUETOOTH • ${lvl}${chg}`;
-      }
-
-      // 3. Fallback inteligente baseado em ID
-      const id = (connectedGamepadId || "").toLowerCase();
-      if (id.includes("bluetooth") || id.includes("bth")) {
-        const lvl = batteryLevel !== null ? ` • ${batteryLevel}%` : "";
-        return `BLUETOOTH${lvl}`;
-      }
-      if (id.includes("wired") || id.includes("cabo")) {
-        const lvl = batteryLevel !== null ? ` • ${batteryLevel}%` : "";
-        return batteryCharging ? `USB • CARREGANDO${lvl}` : `USB • CONECTADO${lvl}`;
-      }
-
-      const lvl = batteryLevel !== null ? ` • ${batteryLevel}%` : "";
-      return `CONECTADO${lvl}`;
+      const lvl = batteryLevel !== null ? ` • ${batteryApproximate ? "≈ " : ""}${batteryLevel}%` : "";
+      return `CONECTADO${lvl}${batteryCharging ? " • CARREGANDO" : ""}`;
     }
 
     return "SEM SINAL";

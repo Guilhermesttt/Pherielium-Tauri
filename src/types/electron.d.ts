@@ -747,8 +747,11 @@ declare global {
       getControllerBattery?: () => Promise<{
         batteryLevel: number | null;
         isCharging: boolean;
-        connectionType: "bluetooth" | "usb" | "unknown";
+        connectionType: string;
         deviceName: string | null;
+        /** nível estimado (XInput só tem 4 degraus) */
+        approximate?: boolean;
+        source?: string;
       }>;
       onAppQuitting?: (callback: () => void) => () => void;
       confirmAppQuit?: () => Promise<void>;

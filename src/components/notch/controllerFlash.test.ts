@@ -3,10 +3,11 @@ import { controllerFlashCopy, parseControllerFlash } from "./controllerFlash";
 
 describe("controllerFlash", () => {
   it("parses valid payloads and clamps the battery", () => {
-    expect(parseControllerFlash({ kind: "connected", link: "USB", battery: 140, at: 5 })).toEqual({
+    expect(parseControllerFlash({ kind: "connected", battery: 140, approximate: true, at: 5 })).toEqual({
       kind: "connected",
-      link: "USB",
       battery: 100,
+      approximate: true,
+      charging: false,
       at: 5,
     });
   });
@@ -18,11 +19,13 @@ describe("controllerFlash", () => {
   });
 
   it("writes the copy for connect, with and without details, and disconnect", () => {
-    expect(controllerFlashCopy({ kind: "connected", link: "BLUETOOTH", battery: 80, at: 0 })).toEqual({
+    expect(controllerFlashCopy({ kind: "connected", battery: 80, at: 0 })).toEqual({
       title: "Controle conectado",
-      subtitle: "BLUETOOTH • 80%",
+      subtitle: "Conectado • 80%",
     });
-    expect(controllerFlashCopy({ kind: "connected", at: 0 }).subtitle).toBe("Pronto para jogar");
+    expect(controllerFlashCopy({ kind: "connected", battery: 60, approximate: true, charging: true, at: 0 }).subtitle)
+      .toBe("Conectado • ≈ 60% • Carregando");
+    expect(controllerFlashCopy({ kind: "connected", at: 0 }).subtitle).toBe("Conectado");
     expect(controllerFlashCopy({ kind: "disconnected", at: 0 })).toEqual({
       title: "Controle desconectado",
       subtitle: "Sem sinal",
