@@ -80,7 +80,7 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={FOCUS_TRANSITION}
-      className="shrink-0 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-[var(--gap-inline)] px-[var(--safe-x)] pt-[var(--safe-y)] pb-[var(--gap-stack)] relative z-30 select-none will-change-transform"
+      className="shrink-0 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-[var(--gap-inline)] px-[var(--safe-x)] pt-[var(--header-pt)] pb-[var(--gap-stack)] relative z-30 select-none will-change-transform"
       role="banner"
     >
       {/* 1. Left: Pherielium Brand Identity */}

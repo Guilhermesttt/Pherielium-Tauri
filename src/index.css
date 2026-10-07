@@ -129,6 +129,8 @@ html[data-launcher-theme="checkpoint"] {
   /* Margem de seguranca de TV: ~48px em 1080p, 32px em 720p, 64px em 1440p */
   --safe-x: clamp(24px, 2.5vw, 72px);
   --safe-y: clamp(20px, 2.5vw, 72px);
+  /* topo do header: mais baixo que a margem lateral para o header ocupar menos */
+  --header-pt: clamp(14px, 1.25vw, 36px);
 
   /* Ritmo vertical entre secoes (header / continuar / hero / biblioteca) */
   --gap-section: clamp(16px, 1.6vw, 44px);
@@ -136,18 +138,18 @@ html[data-launcher-theme="checkpoint"] {
   --gap-inline: clamp(8px, 0.65vw, 18px);
 
   /* Escala tipografica: minimo legivel em 720p, ~12-13px de label em 1080p */
-  --fs-label: clamp(0.75rem, 0.65vw, 1.125rem);
-  --fs-caption: clamp(0.8125rem, 0.72vw, 1.25rem);
+  --fs-label: clamp(0.75rem, 0.62vw, 1.0625rem);
+  --fs-caption: clamp(0.75rem, 0.66vw, 1.125rem);
   --fs-body: clamp(0.9375rem, 0.85vw, 1.5rem);
   --fs-title: clamp(1.0625rem, 1vw, 1.75rem);
-  --fs-heading: clamp(1.25rem, 1.15vw, 2rem);
+  --fs-heading: clamp(1.0625rem, 0.95vw, 1.625rem);
   --fs-hero: clamp(2.5rem, 4.4vw, 6.5rem);
   --tracking-label: 0.14em;
 
   /* Alturas de controles (botoes circulares, pills, CTAs) */
-  --control-h: clamp(40px, 2.5vw, 64px);
+  --control-h: clamp(34px, 1.9vw, 52px);
   --cta-h: clamp(48px, 2.9vw, 76px);
-  --clock-w: clamp(104px, 6.8vw, 170px);
+  --clock-w: clamp(104px, 6.4vw, 150px);
   /* Busca aberta = slot da busca + (+) + (filtros) [+ relogio >=1360px]; sem relogio abaixo disso */
   --search-open-w: calc(3 * var(--control-h) + 2 * var(--gap-inline));
   /* Largura aproximada do grupo de acoes (busca/+/filtros/relogio/perfil):
@@ -196,6 +198,30 @@ html[data-launcher-theme="checkpoint"] {
 @media (min-width: 1360px) {
   :root {
     --search-open-w: calc(3 * var(--control-h) + 3 * var(--gap-inline) + var(--clock-w));
+  }
+}
+
+/* Botao "Jogar": cor do jogo selecionado (--game-color vem da capa), sempre escurecida
+   o bastante para texto e glifo de controle brancos terem contraste. */
+@layer components {
+  .btn-play {
+    --_game: var(--game-color, rgb(var(--launcher-accent)));
+    color: #fff;
+    background: color-mix(in srgb, var(--_game) 68%, #0a0a0f);
+    border: 1px solid color-mix(in srgb, var(--_game) 55%, #fff 25%);
+    box-shadow:
+      0 8px 30px color-mix(in srgb, var(--_game) 38%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    transition:
+      background-color var(--transition-focus),
+      box-shadow var(--transition-focus),
+      transform var(--transition-focus);
+  }
+  .btn-play:hover {
+    background: color-mix(in srgb, var(--_game) 80%, #0a0a0f);
+  }
+  .btn-play:disabled {
+    opacity: 0.85;
   }
 }
 
@@ -656,6 +682,8 @@ html[data-launcher-theme="xbox360"] {
 
 @layer base {
   html {
+    /* o canvas nunca fica branco (ex.: faixa inferior ao alternar tela cheia no WebView2) */
+    background-color: var(--surface-base);
     scroll-behavior: smooth;
     overflow-x: hidden;
     scrollbar-gutter: stable;

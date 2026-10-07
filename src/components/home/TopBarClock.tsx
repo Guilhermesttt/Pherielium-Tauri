@@ -18,7 +18,7 @@ export const TopBarClock: React.FC = () => {
   }, []);
 
   return (
-    <div className="ctl-pill justify-center gap-[var(--gap-stack)] px-[var(--space-4)] w-[var(--clock-w)] select-none">
+    <div className="ctl-pill justify-center gap-[var(--gap-stack)] px-[var(--space-4)] w-[var(--clock-w)] whitespace-nowrap select-none">
       <span className="h-[0.5em] w-[0.5em] rounded-full bg-emerald-400 animate-pulse text-[length:var(--fs-caption)]" />
       <span className="font-mono text-[length:var(--fs-caption)] font-semibold tracking-wider text-white/80">
         {time}

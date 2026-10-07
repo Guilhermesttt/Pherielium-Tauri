@@ -29,7 +29,7 @@ const routeFallback = (
 );
 
 const RootLayout: React.FC = () => (
-  <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#070707] text-white select-none">
+  <div className="fixed inset-0 flex flex-col overflow-hidden bg-[var(--surface-base)] text-white select-none">
     <TitleBar />
     <main className="relative flex-1 w-full overflow-hidden">
       <Outlet />

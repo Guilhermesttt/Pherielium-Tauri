@@ -124,10 +124,10 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
               whileTap={{ scale: 0.96 }}
               transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
               onClick={handleLaunchClick}
-              className={`flex items-center gap-3 px-8 sm:px-10 py-3.5 rounded-2xl font-display font-extrabold text-sm sm:text-base tracking-wider uppercase shadow-[0_8px_30px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.35)] transition-all cursor-pointer ${
+              className={`flex items-center gap-3 px-8 sm:px-10 py-3.5 rounded-2xl font-display font-extrabold text-sm sm:text-base tracking-wider uppercase cursor-pointer ${
                 isRunning
-                  ? "bg-emerald-600/80 text-emerald-100 border border-emerald-400/50 shadow-[0_0_28px_rgba(16,185,129,0.4)]"
-                  : "bg-white text-black hover:bg-[#F2F2F2]"
+                  ? "bg-emerald-600/80 text-emerald-100 border border-emerald-400/50 shadow-[0_0_28px_rgba(16,185,129,0.4)] transition-all"
+                  : "btn-play"
               }`}
             >
               {isGamepadConnected ? (
@@ -142,7 +142,7 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400" />
                 </span>
               ) : (
-                <Play className="w-4 h-4 fill-black text-black shrink-0" />
+                <Play className="w-4 h-4 fill-current shrink-0" />
               )}
 
               <span>{isRunning ? runningLabel : playNowLabel}</span>
