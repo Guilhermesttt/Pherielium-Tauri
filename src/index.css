@@ -119,6 +119,75 @@ html[data-launcher-theme="checkpoint"] {
 }
 
 /* ========================================================
+   Design tokens da tela principal (10-foot UI)
+   Fluidos em vw/clamp; cores/sombras derivam das variaveis de
+   tema acima, entao todos os temas herdam sem override.
+   Prefixos proprios (--fs-, --elev-, --safe-) para nao colidir
+   com os namespaces --text-* / --shadow-* do Tailwind.
+   ======================================================== */
+:root {
+  /* Margem de seguranca de TV: ~48px em 1080p, 32px em 720p, 64px em 1440p */
+  --safe-x: clamp(24px, 2.5vw, 72px);
+  --safe-y: clamp(20px, 2.5vw, 72px);
+
+  /* Ritmo vertical entre secoes (header / continuar / hero / biblioteca) */
+  --gap-section: clamp(16px, 1.6vw, 44px);
+  --gap-stack: clamp(8px, 0.8vw, 20px);
+  --gap-inline: clamp(8px, 0.65vw, 18px);
+
+  /* Escala tipografica: minimo legivel em 720p, ~12-13px de label em 1080p */
+  --fs-label: clamp(0.75rem, 0.65vw, 1.125rem);
+  --fs-caption: clamp(0.8125rem, 0.72vw, 1.25rem);
+  --fs-body: clamp(0.9375rem, 0.85vw, 1.5rem);
+  --fs-title: clamp(1.0625rem, 1vw, 1.75rem);
+  --fs-heading: clamp(1.25rem, 1.15vw, 2rem);
+  --fs-hero: clamp(2.5rem, 4.4vw, 6.5rem);
+  --tracking-label: 0.14em;
+
+  /* Alturas de controles (botoes circulares, pills, CTAs) */
+  --control-h: clamp(40px, 2.5vw, 64px);
+  --cta-h: clamp(48px, 2.9vw, 76px);
+
+  /* Cards da Biblioteca (2:3) e espaco reservado ao foco */
+  --card-w: clamp(132px, 8.75vw, 280px);
+  --card-h: calc(var(--card-w) * 1.5);
+  --card-gap: var(--gap-inline);
+  --card-focus-scale: 1.06;
+  --card-focus-pad-x: calc(var(--card-w) * 0.06 + 6px);
+  --card-focus-pad-y: calc(var(--card-h) * 0.06 + 6px);
+
+  /* Cards do "Continuar jogando" */
+  --continue-card-w: clamp(260px, 17vw, 440px);
+  --continue-card-h: clamp(88px, 5.4vw, 140px);
+
+  /* Raios (complementam --radius-panel/card/control dos temas) */
+  --radius-badge: 8px;
+
+  /* Bordas: alpha vem de --border-* do tema */
+  --edge-subtle: var(--border-subtle);
+  --edge-strong: var(--border-strong);
+  --edge-selected: var(--border-selected);
+
+  /* Elevacao: sombra = cor base do tema, brilho = cor de texto do tema */
+  --elev-shadow-color: color-mix(in srgb, var(--surface-base) 70%, transparent);
+  --elev-card: 0 10px 28px -10px var(--elev-shadow-color);
+  --elev-pill: var(--surface-chamfer), 0 4px 20px var(--elev-shadow-color);
+  --elev-focus: 0 18px 40px -12px var(--elev-shadow-color), 0 0 0 1px var(--edge-selected);
+  --elev-button:
+    0 8px 30px var(--elev-shadow-color),
+    inset 0 1px 0 color-mix(in srgb, var(--color-text-main) 35%, transparent);
+
+  /* Protecao de texto sobre imagens (gradiente inferior / lateral) */
+  --scrim-bottom: linear-gradient(to top, color-mix(in srgb, var(--surface-base) 92%, transparent) 0%, transparent 100%);
+  --scrim-left: linear-gradient(to right, var(--surface-base) 0%, color-mix(in srgb, var(--surface-base) 70%, transparent) 40%, transparent 100%);
+
+  /* Transicao unica de foco/hover (espelhada em src/styles/motion.ts) */
+  --dur-focus: 280ms;
+  --ease-focus: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-focus: var(--dur-focus) var(--ease-focus);
+}
+
+/* ========================================================
    2. PS2 (Profundidade Monolítica / Azul Abissal & Contorno)
    ======================================================== */
 html[data-launcher-theme="playstation"] {
