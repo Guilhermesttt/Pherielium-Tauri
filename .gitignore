@@ -33,3 +33,7 @@ target-check
 *.njsproj
 *.sln
 *.sw?
+
+# E2E visual harness output
+e2e/screenshots
+test-results
