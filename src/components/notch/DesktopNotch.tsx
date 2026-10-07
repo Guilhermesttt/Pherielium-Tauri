@@ -28,7 +28,7 @@ import {
 import { playNotchSound, type NotchSoundId } from "./notchSounds";
 import { useNotchDropzone } from "./useNotchDropzone";
 import { RetroBubble } from "./RetroBubble";
-import { ControllerFlashBar, useControllerFlash } from "./ControllerFlashBar";
+import { ControllerFlashBar, FLASH_MASCOT_MOOD, useControllerFlash } from "./ControllerFlashBar";
 import { CONTROLLER_FLASH_WIDTH } from "./controllerFlash";
 import { useAudioReactiveRef } from "../../mascot/useAudioReactive";
 import { equalizerHeights, isAudioLive, type AudioReactive } from "../../mascot/headbang";
@@ -852,7 +852,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   const mascotMood: MascotMood = useMemo(() => {
     if (dizzy) return "dizzy"; // chacoalharam o mouse
-    if (controllerFlash) return controllerFlash.kind === "connected" ? "excited" : "sad";
+    if (controllerFlash) return FLASH_MASCOT_MOOD[controllerFlash.kind];
     if (dropzone.armed || dropzone.over || dropzone.importing) return "surprised"; // boca aberta
     if (digested) return "happy"; // "digeriu" o arquivo
     if (isCallActive) return isMuted ? "muted" : "calling";
@@ -911,7 +911,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   useEffect(() => {
     if (flashAt === null) return;
     revealNotch();
-    notchSoundRef.current(flashKind === "connected" ? "expand" : "collapse");
+    notchSoundRef.current(flashKind === "disconnected" || flashKind === "hapticsOff" ? "collapse" : "expand");
     return () => {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       hideTimerRef.current = setTimeout(() => setIsRevealed(false), 250);

@@ -39,11 +39,11 @@ export const GamepadStatusOverlay: React.FC = () => {
   };
 
   const showOverlay = (state: OverlayState, ms = 3000) => {
-    if (notchEnabled && (state.kind === "connected" || state.kind === "disconnected")) {
+    if (notchEnabled && state.kind !== "batteryStatus") {
       announceControllerFlash({
         kind: state.kind,
         link: linkLabel(),
-        battery: state.kind === "connected" ? (state.batteryLevel ?? null) : null,
+        battery: state.kind === "connected" || state.kind === "batteryLow" ? (state.batteryLevel ?? null) : null,
       });
       return;
     }

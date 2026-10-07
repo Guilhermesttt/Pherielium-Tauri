@@ -139,5 +139,16 @@ test("notch encena controle conectado e desconectado", async ({ browser }) => {
   await page.waitForTimeout(1100);
   await page.screenshot({ path: path.join(outDir, "notch-disconnected.png"), clip });
   await expect(notch.getByText("Controle desconectado")).toBeHidden({ timeout: 6000 });
+
+  await fire("hapticsOn");
+  await expect(notch.getByText("Vibração ligada")).toBeVisible();
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: path.join(outDir, "notch-haptics-on.png"), clip });
+  await expect(notch.getByText("Vibração ligada")).toBeHidden({ timeout: 6000 });
+
+  await fire("hapticsOff");
+  await expect(notch.getByText("Vibração desligada")).toBeVisible();
+  await page.waitForTimeout(1100);
+  await page.screenshot({ path: path.join(outDir, "notch-haptics-off.png"), clip });
   await context.close();
 });

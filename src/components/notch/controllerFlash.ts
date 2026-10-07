@@ -4,7 +4,20 @@
  * o aviso viaja por evento do Tauri; na mesma janela (dev no navegador) por
  * CustomEvent. Sem dependência de React, para ser testável.
  */
-export type ControllerFlashKind = "connected" | "disconnected";
+export type ControllerFlashKind =
+  | "connected"
+  | "disconnected"
+  | "hapticsOn"
+  | "hapticsOff"
+  | "batteryLow";
+
+const FLASH_KINDS: readonly ControllerFlashKind[] = [
+  "connected",
+  "disconnected",
+  "hapticsOn",
+  "hapticsOff",
+  "batteryLow",
+];
 
 export interface ControllerFlash {
   kind: ControllerFlashKind;
@@ -25,12 +38,12 @@ const isTauri = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in 
 export function parseControllerFlash(raw: unknown): ControllerFlash | null {
   if (!raw || typeof raw !== "object") return null;
   const value = raw as Record<string, unknown>;
-  if (value.kind !== "connected" && value.kind !== "disconnected") return null;
+  if (!FLASH_KINDS.includes(value.kind as ControllerFlashKind)) return null;
   const battery = typeof value.battery === "number" && Number.isFinite(value.battery)
     ? Math.max(0, Math.min(100, Math.round(value.battery)))
     : null;
   return {
-    kind: value.kind,
+    kind: value.kind as ControllerFlashKind,
     link: typeof value.link === "string" && value.link ? value.link : null,
     battery,
     at: typeof value.at === "number" ? value.at : Date.now(),
@@ -41,6 +54,14 @@ export function parseControllerFlash(raw: unknown): ControllerFlash | null {
 export function controllerFlashCopy(flash: ControllerFlash): { title: string; subtitle: string } {
   if (flash.kind === "disconnected") {
     return { title: "Controle desconectado", subtitle: "Sem sinal" };
+  }
+  if (flash.kind === "hapticsOn") return { title: "Vibração ligada", subtitle: "Os gatilhos vão tremer" };
+  if (flash.kind === "hapticsOff") return { title: "Vibração desligada", subtitle: "Sem feedback tátil" };
+  if (flash.kind === "batteryLow") {
+    return {
+      title: "Bateria baixa",
+      subtitle: flash.battery != null ? `${flash.battery}% • conecte o cabo` : "Conecte o cabo",
+    };
   }
   const parts = [flash.link, flash.battery != null ? `${flash.battery}%` : null].filter(Boolean);
   return { title: "Controle conectado", subtitle: parts.join(" • ") || "Pronto para jogar" };

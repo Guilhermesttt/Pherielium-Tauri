@@ -14,7 +14,7 @@ describe("controllerFlash", () => {
   it("rejects unknown kinds and non-objects", () => {
     expect(parseControllerFlash(null)).toBeNull();
     expect(parseControllerFlash("connected")).toBeNull();
-    expect(parseControllerFlash({ kind: "batteryLow" })).toBeNull();
+    expect(parseControllerFlash({ kind: "poof" })).toBeNull();
   });
 
   it("writes the copy for connect, with and without details, and disconnect", () => {
@@ -27,5 +27,11 @@ describe("controllerFlash", () => {
       title: "Controle desconectado",
       subtitle: "Sem sinal",
     });
+  });
+
+  it("accepts haptics and low-battery flashes with their own copy", () => {
+    expect(parseControllerFlash({ kind: "hapticsOn" })?.kind).toBe("hapticsOn");
+    expect(controllerFlashCopy({ kind: "hapticsOff", at: 0 }).title).toBe("Vibração desligada");
+    expect(controllerFlashCopy({ kind: "batteryLow", battery: 15, at: 0 }).subtitle).toBe("15% • conecte o cabo");
   });
 });
