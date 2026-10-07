@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Gamepad2, Battery, BatteryLow, BatteryCharging, Usb, Bluetooth, VibrateOff } from "lucide-react";
 import { useGamepad, playHapticPattern } from "../../context/GamepadContext";
 import { usePreferences } from "../../context/PreferencesContext";
+import { useNotchConfig } from "../../mascot/useNotchConfig";
+import { announceControllerFlash } from "../notch/controllerFlash";
 
 type OverlayKind = "connected" | "disconnected" | "hapticsOn" | "hapticsOff" | "batteryLow" | "batteryStatus";
 
@@ -15,11 +17,21 @@ interface OverlayState {
 export const GamepadStatusOverlay: React.FC = () => {
   const { isGamepadConnected, connectedGamepadId, batteryLevel, batteryCharging, connectionType, isLowBattery } = useGamepad();
   const { hapticsEnabled } = usePreferences();
+  // Com o notch ligado, conectar/desconectar vira animação nele (sem popup no hub).
+  const notchEnabled = useNotchConfig().enabled;
   const [overlay, setOverlay] = useState<OverlayState | null>(null);
   const [show, setShow] = useState(false);
   const prevConnectedRef = useRef<boolean | null>(null);
   const prevHapticsRef = useRef<boolean | null>(null);
   const hideTimerRef = useRef<number | null>(null);
+
+  const linkLabel = (): string | null => {
+    if (!isGamepadConnected) return null;
+    const id = (connectedGamepadId || "").toLowerCase();
+    if (connectionType === "bluetooth" || id.includes("bluetooth") || id.includes("bth")) return "BLUETOOTH";
+    if (connectionType === "usb" || id.includes("wired") || id.includes("cabo")) return "USB";
+    return null;
+  };
 
   const scheduleHide = (ms = 3000) => {
     if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
@@ -27,6 +39,14 @@ export const GamepadStatusOverlay: React.FC = () => {
   };
 
   const showOverlay = (state: OverlayState, ms = 3000) => {
+    if (notchEnabled && (state.kind === "connected" || state.kind === "disconnected")) {
+      announceControllerFlash({
+        kind: state.kind,
+        link: linkLabel(),
+        battery: state.kind === "connected" ? (state.batteryLevel ?? null) : null,
+      });
+      return;
+    }
     setOverlay(state);
     setShow(true);
     scheduleHide(ms);

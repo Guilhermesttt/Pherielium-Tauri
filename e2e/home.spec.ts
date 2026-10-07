@@ -82,3 +82,62 @@ test("home 1920x1080 tema alternativo", async ({ browser }) => {
   await page.screenshot({ path: path.join(outDir, "home-theme-1920x1080.png") });
   await context.close();
 });
+
+for (const vp of [VIEWPORTS[0], VIEWPORTS[1]]) {
+  test(`busca aberta ${vp.name}`, async ({ browser }) => {
+    mkdirSync(outDir, { recursive: true });
+    const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
+    await installHarness(context, {
+      localStorage: { checkpoint_custom_library_filters: JSON.stringify(LONG_TABS) },
+    });
+    const page = await context.newPage();
+    await openHome(page);
+    await page.getByRole("button", { name: "Abrir pesquisa" }).click();
+    await page.keyboard.type("hades");
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: path.join(outDir, `search-${vp.name}.png`), clip: { x: 0, y: 0, width: vp.width, height: 160 } });
+
+    const tabs = await page.getByRole("tablist").boundingBox();
+    const input = await page.getByPlaceholder("Buscar...").boundingBox();
+    const profile = await page.getByRole("button", { name: /JOGADOR/i }).boundingBox();
+    expect(tabs).not.toBeNull();
+    // a busca aberta nao invade a pill de abas nem o perfil
+    expect(input!.x).toBeGreaterThanOrEqual(tabs!.x + tabs!.width);
+    expect(input!.x + input!.width).toBeLessThanOrEqual(profile!.x);
+    await context.close();
+  });
+}
+
+test("notch encena controle conectado e desconectado", async ({ browser }) => {
+  mkdirSync(outDir, { recursive: true });
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  await installHarness(context, { tauri: false });
+  const page = await context.newPage();
+  await page.goto("/");
+  const notch = page.locator("[data-notch-root]");
+  await expect(notch).toBeVisible({ timeout: 45_000 });
+  await page.waitForTimeout(1500);
+  const clip = { x: 660, y: 0, width: 600, height: 120 };
+  const fire = (kind: string) =>
+    page.evaluate((k) => {
+      window.dispatchEvent(
+        new CustomEvent("pherielium:controller-flash", {
+          detail: { kind: k, link: "BLUETOOTH", battery: 82, at: Date.now() },
+        }),
+      );
+    }, kind);
+
+  await page.screenshot({ path: path.join(outDir, "notch-idle.png"), clip });
+  await fire("connected");
+  await expect(notch.getByText("Controle conectado")).toBeVisible();
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: path.join(outDir, "notch-connected.png"), clip });
+  await expect(notch.getByText("Controle conectado")).toBeHidden({ timeout: 6000 });
+
+  await fire("disconnected");
+  await expect(notch.getByText("Controle desconectado")).toBeVisible();
+  await page.waitForTimeout(1100);
+  await page.screenshot({ path: path.join(outDir, "notch-disconnected.png"), clip });
+  await expect(notch.getByText("Controle desconectado")).toBeHidden({ timeout: 6000 });
+  await context.close();
+});
