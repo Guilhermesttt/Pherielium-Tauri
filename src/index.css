@@ -682,8 +682,6 @@ html[data-launcher-theme="xbox360"] {
 
 @layer base {
   html {
-    /* o canvas nunca fica branco (ex.: faixa inferior ao alternar tela cheia no WebView2) */
-    background-color: var(--surface-base);
     scroll-behavior: smooth;
     overflow-x: hidden;
     scrollbar-gutter: stable;

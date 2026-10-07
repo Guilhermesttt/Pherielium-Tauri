@@ -9,6 +9,10 @@ import "@fontsource/archivo-black/400.css";
 import "@fontsource/stix-two-text/400.css";
 import "@fontsource/stix-two-text/700.css";
 import "./index.css";
+
+// Só a janela principal: o canvas nunca fica branco (faixa inferior ao alternar tela
+// cheia no WebView2). Não pode ir no index.css: o overlay (transparente) o importa também.
+document.documentElement.style.backgroundColor = "var(--surface-base)";
 import { Navigate, createHashRouter, RouterProvider, Outlet } from "react-router-dom";
 import TitleBar from "./components/layout/TitleBar";
 
