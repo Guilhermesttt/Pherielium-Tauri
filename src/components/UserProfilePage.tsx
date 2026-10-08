@@ -681,52 +681,36 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
 
 
       <div className={`relative mx-auto max-w-6xl ${compactProfile ? "space-y-4" : "space-y-6"}`}>
-        {/* HERO SECTION EDITORIAL MINIMALISTA */}
-        <section
-          className={`relative rounded-[28px] bg-[#121216] ring-1 ring-white/[0.07] ${compactProfile ? "p-5 md:p-6" : "p-6 sm:p-8"}`}
-          style={{
-            // com banner, o conteúdo desce para o avatar "pousar" na borda do banner (como no Discord)
-            paddingTop: userProfile?.bannerURL ? (compactProfile ? 128 : 156) : undefined,
-          }}
-        >
-          {userProfile?.bannerURL ? (
-            <div className="absolute inset-x-0 top-0 h-[176px] overflow-hidden rounded-t-[28px]">
+        {/* HERO: capa com avatar e nome alinhados pelo centro na base; o resto vem abaixo */}
+        <section className="relative overflow-hidden rounded-[28px] bg-[#121216] ring-1 ring-white/[0.07]">
+          <div
+            className={`relative ${compactProfile ? "h-[190px]" : "h-[240px]"}`}
+            style={{
+              background: `linear-gradient(135deg, ${playerLevel.tierInfo.gradientFrom}55, ${playerLevel.tierInfo.gradientTo}22 55%, #121216)`,
+            }}
+          >
+            {userProfile?.bannerURL && (
               <img
                 src={userProfile.bannerURL}
                 alt=""
-                className="h-full w-full select-none object-cover"
+                className="absolute inset-0 h-full w-full select-none object-cover"
                 draggable={false}
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#121216]" />
-            </div>
-          ) : null}
-          {/* Luz ambiente sutil na cor da patente do jogador isolada para não cortar elementos flutuantes */}
-          <div className="absolute inset-0 rounded-[28px] overflow-hidden pointer-events-none">
-            <div
-              className="absolute -top-32 -left-32 w-80 h-80 rounded-full blur-[110px] opacity-15 pointer-events-none transition-all duration-700"
-              style={{ background: playerLevel.tierInfo.gradientFrom }}
-            />
-          </div>
-
-          <div className="relative z-10 flex flex-col gap-6">
-            {/* Linha Principal: Identidade à Esquerda | KPIs + Ações à Direita */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-
-              {/* BLOCO DE IDENTIDADE: Avatar + Informações unificadas */}
-              <div className="flex items-start sm:items-end gap-5 sm:gap-6 min-w-0 flex-1">
-                <ProfileAvatar
-                  profile={userProfile}
-                  authPhotoURL={user?.photoURL}
-                  displayName={displayName}
-                  compact={compactProfile}
-                  editable={editable}
-                  onEditClick={() => {
-                    setIsEditing(true);
-                    playSound?.("showModal");
-                  }}
-                />
-
-                <div className="min-w-0 flex-1">
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#121216]/30 to-[#121216]" />
+            <div className="absolute inset-x-6 bottom-5 flex items-center gap-5 sm:inset-x-8 sm:gap-6">
+              <ProfileAvatar
+                profile={userProfile}
+                authPhotoURL={user?.photoURL}
+                displayName={displayName}
+                compact={compactProfile}
+                editable={editable}
+                onEditClick={() => {
+                  setIsEditing(true);
+                  playSound?.("showModal");
+                }}
+              />
+              <div className="min-w-0 flex-1">
                   {/* Nível 1: Nome do Jogador */}
                   <div className="flex items-center gap-3">
                     <h1 className={`${compactProfile ? "text-[30px]" : "text-[40px]"} font-display font-bold tracking-tight text-white leading-none truncate`}>
@@ -794,7 +778,12 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                       Lv. {effectiveLevel}
                     </motion.span>
                   </div>
+              </div>
+            </div>
+          </div>
 
+          <div className={`flex flex-col gap-6 ${compactProfile ? "px-5 pb-5 pt-4" : "px-6 pb-7 pt-5 sm:px-8"}`}>
+            <div className="min-w-0 max-w-2xl flex-1">
                   {/* Barra de Progressão da Patente (Clean & Minimal) */}
                   <div className="mt-2.5 space-y-1 max-w-sm">
                     <div className="h-2 w-full sm:w-80 rounded-full bg-white/[0.07] overflow-hidden">
@@ -886,11 +875,9 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                       ))}
                     </div>
                   )}
-                </div>
-              </div>
+            </div>
 
-              {/* LADO DIREITO: KPIs Unificados + Botão de Edição */}
-              <div className="flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end justify-between gap-4 shrink-0">
+              <div className={`z-10 flex shrink-0 flex-col items-start justify-between gap-4 lg:absolute lg:right-8 lg:top-5 lg:items-end ${compactProfile ? "lg:h-[150px]" : "lg:h-[200px]"}`}>
                 <div className="flex items-center gap-2.5 flex-wrap">
                   {editable && Boolean(import.meta.env.DEV) && typeof window !== "undefined" && window.localStorage?.getItem("checkpoint_dev_tools") === "true" && (
                     <div className="relative flex items-center">
@@ -1023,7 +1010,6 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                   />
                 )}
               </div>
-            </div>
           </div>
         </section>
 

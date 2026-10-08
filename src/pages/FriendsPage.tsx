@@ -11,7 +11,7 @@ import ModalShell from "../components/ui/ModalShell";
 import { StandardEmptyState } from "../components/ui/StateViews";
 import { usePreferences, type LauncherLanguage } from "../context/PreferencesContext";
 import { searchCheckpointFriends } from "../services/checkpointFriends";
-import type { CheckpointFriendRequest, SocialFriend, UserProfile } from "../types/domain";
+import type { CheckpointFriendRequest, Game, SocialFriend, UserProfile } from "../types/domain";
 import type { SoundEffectType } from "../hooks/useSoundEffects";
 import { VoiceRoomsTab } from "../components/voice/VoiceRoomsTab";
 import { useVoiceCallContext } from "../context/VoiceCallContext";
@@ -52,6 +52,8 @@ export interface FriendsPageProps {
   onStartVoiceCall?: (friend: SocialFriend, withVideo?: boolean) => void;
   onStartTestCall?: () => void;
   playSound?: (type: SoundEffectType) => void;
+  /** biblioteca de quem está vendo (arte dos jogos que os amigos estão jogando) */
+  games?: Game[];
 }
 
 // ============================================================
@@ -73,6 +75,7 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
   onOpenChat,
   onStartVoiceCall,
   playSound,
+  games,
 }) => {
   const [friendSearch, setFriendSearch] = useState("");
   const [dnd, setDnd] = useState(isManualDnd);
@@ -170,6 +173,7 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
       {activeSubTab === "AMIGOS" && friends.length > 0 && (
         <FriendsRoster
           friends={friends}
+          games={games}
           unreadByFriend={unreadMessagesByFriend}
           search={friendSearch}
           onSearchChange={setFriendSearch}

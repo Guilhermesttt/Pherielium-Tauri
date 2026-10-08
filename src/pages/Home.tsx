@@ -3049,6 +3049,7 @@ const Home: React.FC = () => {
                     discordAvatar={userProfile?.discordAvatar}
                     DiscordIcon={DiscordBrandIcon}
                     friends={socialFriends}
+                    games={games}
                     unreadMessagesByFriend={unreadMessagesByFriend}
                     incomingRequests={incomingFriendRequests}
                     currentPresenceGame={currentPresenceGame}

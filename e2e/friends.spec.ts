@@ -18,7 +18,7 @@ test("amigos: lista + painel", async ({ browser }) => {
     mount(document.getElementById("x")!);
   });
   await page.waitForTimeout(600);
-  await expect(page.getByRole("heading", { name: "Ana Souza", level: 2 }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Leo", level: 2 }).first()).toBeVisible();
   await page.screenshot({ path: path.join(outDir, "friends-roster.png"), fullPage: false });
   await page.evaluate(() => document.getElementById("x")!.scrollTo(0, 700));
   await page.waitForTimeout(200);

@@ -20,6 +20,7 @@ const Host: React.FC = () => {
   return (
     <FriendsRoster
       friends={friends}
+      games={[{ id: "g", title: "Hades II", image: "" }] as never}
       unreadByFriend={{ 1: 3 }}
       search={search}
       onSearchChange={setSearch}
