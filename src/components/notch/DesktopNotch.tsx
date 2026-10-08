@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  Maximize2,
   Mic,
   MicOff,
   Volume2,
@@ -61,6 +62,8 @@ export interface DesktopNotchProps {
   onOverlayMute?: () => void;
   onOverlayDeafen?: () => void;
   onOverlayHangUp?: () => void;
+  /** Overlay: pede ao hub para abrir a janela da chamada. */
+  onOverlayOpenCall?: () => void;
   /** Configuração do notch (o overlay passa a sua; sem ela o notch lê a gravada). */
   config?: NotchConfig;
   /** Volume dos efeitos do launcher (0..1) para os sons do notch. */
@@ -412,6 +415,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   onOverlayMute,
   onOverlayDeafen,
   onOverlayHangUp,
+  onOverlayOpenCall,
   config: configProp,
   soundVolume,
 }) => {
@@ -529,6 +533,12 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   const handleToggleDeafen = () => {
     if (onOverlayDeafen) onOverlayDeafen();
     else voiceCall.toggleDeafen();
+  };
+
+  // O notch é o widget da chamada: clicar nele reabre a janela da chamada (sem passar pelos canais de voz).
+  const handleOpenCall = () => {
+    if (onOverlayOpenCall) onOverlayOpenCall();
+    else voiceCall.setIsVoiceWindowOpen(true);
   };
 
   const handleHangUp = () => {
@@ -1099,7 +1109,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         <div className="flex-1 flex items-center">{barMascot(26)}</div>
         <span className="text-[13px] font-semibold tracking-tight text-white tabular-nums">{config.showClock ? currentTime : ""}</span>
         <div className="flex-1 flex items-center justify-end">
-          {isPcMediaPlaying && <Equalizer playing height={14} audioRef={audioRef} />}
+          {isPcMediaPlaying && !isExpanded && <Equalizer playing height={14} audioRef={audioRef} />}
         </div>
       </>
     );
@@ -1192,7 +1202,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
           <div
             className="flex items-center px-3 cursor-pointer"
             style={{ height: NOTCH_BAR_HEIGHT }}
-            onClick={openNotch}
+            onClick={isCallActive ? handleOpenCall : openNotch}
           >
             {renderBar()}
           </div>
@@ -1257,6 +1267,9 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                             title={isDeafened ? "Reativar áudio" : "Silenciar áudio"}
                           >
                             {isDeafened ? <VolumeX size={15} /> : <Volume2 size={15} />}
+                          </NotchIconButton>
+                          <NotchIconButton onClick={handleOpenCall} title="Abrir chamada">
+                            <Maximize2 size={15} />
                           </NotchIconButton>
                           <NotchIconButton onClick={handleHangUp} tone="danger" title="Desconectar">
                             <PhoneOff size={15} />

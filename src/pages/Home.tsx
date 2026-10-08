@@ -2492,6 +2492,7 @@ const Home: React.FC = () => {
       }
       if (action.kind === "voice-open-hub") {
         void (window.electronAPI as any)?.showMainWindow?.();
+        voiceCallContext?.setIsVoiceWindowOpen(true);
         return;
       }
       if (action.kind === "retry-message" && (action as any).text && overlayChatFriendUid) {

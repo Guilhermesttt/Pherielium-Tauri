@@ -1593,6 +1593,7 @@ const OverlayApp: React.FC = () => {
         onOverlayMute={toggleMute}
         onOverlayDeafen={toggleDeafen}
         onOverlayHangUp={handleEndCall}
+        onOverlayOpenCall={() => (window as any).achievementOverlay?.panelAction?.({ kind: "voice-open-hub" })}
         activeGameTitle={notchGameTitle}
         activeGameElapsedSeconds={notchGameElapsed}
       />
