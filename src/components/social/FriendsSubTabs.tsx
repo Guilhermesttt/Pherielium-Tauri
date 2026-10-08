@@ -32,15 +32,10 @@ export const FriendsSubTabs: React.FC<FriendsSubTabsProps> = ({
 
   return (
     <div className="w-full flex justify-center mb-6 z-10 relative">
-      {/* Container de fundo translúcido escuro (estilo "Pill" da imagem 1) */}
+      {/* Abas sobre superfície sólida */}
       <div
-        className="flex items-center justify-between px-2 py-1.5 rounded-full border border-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_8px_30px_rgba(0,0,0,0.6)]"
-        style={{
-          background: "rgba(255, 255, 255, 0.02)",
-          backdropFilter: "blur(20px) saturate(180%)",
-          WebkitBackdropFilter: "blur(20px) saturate(180%)",
-          minWidth: "720px", // Garante a largura ampla vista na referência
-        }}
+        className="flex items-center justify-between px-2 py-1.5 rounded-full ring-1 ring-white/[0.07]"
+        style={{ background: "#121216" }}
       >
         {/* Abas de Navegação */}
         <HorizontalTabs

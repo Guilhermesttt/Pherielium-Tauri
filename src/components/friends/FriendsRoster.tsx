@@ -2,6 +2,41 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Gamepad2, Loader2, MessageSquare, Phone, Search, User, UserMinus, Video } from "lucide-react";
 import type { SocialFriend } from "../../types/domain";
 import type { SoundEffectType } from "../../hooks/useSoundEffects";
+import { getCheckpointFriendProfile } from "../../services/checkpointFriends";
+import { friendLevelFromProfile } from "../../utils/friendLevel";
+import type { PlayerLevelInfo } from "../../utils/trophyTiers";
+
+const levelCache = new Map<string, PlayerLevelInfo | null>();
+
+/** Nível de cada amigo do Pherielium, buscado no perfil público (cache por sessão, 3 por vez). */
+function useFriendLevels(friends: SocialFriend[]): Record<string, PlayerLevelInfo | null> {
+  const [, bump] = useState(0);
+  const key = friends.map((f) => f.id).join("|");
+  useEffect(() => {
+    let cancelled = false;
+    const queue = friends
+      .filter((f) => f.source === "checkpoint" && !levelCache.has(f.id))
+      .map((f) => f.id);
+    const worker = async () => {
+      for (let id = queue.shift(); id && !cancelled; id = queue.shift()) {
+        const uid = id.split(":")[1];
+        try {
+          const { profile } = await getCheckpointFriendProfile(uid);
+          levelCache.set(id, friendLevelFromProfile(profile));
+        } catch {
+          levelCache.set(id, null);
+        }
+        if (!cancelled) bump((n) => n + 1);
+      }
+    };
+    void Promise.all([worker(), worker(), worker()]);
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return Object.fromEntries(friends.map((f) => [f.id, levelCache.get(f.id) ?? null]));
+}
 
 export type RosterFilter = "ALL" | "ONLINE" | "PLAYING" | "OFFLINE";
 
@@ -54,7 +89,7 @@ const Avatar: React.FC<{ friend: SocialFriend; size: number; ring?: boolean }> =
       )}
     </div>
     <span
-      className={`absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-[#0b0b0e] ${presenceClass(friend)}`}
+      className={`absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-[#121216] ${presenceClass(friend)}`}
       style={{ width: Math.min(18, Math.max(10, size * 0.26)), height: Math.min(18, Math.max(10, size * 0.26)) }}
     />
   </div>
@@ -106,6 +141,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
   playSound,
   discord,
 }) => {
+  const levels = useFriendLevels(friends);
   const q = search.trim().toLowerCase();
   const visible = useMemo(
     () =>
@@ -141,7 +177,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(300px,380px)_1fr] lg:items-start">
       {/* Lista */}
-      <section aria-label="Lista de amigos" className="flex flex-col gap-3 rounded-[22px] bg-white/[0.035] p-3">
+      <section aria-label="Lista de amigos" className="flex flex-col gap-3 rounded-[22px] bg-[#121216] p-3 ring-1 ring-white/[0.07]">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
           <input
@@ -150,7 +186,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Buscar por nome ou jogo"
-            className="h-10 w-full rounded-full bg-black/35 pl-10 pr-4 text-[13px] text-white outline-none placeholder:text-white/35 focus:ring-2 focus:ring-white/25"
+            className="h-10 w-full rounded-full bg-[#0d0d10] pl-10 pr-4 text-[13px] text-white outline-none placeholder:text-white/35 focus:ring-2 focus:ring-white/25"
           />
         </div>
 
@@ -184,7 +220,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
               .filter((g) => g.items.length > 0)
               .map((g) => (
                 <div key={g.id} className="mb-2">
-                  <h3 className="sticky top-0 z-10 flex items-center gap-2 bg-[#0b0b0e]/85 px-2 py-1.5 text-[12px] font-semibold text-white/55 backdrop-blur-sm">
+                  <h3 className="sticky top-0 z-10 flex items-center gap-2 bg-[#121216] px-2 py-1.5 text-[12px] font-semibold text-white/55">
                     {g.title}
                     <span className="font-normal text-white/35">{g.items.length}</span>
                   </h3>
@@ -217,6 +253,11 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
                                 <span className="truncate">{statusLine(f)}</span>
                               </span>
                             </span>
+                            {levels[f.id] && (
+                              <span className="shrink-0 rounded-full bg-white/[0.08] px-2 py-0.5 text-[11px] font-semibold text-white/70">
+                                Nv {levels[f.id]!.level}
+                              </span>
+                            )}
                             {unread(f) > 0 && (
                               <span className="min-w-5 rounded-full bg-white px-1.5 text-center text-[11px] font-bold leading-5 text-black">
                                 {unread(f)}
@@ -233,7 +274,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
         </div>
 
         {discord && (
-          <div className="flex items-center justify-between gap-3 rounded-2xl bg-black/30 px-3.5 py-2.5 text-[13px]">
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-[#0d0d10] px-3.5 py-2.5 text-[13px]">
             <span className="text-white/65">
               {discord.connected ? "Discord conectado" : "Veja seus amigos do Discord aqui"}
             </span>
@@ -251,10 +292,11 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
       </section>
 
       {/* Painel do amigo */}
-      <section aria-label="Detalhes do amigo" className="relative min-h-[26rem] overflow-hidden rounded-[22px] bg-white/[0.035]">
+      <section aria-label="Detalhes do amigo" className="relative min-h-[26rem] overflow-hidden rounded-[22px] bg-[#121216] ring-1 ring-white/[0.07]">
         {selected ? (
           <FriendPanel
             friend={selected}
+            level={levels[selected.id]}
             unread={unread(selected)}
             inCall={isCallActiveWith(selected.id)}
             loading={loadingProfileId === selected.id}
@@ -276,6 +318,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
 
 const FriendPanel: React.FC<{
   friend: SocialFriend;
+  level: PlayerLevelInfo | null;
   unread: number;
   inCall: boolean;
   loading: boolean;
@@ -284,7 +327,7 @@ const FriendPanel: React.FC<{
   onViewProfile: (f: SocialFriend) => void;
   onRemoveFriend: (f: SocialFriend) => void;
   playSound?: (t: SoundEffectType) => void;
-}> = ({ friend, unread, inCall, loading, onOpenChat, onStartVoiceCall, onViewProfile, onRemoveFriend, playSound }) => {
+}> = ({ friend, level, unread, inCall, loading, onOpenChat, onStartVoiceCall, onViewProfile, onRemoveFriend, playSound }) => {
   const [confirmRemove, setConfirmRemove] = useState(false);
   useEffect(() => setConfirmRemove(false), [friend.id]);
   const playing = friend.status === "playing";
@@ -309,8 +352,8 @@ const FriendPanel: React.FC<{
           className="absolute inset-0"
           style={{
             background: playing
-              ? "linear-gradient(180deg, rgba(16,185,129,0.20), rgba(11,11,14,0.95))"
-              : "linear-gradient(180deg, rgba(255,255,255,0.05), rgba(11,11,14,0.95))",
+              ? "linear-gradient(180deg, #123a2e, #121216)"
+              : "linear-gradient(180deg, #1d1d24, #121216)",
           }}
         />
       </div>
@@ -379,24 +422,41 @@ const FriendPanel: React.FC<{
           </button>
         </div>
 
-        <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 text-[13px] sm:grid-cols-3">
-          <div>
-            <dt className="text-white/40">Nível</dt>
-            <dd className="mt-0.5 font-display text-[18px] font-semibold text-white">{friend.level ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-white/40">Origem</dt>
-            <dd className="mt-0.5 font-semibold text-white">
-              {friend.source === "checkpoint" ? "Pherielium" : friend.source?.startsWith("discord") ? "Discord" : "Local"}
-            </dd>
-          </div>
-          {seen && (
-            <div>
-              <dt className="text-white/40">Última vez online</dt>
-              <dd className="mt-0.5 font-semibold text-white">{seen}</dd>
+        <div className="mt-6 flex flex-wrap items-stretch gap-3">
+          <div className="min-w-[15rem] flex-1 rounded-2xl bg-[#0d0d10] p-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="text-[13px] text-white/45">Nível</p>
+              {level && <p className="text-[12px] font-semibold" style={{ color: level.rankColor }}>{level.rank}</p>}
             </div>
-          )}
-        </dl>
+            <p className="mt-0.5 font-display text-[34px] font-bold leading-none text-white">{level ? level.level : "—"}</p>
+            {level && level.xpForNextLevel > 0 && (
+              <div className="mt-3">
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${Math.min(100, Math.max(0, level.progress))}%`, background: level.rankColor }}
+                  />
+                </div>
+                <p className="mt-1.5 text-[12px] text-white/40">{Math.round(level.progress)}% para o próximo nível</p>
+              </div>
+            )}
+            {!level && <p className="mt-2 text-[12px] text-white/40">O nível aparece quando o perfil do amigo carregar.</p>}
+          </div>
+          <dl className="grid min-w-[12rem] grid-cols-1 gap-3 rounded-2xl bg-[#0d0d10] p-4 text-[13px]">
+            <div>
+              <dt className="text-white/40">Origem</dt>
+              <dd className="mt-0.5 font-semibold text-white">
+                {friend.source === "checkpoint" ? "Pherielium" : friend.source?.startsWith("discord") ? "Discord" : "Local"}
+              </dd>
+            </div>
+            {seen && (
+              <div>
+                <dt className="text-white/40">Última vez online</dt>
+                <dd className="mt-0.5 font-semibold text-white">{seen}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
 
         <div className="mt-6 border-t border-white/[0.07] pt-4">
           {confirmRemove ? (

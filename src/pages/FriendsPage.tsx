@@ -1,13 +1,10 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { isManualDnd, setManualDnd } from "../services/presenceStatus";
 import {
-  Phone,
   Search,
   User,
   Users,
-  Video,
   X,
-  Gamepad2,
 } from "lucide-react";
 import { SystemPageShell } from "../components/ui/SystemPageShell";
 import ModalShell from "../components/ui/ModalShell";
@@ -27,6 +24,8 @@ type TranslationFn = ReturnType<typeof usePreferences>["t"];
 type BrandIcon = React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
 
 import { FriendsRoster } from "../components/friends/FriendsRoster";
+import { ChatsPanel } from "../components/friends/ChatsPanel";
+import { RequestsPanel } from "../components/friends/RequestsPanel";
 
 export type SocialSubTab = "AMIGOS" | "CHAT" | "SALAS" | "SOLICITAÇÕES";
 
@@ -58,173 +57,6 @@ export interface FriendsPageProps {
 // ============================================================
 // SUBCOMPONENTES MEMOIZADOS DE AMIGOS
 // ============================================================
-
-const FriendChatCard = React.memo<{
-  friend: SocialFriend;
-  unreadCount: number;
-  onOpenChat: (friend: SocialFriend) => void;
-  onStartVoiceCall?: (friend: SocialFriend, withVideo?: boolean) => void;
-  playSound?: (type: SoundEffectType) => void;
-}>(({ friend, unreadCount, onOpenChat, onStartVoiceCall, playSound }) => {
-  const handleChat = useCallback(() => onOpenChat(friend), [friend, onOpenChat]);
-  const handleVoice = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onStartVoiceCall?.(friend, false);
-  }, [friend, onStartVoiceCall]);
-  const handleVideo = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onStartVoiceCall?.(friend, true);
-  }, [friend, onStartVoiceCall]);
-
-  const isPlaying = friend.status === "playing";
-  const isOnline = isPlaying || friend.status === "online";
-
-  return (
-    <div
-      tabIndex={0}
-      role="button"
-      data-friend-id={friend.id}
-      onClick={handleChat}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          handleChat();
-        }
-      }}
-      className="group relative flex items-center justify-between p-4 rounded-2xl bg-[var(--color-surface)] hover:bg-[#222222] border border-[var(--color-ui-detail)] hover:border-white/20 focus:border-white/40 focus:bg-[var(--color-surface)] focus:outline-none data-[gamepad-focused='true']:border-white data-[gamepad-focused='true']:bg-[var(--color-surface)] data-[gamepad-focused='true']:ring-2 data-[gamepad-focused='true']:ring-white/40 cursor-pointer transition-all shadow-md"
-    >
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="relative w-11 h-11 rounded-xl overflow-hidden bg-[var(--color-surface)] border border-white/10 shrink-0">
-          {friend.avatar ? (
-            <img src={friend.avatar} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-white/40">
-              <User className="w-5 h-5" />
-            </div>
-          )}
-          {/* Indicador de status */}
-          <span
-            className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-black/80 ${isPlaying
-              ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)] animate-pulse"
-              : isOnline
-                ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]"
-                : "bg-white/20"
-              }`}
-          />
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-white truncate">{friend.name}</p>
-          <p className={`text-xs truncate font-medium ${isPlaying ? "text-emerald-400 font-semibold flex items-center gap-1" : isOnline ? "text-white/60" : "text-white/30"
-            }`}>
-            {isPlaying ? (
-              <>
-                <Gamepad2 className="w-3 h-3 text-emerald-400 shrink-0 inline" />
-                <span>Jogando {friend.playing || "um jogo"}</span>
-              </>
-            ) : isOnline ? (
-              "Online"
-            ) : (
-              "Offline"
-            )}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-        {onStartVoiceCall && (
-          <>
-            <button
-              type="button"
-              tabIndex={-1}
-              onMouseEnter={() => playSound?.("hover")}
-              onClick={handleVoice}
-              title="Ligar (Áudio)"
-              className="p-2 rounded-xl bg-[var(--color-surface)] hover:bg-white/10 text-white/70 hover:text-white border border-[var(--color-ui-detail)] transition-all cursor-pointer"
-            >
-              <Phone className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              tabIndex={-1}
-              onMouseEnter={() => playSound?.("hover")}
-              onClick={handleVideo}
-              title="Chamada de Vídeo"
-              className="p-2 rounded-xl bg-[var(--color-surface)] hover:bg-white/10 text-white/70 hover:text-white border border-[var(--color-ui-detail)] transition-all cursor-pointer"
-            >
-              <Video className="w-4 h-4" />
-            </button>
-          </>
-        )}
-        {unreadCount > 0 && (
-          <span className="px-2 py-0.5 rounded-full bg-white text-black text-xs font-bold">
-            {unreadCount}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}, (prev, next) => (
-  prev.friend.id === next.friend.id &&
-  prev.friend.name === next.friend.name &&
-  prev.friend.avatar === next.friend.avatar &&
-  prev.friend.status === next.friend.status &&
-  prev.friend.playing === next.friend.playing &&
-  prev.unreadCount === next.unreadCount &&
-  prev.onOpenChat === next.onOpenChat &&
-  prev.onStartVoiceCall === next.onStartVoiceCall &&
-  prev.playSound === next.playSound
-));
-
-const FriendRequestCard = React.memo<{
-  request: CheckpointFriendRequest;
-  onAccept: (uid: string) => void;
-  onReject: (uid: string) => void;
-}>(({ request, onAccept, onReject }) => {
-  const handleAccept = useCallback(() => onAccept(request.uid), [request.uid, onAccept]);
-  const handleReject = useCallback(() => onReject(request.uid), [request.uid, onReject]);
-
-  return (
-    <div className="flex items-center justify-between p-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-ui-detail)]">
-      <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-xl overflow-hidden bg-[var(--color-surface)] border border-white/10">
-          {request.photoURL ? (
-            <img src={request.photoURL} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-white/40">
-              <User className="w-5 h-5" />
-            </div>
-          )}
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-white">{request.displayName || "Jogador"}</p>
-          <p className="text-xs text-white/40">Deseja adicionar você</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={handleReject}
-          className="px-3 py-1.5 rounded-xl border border-white/10 bg-[var(--color-surface)] text-white/60 hover:text-white text-xs font-semibold cursor-pointer"
-        >
-          Rejeitar
-        </button>
-        <button
-          type="button"
-          onClick={handleAccept}
-          className="px-4 py-1.5 rounded-xl bg-white text-black text-xs font-bold shadow-md hover:bg-white/90 cursor-pointer"
-        >
-          Aceitar
-        </button>
-      </div>
-    </div>
-  );
-}, (prev, next) => (
-  prev.request.uid === next.request.uid &&
-  prev.request.displayName === next.request.displayName &&
-  prev.request.photoURL === next.request.photoURL &&
-  prev.onAccept === next.onAccept &&
-  prev.onReject === next.onReject
-));
 
 export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
   discordConnected,
@@ -359,34 +191,14 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
 
       {/* SubTab: CHATS */}
       {activeSubTab === "CHAT" && (
-        <div
-          className="rounded-2xl border border-[var(--color-ui-detail)] p-6 shadow-2xl glass-panel"
-        >
-
-          <div className="mb-6 flex items-center justify-between border-b border-[var(--color-ui-detail)] pb-4">
-            <div>
-              <h2 className="text-lg font-display font-bold text-white">Conversas Recentes</h2>
-              <p className="text-xs font-body text-white/40">Abra mensagens diretas e canais de amigos.</p>
-            </div>
-          </div>
-
-          {checkpointFriends.length === 0 ? (
-            <div className="py-12 text-center text-white/40 text-sm">Nenhuma conversa encontrada.</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {checkpointFriends.map((friend) => (
-                <FriendChatCard
-                  key={friend.id}
-                  friend={friend}
-                  unreadCount={unreadMessagesByFriend[friend.id.split(":")[1]] || 0}
-                  onOpenChat={onOpenChat}
-                  onStartVoiceCall={onStartVoiceCall}
-                  playSound={playSound}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        <ChatsPanel
+          friends={checkpointFriends}
+          unreadByFriend={unreadMessagesByFriend}
+          onOpenChat={onOpenChat}
+          onStartVoiceCall={onStartVoiceCall}
+          onAddFriend={onAddFriendClick}
+          playSound={playSound}
+        />
       )}
 
       {/* SubTab: CANAIS DE VOZ */}
@@ -414,35 +226,13 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
 
       {/* SubTab: SOLICITAÇÕES */}
       {activeSubTab === "SOLICITAÇÕES" && (
-        <div
-          className="rounded-2xl border border-[var(--color-ui-detail)] p-6 shadow-2xl glass-panel"
-        >
-
-          <div className="mb-6 flex items-center justify-between border-b border-[var(--color-ui-detail)] pb-4">
-            <div>
-              <h2 className="text-lg font-display font-bold text-white">Solicitações de Amizade</h2>
-              <p className="text-xs font-body text-white/40">Gerencie convites de novas conexões.</p>
-            </div>
-            <span className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs font-bold text-white">
-              {incomingRequests.length}
-            </span>
-          </div>
-
-          {incomingRequests.length === 0 ? (
-            <div className="py-12 text-center text-white/40 text-sm">Nenhuma solicitação pendente.</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {incomingRequests.map((req) => (
-                <FriendRequestCard
-                  key={req.uid}
-                  request={req}
-                  onAccept={onAcceptRequest}
-                  onReject={onRejectRequest}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        <RequestsPanel
+          requests={incomingRequests}
+          onAccept={onAcceptRequest}
+          onReject={onRejectRequest}
+          onAddFriend={onAddFriendClick}
+          playSound={playSound}
+        />
       )}
     </SystemPageShell>
   );

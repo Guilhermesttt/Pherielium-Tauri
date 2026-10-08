@@ -164,20 +164,15 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
   return (
     <div className="space-y-6 select-none">
       {/* Header with Stats & Actions */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-3xl border border-white/8 bg-white/3 p-5 md:p-6 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.4)]">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-[22px] bg-[#121216] p-5 md:p-6 ring-1 ring-white/[0.07]">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white border border-white/15 shadow-inner">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0d0d10] text-white">
             <Radio className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-base font-black uppercase tracking-wider text-white flex items-center gap-2">
-              <span>Canais de Voz</span>
-              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-white/10 text-white/80 border border-white/15">
-                P2P Mesh (4 Max)
-              </span>
-            </h2>
-            <p className="text-xs text-white/50">
-              Salas públicas permanentes e canais de conversa para jogar com a galera
+            <h2 className="font-display text-[22px] font-bold leading-tight text-white">Canais de voz</h2>
+            <p className="text-[13px] text-white/50">
+              Entre numa sala para jogar conversando, ou crie a sua. Até 4 pessoas por sala.
             </p>
           </div>
         </div>
@@ -202,17 +197,17 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
               title="Testar modal e toque de chamada recebida"
             >
               <PhoneIncoming className="h-4 w-4 text-emerald-400 animate-pulse" />
-              <span className="hidden sm:inline">Testar Chamada</span>
+              <span className="hidden sm:inline">Testar chamada</span>
             </button>
           )}
 
           <button
             type="button"
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex-1 md:flex-initial flex items-center justify-center gap-2 h-10 px-5 rounded-xl bg-white text-black font-black text-xs uppercase tracking-wider hover:bg-white/90 shadow-[0_4px_20px_rgba(255,255,255,0.15)] transition hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+            className="flex-1 md:flex-initial flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-white text-black font-semibold text-[13px] hover:bg-white/90 transition active:scale-[0.97] cursor-pointer"
           >
             <Plus className="h-4 w-4" />
-            <span>Criar Canal de Voz</span>
+            <span>Criar canal de voz</span>
           </button>
         </div>
       </div>
@@ -222,14 +217,14 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between p-4.5 rounded-2xl border border-white/15 bg-white/4 backdrop-blur-2xl shadow-xl"
+          className="flex items-center justify-between p-4 rounded-[22px] bg-[#123a2e] ring-1 ring-emerald-400/25"
         >
           <div className="flex items-center gap-3.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white border border-white/15">
               <Volume2 className="h-5 w-5 animate-pulse" />
             </div>
             <div>
-              <div className="text-xs font-black text-white flex items-center gap-2">
+              <div className="text-xs font-bold text-white flex items-center gap-2">
                 <span>Você está conectado em uma sala ativa</span>
                 <span className="inline-block h-2 w-2 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
               </div>
@@ -242,9 +237,9 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
             <button
               type="button"
               onClick={onOpenActiveWindow}
-              className="px-4 py-2 rounded-xl bg-white text-black font-black text-xs uppercase tracking-wider hover:bg-white/90 transition shadow-md cursor-pointer hover:scale-105 active:scale-95"
+              className="px-5 h-10 rounded-full bg-white text-black font-semibold text-[13px] hover:bg-white/90 transition cursor-pointer active:scale-95"
             >
-              Abrir Painel
+              Abrir chamada
             </button>
           )}
         </motion.div>
@@ -259,7 +254,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
             placeholder="Pesquisar canais de voz por nome..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 rounded-xl bg-white/4 border border-white/8 backdrop-blur-xl text-xs font-semibold text-white placeholder-white/40 focus:outline-none focus:border-white/30 focus:bg-white/8 transition"
+            className="w-full h-10 pl-10 pr-4 rounded-full bg-[#121216] ring-1 ring-white/[0.07] text-[13px] text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/25 transition"
           />
         </div>
 
@@ -268,10 +263,10 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
           <button
             type="button"
             onClick={() => setSelectedCategory("all")}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+            className={`px-4 h-9 rounded-full text-[13px] font-semibold transition whitespace-nowrap cursor-pointer ${
               selectedCategory === "all"
-                ? "bg-white text-black font-black shadow-sm"
-                : "bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/5"
+                ? "bg-white text-black font-semibold"
+                : "bg-[#121216] hover:bg-[#1b1b22] text-white/65 hover:text-white"
             }`}
           >
             Todas
@@ -281,10 +276,10 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
               key={key}
               type="button"
               onClick={() => setSelectedCategory(key)}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer border ${
+              className={`flex items-center gap-1.5 px-4 h-9 rounded-full text-[13px] font-semibold transition whitespace-nowrap cursor-pointer border ${
                 selectedCategory === key
-                  ? "bg-white text-black font-black shadow-sm border-white"
-                  : "bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border-white/5"
+                  ? "bg-white text-black font-semibold border-white"
+                  : "bg-[#121216] hover:bg-[#1b1b22] text-white/65 hover:text-white border-transparent"
               }`}
             >
               {meta.icon}
@@ -297,9 +292,9 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
       {/* Minhas Salas Salvas (Minhas salas só aparecem aqui) */}
       {myRooms.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-xs font-black uppercase tracking-wider text-white/60 flex items-center gap-2">
-            <span>Minhas Salas Salvas</span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/80 font-black">
+          <h3 className="text-[14px] font-semibold text-white/70 flex items-center gap-2">
+            <span>Minhas salas</span>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/80 font-bold">
               {myRooms.length}
             </span>
           </h3>
@@ -313,15 +308,15 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
               return (
                 <div
                   key={room.id}
-                  className={`group relative flex flex-col justify-between p-4.5 rounded-2xl border transition-all duration-200 backdrop-blur-xl ${
+                  className={`group relative flex flex-col justify-between p-4.5 rounded-[22px] border transition-colors duration-200 ${
                     isCurrent
-                      ? "bg-white/8 border-white/40 shadow-xl"
-                      : "bg-white/3 hover:bg-white/6 border-white/8 hover:border-white/20 shadow-[0_15px_35px_rgba(0,0,0,0.3)]"
+                      ? "bg-[#1b1b22] border-white/40"
+                      : "bg-[#121216] hover:bg-[#17171d] border-white/[0.07] hover:border-white/20"
                   }`}
                 >
                   <div className="space-y-2.5">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2.5 font-black text-sm text-white truncate min-w-0">
+                      <div className="flex items-center gap-2.5 font-bold text-sm text-white truncate min-w-0">
                         <div
                           className="h-8 w-8 rounded-xl flex items-center justify-center text-sm shrink-0 border"
                           style={{ borderColor: `${roomColor}60`, backgroundColor: `${roomColor}20` }}
@@ -381,7 +376,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                       {room.participants.map((p, i) => (
                         <div
                           key={p.uid || i}
-                          className="h-6 w-6 rounded-full border border-black bg-white/10 flex items-center justify-center text-[9px] font-black text-white"
+                          className="h-6 w-6 rounded-full border border-black bg-white/10 flex items-center justify-center text-[9px] font-bold text-white"
                           title={p.name}
                         >
                           {p.avatar ? (
@@ -399,7 +394,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                     <button
                       type="button"
                       onClick={() => handleJoinClick(room)}
-                      className={`px-3.5 py-1.5 rounded-xl font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                      className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-1.5 ${
                         isCurrent
                           ? "bg-white text-black shadow-sm"
                           : "bg-white/15 text-white hover:bg-white hover:text-black border border-white/15 shadow-sm"
@@ -418,15 +413,15 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
 
       {/* Grid de Salas Públicas Globais (Apenas salas de outros usuários) */}
       <div className="space-y-3">
-        <h3 className="text-xs font-black uppercase tracking-wider text-white/60 flex items-center gap-2">
+        <h3 className="text-[14px] font-semibold text-white/70 flex items-center gap-2">
           <span>Salas Públicas Globais</span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/80 font-black">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/80 font-bold">
             {globalOtherRooms.length}
           </span>
         </h3>
 
         {globalOtherRooms.length === 0 && !isLoading && (
-          <div className="flex flex-col items-center justify-center p-10 rounded-3xl border border-white/5 bg-black/20 text-center space-y-3">
+          <div className="flex flex-col items-center justify-center p-10 rounded-[22px] bg-[#121216] ring-1 ring-white/[0.07] text-center space-y-3">
             <Radio className="h-8 w-8 text-white/20" />
             <div>
               <p className="text-sm font-bold text-white/80">Nenhuma outra sala pública ativa no momento</p>
@@ -445,17 +440,17 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
             return (
               <div
                 key={room.id}
-                className={`flex flex-col justify-between p-4.5 rounded-2xl border transition-all duration-200 backdrop-blur-xl ${
+                className={`flex flex-col justify-between p-4.5 rounded-[22px] border transition-colors duration-200 ${
                   isCurrent
-                    ? "bg-white/8 border-white/40 shadow-xl"
+                    ? "bg-[#1b1b22] border-white/40"
                     : isFull
                     ? "bg-white/1 border-white/5 opacity-70"
-                    : "bg-white/3 hover:bg-white/6 border-white/8 hover:border-white/20 shadow-[0_15px_35px_rgba(0,0,0,0.3)]"
+                    : "bg-[#121216] hover:bg-[#17171d] border-white/[0.07] hover:border-white/20"
                 }`}
               >
                 <div className="space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2.5 font-black text-sm text-white truncate min-w-0">
+                    <div className="flex items-center gap-2.5 font-bold text-sm text-white truncate min-w-0">
                       <div
                         className="h-8 w-8 rounded-xl flex items-center justify-center text-sm shrink-0 border"
                         style={{ borderColor: `${roomColor}60`, backgroundColor: `${roomColor}20` }}
@@ -466,11 +461,11 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                           renderVoiceRoomIcon(room.icon, "h-4 w-4", roomColor)
                         )}
                       </div>
-                      <h4 className="font-black text-sm text-white truncate">{room.name}</h4>
+                      <h4 className="font-bold text-sm text-white truncate">{room.name}</h4>
                     </div>
 
                     {isFull && (
-                      <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[9px] font-black uppercase shrink-0">
+                      <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[9px] font-bold shrink-0">
                         Lotada
                       </span>
                     )}
@@ -494,7 +489,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                     {room.participants.slice(0, 4).map((p, i) => (
                       <div
                         key={p.uid || i}
-                        className="h-6 w-6 rounded-full border border-black bg-white/10 flex items-center justify-center text-[9px] font-black text-white"
+                        className="h-6 w-6 rounded-full border border-black bg-white/10 flex items-center justify-center text-[9px] font-bold text-white"
                         title={p.name}
                       >
                         {p.avatar ? (
@@ -513,7 +508,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                     type="button"
                     onClick={() => handleJoinClick(room)}
                     disabled={isFull && !isCurrent}
-                    className={`px-4 py-1.5 rounded-xl font-black text-xs transition cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-4 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer flex items-center gap-1.5 ${
                       isCurrent
                         ? "bg-white text-black shadow-sm"
                         : isFull
@@ -589,7 +584,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
               className="relative w-full max-w-sm overflow-hidden rounded-3xl border border-white/10 bg-[#12131a] p-6 shadow-2xl z-10 space-y-4"
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
+                <div className="flex items-center gap-2 text-amber-400 font-bold text-xs">
                   <KeyRound className="h-4 w-4" />
                   <span>Sala Protegida por Senha</span>
                 </div>
@@ -603,7 +598,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
               </div>
 
               <div>
-                <h3 className="font-black text-sm text-white">{passwordModalRoom.name}</h3>
+                <h3 className="font-bold text-sm text-white">{passwordModalRoom.name}</h3>
                 <p className="text-xs text-white/50 mt-0.5">
                   Digite a senha configurada pelo host para ingressar.
                 </p>
@@ -638,7 +633,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                   type="button"
                   onClick={handlePasswordSubmit}
                   disabled={isJoiningWithPassword}
-                  className="flex-1 py-2 rounded-xl bg-white text-black font-black text-xs hover:bg-white/90 transition shadow-sm disabled:opacity-50 cursor-pointer"
+                  className="flex-1 py-2 rounded-xl bg-white text-black font-bold text-xs hover:bg-white/90 transition shadow-sm disabled:opacity-50 cursor-pointer"
                 >
                   {isJoiningWithPassword ? "Entrando..." : "Entrar"}
                 </button>
