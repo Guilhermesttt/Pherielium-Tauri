@@ -1,0 +1,74 @@
+import { mkdirSync } from "node:fs";
+import path from "node:path";
+import { expect, test } from "@playwright/test";
+import { installHarness } from "./fixtures";
+
+const outDir = path.resolve(import.meta.dirname, "screenshots", process.env.SHOTS_LABEL ?? "after");
+
+test("pherie: os 24 humores desenham sem erro", async ({ browser }) => {
+  mkdirSync(outDir, { recursive: true });
+  const context = await browser.newContext({ viewport: { width: 1100, height: 760 } });
+  await installHarness(context, { tauri: false });
+  const page = await context.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => {
+    if (!/transformCallback|invoke/.test(e.message)) errors.push(e.message);
+  });
+  await page.goto("/");
+  await page.waitForTimeout(3000);
+
+  await page.evaluate(async () => {
+    const eng = await import("/src/mascot/pherie/engine.ts");
+    const draw = await import("/src/mascot/pherie/draw.ts");
+    const moods = await import("/src/mascot/moods.ts");
+    const states = await import("/src/mascot/pherieStates.ts");
+    const mouth = await import("/src/mascot/mouth.ts");
+    const color = await import("/src/mascot/mascotColor.ts");
+    document.body.innerHTML = "";
+    const grid = document.createElement("div");
+    grid.style.cssText =
+      "position:fixed;inset:0;z-index:99999;background:#1b1b20;display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:8px;font:11px system-ui;color:#aaa";
+    document.body.appendChild(grid);
+    const palette = color.deriveBodyPalette(null);
+    const items = new Set<string>();
+    for (const m of moods.MASCOT_MOODS) {
+      const cell = document.createElement("div");
+      cell.style.textAlign = "center";
+      const c = document.createElement("canvas");
+      const size = 150;
+      const dpr = 1;
+      c.width = size;
+      c.height = size;
+      c.style.width = size + "px";
+      cell.appendChild(c);
+      cell.appendChild(document.createTextNode(m.id));
+      grid.appendChild(cell);
+      const e = new eng.PherieEngine(m.id, "squircle", () => 0.5);
+      for (let t = 0; t < 2.5; t += 1 / 60) e.update(1 / 60);
+      const spec = states.MOOD_SPECS[m.id];
+      draw.drawPherie(
+        c.getContext("2d")!,
+        e,
+        {
+          palette,
+          faceColor: palette.face,
+          accentColor: palette.accent,
+          ears: "cat",
+          earAccent: "#e8483f",
+          items: items as never,
+          rgbHeadphones: m.id === "gaming",
+          showMic: m.id === "calling",
+          mouth: mouth.mouthShape(spec.mouth, 0),
+          blush: spec.blush,
+          extras: spec.extras ?? [],
+        },
+        size,
+        dpr,
+      );
+    }
+  });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: path.join(outDir, "pherie-moods.png") });
+  expect(errors).toEqual([]);
+  await context.close();
+});
