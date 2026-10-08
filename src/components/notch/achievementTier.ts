@@ -22,11 +22,11 @@ export interface TierStyle {
  * ouro uma explosão de luz com faíscas; platina anéis prismáticos, mais faíscas e mais tempo.
  */
 export const TIER_STYLES: Record<AchievementTier, TierStyle> = {
-  iron: { label: "Ferro", rgb: "148,155,163", durationMs: 4600, effect: "none", sparks: 0, pulses: 0 },
-  bronze: { label: "Bronze", rgb: "205,127,50", durationMs: 5200, effect: "sheen", sparks: 0, pulses: 0 },
-  silver: { label: "Prata", rgb: "203,209,220", durationMs: 5600, effect: "sheen", sparks: 4, pulses: 0 },
-  gold: { label: "Ouro", rgb: "245,176,36", durationMs: 6600, effect: "burst", sparks: 9, pulses: 1 },
-  platinum: { label: "Platina", rgb: "125,249,255", durationMs: 7800, effect: "prism", sparks: 14, pulses: 3 },
+  iron: { label: "Ferro", rgb: "148,155,163", durationMs: 3000, effect: "none", sparks: 0, pulses: 0 },
+  bronze: { label: "Bronze", rgb: "205,127,50", durationMs: 3400, effect: "sheen", sparks: 0, pulses: 0 },
+  silver: { label: "Prata", rgb: "203,209,220", durationMs: 3800, effect: "sheen", sparks: 4, pulses: 0 },
+  gold: { label: "Ouro", rgb: "245,176,36", durationMs: 4400, effect: "burst", sparks: 9, pulses: 1 },
+  platinum: { label: "Platina", rgb: "125,249,255", durationMs: 5200, effect: "prism", sparks: 14, pulses: 3 },
 };
 
 export const tierStyle = (tier: AchievementTier | undefined): TierStyle => TIER_STYLES[tier ?? "bronze"];

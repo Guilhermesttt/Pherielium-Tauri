@@ -1,4 +1,5 @@
 import type { MascotMood } from "../../mascot/moods";
+import { TIER_STYLES } from "./achievementTier";
 
 /**
  * Eventos do ecossistema que o notch encena (pedido de amizade, mensagem, conquista...).
@@ -37,15 +38,6 @@ export const NOTCH_EVENT_TAURI_EVENT = "overlay:notch-event";
 export const NOTCH_EVENT_WIDTH = 328;
 export const NOTCH_EVENT_QUEUE_MAX = 4;
 
-/** Mais raro, mais tempo na tela (mantém em sincronia com TIER_STYLES.durationMs). */
-const ACHIEVEMENT_DURATION_MS: Record<AchievementTier, number> = {
-  iron: 4600,
-  bronze: 5200,
-  silver: 5600,
-  gold: 6600,
-  platinum: 7800,
-};
-
 const DURATION_MS: Record<NotchEventKind, number> = {
   "friend-request": 4800,
   "friend-accepted": 3800,
@@ -56,7 +48,7 @@ const DURATION_MS: Record<NotchEventKind, number> = {
 };
 
 export const notchEventDuration = (kind: NotchEventKind, tier?: AchievementTier) =>
-  kind === "achievement" ? ACHIEVEMENT_DURATION_MS[tier ?? "bronze"] : DURATION_MS[kind];
+  kind === "achievement" ? TIER_STYLES[tier ?? "bronze"].durationMs : DURATION_MS[kind];
 
 /** Conquista abre o notch inteiro (mascote + imagem + nome + descrição) em vez da barra compacta. */
 export const notchEventIsExpanded = (kind: NotchEventKind) => kind === "achievement";
