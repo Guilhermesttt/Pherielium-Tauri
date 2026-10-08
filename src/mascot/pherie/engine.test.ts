@@ -189,3 +189,66 @@ describe("cenas no engine", () => {
     expect(e.lhy.value).toBeGreaterThan(60);
   });
 });
+
+import { HEADBANG_FACE } from "./face";
+
+describe("notas musicais e cara de música pesada", () => {
+  const dance = (style: "calm" | "groove" | "headbang", seconds = 4) => {
+    const e = new PherieEngine("music", undefined, seeded());
+    e.phA.set(1);
+    e.setScene({ dancing: true, danceStyle: style, beat: 0 });
+    let notes = 0;
+    for (let t = 0; t < seconds; t += 1 / 60) {
+      e.setScene({ beat: Math.floor(t * 3) % 2 === 0 && t % (1 / 3) < 0.05 ? 1 : 0 });
+      const before = e.particles.filter((p) => p.kind === "note").length;
+      e.update(1 / 60);
+      notes += Math.max(0, e.particles.filter((p) => p.kind === "note").length - before);
+    }
+    return notes;
+  };
+  const seeded = () => {
+    let n = 0.37;
+    return () => ((n = (n * 9301 + 49297) % 233280) / 233280);
+  };
+
+  it("sai nota dos fones quando ela dança, e mais na música pesada", () => {
+    const calmNotes = dance("calm");
+    const heavy = dance("headbang");
+    expect(calmNotes).toBeGreaterThan(0);
+    expect(heavy).toBeGreaterThan(calmNotes * 2);
+  });
+
+  it("sem fones ou sem dançar não sai nota", () => {
+    const e = new PherieEngine("music", undefined, seeded());
+    e.setScene({ dancing: true, danceStyle: "headbang" });
+    for (let t = 0; t < 3; t += 1 / 60) e.update(1 / 60);
+    expect(e.particles.some((p) => p.kind === "note")).toBe(false);
+    e.phA.set(1);
+    e.setScene({ dancing: false });
+    for (let t = 0; t < 3; t += 1 / 60) e.update(1 / 60);
+    expect(e.particles.some((p) => p.kind === "note")).toBe(false);
+  });
+
+  it("as notas sobem e somem", () => {
+    const e = new PherieEngine("music", undefined, seeded());
+    e.phA.set(1);
+    e.setScene({ dancing: true, danceStyle: "groove" });
+    for (let t = 0; t < 1; t += 1 / 60) e.update(1 / 60);
+    const n = e.particles.find((p) => p.kind === "note")!;
+    expect(n.vy).toBeLessThan(0);
+    e.setScene({ dancing: false });
+    for (let t = 0; t < 3; t += 1 / 60) e.update(1 / 60);
+    expect(e.particles.some((p) => p.kind === "note")).toBe(false);
+  });
+
+  it("cara de mau: sobrancelha baixa nos dois olhos e volta ao humor depois", () => {
+    const e = new PherieEngine("music", undefined, seeded());
+    e.setFaceOverride(HEADBANG_FACE);
+    for (let t = 0; t < 2; t += 1 / 60) e.update(1 / 60);
+    expect(e.left.lid.value).toBeGreaterThan(15);
+    expect(e.right.lid.value).toBeLessThan(-15);
+    e.setFaceOverride(null);
+    for (let t = 0; t < 2; t += 1 / 60) e.update(1 / 60);
+    expect(Math.abs(e.left.lid.value)).toBeLessThan(2);
+  });
+});

@@ -332,6 +332,46 @@ function drawParticles(ctx: CanvasRenderingContext2D, eng: PherieEngine, st: Dra
       ctx.fillStyle = "#f472b6";
       ctx.scale(0.9 + t * 0.5, 0.9 + t * 0.5);
       ctx.fill(new Path2D("M 0 8 C -14 -2 -12 -14 -5 -14 C -1 -14 0 -10 0 -10 C 0 -10 1 -14 5 -14 C 12 -14 14 -2 0 8 Z"));
+    } else if (p.kind === "note") {
+      // cor pelo estilo: calma azul-clara, animada rosa/violeta, pesada vermelho-fogo
+      const colors = ["#7dd3fc", "#f0abfc", "#fb7185"] as const;
+      const color = colors[Math.min(2, Math.max(0, p.tone ?? 1))];
+      ctx.rotate(p.rot ?? 0);
+      const grow = 0.85 + Math.min(1, t * 3) * 0.35;
+      ctx.scale(grow * 1.5, grow * 1.5);
+      ctx.fillStyle = color;
+      ctx.strokeStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 7;
+      ctx.lineWidth = 2.4;
+      ctx.lineCap = "round";
+      if (p.variant === 1) {
+        // duas colcheias ligadas (♫)
+        for (const x of [-7, 7]) {
+          ctx.beginPath();
+          ctx.ellipse(x, 9, 5.2, 3.9, -0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(x + 4.6, 8);
+          ctx.lineTo(x + 4.6, -12);
+          ctx.stroke();
+        }
+        ctx.lineWidth = 3.4;
+        ctx.beginPath();
+        ctx.moveTo(-2.4, -12);
+        ctx.lineTo(11.6, -12);
+        ctx.stroke();
+      } else {
+        // colcheia (♪)
+        ctx.beginPath();
+        ctx.ellipse(0, 9, 5.4, 4, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(4.8, 8);
+        ctx.lineTo(4.8, -12);
+        ctx.quadraticCurveTo(12, -9, 11, -2);
+        ctx.stroke();
+      }
     } else {
       ctx.fillStyle = st.palette.light ? "#f5a524" : "#fde68a";
       ctx.rotate(t * 2);

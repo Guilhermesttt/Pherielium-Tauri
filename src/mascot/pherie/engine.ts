@@ -9,7 +9,12 @@ import type { MascotMood } from "../moods";
 export const R = 100;
 
 export interface Particle {
-  kind: "z" | "heart" | "spark";
+  kind: "z" | "heart" | "spark" | "note";
+  /** nota musical: qual desenho (0 = colcheia, 1 = duas colcheias) e a cor (0 calma, 1 animada, 2 pesada) */
+  variant?: number;
+  tone?: number;
+  rot?: number;
+  spin?: number;
   x: number;
   y: number;
   vx: number;
@@ -66,6 +71,9 @@ export class PherieEngine {
   particles: Particle[] = [];
   time = 0;
   private blinkIn = 2.2;
+  private override: FaceSpec | null = null;
+  private noteIn = 0;
+  private prevBeat = 0;
   private blinkHold = 0;
   private spawnIn = 0;
   private gazeFromPointerX = 0;
@@ -86,8 +94,33 @@ export class PherieEngine {
     this.targetRadii = [...radiiFor(shape)];
   }
 
+  /** Rosto fixo por cima do humor (ex.: cara de mau na música pesada); `null` volta ao humor. */
+  setFaceOverride(face: FaceSpec | null) {
+    if (face === this.override) return;
+    this.override = face;
+    this.applyFace(face ?? faceFor(this.mood));
+  }
+
+  private applyFace(next: FaceSpec) {
+    const prev = this.face;
+    this.face = next;
+    for (const [state, spec] of [[this.left, next.left], [this.right, next.right]] as const) {
+      state.spec = spec;
+      state.w.target = spec.w;
+      state.h.target = spec.h;
+      state.lid.target = spec.lid;
+    }
+    if (prev.left.shape !== next.left.shape || prev.right.shape !== next.right.shape) this.blink();
+    this.syncGaze();
+  }
+
   setMood(mood: MascotMood) {
     if (mood === this.mood) return;
+    if (this.override) {
+      // o rosto fixo manda; só guarda o humor para quando ele sair
+      this.mood = mood;
+      return;
+    }
     const prev = this.face;
     this.mood = mood;
     this.face = faceFor(mood);
@@ -202,12 +235,46 @@ export class PherieEngine {
     }
 
     this.emit(dt);
+    this.emitNotes(dt);
     this.particles = this.particles.filter((p) => {
       p.age += dt;
-      p.x += p.vx * dt;
+      p.x += p.vx * dt + (p.kind === "note" ? Math.sin(p.age * 5 + (p.rot ?? 0) * 9) * 6 * dt : 0);
       p.y += p.vy * dt;
+      if (p.kind === "note") p.rot = (p.rot ?? 0) + (p.spin ?? 0) * dt;
       return p.age < p.life;
     });
+  }
+
+  /** Notas musicais saindo dos fones enquanto ela dança: mais e mais fortes quanto mais pesada a música. */
+  private emitNotes(dt: number) {
+    const s = this.scene;
+    const beatHit = s.beat > 0.9 && this.prevBeat <= 0.9;
+    this.prevBeat = s.beat;
+    if (!s.dancing || this.phA.value < 0.5) return;
+    const style = s.danceStyle ?? "groove";
+    const tone = style === "calm" ? 0 : style === "headbang" ? 2 : 1;
+    const every = style === "calm" ? 0.85 : style === "headbang" ? 0.22 : 0.42;
+    this.noteIn -= dt;
+    const burst = beatHit && style !== "calm";
+    if (this.noteIn > 0 && !burst) return;
+    this.noteIn = every;
+    const count = burst && style === "headbang" ? 2 : 1;
+    for (let i = 0; i < count; i++) {
+      const side = this.rng() < 0.5 ? -1 : 1;
+      this.particles.push({
+        kind: "note",
+        variant: this.rng() < 0.35 ? 1 : 0,
+        tone,
+        rot: (this.rng() - 0.5) * 0.5,
+        spin: (this.rng() - 0.5) * 1.2,
+        x: side * 117,
+        y: 0 + this.rng() * 14,
+        vx: side * (3 + this.rng() * 6),
+        vy: -(28 + this.rng() * 22 + tone * 8),
+        age: 0,
+        life: 1.9,
+      });
+    }
   }
 
   private emit(dt: number) {

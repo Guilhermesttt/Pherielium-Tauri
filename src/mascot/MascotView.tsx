@@ -9,6 +9,7 @@ import { headbangPose, headbangTransform, isAudioLive, nextBeatEnvelope, type Au
 import { DANCE_INTENSITY, MusicAnalyzer, type DanceStyle } from "./musicStyle";
 import type { EarsId, ItemId } from "./notchConfig";
 import { PherieEngine } from "./pherie/engine";
+import { HEADBANG_FACE } from "./pherie/face";
 import { drawPherie, type DrawStyle } from "./pherie/draw";
 
 export interface MascotPointer {
@@ -237,6 +238,7 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
     let clock = 0;
     let fumeUntil = 0;
     const analyzer = new MusicAnalyzer();
+    let metalFace = false;
     let danceStyle: DanceStyle = "groove";
     // instâncias pequenas (barra do notch, grade das configs) não precisam de 60 fps
     const divisor = size <= 48 ? 2 : 1;
@@ -277,8 +279,9 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
         items: st.itemSet,
         rgbHeadphones: st.rgbHeadphones,
         showMic: st.showMic,
-        mouth: mouthShape(cur.spec.mouth, level),
-        blush: cur.spec.blush,
+        // música pesada: cara de mau, sorriso de lado a lado e sem bochecha rosada
+        mouth: mouthShape(metalFace ? "grin" : cur.spec.mouth, level),
+        blush: metalFace ? 0.04 : cur.spec.blush,
         extras: cur.spec.extras ?? [],
       };
       drawPherie(ctx, engine, style, size, dpr);
@@ -332,6 +335,8 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
         danceStyle,
         beat: beatEnv,
       });
+      metalFace = Boolean(cur.isMusicPlaying || cur.effectiveMood === "music") && danceStyle === "headbang" && !fume;
+      engine.setFaceOverride(metalFace ? HEADBANG_FACE : null);
 
       const explicit = Math.max(cur.level ?? 0, cur.levelRef?.current ?? 0);
       const synthetic = cur.isSpeaking && explicit <= 0 ? 0.45 + 0.4 * Math.sin(clock * 18) : 0;

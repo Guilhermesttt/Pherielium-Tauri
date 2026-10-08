@@ -58,6 +58,9 @@ export const FACES: Record<MascotMood, FaceSpec> = {
   dizzy: both(e("spiral", 36, 36)),
 };
 
+/** Cara de mau para música pesada (rock/metal): olhos estreitos com sobrancelha baixa. */
+export const HEADBANG_FACE: FaceSpec = both(e("pill", 27, 30, 26), 0, 0.2);
+
 export function faceFor(mood: MascotMood): FaceSpec {
   return FACES[mood] ?? FACES.idle;
 }

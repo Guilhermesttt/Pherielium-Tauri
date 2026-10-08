@@ -86,6 +86,7 @@ test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)"
     const states = await import("/src/mascot/pherieStates.ts");
     const mouth = await import("/src/mascot/mouth.ts");
     const color = await import("/src/mascot/mascotColor.ts");
+    const faces = await import("/src/mascot/pherie/face.ts");
     document.body.innerHTML = "";
     const grid = document.createElement("div");
     grid.style.cssText =
@@ -122,7 +123,13 @@ test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)"
         e.phA.set(1);
         e.phA.target = 1;
       }
-      for (let t = 0; t < sc.t; t += 1 / 60) e.update(1 / 60);
+      const heavy = (sc as { style?: string }).style === "headbang";
+      if (heavy) e.setFaceOverride(faces.HEADBANG_FACE);
+      const steps = Math.round((sc.t < 2 ? 2.2 : sc.t) * 60);
+      for (let i = 0; i < steps; i++) {
+        if ((sc as { style?: string }).style) e.setScene({ beat: i % 18 < 3 ? 1 : 0 });
+        e.update(1 / 60);
+      }
       const spec = states.MOOD_SPECS[sc.mood as never] as never as { mouth: never; blush: number; extras?: never[] };
       draw.drawPherie(
         c.getContext("2d")!,
@@ -136,8 +143,8 @@ test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)"
           items: new Set() as never,
           rgbHeadphones: sc.mood === "gaming",
           showMic: false,
-          mouth: mouth.mouthShape(spec.mouth, 0),
-          blush: spec.blush,
+          mouth: mouth.mouthShape(heavy ? ("grin" as never) : spec.mouth, 0),
+          blush: heavy ? 0.04 : spec.blush,
           extras: spec.extras ?? [],
         },
         size,
