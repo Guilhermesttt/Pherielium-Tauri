@@ -225,27 +225,19 @@ function drawArms(ctx: CanvasRenderingContext2D, st: DrawStyle, eng: PherieEngin
   for (const s of [-1, 1] as const) {
     const hx = s === -1 ? eng.lhx.value : eng.rhx.value;
     const hy = s === -1 ? eng.lhy.value : eng.rhy.value;
-    const sx = s * SHOULDER_X;
-    const sy = SHOULDER_Y;
-    // cotovelo para fora e um pouco para baixo: a curva "dobra" naturalmente
-    const cx = (sx + hx) / 2 + s * 16;
-    const cy = (sy + hy) / 2 + 8;
-    const limb = new Path2D();
-    limb.moveTo(sx, sy);
-    limb.quadraticCurveTo(cx, cy, hx, hy);
+    // braço-pílula solto (sem ligação com o corpo): uma cápsula apontando do ombro para a mão
+    const ang = Math.atan2(hy - SHOULDER_Y, hx - s * SHOULDER_X);
+    const dx = Math.cos(ang) * 11;
+    const dy = Math.sin(ang) * 11;
+    const pill = new Path2D();
+    pill.moveTo(hx - dx, hy - dy);
+    pill.lineTo(hx + dx, hy + dy);
     ctx.strokeStyle = p.rim;
-    ctx.lineWidth = 15;
-    ctx.stroke(limb);
+    ctx.lineWidth = 25;
+    ctx.stroke(pill);
     ctx.strokeStyle = p.earStroke;
-    ctx.lineWidth = 11;
-    ctx.stroke(limb);
-    ctx.fillStyle = p.earStroke;
-    ctx.strokeStyle = p.rim;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(hx, hy, 11, 0, TAU);
-    ctx.fill();
-    ctx.stroke();
+    ctx.lineWidth = 21;
+    ctx.stroke(pill);
   }
 }
 
