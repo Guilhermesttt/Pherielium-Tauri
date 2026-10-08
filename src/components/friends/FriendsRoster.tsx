@@ -56,11 +56,29 @@ function statusLine(f: SocialFriend): string {
   return seen ? `Visto ${seen}` : "Offline";
 }
 
-/** Avatar quadrado arredondado; o ponto de presença fica no canto, sem sair do alinhamento. */
+/** Ponto de presença antes do nome: verde online, vermelho offline. */
+const PresenceDot: React.FC<{ friend: SocialFriend; size?: number }> = ({ friend, size = 9 }) => {
+  const online = isFriendOnline(friend);
+  return (
+    <span
+      role="img"
+      aria-label={online ? "Online" : "Offline"}
+      className="inline-block shrink-0 rounded-full"
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: online ? "#22c55e" : "#ef4444",
+        boxShadow: `0 0 0 2px color-mix(in srgb, ${online ? "#22c55e" : "#ef4444"} 22%, transparent)`,
+      }}
+    />
+  );
+};
+
+/** Avatar quadrado arredondado. */
 const Avatar: React.FC<{ friend: SocialFriend; size: number; ring?: boolean }> = ({ friend, size, ring }) => (
   <span className="relative inline-block shrink-0 align-middle" style={{ width: size, height: size }}>
     <span
-      className={`block h-full w-full overflow-hidden rounded-[28%] bg-white/[0.06] ${ring ? "ring-2 ring-[rgb(var(--launcher-accent))]" : ""} ${isFriendOnline(friend) ? "" : "opacity-55"}`}
+      className={`block h-full w-full overflow-hidden rounded-[28%] bg-white/[0.06] ${ring ? "ring-2 ring-[rgb(var(--launcher-accent))]" : ""}`}
     >
       {friend.avatar ? (
         <img src={friend.avatar} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
@@ -70,17 +88,6 @@ const Avatar: React.FC<{ friend: SocialFriend; size: number; ring?: boolean }> =
         </span>
       )}
     </span>
-    <span
-      className={`absolute rounded-full border-2 border-[var(--surface-raised)] ${
-        friend.status === "playing" ? "bg-[rgb(var(--launcher-accent))]" : isFriendOnline(friend) ? "bg-white/85" : "bg-white/25"
-      }`}
-      style={{
-        right: -2,
-        bottom: -2,
-        width: Math.min(16, Math.max(10, size * 0.26)),
-        height: Math.min(16, Math.max(10, size * 0.26)),
-      }}
-    />
   </span>
 );
 
@@ -241,7 +248,10 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
                       >
                         <Avatar friend={f} size={48} />
                         <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[15px] font-semibold text-white">{f.name}</span>
+                          <span className="flex items-center gap-2 text-[15px] font-semibold text-white">
+                            <PresenceDot friend={f} />
+                            <span className="truncate">{f.name}</span>
+                          </span>
                           <span className="block truncate text-[13px] text-white/50">{statusLine(f)}</span>
                         </span>
                         {unread(f) > 0 && (
@@ -270,7 +280,10 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
                         }`}
                       >
                         <Avatar friend={f} size={36} />
-                        <span className="min-w-0 flex-1 truncate text-[14px] text-white/75">{f.name}</span>
+                        <span className="flex min-w-0 flex-1 items-center gap-2 text-[14px] text-white/85">
+                          <PresenceDot friend={f} />
+                          <span className="truncate">{f.name}</span>
+                        </span>
                         <span className="shrink-0 text-[12px] text-white/35">{formatLastSeen(f.lastSeen)}</span>
                       </button>
                     </li>
@@ -363,6 +376,7 @@ const GameBlock: React.FC<{
               }`}
             >
               <Avatar friend={f} size={32} />
+              <PresenceDot friend={f} />
               <span className="text-[14px] font-semibold">{f.name}</span>
               {unread(f) > 0 && <span className="rounded-full bg-[rgb(var(--launcher-accent))] px-1.5 text-[11px] font-bold text-black">{unread(f)}</span>}
             </button>
@@ -415,7 +429,10 @@ const FriendDrawer: React.FC<{
             )}
           </span>
           <div className="min-w-0">
-            <h2 className="truncate font-display text-[26px] font-bold leading-tight text-white">{friend.name}</h2>
+            <h2 className="flex items-center gap-2.5 font-display text-[26px] font-bold leading-tight text-white">
+              <PresenceDot friend={friend} size={11} />
+              <span className="truncate">{friend.name}</span>
+            </h2>
             <p className={`flex items-center gap-1.5 text-[14px] ${playing ? "font-semibold text-[rgb(var(--launcher-accent))]" : "text-white/60"}`}>
               {playing && <Gamepad2 className="h-4 w-4 shrink-0" />}
               <span className="truncate">{statusLine(friend)}</span>
