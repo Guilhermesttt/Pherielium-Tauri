@@ -22,12 +22,24 @@ pub struct LevelFrame {
 /// Fronteiras das bandas (Hz).
 const LOW_CUTOFF_HZ: f32 = 200.0;
 const MID_CUTOFF_HZ: f32 = 2000.0;
-/// Energia mínima de graves (RMS) para contar como batida: ignora ruído de fundo.
-const BEAT_MIN_LOW: f32 = 0.02;
+/// Piso absoluto de graves (RMS) para contar como batida: só ignora silêncio digital. O corte
+/// real é relativo ao pico recente (`LOW_PEAK_FRACTION`), senão música baixa nunca "batia".
+const BEAT_MIN_LOW: f32 = 0.0015;
+/// A batida precisa passar desta fração do pico recente de graves (independe do volume).
+const LOW_PEAK_FRACTION: f32 = 0.12;
+/// Decaimento do pico recente de graves por quadro (~10 s a 30 Hz).
+const LOW_PEAK_KEEP: f32 = 0.9965;
+/// Início de som (onset) na faixa toda: música densa e alta (rock/metal) tem graves quase constantes,
+/// então a batida de graves sozinha não dispara; o pico de energia total cobre esse caso.
+const ONSET_RATIO: f32 = 1.16;
+/// Média rápida do nível total (~0,3 s a 30 Hz).
+const RMS_AVG_KEEP: f32 = 0.9;
+/// Nível total mínimo para um onset valer.
+const ONSET_MIN_RMS: f32 = 0.002;
 /// A energia de graves do quadro precisa superar a média recente por este fator.
 const BEAT_RATIO: f32 = 1.45;
 /// Intervalo mínimo entre batidas (ms) — limita a ~250 BPM e evita disparos duplos.
-const BEAT_MIN_GAP_MS: f32 = 240.0;
+const BEAT_MIN_GAP_MS: f32 = 210.0;
 /// Quadros iniciais só aquecem a média (sem disparar batida).
 const WARMUP_FRAMES: u32 = 12;
 /// Peso da média móvel dos graves (quanto maior, mais lenta: ~janela de 0,6 s a 30 Hz).
@@ -50,6 +62,8 @@ pub struct Analyzer {
     sum_high: f32,
     // batida
     low_avg: f32,
+    low_peak: f32,
+    rms_avg: f32,
     frames_seen: u32,
     since_beat_ms: f32,
 }
@@ -76,6 +90,8 @@ impl Analyzer {
             sum_mid: 0.0,
             sum_high: 0.0,
             low_avg: 0.0,
+            low_peak: 0.0,
+            rms_avg: 0.0,
             frames_seen: 0,
             since_beat_ms: f32::MAX,
         }
@@ -113,14 +129,18 @@ impl Analyzer {
 
         self.since_beat_ms += self.frame_ms;
         self.frames_seen = self.frames_seen.saturating_add(1);
+        let low_gate = BEAT_MIN_LOW.max(self.low_peak * LOW_PEAK_FRACTION);
+        let low_hit = low > low_gate && low > self.low_avg * BEAT_RATIO;
+        let onset = rms > ONSET_MIN_RMS && rms > self.rms_avg * ONSET_RATIO;
         let beat = self.frames_seen > WARMUP_FRAMES
-            && low > BEAT_MIN_LOW
-            && low > self.low_avg * BEAT_RATIO
+            && (low_hit || onset)
             && self.since_beat_ms >= BEAT_MIN_GAP_MS;
         if beat {
             self.since_beat_ms = 0.0;
         }
         self.low_avg = self.low_avg * LOW_AVG_KEEP + low * (1.0 - LOW_AVG_KEEP);
+        self.low_peak = (self.low_peak * LOW_PEAK_KEEP).max(low);
+        self.rms_avg = self.rms_avg * RMS_AVG_KEEP + rms * (1.0 - RMS_AVG_KEEP);
 
         self.n = 0;
         self.sum_sq = 0.0;
@@ -291,5 +311,46 @@ mod tests {
         let mono = pcm_to_mono_f32(&[0u8; 3], 4, 2, PcmKind::F32);
         assert_eq!(mono.len(), 4);
         assert!(mono.iter().all(|v| *v == 0.0));
+    }
+
+    #[test]
+    fn quiet_music_still_beats() {
+        // mesmos kicks, 20x mais baixos: o corte é relativo ao pico, não absoluto
+        let mut samples = vec![0.0f32; FS as usize * 4];
+        let kicks = 8;
+        for k in 0..kicks {
+            let start = (FS as f32 * (0.6 + k as f32 * 0.5)) as usize;
+            let len = (FS as f32 * 0.09) as usize;
+            for i in 0..len {
+                if start + i < samples.len() {
+                    let env = 1.0 - i as f32 / len as f32;
+                    samples[start + i] += 0.04 * env * (2.0 * PI * 60.0 * i as f32 / FS as f32).sin();
+                }
+            }
+        }
+        let beats = run(&samples).iter().filter(|f| f.beat).count();
+        assert!((kicks - 2..=kicks + 2).contains(&beats), "batidas em volume baixo: {beats}");
+    }
+
+    #[test]
+    fn dense_loud_music_beats_through_onsets() {
+        // graves quase constantes e altos + "caixa/guitarra" em médios a cada 400 ms
+        let mut samples = vec![0.0f32; FS as usize * 4];
+        for (i, s) in samples.iter_mut().enumerate() {
+            *s += 0.35 * (2.0 * PI * 70.0 * i as f32 / FS as f32).sin();
+        }
+        let hits = 8;
+        for k in 0..hits {
+            let start = (FS as f32 * (0.8 + k as f32 * 0.4)) as usize;
+            let len = (FS as f32 * 0.07) as usize;
+            for i in 0..len {
+                if start + i < samples.len() {
+                    let env = 1.0 - i as f32 / len as f32;
+                    samples[start + i] += 0.5 * env * (2.0 * PI * 900.0 * i as f32 / FS as f32).sin();
+                }
+            }
+        }
+        let beats = run(&samples).iter().filter(|f| f.beat).count();
+        assert!(beats >= hits - 2, "batidas na música densa: {beats}");
     }
 }

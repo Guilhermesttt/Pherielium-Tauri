@@ -26,7 +26,7 @@ const SMOOTH_S = 2.5;
 /** Tempo mínimo (ms) em um estilo antes de trocar, para a Pherie não ficar nervosa. */
 export const MIN_DWELL_MS = 2000;
 /** Abaixo disso é silêncio: não classifica. */
-export const SILENCE_RMS = 0.008;
+export const SILENCE_RMS = 0.002;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
@@ -125,3 +125,52 @@ export const DANCE_INTENSITY: Record<DanceStyle, number> = {
   groove: 1,
   headbang: 2,
 };
+
+/**
+ * Relógio de batida: usa as batidas reais do Rust e, quando elas somem (música densa e alta, sem
+ * graves destacados, ou som muito baixo), mantém um pulso no ritmo estimado. Assim a Pherie nunca
+ * fica parada enquanto há música tocando.
+ */
+export const FALLBACK_DEFAULT_INTERVAL_MS = 480;
+
+export class BeatClock {
+  private intervals: number[] = [];
+  private lastBeat = 0;
+  private lastReal = 0;
+
+  /** Intervalo estimado (ms): mediana dos últimos reais, ou o padrão (~125 bpm). */
+  get interval(): number {
+    if (this.intervals.length < 3) return FALLBACK_DEFAULT_INTERVAL_MS;
+    const sorted = [...this.intervals].sort((a, b) => a - b);
+    return Math.min(900, Math.max(300, sorted[Math.floor(sorted.length / 2)]));
+  }
+
+  /** `realBeatAt` = timestamp da última batida do Rust (0 = nunca). Devolve `true` quando deve bater agora. */
+  tick(now: number, live: boolean, realBeatAt: number): boolean {
+    if (!live) return false;
+    if (realBeatAt > 0 && realBeatAt !== this.lastReal) {
+      if (this.lastReal > 0) {
+        const gap = realBeatAt - this.lastReal;
+        if (gap >= 200 && gap <= 1500) {
+          this.intervals.push(gap);
+          if (this.intervals.length > 8) this.intervals.shift();
+        }
+      }
+      this.lastReal = realBeatAt;
+      this.lastBeat = now;
+      return true;
+    }
+    // sem batida real por mais de ~1,6 intervalo: pulsa sozinho no ritmo estimado
+    if (now - this.lastBeat > this.interval * 1.6) {
+      this.lastBeat = now;
+      return true;
+    }
+    return false;
+  }
+
+  reset() {
+    this.intervals = [];
+    this.lastBeat = 0;
+    this.lastReal = 0;
+  }
+}

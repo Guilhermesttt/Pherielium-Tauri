@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EMPTY_AUDIO, type AudioReactive } from "./headbang";
-import { MIN_DWELL_MS, MusicAnalyzer, aggressionScore, styleFromScore } from "./musicStyle";
+import { BeatClock, FALLBACK_DEFAULT_INTERVAL_MS, MIN_DWELL_MS, MusicAnalyzer, aggressionScore, styleFromScore } from "./musicStyle";
 
 const audio = (over: Partial<AudioReactive>): AudioReactive => ({ ...EMPTY_AUDIO, lastAt: 1, ...over });
 
@@ -100,5 +100,41 @@ describe("MusicAnalyzer", () => {
     play(a, 12, () => ({ rms: 0.16, low: 0.08, mid: 0.12, high: 0.08 }), 0, 180);
     a.reset();
     expect(a.style).toBe("groove");
+  });
+});
+
+describe("BeatClock", () => {
+  it("segue as batidas reais", () => {
+    const c = new BeatClock();
+    expect(c.tick(1000, true, 1000)).toBe(true);
+    expect(c.tick(1100, true, 1000)).toBe(false);
+    expect(c.tick(1500, true, 1500)).toBe(true);
+  });
+
+  it("sem batida real, pulsa sozinho no ritmo padrão (nunca fica parado)", () => {
+    const c = new BeatClock();
+    c.tick(0, true, 0);
+    let pulses = 0;
+    for (let t = 0; t < 5000; t += 16) if (c.tick(t, true, 0)) pulses++;
+    expect(pulses).toBeGreaterThanOrEqual(Math.floor(5000 / (FALLBACK_DEFAULT_INTERVAL_MS * 1.7)));
+  });
+
+  it("estima o ritmo dos batimentos reais e o mantém quando eles somem", () => {
+    const c = new BeatClock();
+    for (let i = 0; i < 6; i++) c.tick(i * 400, true, i * 400 + 1);
+    expect(c.interval).toBeGreaterThan(380);
+    expect(c.interval).toBeLessThan(420);
+  });
+
+  it("sem áudio ao vivo não bate", () => {
+    const c = new BeatClock();
+    for (let t = 0; t < 3000; t += 16) expect(c.tick(t, false, 0)).toBe(false);
+  });
+
+  it("reset esquece o ritmo", () => {
+    const c = new BeatClock();
+    for (let i = 0; i < 6; i++) c.tick(i * 400, true, i * 400 + 1);
+    c.reset();
+    expect(c.interval).toBe(FALLBACK_DEFAULT_INTERVAL_MS);
   });
 });

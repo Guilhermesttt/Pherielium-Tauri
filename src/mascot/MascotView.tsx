@@ -6,7 +6,7 @@ import type { MascotMood } from "./moods";
 import { MOOD_SPECS, type BounceKind, type MoodSpec } from "./pherieStates";
 import { subscribeTicker } from "./ticker";
 import { headbangPose, headbangTransform, isAudioLive, nextBeatEnvelope, type AudioReactive } from "./headbang";
-import { DANCE_INTENSITY, MusicAnalyzer, type DanceStyle } from "./musicStyle";
+import { BeatClock, DANCE_INTENSITY, MusicAnalyzer, type DanceStyle } from "./musicStyle";
 import type { EarsId, ItemId } from "./notchConfig";
 import { PherieEngine } from "./pherie/engine";
 import { HEADBANG_FACE } from "./pherie/face";
@@ -240,6 +240,7 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
     let clock = 0;
     let fumeUntil = 0;
     const analyzer = new MusicAnalyzer();
+    const beatClock = new BeatClock();
     let metalFace = false;
     let danceStyle: DanceStyle = "groove";
     let lastLiveAt = 0;
@@ -306,7 +307,9 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
       // headbang: o envelope da batida vira queda/inclinação da cabeça (só com áudio ao vivo)
       const audio = cur.audioRef?.current;
       if (audio && isAudioLive(audio, performance.now())) {
-        const isNewBeat = audio.beatAt > 0 && audio.beatAt !== lastBeatAt;
+        // batida real do Rust; se ela some (música densa/alta ou baixinha), um pulso no ritmo
+        // estimado mantém a Pherie se mexendo enquanto há som
+        const isNewBeat = beatClock.tick(performance.now(), audio.rms > 0.0015, audio.beatAt);
         if (isNewBeat) {
           lastBeatAt = audio.beatAt;
           beatCount += 1;
@@ -329,6 +332,7 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
         // normal na hora, senão ela oscilaria entre bater cabeça e dançar.
         if (lastLiveAt > 0 && performance.now() - lastLiveAt > MUSIC_STYLE_HOLD_MS) {
           analyzer.reset();
+          beatClock.reset();
           danceStyle = "groove";
           lastLiveAt = 0;
         }
