@@ -3,6 +3,8 @@ import { MASCOT_MOODS } from "../moods";
 import { FACES, faceFor } from "./face";
 import { PherieEngine } from "./engine";
 import { Spring } from "./spring";
+import { SHAPES } from "../engine/skins";
+import { PROFILE_SAMPLES } from "../engine/profiles";
 
 const run = (e: PherieEngine, seconds: number, dt = 1 / 60) => {
   for (let t = 0; t < seconds; t += dt) e.update(dt);
@@ -98,5 +100,14 @@ describe("Spring", () => {
     for (let i = 0; i < 40; i++) s.step(0.064);
     expect(s.value).toBeCloseTo(10, 1);
     expect(Number.isFinite(s.value)).toBe(true);
+  });
+});
+
+describe("formas do corpo", () => {
+  it("todas as formas têm um raio por amostra e são finitas e positivas", () => {
+    for (const shape of SHAPES) {
+      expect(shape.radii, shape.id).toHaveLength(PROFILE_SAMPLES);
+      expect(shape.radii.every((r) => Number.isFinite(r) && r > 0.3), shape.id).toBe(true);
+    }
   });
 });
