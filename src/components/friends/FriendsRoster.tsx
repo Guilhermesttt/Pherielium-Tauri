@@ -5,7 +5,7 @@ import type { SoundEffectType } from "../../hooks/useSoundEffects";
 import { getCheckpointFriendProfile } from "../../services/checkpointFriends";
 import { friendLevelFromProfile } from "../../utils/friendLevel";
 import type { PlayerLevelInfo } from "../../utils/trophyTiers";
-import { buildBoard, formatLastSeen, isFriendOnline, titleHue, type GameGroup } from "./friendsBoard";
+import { buildBoard, formatLastSeen, isFriendOnline, type GameGroup } from "./friendsBoard";
 
 export { formatLastSeen } from "./friendsBoard";
 
@@ -60,7 +60,7 @@ function statusLine(f: SocialFriend): string {
 const Avatar: React.FC<{ friend: SocialFriend; size: number; ring?: boolean }> = ({ friend, size, ring }) => (
   <span className="relative inline-block shrink-0 align-middle" style={{ width: size, height: size }}>
     <span
-      className={`block h-full w-full overflow-hidden rounded-[28%] bg-white/[0.06] ${ring ? "ring-2 ring-emerald-400/80" : ""} ${isFriendOnline(friend) ? "" : "opacity-55"}`}
+      className={`block h-full w-full overflow-hidden rounded-[28%] bg-white/[0.06] ${ring ? "ring-2 ring-[rgb(var(--launcher-accent))]" : ""} ${isFriendOnline(friend) ? "" : "opacity-55"}`}
     >
       {friend.avatar ? (
         <img src={friend.avatar} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
@@ -71,8 +71,8 @@ const Avatar: React.FC<{ friend: SocialFriend; size: number; ring?: boolean }> =
       )}
     </span>
     <span
-      className={`absolute rounded-full border-2 border-[#121216] ${
-        friend.status === "playing" ? "bg-emerald-400" : isFriendOnline(friend) ? "bg-white/85" : "bg-white/25"
+      className={`absolute rounded-full border-2 border-[var(--surface-raised)] ${
+        friend.status === "playing" ? "bg-[rgb(var(--launcher-accent))]" : isFriendOnline(friend) ? "bg-white/85" : "bg-white/25"
       }`}
       style={{
         right: -2,
@@ -183,7 +183,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Buscar por nome ou jogo"
-              className="h-11 w-full rounded-full bg-[#121216] pl-11 pr-4 text-[14px] text-white outline-none ring-1 ring-white/[0.07] placeholder:text-white/35 focus:ring-2 focus:ring-white/30"
+              className="h-11 w-full rounded-full bg-[var(--surface-raised)] pl-11 pr-4 text-[14px] text-white outline-none ring-1 ring-[color:var(--border-subtle)] placeholder:text-white/35 focus:ring-2 focus:ring-white/30"
             />
           </div>
           <div role="tablist" aria-label="Filtrar por presença" className="flex gap-1.5">
@@ -198,7 +198,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
                   onFilterChange(x.id);
                 }}
                 className={`h-11 rounded-full px-5 text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-white/40 ${
-                  filter === x.id ? "bg-white text-black" : "bg-[#121216] text-white/65 ring-1 ring-white/[0.07] hover:text-white"
+                  filter === x.id ? "bg-white text-black" : "bg-[var(--surface-raised)] text-white/65 ring-1 ring-[color:var(--border-subtle)] hover:text-white"
                 }`}
               >
                 {x.label}
@@ -208,7 +208,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
         </div>
 
         {visible.length === 0 ? (
-          <p className="rounded-[24px] bg-[#121216] px-6 py-14 text-center text-[14px] text-white/45 ring-1 ring-white/[0.07]">
+          <p className="rounded-[24px] bg-[var(--surface-raised)] px-6 py-14 text-center text-[14px] text-white/45 ring-1 ring-[color:var(--border-subtle)]">
             Ninguém por aqui com esse filtro. Tente outro nome ou volte para Todos.
           </p>
         ) : (
@@ -236,7 +236,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
                         onMouseEnter={() => playSound?.("hover")}
                         onClick={() => pick(f)}
                         className={`flex w-full items-center gap-3.5 rounded-[20px] p-3 text-left ring-1 transition-colors focus-visible:ring-2 focus-visible:ring-white/50 ${
-                          f.id === selectedId ? "bg-[#1b1b22] ring-white/30" : "bg-[#121216] ring-white/[0.07] hover:bg-[#17171d]"
+                          f.id === selectedId ? "bg-[var(--surface-overlay)] ring-white/30" : "bg-[var(--surface-raised)] ring-[color:var(--border-subtle)] hover:bg-[var(--surface-overlay)]"
                         }`}
                       >
                         <Avatar friend={f} size={48} />
@@ -282,7 +282,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
         )}
 
         {discord && (
-          <div className="mt-8 flex items-center justify-between gap-3 rounded-[20px] bg-[#121216] px-5 py-3.5 text-[14px] ring-1 ring-white/[0.07]">
+          <div className="mt-8 flex items-center justify-between gap-3 rounded-[20px] bg-[var(--surface-raised)] px-5 py-3.5 text-[14px] ring-1 ring-[color:var(--border-subtle)]">
             <span className="text-white/60">{discord.connected ? "Discord conectado" : "Veja seus amigos do Discord aqui"}</span>
             {!discord.connected && (
               <button
@@ -314,7 +314,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
             playSound={playSound}
           />
         ) : (
-          <div className="flex min-h-[18rem] items-center justify-center rounded-[28px] bg-[#121216] px-8 text-center text-[14px] text-white/45 ring-1 ring-white/[0.07]">
+          <div className="flex min-h-[18rem] items-center justify-center rounded-[28px] bg-[var(--surface-raised)] px-8 text-center text-[14px] text-white/45 ring-1 ring-[color:var(--border-subtle)]">
             Selecione um amigo para conversar, ligar ou ver o perfil.
           </div>
         )}
@@ -330,23 +330,22 @@ const GameBlock: React.FC<{
   onPick: (f: SocialFriend) => void;
   unread: (f: SocialFriend) => number;
 }> = ({ group, selectedId, onPick, unread }) => {
-  const hue = titleHue(group.title);
   return (
-    <article className="overflow-hidden rounded-[26px] bg-[#121216] ring-1 ring-white/[0.07]">
+    <article className="overflow-hidden rounded-[26px] bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)]">
       <div
         className="relative h-[120px] overflow-hidden"
-        style={{ background: `linear-gradient(120deg, hsl(${hue} 45% 24%), hsl(${(hue + 40) % 360} 40% 14%))` }}
+        style={{ background: "linear-gradient(120deg, var(--surface-overlay), var(--surface-raised))" }}
       >
         {group.art && (
           <img src={group.art} alt="" aria-hidden className="absolute right-0 top-0 h-full w-3/5 object-cover object-center" loading="lazy" />
         )}
         <div
           className="absolute inset-0"
-          style={{ background: "linear-gradient(90deg, #121216 0%, rgba(18,18,22,0.78) 38%, rgba(18,18,22,0) 100%)" }}
+          style={{ background: "linear-gradient(90deg, var(--surface-raised) 0%, color-mix(in srgb, var(--surface-raised) 78%, transparent) 38%, transparent 100%)" }}
         />
         <div className="absolute inset-x-6 bottom-4">
           <h4 className="truncate font-display text-[28px] font-bold leading-none text-white">{group.title}</h4>
-          <p className="mt-1.5 flex items-center gap-1.5 text-[14px] text-emerald-300">
+          <p className="mt-1.5 flex items-center gap-1.5 text-[14px] text-[rgb(var(--launcher-accent))]">
             <Gamepad2 className="h-4 w-4" />
             {group.friends.length === 1 ? "1 amigo jogando" : `${group.friends.length} amigos jogando`}
           </p>
@@ -360,12 +359,12 @@ const GameBlock: React.FC<{
               aria-current={f.id === selectedId}
               onClick={() => onPick(f)}
               className={`flex items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-4 ring-1 transition-colors focus-visible:ring-2 focus-visible:ring-white/50 ${
-                f.id === selectedId ? "bg-[#1b1b22] text-white ring-2 ring-white" : "bg-[#0d0d10] text-white ring-white/[0.07] hover:bg-[#1b1b22]"
+                f.id === selectedId ? "bg-[var(--surface-overlay)] text-white ring-2 ring-white" : "bg-[var(--surface-base)] text-white ring-[color:var(--border-subtle)] hover:bg-[var(--surface-overlay)]"
               }`}
             >
               <Avatar friend={f} size={32} />
               <span className="text-[14px] font-semibold">{f.name}</span>
-              {unread(f) > 0 && <span className="rounded-full bg-emerald-400 px-1.5 text-[11px] font-bold text-black">{unread(f)}</span>}
+              {unread(f) > 0 && <span className="rounded-full bg-[rgb(var(--launcher-accent))] px-1.5 text-[11px] font-bold text-black">{unread(f)}</span>}
             </button>
           </li>
         ))}
@@ -395,9 +394,9 @@ const FriendDrawer: React.FC<{
     "inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-white/[0.09] px-4 text-[13px] font-semibold text-white transition hover:bg-white/[0.16] active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-white/50";
 
   return (
-    <div className="overflow-hidden rounded-[28px] bg-[#121216] ring-1 ring-white/[0.07]">
+    <div className="overflow-hidden rounded-[28px] bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)]">
       {/* Capa: avatar e nome ficam juntos na base, alinhados pelo centro */}
-      <div className="relative h-[168px] overflow-hidden bg-[#1d1d24]">
+      <div className="relative h-[168px] overflow-hidden bg-[var(--surface-overlay)]">
         {banner ? (
           <img src={banner} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
         ) : (
@@ -405,7 +404,7 @@ const FriendDrawer: React.FC<{
             <img src={friend.avatar} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-125 object-cover opacity-45 blur-2xl" />
           )
         )}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(18,18,22,0) 20%, rgba(18,18,22,0.92) 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent 20%, color-mix(in srgb, var(--surface-raised) 92%, transparent) 100%)" }} />
         <div className="absolute inset-x-5 bottom-4 flex items-center gap-4">
           <span className="relative">
             <Avatar friend={friend} size={76} ring={playing} />
@@ -417,7 +416,7 @@ const FriendDrawer: React.FC<{
           </span>
           <div className="min-w-0">
             <h2 className="truncate font-display text-[26px] font-bold leading-tight text-white">{friend.name}</h2>
-            <p className={`flex items-center gap-1.5 text-[14px] ${playing ? "font-semibold text-emerald-300" : "text-white/60"}`}>
+            <p className={`flex items-center gap-1.5 text-[14px] ${playing ? "font-semibold text-[rgb(var(--launcher-accent))]" : "text-white/60"}`}>
               {playing && <Gamepad2 className="h-4 w-4 shrink-0" />}
               <span className="truncate">{statusLine(friend)}</span>
             </p>
@@ -444,7 +443,7 @@ const FriendDrawer: React.FC<{
               <button
                 type="button"
                 onClick={() => onStartVoiceCall(friend, false)}
-                className={`${small} ${inCall ? "animate-pulse bg-emerald-400! text-black!" : ""}`}
+                className={`${small} ${inCall ? "animate-pulse bg-[rgb(var(--launcher-accent))]! text-black!" : ""}`}
               >
                 <Phone className="h-4 w-4" />
                 {inCall ? "Em chamada" : "Ligar"}
@@ -468,7 +467,7 @@ const FriendDrawer: React.FC<{
         </div>
 
         {/* Nível: o número é o destaque, o rank dá a cor */}
-        <div className="rounded-[20px] bg-[#0d0d10] p-4">
+        <div className="rounded-[20px] bg-[var(--surface-base)] p-4">
           <div className="flex items-end justify-between gap-3">
             <div>
               <p className="text-[13px] text-white/45">Nível</p>

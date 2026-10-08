@@ -15,7 +15,7 @@ export interface RequestsPanelProps {
 export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept, onReject, onAddFriend, playSound }) => {
   if (requests.length === 0) {
     return (
-      <div className="mx-auto max-w-xl rounded-[22px] bg-[#121216] p-10 text-center ring-1 ring-white/[0.07]">
+      <div className="mx-auto max-w-xl rounded-[22px] bg-[var(--surface-raised)] p-10 text-center ring-1 ring-[color:var(--border-subtle)]">
         <UserPlus className="mx-auto h-8 w-8 text-white/30" />
         <h2 className="mt-4 font-display text-[20px] font-bold text-white">Nenhum convite pendente</h2>
         <p className="mt-1 text-[14px] text-white/55">Quando alguém pedir para ser seu amigo, o convite aparece aqui.</p>
@@ -31,7 +31,7 @@ export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept
   }
 
   return (
-    <section aria-label="Convites de amizade" className="mx-auto max-w-3xl rounded-[22px] bg-[#121216] p-4 ring-1 ring-white/[0.07]">
+    <section aria-label="Convites de amizade" className="mx-auto max-w-3xl rounded-[22px] bg-[var(--surface-raised)] p-4 ring-1 ring-[color:var(--border-subtle)]">
       <header className="mb-3 px-1">
         <h2 className="font-display text-[22px] font-bold leading-tight text-white">Convites de amizade</h2>
         <p className="text-[13px] text-white/50">
@@ -40,7 +40,7 @@ export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept
       </header>
       <ul className="flex flex-col gap-1">
         {requests.map((r) => (
-          <li key={r.uid} className="flex items-center gap-3.5 rounded-2xl bg-[#0d0d10] px-3.5 py-3">
+          <li key={r.uid} className="flex items-center gap-3.5 rounded-2xl bg-[var(--surface-base)] px-3.5 py-3">
             <span className="h-12 w-12 shrink-0 overflow-hidden rounded-[28%] bg-white/[0.06]">
               {r.photoURL ? (
                 <img src={r.photoURL} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />

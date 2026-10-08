@@ -46,7 +46,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
 
   if (friends.length === 0) {
     return (
-      <div className="mx-auto max-w-xl rounded-[22px] bg-[#121216] p-10 text-center ring-1 ring-white/[0.07]">
+      <div className="mx-auto max-w-xl rounded-[22px] bg-[var(--surface-raised)] p-10 text-center ring-1 ring-[color:var(--border-subtle)]">
         <MessageSquare className="mx-auto h-8 w-8 text-white/30" />
         <h2 className="mt-4 font-display text-[20px] font-bold text-white">Nenhuma conversa ainda</h2>
         <p className="mt-1 text-[14px] text-white/55">Adicione um amigo para começar a conversar.</p>
@@ -62,7 +62,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
   }
 
   return (
-    <section aria-label="Conversas" className="mx-auto max-w-3xl rounded-[22px] bg-[#121216] p-4 ring-1 ring-white/[0.07]">
+    <section aria-label="Conversas" className="mx-auto max-w-3xl rounded-[22px] bg-[var(--surface-raised)] p-4 ring-1 ring-[color:var(--border-subtle)]">
       <header className="mb-3 flex items-center gap-3 px-1">
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-[22px] font-bold leading-tight text-white">Conversas</h2>
@@ -75,7 +75,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar conversa"
-            className="h-10 w-full rounded-full bg-[#0d0d10] pl-10 pr-4 text-[13px] text-white outline-none placeholder:text-white/35 focus:ring-2 focus:ring-white/25"
+            className="h-10 w-full rounded-full bg-[var(--surface-base)] pl-10 pr-4 text-[13px] text-white outline-none placeholder:text-white/35 focus:ring-2 focus:ring-white/25"
           />
         </div>
       </header>
@@ -110,8 +110,8 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
                       )}
                     </span>
                     <span
-                      className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#121216] ${
-                        playing ? "bg-emerald-400" : ONLINE.has(f.status) ? "bg-white/80" : "bg-white/20"
+                      className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[var(--surface-raised)] ${
+                        playing ? "bg-[rgb(var(--launcher-accent))]" : ONLINE.has(f.status) ? "bg-white/80" : "bg-white/20"
                       }`}
                     />
                   </span>
@@ -119,7 +119,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
                     <span className={`block truncate text-[15px] ${n > 0 ? "font-bold text-white" : "font-semibold text-white/90"}`}>
                       {f.name}
                     </span>
-                    <span className={`flex items-center gap-1 truncate text-[12.5px] ${playing ? "text-emerald-300" : "text-white/50"}`}>
+                    <span className={`flex items-center gap-1 truncate text-[12.5px] ${playing ? "text-[rgb(var(--launcher-accent))]" : "text-white/50"}`}>
                       {playing && <Gamepad2 className="h-3 w-3 shrink-0" />}
                       <span className="truncate">
                         {n > 0

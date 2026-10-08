@@ -230,7 +230,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: isModal ? 0.96 : 1, y: isModal ? 0 : -12 }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className={`rounded-[22px] bg-[#121216] ring-1 ring-white/[0.07] p-5 sm:p-6 relative overflow-hidden ${
+      className={`rounded-[22px] bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)] p-5 sm:p-6 relative overflow-hidden ${
         isModal
           ? "w-full max-w-5xl max-h-[85vh] overflow-y-auto thin-scrollbar"
           : "mx-6 sm:mx-10 mb-8"
@@ -238,13 +238,11 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
       onClick={(e) => isModal && e.stopPropagation()}
     >
       {/* Glow de fundo âmbar e ciano */}
-      <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-amber-500/10 blur-[100px] pointer-events-none" />
-      <div className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full bg-cyan-500/10 blur-[100px] pointer-events-none" />
-
+            
       {/* Top Header */}
       <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-amber-500/15 border border-amber-500/30 text-amber-400">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-white/10 border border-white/15 text-[rgb(var(--launcher-accent))]">
             <Compass className="h-5 w-5 animate-[spin_18s_linear_infinite]" />
           </div>
           <div>
@@ -252,7 +250,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
               <h2 className="font-display text-[20px] font-bold text-white">
                 Guia de Iniciação & Missões
               </h2>
-              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-amber-400">
+              <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[12px] font-semibold text-[rgb(var(--launcher-accent))]">
                 Novos Jogadores
               </span>
             </div>
@@ -264,17 +262,17 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
 
         {/* Status + Ações do cabeçalho */}
         <div className="flex items-center gap-3 shrink-0">
-          <div className="flex items-center gap-3 rounded-2xl bg-[#0d0d10] px-3.5 py-2">
+          <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface-base)] px-3.5 py-2">
             <div className="flex flex-col">
               <span className="text-[11px] font-extrabold text-white">
                 {completedCount} de {totalCount} Concluídas
               </span>
-              <span className="text-[12px] font-semibold text-amber-400">
+              <span className="text-[12px] font-semibold text-[rgb(var(--launcher-accent))]">
                 +{earnedXp} XP Acumulado
               </span>
             </div>
             <div className="h-4 w-px bg-white/10" />
-            <span className="text-[13px] font-semibold tabular-nums text-amber-400">
+            <span className="text-[13px] font-semibold tabular-nums text-[rgb(var(--launcher-accent))]">
               {progressPercent}%
             </span>
           </div>
@@ -314,10 +312,10 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 mt-5 flex items-center justify-between gap-4 rounded-2xl bg-[#123a2e] p-4"
+          className="relative z-10 mt-5 flex items-center justify-between gap-4 rounded-2xl bg-[var(--surface-overlay)] p-4"
         >
           <div className="flex items-center gap-3">
-            <PartyPopper className="h-6 w-6 text-emerald-400 shrink-0" />
+            <PartyPopper className="h-6 w-6 text-[rgb(var(--launcher-accent))] shrink-0" />
             <div>
               <p className="text-sm font-black text-white">
                 Parabéns! Todas as missões iniciais foram concluídas!
@@ -330,7 +328,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
           <button
             type="button"
             onClick={handleDismiss}
-            className="shrink-0 rounded-xl bg-emerald-500 px-4 py-2 text-xs font-black text-black hover:bg-emerald-400 transition"
+            className="shrink-0 rounded-xl bg-white px-4 py-2 text-xs font-black text-black hover:bg-[rgb(var(--launcher-accent))] transition"
           >
             Ocultar Guia
           </button>
@@ -354,7 +352,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
                   key={q.id}
                   className={`group relative flex flex-col justify-between rounded-2xl border p-4 transition-all duration-300 ${
                     q.completed
-                      ? "border-emerald-500/25 bg-emerald-950/15 opacity-80"
+                      ? "border-white/10 bg-white/[0.03] opacity-80"
                       : "border-white/[0.08] bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]"
                   }`}
                 >
@@ -364,8 +362,8 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
                       <div
                         className={`flex h-10 w-10 items-center justify-center rounded-xl shrink-0 transition-colors ${
                           q.completed
-                            ? "border border-emerald-500/30 bg-emerald-500/20 text-emerald-400"
-                            : "border border-white/10 bg-white/[0.06] text-white/80 group-hover:border-amber-500/40 group-hover:text-amber-400"
+                            ? "border border-white/15 bg-white/10 text-[rgb(var(--launcher-accent))]"
+                            : "border border-white/10 bg-white/[0.06] text-white/80 group-hover:border-white/30 group-hover:text-[rgb(var(--launcher-accent))]"
                         }`}
                       >
                         {q.completed ? <CheckCircle2 className="h-4 w-4" /> : icon}
@@ -373,13 +371,13 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
 
                       <div className="flex items-center gap-1.5">
                         {q.instantLevelUp && !q.completed && (
-                          <span className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[11px] font-semibold text-cyan-300">
+                          <span className="rounded-md border border-white/15 bg-white/10 px-1.5 py-0.5 text-[11px] font-semibold text-white">
                             ★ Level UP
                           </span>
                         )}
                         <span
                           className={`text-[13px] font-semibold tabular-nums ${
-                            q.completed ? "text-emerald-400" : "text-amber-400"
+                            q.completed ? "text-[rgb(var(--launcher-accent))]" : "text-[rgb(var(--launcher-accent))]"
                           }`}
                         >
                           +{q.xpReward} XP
@@ -405,7 +403,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
                   {/* Ação ou Badge de Concluído */}
                   <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between">
                     {q.completed ? (
-                      <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-emerald-400">
+                      <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[rgb(var(--launcher-accent))]">
                         <CheckCircle2 className="h-3 w-3" />
                         Concluída
                       </span>

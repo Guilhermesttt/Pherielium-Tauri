@@ -218,13 +218,61 @@ function drawController(ctx: CanvasRenderingContext2D, st: DrawStyle, eng: Pheri
   ctx.restore();
 }
 
+/** Mão fazendo o sinal de rock (🤘): indicador e mindinho de pé, polegar sobre os dedos do meio. */
+function drawRockHand(ctx: CanvasRenderingContext2D, x: number, y: number, side: -1 | 1, p: BodyPalette) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(side * 0.22);
+  ctx.scale(1.35, 1.35);
+  ctx.lineCap = "round";
+  const finger = (x1: number, y1: number, x2: number, y2: number, w: number, color: string) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  };
+  for (const [color, grow] of [[p.rim, 5], [p.earStroke, 0]] as const) {
+    // dedos esticados (chifres)
+    finger(-8, -2, -9.5, -22, 8 + grow, color);
+    finger(8, -2, 10.5, -19, 7 + grow, color);
+    // palma
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(-14 - grow / 2, -5 - grow / 2, 28 + grow, 26 + grow, 11);
+    ctx.fill();
+  }
+  // dedos do meio dobrados + polegar por cima
+  ctx.fillStyle = p.top;
+  for (const cx of [-2.5, 3.5]) {
+    ctx.beginPath();
+    ctx.arc(cx, 2, 3.4, 0, TAU);
+    ctx.fill();
+  }
+  ctx.fillStyle = p.earStroke;
+  ctx.strokeStyle = p.rim;
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.ellipse(0, 11, 8.5, 5.2, -0.25, 0, TAU);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawArms(ctx: CanvasRenderingContext2D, st: DrawStyle, eng: PherieEngine) {
   const p = st.palette;
   drawController(ctx, st, eng);
   ctx.lineCap = "round";
+  const rock = eng.scene.dancing && eng.scene.danceStyle === "headbang";
   for (const s of [-1, 1] as const) {
     const hx = s === -1 ? eng.lhx.value : eng.rhx.value;
     const hy = s === -1 ? eng.lhy.value : eng.rhy.value;
+    // música pesada: as duas mãos fazem o sinal de rock
+    if (rock) {
+      drawRockHand(ctx, hx, hy, s, p);
+      continue;
+    }
     // braço-pílula solto (sem ligação com o corpo): uma cápsula apontando do ombro para a mão
     const ang = Math.atan2(hy - SHOULDER_Y, hx - s * SHOULDER_X);
     const dx = Math.cos(ang) * 11;
@@ -506,8 +554,11 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
     ctx.restore();
   }
 
-  drawArms(ctx, st, eng);
+  // mão de rock fica na frente dos fones; os braços normais ficam atrás
+  const rockHands = eng.scene.dancing && eng.scene.danceStyle === "headbang";
+  if (!rockHands) drawArms(ctx, st, eng);
   drawHeadphones(ctx, st, eng);
+  if (rockHands) drawArms(ctx, st, eng);
   drawExtras(ctx, st, eng.time);
   ctx.restore();
 

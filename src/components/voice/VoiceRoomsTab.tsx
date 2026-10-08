@@ -164,9 +164,9 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
   return (
     <div className="space-y-6 select-none">
       {/* Header with Stats & Actions */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-[22px] bg-[#121216] p-5 md:p-6 ring-1 ring-white/[0.07]">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-[22px] bg-[var(--surface-raised)] p-5 md:p-6 ring-1 ring-[color:var(--border-subtle)]">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0d0d10] text-white">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--surface-base)] text-white">
             <Radio className="h-6 w-6 text-white" />
           </div>
           <div>
@@ -196,7 +196,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
               className="flex items-center gap-2 h-10 px-3.5 rounded-xl bg-white/5 hover:bg-white/12 border border-white/10 text-white font-bold text-xs transition hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               title="Testar modal e toque de chamada recebida"
             >
-              <PhoneIncoming className="h-4 w-4 text-emerald-400 animate-pulse" />
+              <PhoneIncoming className="h-4 w-4 text-[rgb(var(--launcher-accent))] animate-pulse" />
               <span className="hidden sm:inline">Testar chamada</span>
             </button>
           )}
@@ -217,7 +217,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between p-4 rounded-[22px] bg-[#123a2e] ring-1 ring-emerald-400/25"
+          className="flex items-center justify-between p-4 rounded-[22px] bg-[var(--surface-overlay)] ring-1 ring-[color:var(--border-strong)]"
         >
           <div className="flex items-center gap-3.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white border border-white/15">
@@ -254,7 +254,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
             placeholder="Pesquisar canais de voz por nome..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 rounded-full bg-[#121216] ring-1 ring-white/[0.07] text-[13px] text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/25 transition"
+            className="w-full h-10 pl-10 pr-4 rounded-full bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)] text-[13px] text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/25 transition"
           />
         </div>
 
@@ -266,7 +266,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
             className={`px-4 h-9 rounded-full text-[13px] font-semibold transition whitespace-nowrap cursor-pointer ${
               selectedCategory === "all"
                 ? "bg-white text-black font-semibold"
-                : "bg-[#121216] hover:bg-[#1b1b22] text-white/65 hover:text-white"
+                : "bg-[var(--surface-raised)] hover:bg-[var(--surface-overlay)] text-white/65 hover:text-white"
             }`}
           >
             Todas
@@ -279,7 +279,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
               className={`flex items-center gap-1.5 px-4 h-9 rounded-full text-[13px] font-semibold transition whitespace-nowrap cursor-pointer border ${
                 selectedCategory === key
                   ? "bg-white text-black font-semibold border-white"
-                  : "bg-[#121216] hover:bg-[#1b1b22] text-white/65 hover:text-white border-transparent"
+                  : "bg-[var(--surface-raised)] hover:bg-[var(--surface-overlay)] text-white/65 hover:text-white border-transparent"
               }`}
             >
               {meta.icon}
@@ -310,8 +310,8 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                   key={room.id}
                   className={`group relative flex flex-col justify-between p-4.5 rounded-[22px] border transition-colors duration-200 ${
                     isCurrent
-                      ? "bg-[#1b1b22] border-white/40"
-                      : "bg-[#121216] hover:bg-[#17171d] border-white/[0.07] hover:border-white/20"
+                      ? "bg-[var(--surface-overlay)] border-white/40"
+                      : "bg-[var(--surface-raised)] hover:bg-[var(--surface-overlay)] border-white/[0.07] hover:border-white/20"
                   }`}
                 >
                   <div className="space-y-2.5">
@@ -421,7 +421,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
         </h3>
 
         {globalOtherRooms.length === 0 && !isLoading && (
-          <div className="flex flex-col items-center justify-center p-10 rounded-[22px] bg-[#121216] ring-1 ring-white/[0.07] text-center space-y-3">
+          <div className="flex flex-col items-center justify-center p-10 rounded-[22px] bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)] text-center space-y-3">
             <Radio className="h-8 w-8 text-white/20" />
             <div>
               <p className="text-sm font-bold text-white/80">Nenhuma outra sala pública ativa no momento</p>
@@ -442,10 +442,10 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                 key={room.id}
                 className={`flex flex-col justify-between p-4.5 rounded-[22px] border transition-colors duration-200 ${
                   isCurrent
-                    ? "bg-[#1b1b22] border-white/40"
+                    ? "bg-[var(--surface-overlay)] border-white/40"
                     : isFull
                     ? "bg-white/1 border-white/5 opacity-70"
-                    : "bg-[#121216] hover:bg-[#17171d] border-white/[0.07] hover:border-white/20"
+                    : "bg-[var(--surface-raised)] hover:bg-[var(--surface-overlay)] border-white/[0.07] hover:border-white/20"
                 }`}
               >
                 <div className="space-y-2.5">

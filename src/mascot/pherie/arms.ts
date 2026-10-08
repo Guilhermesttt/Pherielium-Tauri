@@ -79,8 +79,8 @@ export function armTargets(scene: ArmScene, t: number): ArmTargets {
       // música pesada: punhos para cima, batendo junto com a batida (\m/)
       const pump = Math.min(1, Math.max(0, scene.beat));
       const shake = Math.sin(t * 15) * 3;
-      left = { x: -108 + shake, y: -14 - 38 * pump };
-      right = { x: 108 - shake, y: -14 - 38 * pump };
+      left = { x: -130 + shake, y: -42 - 30 * pump };
+      right = { x: 130 - shake, y: -42 - 30 * pump };
     } else {
       const swing = Math.sin(t * 6.5);
       const pump = 0.6 + 0.4 * scene.beat;

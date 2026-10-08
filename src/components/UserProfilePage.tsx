@@ -204,7 +204,7 @@ const ProfileAvatar: React.FC<{
   return (
     <div
       onClick={editable ? onEditClick : undefined}
-      className={`group relative shrink-0 aspect-square overflow-hidden rounded-[28%] bg-[#0d0d10] ring-4 ring-[#121216] ${compact ? "h-[88px] w-[88px]" : "h-[116px] w-[116px]"
+      className={`group relative shrink-0 aspect-square overflow-hidden rounded-[28%] bg-[var(--surface-base)] ring-4 ring-[var(--surface-raised)] ${compact ? "h-[88px] w-[88px]" : "h-[116px] w-[116px]"
         } ${editable ? "cursor-pointer" : ""}`}
       title={editable ? "Clique para editar perfil e foto" : undefined}
     >
@@ -236,7 +236,7 @@ const PlatformRow: React.FC<{
   compact?: boolean;
 }> = ({ name, connected, username, avatar, icon, connectedLabel, disconnectedLabel, compact = false }) => (
   <div
-    className={`flex items-center bg-[#0d0d10] justify-between transition-colors hover:bg-[#17171d] rounded-2xl ${compact ? "py-2.5 px-3 gap-2.5" : "py-3 px-3.5 gap-3"
+    className={`flex items-center bg-[var(--surface-base)] justify-between transition-colors hover:bg-[var(--surface-overlay)] rounded-2xl ${compact ? "py-2.5 px-3 gap-2.5" : "py-3 px-3.5 gap-3"
       }`}
   >
     <div className="flex min-w-0 items-center gap-3">
@@ -250,7 +250,7 @@ const PlatformRow: React.FC<{
         </p>
       </div>
     </div>
-    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${connected ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]" : "bg-white/20"}`} />
+    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${connected ? "bg-[rgb(var(--launcher-accent))] shadow-[0_0_8px_rgba(52,211,153,0.7)]" : "bg-white/20"}`} />
   </div>
 );
 
@@ -267,7 +267,7 @@ const MetricsCluster: React.FC<{
       [hours, copy.hours],
       [favorites, copy.favorites],
     ].map(([value, label]) => (
-      <div key={String(label)} className={`bg-[#0d0d10] ${compact ? "px-5 py-3" : "px-6 py-4"}`}>
+      <div key={String(label)} className={`bg-[var(--surface-base)] ${compact ? "px-5 py-3" : "px-6 py-4"}`}>
         <dd className="font-display font-bold leading-none tabular-nums text-white">{value}</dd>
         <dt className="mt-1.5 text-[13px] text-white/50">{label}</dt>
       </div>
@@ -291,11 +291,11 @@ const Section: React.FC<SectionProps> = ({
   compact = false,
 }) => (
   <section
-    className={`${compact ? "rounded-[22px] p-4 md:p-5" : "rounded-[22px] p-5 md:p-6"} bg-[#121216] ring-1 ring-white/[0.07] ${className}`}
+    className={`${compact ? "rounded-[22px] p-4 md:p-5" : "rounded-[22px] p-5 md:p-6"} bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)] ${className}`}
   >
     <div className={`${compact ? "mb-3" : "mb-4"} flex items-center gap-2.5`}>
       {icon && (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#0d0d10] text-white/70">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-base)] text-white/70">
           {icon}
         </div>
       )}
@@ -682,11 +682,11 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
 
       <div className={`relative mx-auto max-w-6xl ${compactProfile ? "space-y-4" : "space-y-6"}`}>
         {/* HERO: capa com avatar e nome alinhados pelo centro na base; o resto vem abaixo */}
-        <section className="relative overflow-hidden rounded-[28px] bg-[#121216] ring-1 ring-white/[0.07]">
+        <section className="relative overflow-hidden rounded-[28px] bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)]">
           <div
             className={`relative ${compactProfile ? "h-[190px]" : "h-[240px]"}`}
             style={{
-              background: `linear-gradient(135deg, ${playerLevel.tierInfo.gradientFrom}55, ${playerLevel.tierInfo.gradientTo}22 55%, #121216)`,
+              background: "linear-gradient(135deg, rgba(var(--launcher-accent), 0.16), transparent 60%), var(--surface-overlay)",
             }}
           >
             {userProfile?.bannerURL && (
@@ -697,7 +697,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 draggable={false}
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#121216]/30 to-[#121216]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--surface-raised)]/30 to-[var(--surface-raised)]" />
             <div className="absolute inset-x-6 bottom-5 flex items-center gap-5 sm:inset-x-8 sm:gap-6">
               <ProfileAvatar
                 profile={userProfile}
@@ -1014,7 +1014,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
         </section>
 
         {isPrivateProfile ? (
-          <section className="bg-[#121216] ring-1 ring-white/[0.07] flex flex-col items-center justify-center rounded-[22px] p-12 text-center">
+          <section className="bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)] flex flex-col items-center justify-center rounded-[22px] p-12 text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-white/15 bg-white/[0.06] text-white/60 shadow-inner">
               <Lock className="h-8 w-8 text-white/80" />
             </div>
@@ -1201,10 +1201,10 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                           const itemProps = canOpenGames
                             ? {
                                 onClick: () => onOpenGame?.(game),
-                                className: "flex items-center gap-3.5 p-3 rounded-2xl bg-[#0d0d10] hover:bg-[#17171d] transition text-left cursor-pointer group",
+                                className: "flex items-center gap-3.5 p-3 rounded-2xl bg-[var(--surface-base)] hover:bg-[var(--surface-overlay)] transition text-left cursor-pointer group",
                               }
                             : {
-                                className: "flex items-center gap-3.5 p-3 rounded-2xl bg-[#0d0d10] text-left cursor-default select-none",
+                                className: "flex items-center gap-3.5 p-3 rounded-2xl bg-[var(--surface-base)] text-left cursor-default select-none",
                               };
 
                           return (

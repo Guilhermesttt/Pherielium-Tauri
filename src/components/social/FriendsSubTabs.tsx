@@ -34,8 +34,8 @@ export const FriendsSubTabs: React.FC<FriendsSubTabsProps> = ({
     <div className="w-full flex justify-center mb-6 z-10 relative">
       {/* Abas sobre superfície sólida */}
       <div
-        className="flex items-center justify-between px-2 py-1.5 rounded-full ring-1 ring-white/[0.07]"
-        style={{ background: "#121216" }}
+        className="flex items-center justify-between px-2 py-1.5 rounded-full ring-1 ring-[color:var(--border-subtle)]"
+        style={{ background: "var(--surface-raised)" }}
       >
         {/* Abas de Navegação */}
         <HorizontalTabs
