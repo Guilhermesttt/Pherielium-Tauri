@@ -58,7 +58,7 @@ const HoverMascot: React.FC<React.ComponentProps<typeof PherieMascot>> = (props)
 const NotchPreview: React.FC<{ config: NotchConfig; mood: MascotMood }> = ({ config, mood }) => (
   <div className="relative h-[64px] w-[210px]">
     {config.enabled ? (
-      <div className="absolute left-1/2 top-0 flex h-10 w-[178px] -translate-x-1/2 items-center rounded-b-[18px] bg-[#050506] px-3 shadow-[0_10px_24px_rgba(0,0,0,0.45)]">
+      <div className="absolute left-1/2 top-0 flex h-10 w-[178px] -translate-x-1/2 items-center rounded-b-[14px] bg-black px-3">
         <div className="flex flex-1 items-center">
           {config.showMascot && (
             <PherieMascot size={26} mood={mood} bodyColor={config.bodyColor} shape={config.shape} />

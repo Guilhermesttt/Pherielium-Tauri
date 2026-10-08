@@ -28,8 +28,9 @@ export interface NotchStyle {
   isDefault: boolean;
 }
 
-export const EXPANDED_RADIUS_BONUS = 10;
-export const DEFAULT_NOTCH_SURFACE = "#050506";
+/** Coucou: raio 14 px compacto, 22 px expandido. */
+export const EXPANDED_RADIUS_BONUS = 8;
+export const DEFAULT_NOTCH_SURFACE = "#000000";
 
 type StyleOverrides = Pick<
   NotchConfig,
@@ -42,7 +43,7 @@ const DEFAULT_STYLE: NotchStyle = {
   borderColor: null,
   glowColor: "rgba(255,255,255,0)",
   glow: 0,
-  cornerRadius: 18,
+  cornerRadius: 14,
   chamfer: false,
   accent: "#ffffff",
   isDefault: true,
@@ -135,7 +136,10 @@ export function chamferClipPath(cut: number): string {
 export function notchBoxShadow(style: NotchStyle, expanded: boolean): string {
   const ring = style.borderColor && !style.chamfer ? `0 0 0 1px ${style.borderColor}` : "0 0 0 0 transparent";
   const glow = style.glow > 0 ? `0 0 ${Math.round(6 + style.glow * 18)}px ${style.glowColor}` : "0 0 0 0 transparent";
-  const depth1 = expanded ? "0 14px 34px rgba(0,0,0,0.38)" : "0 4px 14px rgba(0,0,0,0.22)";
-  const depth2 = expanded ? "0 2px 8px rgba(0,0,0,0.3)" : "0 0 0 0 rgba(0,0,0,0)";
+  // Estilo padrão (Coucou): preto puro, sem sombra. Temas/ajustes mantêm a profundidade.
+  const flat = style.isDefault;
+  const none = "0 0 0 0 rgba(0,0,0,0)";
+  const depth1 = flat ? none : expanded ? "0 14px 34px rgba(0,0,0,0.38)" : "0 4px 14px rgba(0,0,0,0.22)";
+  const depth2 = flat ? none : expanded ? "0 2px 8px rgba(0,0,0,0.3)" : none;
   return [ring, glow, depth1, depth2].join(", ");
 }

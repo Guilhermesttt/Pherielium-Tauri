@@ -25,6 +25,7 @@ import {
   resolveNotchStyle,
   surfaceColor,
 } from "../../mascot/notchTheme";
+import { CLOSE_TRANSITION, OPEN_SPRING, VIEW_IN_S, VIEW_OUT_S, geometryTransition } from "../../mascot/motion";
 import { playNotchSound, type NotchSoundId } from "./notchSounds";
 import { useNotchDropzone } from "./useNotchDropzone";
 import { RetroBubble } from "./RetroBubble";
@@ -100,7 +101,7 @@ export function resolveMascotMood(params: {
 }
 
 /** Preto "de notch": levemente quente para não parecer um buraco no wallpaper. */
-export const NOTCH_SPRING = { type: "spring", stiffness: 420, damping: 34, mass: 0.7 } as const;
+export const NOTCH_SPRING = OPEN_SPRING;
 const NOTCH_EXPANDED_WIDTH = 392;
 const NOTCH_BAR_HEIGHT = 40;
 
@@ -246,19 +247,19 @@ export const NotchIconButton: React.FC<{
 }> = ({ onClick, title, active = false, tone = "default", wide = false, children }) => {
   const toneClass =
     tone === "danger"
-      ? "bg-red-500 text-white hover:bg-red-400"
+      ? "bg-[#f4505e] text-white hover:brightness-110"
       : active && tone === "warn"
-      ? "bg-amber-400/20 text-amber-300 hover:bg-amber-400/30"
+      ? "bg-[#f5a524]/20 text-[#f5a524] hover:bg-[#f5a524]/30"
       : active
-      ? "bg-red-500/20 text-red-300 hover:bg-red-500/30"
-      : "bg-white/[0.08] text-white hover:bg-white/[0.16]";
+      ? "bg-[#f4505e]/20 text-[#f4505e] hover:bg-[#f4505e]/30"
+      : "bg-white/[0.09] text-[#f5f6f8] hover:bg-white/[0.15]";
   return (
     <button
       type="button"
       title={title}
       aria-label={title}
       onClick={onClick}
-      className={`h-9 ${wide ? "px-4" : "w-9"} shrink-0 rounded-full flex items-center justify-center gap-1.5 text-[11px] font-semibold transition-all duration-150 active:scale-90 ${toneClass}`}
+      className={`h-9 ${wide ? "px-4" : "w-9"} shrink-0 rounded-full flex items-center justify-center gap-1.5 text-[11px] font-semibold transition-all duration-150 active:scale-[0.94] ${toneClass}`}
     >
       {children}
     </button>
@@ -376,9 +377,30 @@ const CallAvatar: React.FC<{ src?: string; name?: string; size: number; speaking
 );
 
 export const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-white/35 leading-none mb-2">
+  <p className="mb-2 text-[11px] font-semibold leading-none text-[#9398a1]">{children}</p>
+);
+
+/** Cores de status do Coucou usadas no "wash" dos cartões. */
+const CARD_WASH = {
+  green: "34,197,94",
+  indigo: "99,102,241",
+  pink: "244,114,182",
+  neutral: "255,255,255",
+} as const;
+
+/** Cartão do painel: raio 20, hairline e um brilho radial na cor de status (de baixo para cima). */
+export const NotchCard: React.FC<{
+  tone?: keyof typeof CARD_WASH;
+  children: React.ReactNode;
+}> = ({ tone = "neutral", children }) => (
+  <section
+    className="rounded-[20px] border border-white/[0.035] bg-[#141518] p-3"
+    style={{
+      backgroundImage: `radial-gradient(120% 140% at 50% 130%, rgba(${CARD_WASH[tone]}, ${tone === "neutral" ? 0.08 : 0.38}) 0%, transparent 62%)`,
+    }}
+  >
     {children}
-  </p>
+  </section>
 );
 
 export const DesktopNotch: React.FC<DesktopNotchProps> = ({
@@ -1111,8 +1133,10 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             ? { filter: `drop-shadow(0 0 ${Math.round(5 + notchStyle.glow * 12)}px ${notchStyle.glowColor})` }
             : undefined
         }
-        className={`fixed top-0 left-1/2 -translate-x-1/2 z-[10030] pointer-events-auto select-none transition-transform duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
-          isHiddenByWindow ? "-translate-y-[64px]" : "translate-y-0"
+        className={`fixed top-0 left-1/2 -translate-x-1/2 z-[10030] pointer-events-auto select-none transition-transform ${
+          isHiddenByWindow
+            ? "-translate-y-[64px] duration-[340ms] delay-[420ms] [transition-timing-function:cubic-bezier(0.45,0,0.2,1)]"
+            : "translate-y-0 duration-300 [transition-timing-function:cubic-bezier(0.3,1.2,0.4,1)]"
         } ${className}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -1126,7 +1150,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             borderBottomRightRadius: notchStyle.chamfer ? 0 : notchStyle.cornerRadius + (isExpanded ? EXPANDED_RADIUS_BONUS : 0),
             boxShadow: notchBoxShadow(notchStyle, isExpanded),
           }}
-          transition={NOTCH_SPRING}
+          transition={geometryTransition(isExpanded)}
           style={{
             backgroundColor: chamferBorder ? (notchStyle.borderColor as string) : notchBg,
             clipPath: notchStyle.chamfer ? chamferClipPath(chamferCut) : undefined,
@@ -1180,8 +1204,11 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                 key="panel"
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ height: NOTCH_SPRING, opacity: { duration: 0.16 } }}
+                exit={{ height: 0, opacity: 0, transition: { height: CLOSE_TRANSITION, opacity: { duration: VIEW_OUT_S } } }}
+                transition={{
+                  height: geometryTransition(true),
+                  opacity: { duration: VIEW_IN_S, delay: VIEW_OUT_S },
+                }}
                 className="overflow-hidden"
               >
                 <div className="px-4 pb-4 pt-1 flex flex-col gap-3.5">
@@ -1202,7 +1229,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                   <div className={dropzone.active ? "hidden" : "contents"}>
                   {/* ── Chamada de voz ── */}
                   {isCallActive && (
-                    <section>
+                    <NotchCard tone="green">
                       <SectionLabel>Chamada de voz</SectionLabel>
                       <div className="flex items-center gap-3">
                         {config.showMascot && panelMascot(52)}
@@ -1236,12 +1263,12 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                           </NotchIconButton>
                         </div>
                       </div>
-                    </section>
+                    </NotchCard>
                   )}
 
                   {/* ── Jogo ── */}
                   {activeGameTitle && (
-                    <section>
+                    <NotchCard tone="indigo">
                       <SectionLabel>Jogando agora</SectionLabel>
                       <div className="flex items-center gap-3">
                         <span className="w-10 h-10 rounded-xl bg-white/[0.07] flex items-center justify-center text-white/80 shrink-0">
@@ -1252,12 +1279,12 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                           {formatSeconds(activeGameElapsedSeconds)}
                         </span>
                       </div>
-                    </section>
+                    </NotchCard>
                   )}
 
                   {/* ── Multimídia do PC ── */}
                   {mediaState.hasMedia && (
-                    <section>
+                    <NotchCard tone="pink">
                       <SectionLabel>{sourceLabel ? `Tocando · ${sourceLabel}` : "Tocando no PC"}</SectionLabel>
                       <div className="flex items-center gap-3">
                         <div
@@ -1275,7 +1302,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                                 className="w-full h-full rounded-2xl object-cover"
                                 draggable={false}
                               />
-                              <div className={`absolute -bottom-1.5 -right-1.5 rounded-full bg-[#050506] p-0.5 ${config.showMascot ? "" : "hidden"}`}>
+                              <div className={`absolute -bottom-1.5 -right-1.5 rounded-full bg-black p-0.5 ${config.showMascot ? "" : "hidden"}`}>
                                 <GazingMascot
                                   cursor={gazeCursor}
                                   size={22}
@@ -1340,7 +1367,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                           <SkipForward size={18} className="fill-current" />
                         </button>
                       </div>
-                    </section>
+                    </NotchCard>
                   )}
 
                   {/* ── Nada acontecendo ── */}

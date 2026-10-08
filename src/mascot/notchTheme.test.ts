@@ -10,14 +10,14 @@ import {
 } from "./notchTheme";
 
 describe("resolveNotchStyle", () => {
-  it("o tema padrão reproduz exatamente o visual de antes (#050506, sem borda, raio 18)", () => {
+  it("o tema padrão reproduz exatamente o visual de antes (#000000, sem borda, raio 14)", () => {
     for (const theme of ["phelierium", "checkpoint", undefined, null, ""]) {
       const s = resolveNotchStyle(theme);
       expect(s.surface).toBe(DEFAULT_NOTCH_SURFACE);
       expect(s.surfaceOpacity).toBe(1);
       expect(s.borderColor).toBeNull();
       expect(s.glow).toBe(0);
-      expect(s.cornerRadius).toBe(18);
+      expect(s.cornerRadius).toBe(14);
       expect(s.chamfer).toBe(false);
       expect(s.isDefault).toBe(true);
     }
@@ -40,7 +40,7 @@ describe("resolveNotchStyle", () => {
       expect(s.glow, theme).toBe(0);
       expect(s.surface, theme).toBe(DEFAULT_NOTCH_SURFACE);
       expect(s.chamfer, theme).toBe(false);
-      expect(s.cornerRadius, theme).toBe(18);
+      expect(s.cornerRadius, theme).toBe(14);
       expect(s.accent, theme).not.toBe("#ffffff");
     }
     expect(resolveNotchStyle("tema-inexistente").isDefault).toBe(true);
@@ -76,7 +76,7 @@ describe("resolveNotchStyle", () => {
 
 describe("helpers de estilo", () => {
   it("surfaceColor só usa rgba quando há transparência", () => {
-    expect(surfaceColor(resolveNotchStyle("phelierium"))).toBe("#050506");
+    expect(surfaceColor(resolveNotchStyle("phelierium"))).toBe("#000000");
     expect(surfaceColor(resolveNotchStyle("cyberpunk"))).toMatch(/^rgba\(10,10,12,0\.88\)$/);
   });
 
@@ -128,7 +128,7 @@ describe("sanitizeNotchConfig — novos campos", () => {
     expect(sanitizeNotchConfig({ ears: "dragão", gameHud: "x", bubbleStyle: "y" })).toMatchObject({
       ears: "cat",
       gameHud: "line",
-      bubbleStyle: "retro",
+      bubbleStyle: "soft",
     });
     expect(sanitizeNotchConfig({ bubbleStyle: "soft" }).bubbleStyle).toBe("soft");
   });

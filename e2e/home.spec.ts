@@ -128,6 +128,12 @@ test("notch encena controle conectado e desconectado", async ({ browser }) => {
     }, kind);
 
   await page.screenshot({ path: path.join(outDir, "notch-idle.png"), clip });
+  await notch.hover();
+  await notch.locator("div.cursor-pointer").first().click();
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: path.join(outDir, "notch-expanded.png"), clip: { x: 660, y: 0, width: 600, height: 300 } });
+  await page.mouse.move(100, 600);
+  await page.waitForTimeout(2500);
   await fire("connected");
   await expect(notch.getByText("Controle conectado")).toBeVisible();
   await page.waitForTimeout(900);

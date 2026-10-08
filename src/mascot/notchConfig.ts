@@ -83,7 +83,7 @@ export const DEFAULT_NOTCH_CONFIG: NotchConfig = {
   shape: DEFAULT_NOTCH_SHAPE,
   ears: "cat",
   items: [],
-  bubbleStyle: "retro",
+  bubbleStyle: "soft",
   gameHud: "line",
   useThemeStyle: true,
   cornerRadius: null,
