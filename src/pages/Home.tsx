@@ -45,6 +45,7 @@ import DynamicBackground from "../components/DynamicBackground";
 import { GameEnvironment } from "../components/home/GameEnvironment";
 import { HeroGame } from "../components/home/HeroGame";
 import { HomeTopNav } from "../components/home/HomeTopNav";
+import { PlatformShortcutHint } from "../components/home/PlatformShortcutHint";
 import { EpicConnectModal } from "../components/settings/EpicConnectModal";
 import { PlatformLibrarySkeleton } from "../components/PlatformLibrarySkeleton";
 import { fetchEpicStatus } from "../services/epic";
@@ -2772,10 +2773,14 @@ const Home: React.FC = () => {
             {activeCategory === "ALL" ? "Biblioteca" : activePlatformConfig.label}
           </h2>
           <div className="flex items-center gap-[var(--gap-section)]">
-            <span className="hidden items-center gap-1.5 text-[length:var(--fs-label)] text-white/40 md:inline-flex">
-              <kbd className="rounded border border-white/15 bg-white/[0.06] px-1.5 py-px font-mono text-[0.85em] text-white/65">Alt</kbd>
-              <span>+ rolar para filtrar por plataforma</span>
-            </span>
+            {!isGamepadConnected && (
+              <PlatformShortcutHint
+                onActivate={() => {
+                  setIsPlatformModalOpen(true);
+                  playSound("showModal");
+                }}
+              />
+            )}
             <span className="text-[length:var(--fs-caption)] font-medium text-white/55">
               {displayGames.length} {displayGames.length === 1 ? "jogo" : "jogos"}
             </span>
@@ -2799,6 +2804,7 @@ const Home: React.FC = () => {
     onSelectHandler,
     handleMenuAction,
     playSound,
+    isGamepadConnected,
   ]);
 
   return (

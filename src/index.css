@@ -201,6 +201,25 @@ html[data-launcher-theme="checkpoint"] {
   }
 }
 
+/* Dica Alt + rolar: so reage a acao da pessoa (hover/foco); a roda "gira" quando ela esta em cima. */
+@layer components {
+  .platform-hint {
+    border: 1px solid transparent;
+  }
+  .platform-hint:hover,
+  .platform-hint:focus-visible {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  .platform-hint .platform-hint-wheel {
+    transition: transform var(--transition-focus);
+  }
+  .platform-hint:hover .platform-hint-wheel,
+  .platform-hint:focus-visible .platform-hint-wheel {
+    transform: translateY(2.2px);
+  }
+}
+
 /* Botao "Jogar": cor do jogo selecionado (--game-color vem da capa), sempre escurecida
    o bastante para texto e glifo de controle brancos terem contraste. */
 @layer components {
