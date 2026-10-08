@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { motion } from "framer-motion";
-import { Search, Plus, SlidersHorizontal, X } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, X, RefreshCw } from "lucide-react";
 import { PHERIELIUM_LOGO_PATH } from "../../constants/assets";
 import { FOCUS_TRANSITION } from "../../styles/motion";
 import { ConsoleLibraryTabs } from "./ConsoleLibraryTabs";
@@ -22,6 +22,8 @@ export interface HomeTopNavProps {
   onToggleSearch: (open: boolean) => void;
   onOpenAddGame: () => void;
   onOpenFilterModal: () => void;
+  onSyncLibraries?: () => void;
+  isSyncingLibraries?: boolean;
   onToggleSidebar?: () => void;
   hasActiveFilters?: boolean;
   showTabsAndSearch?: boolean;
@@ -48,6 +50,8 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
   onToggleSearch,
   onOpenAddGame,
   onOpenFilterModal,
+  onSyncLibraries,
+  isSyncingLibraries = false,
   onToggleSidebar,
   hasActiveFilters = false,
   showTabsAndSearch = true,
@@ -214,6 +218,23 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
             >
               <Plus className="ctl-icon" />
             </button>
+
+            {/* Sincronizar Steam / Epic (ou conectar, se ainda nao ha conta) */}
+            {onSyncLibraries && (
+              <button
+                type="button"
+                onClick={() => {
+                  onSyncLibraries();
+                  playSound("select");
+                }}
+                disabled={isSyncingLibraries}
+                title="Sincronizar jogos da Steam e Epic"
+                aria-label="Sincronizar jogos Steam e Epic"
+                className="ctl-circle"
+              >
+                <RefreshCw className={`ctl-icon ${isSyncingLibraries ? "animate-spin" : ""}`} />
+              </button>
+            )}
 
             {/* Filter / Context Menu Button */}
             <button

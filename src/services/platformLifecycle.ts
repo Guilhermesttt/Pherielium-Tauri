@@ -95,17 +95,6 @@ export const disconnectPlatform = async (
     console.warn(`[platformLifecycle] Falha ao contatar nuvem para purge, prosseguindo:`, err);
   }
 
-  // Deleta diretamente de user_games no Supabase para garantir que nenhuma linha da plataforma persista
-  try {
-    await supabase
-      .from("user_games")
-      .delete()
-      .eq("user_id", uid)
-      .eq("launcher_type", platform);
-  } catch (err) {
-    console.warn(`[platformLifecycle] Falha ao deletar jogos da nuvem para ${platform}:`, err);
-  }
-
   // Phase 4: Refreshing profile & summary
   onPhaseChange?.("refreshing-profile");
   await api.setPlatformCleanupPhase(uid, platform, operationId, "refreshing-profile");

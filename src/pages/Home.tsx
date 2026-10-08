@@ -799,6 +799,27 @@ const Home: React.FC = () => {
 
   const isAnySyncing = steamSyncing || epicSyncing;
 
+  // Sincroniza as contas ja conectadas; sem nenhuma conectada, leva a Configuracoes > Conexoes.
+  const handleSyncLibraries = useCallback(() => {
+    const steamConnected = Boolean(resolvedSteamId);
+    if (!steamConnected && !epicAuthConnected) {
+      notify("Conecte sua conta Steam ou Epic para sincronizar os jogos.", "info");
+      setSettingsTab("connections");
+      selectCategory("SETTINGS");
+      return;
+    }
+    if (steamConnected) void handleSyncSteam();
+    if (epicAuthConnected) void handleSyncEpic();
+    notify(
+      steamConnected && epicAuthConnected
+        ? "Sincronizando Steam e Epic Games..."
+        : steamConnected
+          ? "Sincronizando Steam... (Epic não conectada: veja Configurações > Conexões)"
+          : "Sincronizando Epic Games... (Steam não conectada: veja Configurações > Conexões)",
+      "info",
+    );
+  }, [resolvedSteamId, epicAuthConnected, notify, selectCategory, handleSyncSteam, handleSyncEpic]);
+
   const {
     socialFriends,
     unreadMessagesByFriend,
@@ -2750,9 +2771,15 @@ const Home: React.FC = () => {
           <h2 className="text-[length:var(--fs-label)] font-bold tracking-[var(--tracking-label)] uppercase text-white/60 font-display">
             {activeCategory === "ALL" ? "Biblioteca" : activePlatformConfig.label}
           </h2>
-          <span className="text-[length:var(--fs-caption)] font-medium text-white/55">
-            {displayGames.length} {displayGames.length === 1 ? "jogo" : "jogos"}
-          </span>
+          <div className="flex items-center gap-[var(--gap-section)]">
+            <span className="hidden items-center gap-1.5 text-[length:var(--fs-label)] text-white/40 md:inline-flex">
+              <kbd className="rounded border border-white/15 bg-white/[0.06] px-1.5 py-px font-mono text-[0.85em] text-white/65">Alt</kbd>
+              <span>+ rolar para filtrar por plataforma</span>
+            </span>
+            <span className="text-[length:var(--fs-caption)] font-medium text-white/55">
+              {displayGames.length} {displayGames.length === 1 ? "jogo" : "jogos"}
+            </span>
+          </div>
         </div>
         <GameRow
           games={displayGames}
@@ -2853,6 +2880,8 @@ const Home: React.FC = () => {
           onToggleSearch={setSearchOpen}
           onOpenAddGame={() => openAddGameModal()}
           onOpenFilterModal={() => setFilterModalOpen(true)}
+          onSyncLibraries={handleSyncLibraries}
+          isSyncingLibraries={isAnySyncing}
           onToggleSidebar={() => {
             window.dispatchEvent(
               new CustomEvent("checkpoint:sidebar-toggle", {

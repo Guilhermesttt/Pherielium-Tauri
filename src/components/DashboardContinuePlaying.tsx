@@ -309,7 +309,7 @@ export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> =
   if (continuePlayingGames.length === 0) return null;
 
   return (
-    <section aria-label="Continuar jogando" className="px-[var(--safe-x)] relative group/section">
+    <section aria-label="Continuar jogando" className="px-[var(--safe-x)] pt-[var(--gap-section)] relative group/section">
       <div className="mb-3 flex flex-col">
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/34">
           Retomar

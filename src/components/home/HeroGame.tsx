@@ -73,11 +73,11 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
           className="flex flex-col gap-3.5 w-full max-w-[92vw] lg:max-w-[85vw]"
         >
           {/* 1. Cinematic Title Card (uma linha só sem quebra) */}
-          <div className="flex flex-col min-w-0">
+          <div className="flex flex-col items-start min-w-0 max-w-full">
             <h1
               onClick={handleDetailsClick}
               title={game.title}
-              className={`cursor-pointer tracking-tight font-display font-black ${titleSizeClass} bg-gradient-to-b from-[#FFFFFF] via-[#F4F4F6] to-[#A0A0A5] bg-clip-text text-transparent leading-[1.1] whitespace-nowrap truncate drop-shadow-[0_8px_30px_rgba(0,0,0,0.85)] hover:opacity-95 transition-opacity`}
+              className={`cursor-pointer tracking-tight font-display font-black ${titleSizeClass} bg-gradient-to-b from-[#FFFFFF] via-[#F4F4F6] to-[#A0A0A5] bg-clip-text text-transparent leading-[1.1] max-w-full whitespace-nowrap truncate drop-shadow-[0_8px_30px_rgba(0,0,0,0.85)] hover:opacity-95 transition-opacity`}
             >
               {game.title}
             </h1>

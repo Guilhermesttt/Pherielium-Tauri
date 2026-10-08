@@ -396,18 +396,25 @@ export const updateLibraryGame = async (
   return updated;
 };
 
-export const deleteLibraryGame = async (uid: string, gameId: string) => {
-  if (window.electronAPI?.deleteLocalGame) {
-    return window.electronAPI.deleteLocalGame(uid, gameId);
+/** Apaga do banco (Supabase) as linhas de um jogo; falha de rede não impede a remoção local. */
+const deleteCloudGame = async (uid: string, gameId: string) => {
+  try {
+    const { error } = await supabase.from("user_games").delete().eq("id", gameId).eq("user_id", uid);
+    if (error) console.warn("[localLibrary] Erro ao deletar jogo do Supabase:", error);
+  } catch (err) {
+    console.warn("[localLibrary] Falha ao conectar Supabase para deleção:", err);
   }
-  const { error } = await supabase
-    .from("user_games")
-    .delete()
-    .eq("id", gameId)
-    .eq("user_id", uid);
-  if (error) throw error;
+};
+
+export const deleteLibraryGame = async (uid: string, gameId: string) => {
+  let removedLocal = false;
+  if (window.electronAPI?.deleteLocalGame) {
+    removedLocal = await window.electronAPI.deleteLocalGame(uid, gameId);
+  }
+  // Também do banco: senão o jogo volta na próxima sincronização.
+  await deleteCloudGame(uid, gameId);
   invalidate(`games:list:${uid}`);
-  return true;
+  return removedLocal || !window.electronAPI?.deleteLocalGame;
 };
 
 export const deleteLibraryGamesByLauncher = async (
@@ -424,11 +431,17 @@ export const deleteLibraryGamesByLauncher = async (
   }
   let cloudDeleted = 0;
   try {
+    // Mesma regra do SQLite local: jogos Epic/Steam podem ter launcher_type diferente,
+    // mas sempre carregam o id da loja.
+    const column = launcherType === "epic" ? "epic_catalog_id" : launcherType === "steam" ? "steam_app_id" : null;
+    const filter = column
+      ? `launcher_type.eq.${launcherType},${column}.not.is.null`
+      : `launcher_type.eq.${launcherType}`;
     const { data, error } = await supabase
       .from("user_games")
       .delete()
       .eq("user_id", uid)
-      .eq("launcher_type", launcherType)
+      .or(filter)
       .select("id");
     if (error) console.warn("[localLibrary] Erro ao deletar jogos do Supabase:", error);
     cloudDeleted = data?.length || 0;
