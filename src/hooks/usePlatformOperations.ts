@@ -105,7 +105,7 @@ export const usePlatformOperations = ({
   );
 
   // Sync Platform (Steam or Epic)
-  const syncPlatform = useCallback(
+  const runSync = useCallback(
     async (platform: Platform, args?: any) => {
       if (!userUid) throw new Error("Usuário não autenticado.");
       const operationId = crypto.randomUUID();
@@ -187,6 +187,22 @@ export const usePlatformOperations = ({
       }
     },
     [userUid, language, onRefreshLibrary, notify],
+  );
+
+  // Conectar dispara a sincronização por mais de um caminho (callback de login + efeito da Home):
+  // uma sincronização por plataforma por vez, as demais chamadas aguardam a mesma.
+  const inflightSyncRef = useRef<Record<Platform, Promise<number> | null>>({ steam: null, epic: null });
+  const syncPlatform = useCallback(
+    (platform: Platform, args?: any): Promise<number> => {
+      const running = inflightSyncRef.current[platform];
+      if (running) return running;
+      const promise = runSync(platform, args).finally(() => {
+        inflightSyncRef.current[platform] = null;
+      });
+      inflightSyncRef.current[platform] = promise;
+      return promise;
+    },
+    [runSync],
   );
 
   // Disconnect Platform
