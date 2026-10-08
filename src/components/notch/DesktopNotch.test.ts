@@ -40,10 +40,10 @@ describe("DesktopNotch & PherieMascot Logic", () => {
   it("sizes the compact bar by what is happening (call > game > media > idle)", () => {
     const w = (isCallActive: boolean, activeGameTitle: string | null, isPcMediaPlaying: boolean) =>
       resolveNotchCompactWidth({ isCallActive, activeGameTitle, isPcMediaPlaying });
-    expect(w(false, null, false)).toBe(164);
-    expect(w(false, null, true)).toBe(204);
-    expect(w(false, "Hades II", true)).toBe(232);
-    expect(w(true, "Hades II", true)).toBe(268);
+    expect(w(false, null, false)).toBe(216);
+    expect(w(false, null, true)).toBe(256);
+    expect(w(false, "Hades II", true)).toBe(284);
+    expect(w(true, "Hades II", true)).toBe(320);
   });
 
   it("auto-hides only when another app overlaps and nothing keeps the notch pinned", () => {

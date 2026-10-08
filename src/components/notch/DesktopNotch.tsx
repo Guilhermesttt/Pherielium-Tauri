@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  Home,
+  Settings2,
   Maximize2,
   Mic,
   MicOff,
@@ -39,7 +41,6 @@ import { NOTCH_EVENT_MOOD, NOTCH_EVENT_WIDTH, notchEventWaves } from "./notchEve
 import { AchievementReveal } from "./AchievementReveal";
 import { achievementBoxShadow, tierStyle } from "./achievementTier";
 import { useAudioReactiveRef } from "../../mascot/useAudioReactive";
-import { EqualizerNormalizer, isAudioLive, type AudioReactive } from "../../mascot/headbang";
 import { subscribeTicker } from "../../mascot/ticker";
 import {
   DIZZY_DURATION_MS,
@@ -111,8 +112,10 @@ export function resolveMascotMood(params: {
 
 /** Preto "de notch": levemente quente para não parecer um buraco no wallpaper. */
 export const NOTCH_SPRING = OPEN_SPRING;
-const NOTCH_EXPANDED_WIDTH = 392;
-const NOTCH_BAR_HEIGHT = 40;
+const NOTCH_EXPANDED_WIDTH = 448;
+const NOTCH_BAR_HEIGHT = 52;
+/** Tamanho da Pherie na barra compacta (antes 26: pequena demais para ver o rosto). */
+const BAR_MASCOT = 38;
 
 const EMPTY_MEDIA: DetectedMediaState = {
   hasMedia: false,
@@ -168,69 +171,49 @@ export function resolveNotchCompactWidth(params: {
   activeGameTitle: string | null;
   isPcMediaPlaying: boolean;
 }): number {
-  if (params.isCallActive) return 268;
-  if (params.activeGameTitle) return 232;
-  if (params.isPcMediaPlaying) return 204;
-  return 164;
+  if (params.isCallActive) return 320;
+  if (params.activeGameTitle) return 284;
+  if (params.isPcMediaPlaying) return 256;
+  return 216;
 }
 
-/** Equalizador de 4 barras com dinâmica de molas e física contínua.
- * Reage a frequências de áudio reais (WASAPI loopback) quando disponíveis,
- * ou anima de forma orgânica e rítmica quando há música reproduzindo. */
-const Equalizer: React.FC<{
-  playing: boolean;
-  height?: number;
-  audioRef?: { current: AudioReactive };
-}> = ({ playing, height = 16, audioRef }) => {
+/** Indicador de música: 4 barras com ondulação própria (não segue o som). Ao começar a tocar,
+ * entra com um "pop"; pausado, recolhe para o mínimo. */
+const Equalizer: React.FC<{ playing: boolean; height?: number }> = ({ playing, height = 16 }) => {
   const barRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const smoothRef = useRef<[number, number, number, number]>([0.25, 0.25, 0.25, 0.25]);
-  const normalizerRef = useRef(new EqualizerNormalizer());
 
   useEffect(() => {
     const smooth = smoothRef.current;
     return subscribeTicker((dt, now) => {
-      const audio = audioRef?.current;
-      const energy = audio ? Math.max(audio.rms, audio.low, audio.mid, audio.high) : 0;
-      const isLive = Boolean(audio && isAudioLive(audio, now) && energy > 0.003);
-
-      let target: [number, number, number, number];
-
-      if (!playing) {
-        // Pausado ou sem reprodução: recolhe suavemente para o mínimo de repouso
-        target = [0.22, 0.22, 0.22, 0.22];
-      } else if (isLive && audio) {
-        // Áudio ao vivo do sistema (graves → médios → agudos)
-        target = normalizerRef.current.heights(audio, dt);
-      } else {
-        // Tocando música no PC: ondulação rítmica e dinâmica estilo equalizador Apple Music
-        const t = now * 0.006;
-        target = [
-          0.25 + 0.65 * Math.abs(Math.sin(t * 1.35)),
-          0.25 + 0.72 * Math.abs(Math.sin(t * 1.95 + 1.1)),
-          0.25 + 0.70 * Math.abs(Math.sin(t * 1.55 + 2.3)),
-          0.25 + 0.60 * Math.abs(Math.sin(t * 2.25 + 0.6)),
-        ];
-      }
-
-      // Amortecimento de mola contínua (interrompível e sem saltos)
+      const t = now * 0.006;
+      const target: number[] = playing
+        ? [
+            0.25 + 0.65 * Math.abs(Math.sin(t * 1.35)),
+            0.25 + 0.72 * Math.abs(Math.sin(t * 1.95 + 1.1)),
+            0.25 + 0.7 * Math.abs(Math.sin(t * 1.55 + 2.3)),
+            0.25 + 0.6 * Math.abs(Math.sin(t * 2.25 + 0.6)),
+          ]
+        : [0.22, 0.22, 0.22, 0.22];
       const k = 1 - Math.exp(-22 * Math.max(0.001, dt));
       for (let i = 0; i < 4; i++) {
         smooth[i] += (target[i] - smooth[i]) * k;
         const el = barRefs.current[i];
-        if (el) {
-          const barHeight = Math.max(3, Math.round(smooth[i] * height));
-          el.style.height = `${barHeight}px`;
-        }
+        if (el) el.style.height = `${Math.max(3, Math.round(smooth[i] * height))}px`;
       }
     });
-  }, [audioRef, height, playing]);
+  }, [height, playing]);
 
   const minH = Math.max(3, Math.round(height * 0.25));
 
   return (
-    <div
+    <motion.div
+      key={playing ? "on" : "off"}
+      initial={playing ? { scale: 0.3, opacity: 0 } : false}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 520, damping: 14 }}
       className="flex items-end gap-[2.5px] shrink-0"
-      style={{ height }}
+      style={{ height, originY: 1 }}
       aria-hidden
     >
       {[0, 1, 2, 3].map((i) => (
@@ -239,11 +222,11 @@ const Equalizer: React.FC<{
           ref={(el) => {
             barRefs.current[i] = el;
           }}
-          className="w-[2.5px] rounded-full bg-white transition-[height] duration-75 ease-out"
+          className="w-[2.5px] rounded-full bg-white"
           style={{ height: minH }}
         />
       ))}
-    </div>
+    </motion.div>
   );
 };
 
@@ -1019,10 +1002,12 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   // Quem "hospeda" o mascote quando o painel abre (a barra cede o lugar): a chamada,
   // o slot da capa (música sem capa) ou o balão ocioso. Jogo sozinho não hospeda.
-  const mascotHost: "call" | "media" | "idle" | null = !isExpanded || !config.showMascot
+  const mascotHost: "call" | "game" | "media" | "idle" | null = !isExpanded || !config.showMascot
     ? null
     : isCallActive
     ? "call"
+    : activeGameTitle
+    ? "game"
     : mediaState.hasMedia && !mediaState.thumbnail
     ? "media"
     : !hasAnySection
@@ -1129,7 +1114,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   const renderBar = () => {
     if (controllerFlash) {
-      return <ControllerFlashBar flash={controllerFlash} mascot={barMascot(26)} />;
+      return <ControllerFlashBar flash={controllerFlash} mascot={barMascot(BAR_MASCOT)} />;
     }
     if (notchEvent?.kind === "achievement") {
       // a revelação acontece no painel aberto; a barra só diz o que é
@@ -1142,13 +1127,13 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
       );
     }
     if (notchEvent) {
-      return <NotchEventBar event={notchEvent} mascot={barMascot(26)} />;
+      return <NotchEventBar event={notchEvent} mascot={barMascot(BAR_MASCOT)} />;
     }
     if (isCallActive) {
       return (
         <>
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            {barMascot(26)}
+            {barMascot(BAR_MASCOT)}
             <span className="relative flex h-1.5 w-1.5 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
@@ -1164,10 +1149,40 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         </>
       );
     }
+    if (isExpanded) {
+      // cabeçalho estilo Coucou: aba "Início" à esquerda, atalhos à direita
+      return (
+        <div className="flex w-full items-center justify-between">
+          <span className="flex h-8 items-center gap-1.5 rounded-full bg-white/[0.10] px-3 text-[12px] font-semibold text-white">
+            <Home size={14} />
+            Início
+          </span>
+          <div className="flex items-center gap-1 text-white/60">
+            {config.showClock && (
+              <span className="mr-1 text-[12px] font-semibold tabular-nums text-white/70">{currentTime}</span>
+            )}
+            {isOverlay && hasTauriRuntime() && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void openOverlayPanel();
+                }}
+                title="Painel do overlay"
+                aria-label="Painel do overlay"
+                className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/[0.10] hover:text-white"
+              >
+                <Settings2 size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
     if (activeGameTitle) {
       return (
         <>
-          <div className="flex-1 flex items-center gap-2">{barMascot(26)}</div>
+          <div className="flex-1 flex items-center gap-2">{barMascot(BAR_MASCOT)}</div>
           <span className="text-[13px] font-semibold tracking-tight text-white tabular-nums">{config.showClock ? currentTime : ""}</span>
           <div className="flex-1 flex items-center justify-end gap-1.5 text-white/55">
             <Gamepad2 size={12} />
@@ -1178,10 +1193,10 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     }
     return (
       <>
-        <div className="flex-1 flex items-center">{barMascot(26)}</div>
+        <div className="flex-1 flex items-center">{barMascot(BAR_MASCOT)}</div>
         <span className="text-[13px] font-semibold tracking-tight text-white tabular-nums">{config.showClock ? currentTime : ""}</span>
         <div className="flex-1 flex items-center justify-end">
-          {isPcMediaPlaying && !isExpanded && <Equalizer playing height={14} audioRef={audioRef} />}
+          {isPcMediaPlaying && !isExpanded && <Equalizer playing height={14} />}
         </div>
       </>
     );
@@ -1329,7 +1344,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                     <NotchCard tone="green">
                       <SectionLabel>Chamada de voz</SectionLabel>
                       <div className="flex items-center gap-3">
-                        {config.showMascot && panelMascot(52)}
+                        {config.showMascot && panelMascot(64)}
                         <div className="min-w-0 flex-1">
                           <p className="flex items-center gap-1.5 text-[13px] font-semibold text-white leading-tight min-w-0">
                             <CallAvatar src={callFriendAvatar} name={callFriendName} size={18} speaking={isSpeaking && !isMuted} />
@@ -1371,9 +1386,13 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                     <NotchCard tone="indigo">
                       <SectionLabel>Jogando agora</SectionLabel>
                       <div className="flex items-center gap-3">
-                        <span className="w-10 h-10 rounded-xl bg-white/[0.07] flex items-center justify-center text-white/80 shrink-0">
-                          <Gamepad2 size={18} />
-                        </span>
+                        {mascotHost === "game" ? (
+                          panelMascot(56)
+                        ) : (
+                          <span className="w-10 h-10 rounded-xl bg-white/[0.07] flex items-center justify-center text-white/80 shrink-0">
+                            <Gamepad2 size={18} />
+                          </span>
+                        )}
                         <p className="min-w-0 flex-1 text-[13px] font-semibold text-white truncate">{activeGameTitle}</p>
                         <span className="text-[12px] font-mono tabular-nums text-white/60 shrink-0">
                           {formatSeconds(activeGameElapsedSeconds)}
@@ -1388,7 +1407,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                       <SectionLabel>{sourceLabel ? `Tocando · ${sourceLabel}` : "Tocando no PC"}</SectionLabel>
                       <div className="flex items-center gap-3">
                         <div
-                          className={`relative w-14 h-14 shrink-0 flex items-center justify-center text-white/60 ${
+                          className={`relative w-16 h-16 shrink-0 flex items-center justify-center text-white/60 ${
                             mascotHost === "media" && !mediaState.thumbnail
                               ? "" // a Pherie ocupa o lugar da capa SEM caixa em volta
                               : "rounded-2xl bg-gradient-to-br from-white/[0.14] to-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
@@ -1402,10 +1421,10 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                                 className="w-full h-full rounded-2xl object-cover"
                                 draggable={false}
                               />
-                              <div className={`absolute -bottom-1.5 -right-1.5 rounded-full bg-black p-0.5 ${config.showMascot ? "" : "hidden"}`}>
+                              <div className={`absolute -bottom-2 -right-2 rounded-full bg-black p-0.5 ${config.showMascot && mascotHost !== "game" ? "" : "hidden"}`}>
                                 <GazingMascot
                                   cursor={gazeCursor}
-                                  size={22}
+                                  size={36}
                                   mood={mascotMood}
                                   isHovered={isHovered}
                                   bodyColor={mascotBodyColor}
@@ -1419,19 +1438,19 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                             </>
                           ) : mascotHost === "media" ? (
                             // sem capa: a Pherie ocupa o lugar dela, de fone, no ritmo da música
-                            panelMascot(56)
+                            panelMascot(64)
                           ) : (
                             // sem capa e sem mascote no slot: o equalizador animado (o mesmo da direita)
-                            <Equalizer playing={isPcMediaPlaying} height={26} audioRef={audioRef} />
+                            <Equalizer playing={isPcMediaPlaying} height={26} />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[13px] font-semibold text-white truncate leading-tight">{mediaState.title}</p>
+                          <p className="text-[14px] font-semibold text-white truncate leading-tight">{mediaState.title}</p>
                           <p className="text-[11px] text-white/55 truncate leading-snug">{mediaState.artist}</p>
                         </div>
                         {/* o equalizador vai no slot da capa quando ele está livre; senão fica aqui */}
                         {(mediaState.thumbnail || mascotHost === "media") && (
-                          <Equalizer playing={isPcMediaPlaying} height={18} audioRef={audioRef} />
+                          <Equalizer playing={isPcMediaPlaying} height={18} />
                         )}
                       </div>
                       <div className="flex items-center justify-center gap-5 mt-3">
@@ -1472,46 +1491,28 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
                   {/* ── Nada acontecendo ── */}
                   {!hasAnySection && (
-                    <section className="flex flex-col gap-2.5">
-                      <div className="flex items-center gap-3">
-                        {config.showMascot && panelMascot(60)}
-                        {(() => {
-                          const tip = (
-                            <AnimatePresence mode="wait" initial={false}>
-                              <motion.p
-                                key={bubbleIndex % bubbleLines.length}
-                                initial={{ opacity: 0, y: 4 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -4 }}
-                                transition={{ duration: 0.18 }}
-                                className="text-[12px] leading-snug text-white/80"
-                              >
-                                {bubbleText}
-                              </motion.p>
-                            </AnimatePresence>
-                          );
-                          return config.bubbleStyle === "retro" ? (
-                            <RetroBubble accent={notchStyle.accent}>{tip}</RetroBubble>
-                          ) : (
-                            <div className="relative flex-1 min-w-0 rounded-2xl bg-white/[0.07] px-3.5 py-2.5">
-                              <span className="absolute -left-1 top-1/2 -mt-1.5 h-3 w-3 rotate-45 rounded-[2px] bg-white/[0.07]" />
-                              {tip}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                      {isOverlay && hasTauriRuntime() && (
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={openOverlayPanel}
-                            className="flex items-center gap-1.5 rounded-full bg-white/[0.08] px-3 py-1.5 text-[11px] font-semibold text-white/85 transition-all hover:bg-white/[0.16] active:scale-95"
-                          >
-                            <Sparkles size={12} className="text-amber-300" />
-                            Painel do overlay
-                          </button>
-                        </div>
-                      )}
+                    <section
+                      className="flex flex-col items-center gap-3 rounded-[24px] border border-white/[0.035] bg-[#141518] px-5 pb-4 pt-5"
+                      style={{ backgroundImage: "radial-gradient(70% 90% at 50% 38%, rgba(255,255,255,0.075) 0%, transparent 70%)" }}
+                    >
+                      {config.showMascot && panelMascot(92)}
+                      {(() => {
+                        const tip = (
+                          <AnimatePresence mode="wait" initial={false}>
+                            <motion.p
+                              key={bubbleIndex % bubbleLines.length}
+                              initial={{ opacity: 0, y: 4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -4 }}
+                              transition={{ duration: 0.18 }}
+                              className="text-center text-[12px] leading-snug text-white/75"
+                            >
+                              {bubbleText}
+                            </motion.p>
+                          </AnimatePresence>
+                        );
+                        return config.bubbleStyle === "retro" ? <RetroBubble accent={notchStyle.accent}>{tip}</RetroBubble> : tip;
+                      })()}
                     </section>
                   )}
                   </div>

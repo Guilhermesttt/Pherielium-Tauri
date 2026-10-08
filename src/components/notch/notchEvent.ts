@@ -35,7 +35,7 @@ export interface NotchEvent {
 
 export const NOTCH_EVENT_WINDOW_EVENT = "pherielium:notch-event";
 export const NOTCH_EVENT_TAURI_EVENT = "overlay:notch-event";
-export const NOTCH_EVENT_WIDTH = 328;
+export const NOTCH_EVENT_WIDTH = 344;
 export const NOTCH_EVENT_QUEUE_MAX = 4;
 
 const DURATION_MS: Record<NotchEventKind, number> = {

@@ -73,24 +73,3 @@ export function equalizerHeights(audio: Pick<AudioReactive, "low" | "mid" | "hig
   // barras 1..4: graves, graves+médios, médios+agudos, agudos
   return [low, (low + mid) / 2 || body * 0.6, (mid + high) / 2 || body * 0.6, high];
 }
-
-/**
- * Equalizador independente do volume: cada banda é medida contra o próprio pico recente
- * (sobe rápido, cai devagar). Com o volume no máximo o ganho fixo saturava e as barras
- * ficavam paradas no teto; relativas ao pico, elas continuam variando.
- */
-export class EqualizerNormalizer {
-  private peaks = [0.02, 0.02, 0.02, 0.02];
-
-  /** `dt` em segundos. Devolve alturas 0..1 das 4 barras. */
-  heights(audio: Pick<AudioReactive, "low" | "mid" | "high" | "rms">, dt: number): [number, number, number, number] {
-    const raw = [audio.low, (audio.low + audio.mid) / 2, (audio.mid + audio.high) / 2, audio.high].map((v) => Math.max(0, v));
-    const decay = Math.exp(-dt / 4); // pico esquece em ~4 s
-    return raw.map((v, i) => {
-      this.peaks[i] = Math.max(this.peaks[i] * decay, v, 0.02);
-      const rel = v / this.peaks[i];
-      // curva que abre o meio da faixa: 0.5 do pico ≈ 0.6 de altura
-      return Math.min(1, Math.pow(rel, 1.3) * 1.05);
-    }) as [number, number, number, number];
-  }
-}

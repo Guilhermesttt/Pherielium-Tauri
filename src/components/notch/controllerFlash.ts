@@ -75,7 +75,7 @@ export function controllerFlashCopy(flash: ControllerFlash): { title: string; su
 }
 
 /** Largura da barra compacta enquanto o aviso está aberto. */
-export const CONTROLLER_FLASH_WIDTH = 304;
+export const CONTROLLER_FLASH_WIDTH = 320;
 
 /** Chamado pelo hub: avisa o notch (nesta janela e, no Tauri, nas demais). */
 export function announceControllerFlash(input: Omit<ControllerFlash, "at">): void {
