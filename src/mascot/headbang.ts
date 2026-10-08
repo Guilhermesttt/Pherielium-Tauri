@@ -46,13 +46,14 @@ export interface HeadbangPose {
  * Pose da cabeça: a batida "afunda" a cabeça e a inclina alternando o lado a cada batida;
  * o nível geral dá um leve pulsar de escala. `beatIndex` par/ímpar escolhe o lado.
  */
-export function headbangPose(envelope: number, beatIndex: number, rms: number): HeadbangPose {
+export function headbangPose(envelope: number, beatIndex: number, rms: number, intensity = 1): HeadbangPose {
   const side = beatIndex % 2 === 0 ? 1 : -1;
   const env = Math.min(1, Math.max(0, envelope));
+  const k = Math.max(0, intensity);
   return {
-    y: env * 9,
-    rotate: side * env * 7,
-    scale: 1 + Math.min(1, Math.max(0, rms)) * 0.05 - env * 0.03,
+    y: env * 9 * k,
+    rotate: side * env * 7 * k,
+    scale: 1 + (Math.min(1, Math.max(0, rms)) * 0.05 - env * 0.03) * Math.min(k, 1.5),
   };
 }
 

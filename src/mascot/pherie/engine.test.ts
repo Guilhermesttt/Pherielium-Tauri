@@ -142,6 +142,21 @@ describe("braços", () => {
     expect(Math.sign(h.left.y - 18)).toBe(-Math.sign(h.right.y - 18));
   });
 
+  it("música calma balança os braços devagar e perto do corpo", () => {
+    const a = armTargets({ ...calm, dancing: true, danceStyle: "calm" }, 0.3);
+    const b = armTargets({ ...calm, dancing: true, danceStyle: "groove", beat: 1 }, 0.1);
+    expect(a.left.y).toBeGreaterThan(10); // mãos abaixo do ombro
+    expect(Math.abs(a.left.y - 40)).toBeLessThan(Math.abs(b.left.y - 18) + 30);
+  });
+
+  it("música pesada ergue os dois punhos e sobem mais na batida", () => {
+    const quiet = armTargets({ ...calm, dancing: true, danceStyle: "headbang", beat: 0 }, 0.2);
+    const hit = armTargets({ ...calm, dancing: true, danceStyle: "headbang", beat: 1 }, 0.2);
+    expect(quiet.left.y).toBeLessThan(0);
+    expect(hit.left.y).toBeLessThan(quiet.left.y);
+    expect(hit.right.y).toBeLessThan(quiet.right.y);
+  });
+
   it("irritada ergue os punhos e eles tremem", () => {
     const a = armTargets({ ...calm, fume: true }, 0.01);
     const b = armTargets({ ...calm, fume: true }, 0.05);

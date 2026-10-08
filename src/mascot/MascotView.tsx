@@ -6,6 +6,7 @@ import type { MascotMood } from "./moods";
 import { MOOD_SPECS, type BounceKind, type MoodSpec } from "./pherieStates";
 import { subscribeTicker } from "./ticker";
 import { headbangPose, headbangTransform, isAudioLive, nextBeatEnvelope, type AudioReactive } from "./headbang";
+import { DANCE_INTENSITY, MusicAnalyzer, type DanceStyle } from "./musicStyle";
 import type { EarsId, ItemId } from "./notchConfig";
 import { PherieEngine } from "./pherie/engine";
 import { drawPherie, type DrawStyle } from "./pherie/draw";
@@ -235,6 +236,8 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
     let nodding = false;
     let clock = 0;
     let fumeUntil = 0;
+    const analyzer = new MusicAnalyzer();
+    let danceStyle: DanceStyle = "groove";
     // instâncias pequenas (barra do notch, grade das configs) não precisam de 60 fps
     const divisor = size <= 48 ? 2 : 1;
     let frameNo = 0;
@@ -294,6 +297,28 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
 
       aim(now);
 
+      // headbang: o envelope da batida vira queda/inclinação da cabeça (só com áudio ao vivo)
+      const audio = cur.audioRef?.current;
+      if (audio && isAudioLive(audio, performance.now())) {
+        const isNewBeat = audio.beatAt > 0 && audio.beatAt !== lastBeatAt;
+        if (isNewBeat) {
+          lastBeatAt = audio.beatAt;
+          beatCount += 1;
+        }
+        beatEnv = nextBeatEnvelope(beatEnv, step, isNewBeat);
+        // o estilo vem do que o som faz: calma, balanço normal ou música pesada (bate cabeça)
+        danceStyle = analyzer.push(audio, step, performance.now());
+        canvas.style.transformOrigin = "50% 85%";
+        canvas.style.transform = headbangTransform(headbangPose(beatEnv, beatCount, audio.rms, DANCE_INTENSITY[danceStyle]));
+        nodding = true;
+      } else if (nodding) {
+        beatEnv = 0;
+        canvas.style.transform = "";
+        nodding = false;
+        analyzer.reset();
+        danceStyle = "groove";
+      }
+
       // cenas dos braços: jogar (controle), música (dança), mutado (X) e irritada ao falar mutada
       const muteX = Boolean(cur.muted) || cur.effectiveMood === "muted";
       if (muteX && cur.mutedSpeechRef?.current) fumeUntil = now + 1300;
@@ -304,26 +329,9 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
         fume,
         gaming: cur.effectiveMood === "gaming",
         dancing: Boolean(cur.isMusicPlaying) || cur.effectiveMood === "music",
+        danceStyle,
         beat: beatEnv,
       });
-
-      // headbang: o envelope da batida vira queda/inclinação da cabeça (só com áudio ao vivo)
-      const audio = cur.audioRef?.current;
-      if (audio && isAudioLive(audio, performance.now())) {
-        const isNewBeat = audio.beatAt > 0 && audio.beatAt !== lastBeatAt;
-        if (isNewBeat) {
-          lastBeatAt = audio.beatAt;
-          beatCount += 1;
-        }
-        beatEnv = nextBeatEnvelope(beatEnv, step, isNewBeat);
-        canvas.style.transformOrigin = "50% 85%";
-        canvas.style.transform = headbangTransform(headbangPose(beatEnv, beatCount, audio.rms));
-        nodding = true;
-      } else if (nodding) {
-        beatEnv = 0;
-        canvas.style.transform = "";
-        nodding = false;
-      }
 
       const explicit = Math.max(cur.level ?? 0, cur.levelRef?.current ?? 0);
       const synthetic = cur.isSpeaking && explicit <= 0 ? 0.45 + 0.4 * Math.sin(clock * 18) : 0;

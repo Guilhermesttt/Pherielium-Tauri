@@ -4,6 +4,8 @@
  * (acenar, segurar o controle, colocar os fones, dançar, bufar de raiva) são só uma tabela
  * de alvos em função do tempo — pura e testável.
  */
+import type { DanceStyle } from "../musicStyle";
+
 export interface Hand {
   x: number;
   y: number;
@@ -19,6 +21,8 @@ export interface ArmTargets {
 export interface ArmScene {
   gaming: boolean;
   dancing: boolean;
+  /** jeito de dançar (calmo, balanço, bater cabeça); padrão: balanço */
+  danceStyle?: DanceStyle;
   /** microfone mutado: X na boca */
   muteX: boolean;
   /** tentou falar mutado: irritada, punhos para cima */
@@ -65,10 +69,24 @@ export function armTargets(scene: ArmScene, t: number): ArmTargets {
     left = { x: -118, y: -2 };
     right = { x: 118, y: -2 };
   } else if (scene.dancing) {
-    const swing = Math.sin(t * 6.5);
-    const pump = 0.6 + 0.4 * scene.beat;
-    left = { x: -124, y: 18 - 62 * swing * pump };
-    right = { x: 124, y: 18 + 62 * swing * pump };
+    const style = scene.danceStyle ?? "groove";
+    if (style === "calm") {
+      // música tranquila: balança os braços devagar, sem pressa
+      const swing = Math.sin(t * 2.2);
+      left = { x: -122, y: 40 - 22 * swing };
+      right = { x: 122, y: 40 + 22 * swing };
+    } else if (style === "headbang") {
+      // música pesada: punhos para cima, batendo junto com a batida (\m/)
+      const pump = Math.min(1, Math.max(0, scene.beat));
+      const shake = Math.sin(t * 15) * 3;
+      left = { x: -108 + shake, y: -14 - 38 * pump };
+      right = { x: 108 - shake, y: -14 - 38 * pump };
+    } else {
+      const swing = Math.sin(t * 6.5);
+      const pump = 0.6 + 0.4 * scene.beat;
+      left = { x: -124, y: 18 - 62 * swing * pump };
+      right = { x: 124, y: 18 + 62 * swing * pump };
+    }
   } else if (scene.gaming) {
     // as duas mãos seguram o controle, polegares mexendo
     const thumb = Math.sin(t * 9) * 2;

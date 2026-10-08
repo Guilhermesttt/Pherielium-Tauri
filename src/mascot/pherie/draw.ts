@@ -358,7 +358,12 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
   ctx.save();
   // squash apoiado na base do corpo
   ctx.translate(0, R * 0.9);
-  if (eng.scene.dancing) ctx.rotate(Math.sin(eng.time * 6.5) * (0.05 + 0.05 * eng.scene.beat));
+  if (eng.scene.dancing) {
+    const style = eng.scene.danceStyle ?? "groove";
+    // calma: balanço lento e curto; balanço normal; pesada: cabeça e corpo batendo mais rápido
+    const [freq, amp] = style === "calm" ? [2.2, 0.035] : style === "headbang" ? [11, 0.06 + 0.06 * eng.scene.beat] : [6.5, 0.05 + 0.05 * eng.scene.beat];
+    ctx.rotate(Math.sin(eng.time * freq) * amp);
+  }
   ctx.scale(sx, sy);
   ctx.translate(0, -R * 0.9);
 

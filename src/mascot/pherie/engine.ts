@@ -118,7 +118,7 @@ export class PherieEngine {
     this.lookY.target = k(this.face.gazeY + this.gazeFromPointerY);
   }
 
-  setScene(next: Partial<Pick<ArmScene, "gaming" | "dancing" | "muteX" | "fume" | "beat">>) {
+  setScene(next: Partial<Pick<ArmScene, "gaming" | "dancing" | "danceStyle" | "muteX" | "fume" | "beat">>) {
     Object.assign(this.scene, next);
   }
 
@@ -217,7 +217,9 @@ export class PherieEngine {
       this.spawnIn = 1.1;
       this.particles.push({ kind: "z", x: 70, y: -70, vx: 10, vy: -26, age: 0, life: 2.2 });
     } else if (this.mood === "excited" || this.mood === "music") {
-      this.spawnIn = 0.45;
+      // música pesada solta faíscas o tempo todo; a calma quase não
+      const style = this.scene.danceStyle;
+      this.spawnIn = style === "headbang" ? 0.16 : style === "calm" ? 1.4 : 0.45;
       const side = this.rng() < 0.5 ? -1 : 1;
       this.particles.push({ kind: "spark", x: side * (90 + this.rng() * 20), y: -60 + this.rng() * 40, vx: side * 8, vy: -18, age: 0, life: 0.9 });
     } else if (this.mood === "shy" || this.mood === "proud") {

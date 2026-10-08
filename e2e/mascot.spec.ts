@@ -75,7 +75,7 @@ test("pherie: os 24 humores desenham sem erro", async ({ browser }) => {
 
 test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)", async ({ browser }) => {
   mkdirSync(outDir, { recursive: true });
-  const context = await browser.newContext({ viewport: { width: 1000, height: 420 } });
+  const context = await browser.newContext({ viewport: { width: 1000, height: 440 } });
   await installHarness(context, { tauri: false });
   const page = await context.newPage();
   await page.goto("/");
@@ -99,6 +99,9 @@ test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)"
       { name: "fones", mood: "idle", putOn: true, t: 0.35 },
       { name: "mutada", mood: "muted", muteX: true, hp: true, t: 1.5 },
       { name: "irritada", mood: "angry", muteX: true, fume: true, hp: true, t: 1.5 },
+      { name: "música calma", mood: "music", dancing: true, style: "calm", hp: true, t: 1.2 },
+      { name: "música animada", mood: "music", dancing: true, style: "groove", hp: true, beat: 0.8, t: 1.0 },
+      { name: "música pesada", mood: "music", dancing: true, style: "headbang", hp: true, beat: 1, t: 1.0 },
     ];
     for (const sc of scenes) {
       const cell = document.createElement("div");
@@ -112,7 +115,7 @@ test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)"
       cell.appendChild(document.createTextNode(sc.name));
       grid.appendChild(cell);
       const e = new eng.PherieEngine(sc.mood as never, "squircle", () => 0.5);
-      e.setScene({ gaming: !!sc.gaming, dancing: !!sc.dancing, muteX: !!sc.muteX, fume: !!sc.fume, beat: sc.beat ?? 0 });
+      e.setScene({ gaming: !!sc.gaming, dancing: !!sc.dancing, danceStyle: (sc as { style?: string }).style as never, muteX: !!sc.muteX, fume: !!sc.fume, beat: sc.beat ?? 0 });
       if (sc.wave) e.wave(sc.wave);
       if (sc.putOn) e.setHeadphones(true, true);
       else if (sc.hp) {
@@ -143,6 +146,6 @@ test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)"
     }
   });
   await page.waitForTimeout(300);
-  await page.screenshot({ path: path.join(outDir, "pherie-scenes.png"), clip: { x: 0, y: 0, width: 1000, height: 230 } });
+  await page.screenshot({ path: path.join(outDir, "pherie-scenes.png"), clip: { x: 0, y: 0, width: 1000, height: 420 } });
   await context.close();
 });
