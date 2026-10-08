@@ -90,14 +90,12 @@ describe("conquista no notch", () => {
     expect(notchEventIsExpanded("message")).toBe(false);
   });
 
-  it("quanto mais raro o tier, mais tempo na tela e mais efeito", () => {
+  it("todos os tiers ficam o mesmo tempo; quanto mais raro, mais faíscas", () => {
     const order = ["iron", "bronze", "silver", "gold", "platinum"] as const;
+    for (const t of order) expect(notchEventDuration("achievement", t)).toBe(TIER_STYLES.iron.durationMs);
     for (let i = 1; i < order.length; i++) {
-      expect(TIER_STYLES[order[i]].durationMs).toBeGreaterThan(TIER_STYLES[order[i - 1]].durationMs);
       expect(TIER_STYLES[order[i]].sparks).toBeGreaterThanOrEqual(TIER_STYLES[order[i - 1]].sparks);
     }
-    expect(notchEventDuration("achievement", "platinum")).toBe(TIER_STYLES.platinum.durationMs);
-    expect(notchEventDuration("achievement", "bronze")).toBe(TIER_STYLES.bronze.durationMs);
   });
 
   it("cada tier tem um efeito diferente entre ouro e platina", () => {
