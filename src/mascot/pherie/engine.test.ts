@@ -111,3 +111,58 @@ describe("formas do corpo", () => {
     }
   });
 });
+
+import { armTargets, REST, type ArmScene } from "./arms";
+
+const calm: ArmScene = { gaming: false, dancing: false, muteX: false, fume: false, wave: 0, putOn: 0, beat: 0 };
+
+describe("braços", () => {
+  it("em repouso as mãos ficam caídas dos lados", () => {
+    const h = armTargets(calm, 1);
+    expect(h.left).toEqual(REST.left);
+    expect(h.right).toEqual(REST.right);
+    expect(h.controller).toBe(0);
+  });
+
+  it("acenar só mexe a mão direita, para cima", () => {
+    const h = armTargets({ ...calm, wave: 1 }, 0.3);
+    expect(h.right.y).toBeLessThan(0);
+    expect(h.left).toEqual(REST.left);
+  });
+
+  it("jogando segura o controle com as duas mãos na frente", () => {
+    const h = armTargets({ ...calm, gaming: true }, 0.5);
+    expect(h.controller).toBe(1);
+    expect(Math.abs(h.left.x)).toBeLessThan(60);
+    expect(h.left.y).toBeGreaterThan(60);
+  });
+
+  it("dançando as mãos se alternam", () => {
+    const h = armTargets({ ...calm, dancing: true, beat: 1 }, 0.1);
+    expect(Math.sign(h.left.y - 18)).toBe(-Math.sign(h.right.y - 18));
+  });
+
+  it("irritada ergue os punhos e eles tremem", () => {
+    const a = armTargets({ ...calm, fume: true }, 0.01);
+    const b = armTargets({ ...calm, fume: true }, 0.05);
+    expect(a.left.y).toBeLessThan(20);
+    expect(a.left.x).not.toBe(b.left.x);
+  });
+
+  it("colocar os fones tem prioridade sobre jogar e dançar", () => {
+    const h = armTargets({ ...calm, gaming: true, dancing: true, putOn: 0.5 }, 1);
+    expect(h.left.y).toBeLessThan(10);
+    expect(h.controller).toBe(0);
+  });
+});
+
+describe("cenas no engine", () => {
+  it("colocar fones faz as mãos subirem e depois voltarem", () => {
+    const e = new PherieEngine("idle");
+    e.setHeadphones(true, true);
+    for (let t = 0; t < 0.6; t += 1 / 60) e.update(1 / 60);
+    expect(e.lhy.value).toBeLessThan(30);
+    for (let t = 0; t < 2.5; t += 1 / 60) e.update(1 / 60);
+    expect(e.lhy.value).toBeGreaterThan(60);
+  });
+});

@@ -12,6 +12,8 @@ export interface VoiceLevelPayload {
   /** volume normalizado 0..1 (já suavizável no receptor) */
   level: number;
   speaking: boolean;
+  /** a pessoa está falando com o microfone MUTADO (o mascote tenta falar e não consegue) */
+  mutedSpeech?: boolean;
 }
 
 type EmitTo = typeof import("@tauri-apps/api/event").emitTo;
@@ -42,7 +44,7 @@ export function shouldPublishLevel(params: {
   return level > 0 && elapsedMs >= HEARTBEAT_MS;
 }
 
-export function publishVoiceLevel(level: number, speaking: boolean): void {
+export function publishVoiceLevel(level: number, speaking: boolean, mutedSpeech = false): void {
   if (!isTauri()) return;
   const rounded = Math.round(Math.min(1, Math.max(0, level)) * 100) / 100;
   const now = performance.now();
@@ -63,7 +65,7 @@ export function publishVoiceLevel(level: number, speaking: boolean): void {
   }
   lastSentAt = now;
   lastLevel = rounded;
-  void emitToFn("overlay", VOICE_LEVEL_EVENT, { level: rounded, speaking } satisfies VoiceLevelPayload).catch(
+  void emitToFn("overlay", VOICE_LEVEL_EVENT, { level: rounded, speaking, mutedSpeech } satisfies VoiceLevelPayload).catch(
     () => undefined,
   );
 }

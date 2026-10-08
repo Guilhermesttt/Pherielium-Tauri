@@ -11,7 +11,10 @@ export const hasTauriRuntime = () => typeof window !== "undefined" && "__TAURI_I
  * Se os eventos param (chamada acabou, janela principal oculta/travada), o valor
  * volta a 0 em ~300 ms em vez de deixar a boca aberta.
  */
-export function useVoiceLevelRef(enabled: boolean): { current: number } {
+export function useVoiceLevelRef(
+  enabled: boolean,
+  mutedSpeechRef?: { current: boolean },
+): { current: number } {
   const ref = useRef(0);
   useEffect(() => {
     ref.current = 0;
@@ -22,7 +25,9 @@ export function useVoiceLevelRef(enabled: boolean): { current: number } {
 
     void import("@tauri-apps/api/event").then(({ listen }) => {
       void listen<VoiceLevelPayload>(VOICE_LEVEL_EVENT, (event) => {
-        ref.current = Math.min(1, Math.max(0, event.payload.level));
+        const muted = Boolean(event.payload.mutedSpeech);
+        ref.current = muted ? 0 : Math.min(1, Math.max(0, event.payload.level));
+        if (mutedSpeechRef) mutedSpeechRef.current = muted;
         lastAt = performance.now();
       }).then((fn) => {
         if (cancelled) fn();
@@ -31,7 +36,10 @@ export function useVoiceLevelRef(enabled: boolean): { current: number } {
     });
 
     const decay = window.setInterval(() => {
-      if (ref.current > 0 && performance.now() - lastAt > STALE_MS) ref.current = 0;
+      if (performance.now() - lastAt > STALE_MS) {
+        ref.current = 0;
+        if (mutedSpeechRef) mutedSpeechRef.current = false;
+      }
     }, 120);
 
     return () => {

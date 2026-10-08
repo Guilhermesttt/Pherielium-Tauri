@@ -4,6 +4,7 @@ import type { MascotExtra } from "../pherieStates";
 import type { MouthShape } from "../mouth";
 import { spiralPath } from "../spiral";
 import { PROFILE_SAMPLES } from "../engine/profiles";
+import { SHOULDER_X, SHOULDER_Y } from "./arms";
 import { R, type EyeState, type PherieEngine } from "./engine";
 
 /** Metade do lado da área de desenho (o corpo tem raio 100; orelhas/halo/fones cabem em ±158). */
@@ -184,6 +185,70 @@ function drawEye(ctx: CanvasRenderingContext2D, eye: EyeState, cx: number, cy: n
   ctx.restore();
 }
 
+/** Controle entre as mãos (aparece ao jogar). */
+function drawController(ctx: CanvasRenderingContext2D, st: DrawStyle, eng: PherieEngine) {
+  const a = Math.max(0, Math.min(1, eng.ctl.value));
+  if (a < 0.02) return;
+  const cx = (eng.lhx.value + eng.rhx.value) / 2;
+  const cy = (eng.lhy.value + eng.rhy.value) / 2 - 2;
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.translate(cx, cy);
+  ctx.scale(0.7 + 0.3 * a, 0.7 + 0.3 * a);
+  ctx.fillStyle = "#2b2b33";
+  ctx.strokeStyle = "rgba(255,255,255,0.55)";
+  ctx.lineWidth = 3;
+  roundRect(ctx, -46, -17, 92, 36, 17);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = st.palette.light ? "#f5a524" : "#9fe3ff";
+  for (const [x, y] of [[-24, -3], [24, 6]] as const) {
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, TAU);
+    ctx.fill();
+  }
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  ctx.fillRect(-30, -3, 12, 3.5);
+  ctx.fillRect(-26, -7, 3.5, 12);
+  for (const [x, y] of [[26, -8], [34, -3]] as const) {
+    ctx.beginPath();
+    ctx.arc(x, y, 2.8, 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawArms(ctx: CanvasRenderingContext2D, st: DrawStyle, eng: PherieEngine) {
+  const p = st.palette;
+  drawController(ctx, st, eng);
+  ctx.lineCap = "round";
+  for (const s of [-1, 1] as const) {
+    const hx = s === -1 ? eng.lhx.value : eng.rhx.value;
+    const hy = s === -1 ? eng.lhy.value : eng.rhy.value;
+    const sx = s * SHOULDER_X;
+    const sy = SHOULDER_Y;
+    // cotovelo para fora e um pouco para baixo: a curva "dobra" naturalmente
+    const cx = (sx + hx) / 2 + s * 16;
+    const cy = (sy + hy) / 2 + 8;
+    const limb = new Path2D();
+    limb.moveTo(sx, sy);
+    limb.quadraticCurveTo(cx, cy, hx, hy);
+    ctx.strokeStyle = p.rim;
+    ctx.lineWidth = 15;
+    ctx.stroke(limb);
+    ctx.strokeStyle = p.earStroke;
+    ctx.lineWidth = 11;
+    ctx.stroke(limb);
+    ctx.fillStyle = p.earStroke;
+    ctx.strokeStyle = p.rim;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(hx, hy, 11, 0, TAU);
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
 function drawHeadphones(ctx: CanvasRenderingContext2D, st: DrawStyle, eng: PherieEngine) {
   const alpha = Math.max(0, Math.min(1, eng.phA.value));
   if (alpha < 0.01) return;
@@ -301,6 +366,7 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
   ctx.save();
   // squash apoiado na base do corpo
   ctx.translate(0, R * 0.9);
+  if (eng.scene.dancing) ctx.rotate(Math.sin(eng.time * 6.5) * (0.05 + 0.05 * eng.scene.beat));
   ctx.scale(sx, sy);
   ctx.translate(0, -R * 0.9);
 
@@ -344,7 +410,17 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
   const mouth = new Path2D(st.mouth.d);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  if (st.mouth.fill) {
+  if (eng.scene.muteX) {
+    // microfone mutado: um X vermelho no lugar da boca
+    ctx.strokeStyle = "#f4505e";
+    ctx.lineWidth = 0.12;
+    ctx.beginPath();
+    ctx.moveTo(-0.16, -0.14);
+    ctx.lineTo(0.16, 0.14);
+    ctx.moveTo(0.16, -0.14);
+    ctx.lineTo(-0.16, 0.14);
+    ctx.stroke();
+  } else if (st.mouth.fill) {
     ctx.fillStyle = st.faceColor;
     ctx.fill(mouth);
   } else {
@@ -393,6 +469,7 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
     ctx.restore();
   }
 
+  drawArms(ctx, st, eng);
   drawHeadphones(ctx, st, eng);
   drawExtras(ctx, st, eng.time);
   ctx.restore();

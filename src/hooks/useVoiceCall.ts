@@ -850,7 +850,9 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
             const normalized = silent
               ? 0
               : Math.min(1, Math.max(0, (rawVolume - closeThreshold * 0.6) / 32));
-            publishVoiceLevel(Math.pow(normalized, 0.8), isAboveThreshold);
+            // Falando com o microfone mutado (não surdo): o mascote tenta falar e se irrita.
+            const mutedSpeech = isLocal && isMutedRef.current && !isDeafenedRef.current && rawVolume >= openThreshold;
+            publishVoiceLevel(Math.pow(normalized, 0.8), isAboveThreshold, mutedSpeech);
           }
 
           if (isAboveThreshold) {

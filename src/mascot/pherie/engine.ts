@@ -1,5 +1,6 @@
 import { PROFILE_SAMPLES } from "../engine/profiles";
 import { SHAPE_BY_ID } from "../engine/skins";
+import { armTargets, REST, type ArmScene } from "./arms";
 import { faceFor, type EyeSpec, type FaceSpec } from "./face";
 import { Spring } from "./spring";
 import type { MascotMood } from "../moods";
@@ -55,6 +56,13 @@ export class PherieEngine {
   /** fones: queda de entrada (y em unidades) e opacidade */
   readonly phY = new Spring(0, 0.5, 0.62);
   readonly phA = new Spring(0, 0.25, 1);
+  /** mãos (x, y) e controle */
+  readonly lhx = new Spring(REST.left.x, 0.24, 0.55);
+  readonly lhy = new Spring(REST.left.y, 0.24, 0.55);
+  readonly rhx = new Spring(REST.right.x, 0.24, 0.55);
+  readonly rhy = new Spring(REST.right.y, 0.24, 0.55);
+  readonly ctl = new Spring(0, 0.3, 0.7);
+  readonly scene: ArmScene = { gaming: false, dancing: false, muteX: false, fume: false, wave: 0, putOn: 0, beat: 0 };
   particles: Particle[] = [];
   time = 0;
   private blinkIn = 2.2;
@@ -110,7 +118,18 @@ export class PherieEngine {
     this.lookY.target = k(this.face.gazeY + this.gazeFromPointerY);
   }
 
+  setScene(next: Partial<Pick<ArmScene, "gaming" | "dancing" | "muteX" | "fume" | "beat">>) {
+    Object.assign(this.scene, next);
+  }
+
+  /** Acena por `seconds` (olá!). */
+  wave(seconds = 1.8) {
+    this.scene.wave = seconds;
+  }
+
   setHeadphones(visible: boolean, drop: boolean | undefined) {
+    // colocou os fones: as mãos sobem às orelhas enquanto eles descem
+    if (visible && this.phA.target < 0.5 && drop !== false) this.scene.putOn = 0.9;
     if (drop === false && this.phA.value < 0.01) this.phY.set(-120);
     this.phA.target = visible ? 1 : 0;
     // `drop === false`: fones fora de cena (acima da cabeça); senão encaixados
@@ -153,6 +172,16 @@ export class PherieEngine {
     this.squashY.step(dt);
     this.phY.step(dt);
     this.phA.step(dt);
+
+    this.scene.wave = Math.max(0, this.scene.wave - dt);
+    this.scene.putOn = Math.max(0, this.scene.putOn - dt);
+    const hands = armTargets(this.scene, this.time);
+    this.lhx.target = hands.left.x;
+    this.lhy.target = hands.left.y;
+    this.rhx.target = hands.right.x;
+    this.rhy.target = hands.right.y;
+    this.ctl.target = hands.controller;
+    for (const sp of [this.lhx, this.lhy, this.rhx, this.rhy, this.ctl]) sp.step(dt);
 
     // piscar: sono mantém fechado; senão a cada 2.5–5 s
     this.open.step(dt);
@@ -197,6 +226,16 @@ export class PherieEngine {
   get animating(): boolean {
     return (
       this.particles.length > 0 ||
+      this.scene.gaming ||
+      this.scene.dancing ||
+      this.scene.fume ||
+      this.scene.wave > 0 ||
+      this.scene.putOn > 0 ||
+      !this.lhx.settled ||
+      !this.rhx.settled ||
+      !this.lhy.settled ||
+      !this.rhy.settled ||
+      !this.ctl.settled ||
       !this.open.settled ||
       !this.squashX.settled ||
       !this.squashY.settled ||

@@ -898,7 +898,8 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   // (overlay:voice-level, ref sem re-render). Fora do Tauri (dev no navegador) cai
   // no flag booleano de "falando".
   const hasVoiceFeed = hasTauriRuntime();
-  const voiceLevelRef = useVoiceLevelRef(isCallActive && hasVoiceFeed);
+  const mutedSpeechRef = useRef(false);
+  const voiceLevelRef = useVoiceLevelRef(isCallActive && hasVoiceFeed, mutedSpeechRef);
   const mouthSpeaking =
     !hasVoiceFeed && !isMuted && (overlayCall ? Boolean(overlayCall.speaking) : voiceCall.isSpeakingLocal);
 
@@ -1033,6 +1034,8 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         inCall={isCallActive}
         isMusicPlaying={isPcMediaPlaying}
         levelRef={voiceLevelRef}
+        muted={isCallActive && isMuted}
+        mutedSpeechRef={mutedSpeechRef}
         audioRef={audioRef}
         isSpeaking={mouthSpeaking}
         onClick={handleMascotPoke}
@@ -1061,6 +1064,8 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         inCall={isCallActive}
         isMusicPlaying={isPcMediaPlaying}
         levelRef={voiceLevelRef}
+        muted={isCallActive && isMuted}
+        mutedSpeechRef={mutedSpeechRef}
         audioRef={audioRef}
         isSpeaking={mouthSpeaking}
         onClick={handleMascotPoke}

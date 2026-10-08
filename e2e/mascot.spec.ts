@@ -72,3 +72,77 @@ test("pherie: os 24 humores desenham sem erro", async ({ browser }) => {
   expect(errors).toEqual([]);
   await context.close();
 });
+
+test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)", async ({ browser }) => {
+  mkdirSync(outDir, { recursive: true });
+  const context = await browser.newContext({ viewport: { width: 1000, height: 420 } });
+  await installHarness(context, { tauri: false });
+  const page = await context.newPage();
+  await page.goto("/");
+  await page.waitForTimeout(3000);
+  await page.evaluate(async () => {
+    const eng = await import("/src/mascot/pherie/engine.ts");
+    const draw = await import("/src/mascot/pherie/draw.ts");
+    const states = await import("/src/mascot/pherieStates.ts");
+    const mouth = await import("/src/mascot/mouth.ts");
+    const color = await import("/src/mascot/mascotColor.ts");
+    document.body.innerHTML = "";
+    const grid = document.createElement("div");
+    grid.style.cssText =
+      "position:fixed;inset:0;z-index:99999;background:#1b1b20;display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:8px;font:12px system-ui;color:#aaa";
+    document.body.appendChild(grid);
+    const palette = color.deriveBodyPalette(null);
+    const scenes = [
+      { name: "olá", mood: "happy", wave: 2, t: 0.45 },
+      { name: "jogando", mood: "gaming", gaming: true, hp: true, t: 1.2 },
+      { name: "dançando", mood: "music", dancing: true, hp: true, beat: 0.8, t: 1.0 },
+      { name: "fones", mood: "idle", putOn: true, t: 0.35 },
+      { name: "mutada", mood: "muted", muteX: true, hp: true, t: 1.5 },
+      { name: "irritada", mood: "angry", muteX: true, fume: true, hp: true, t: 1.5 },
+    ];
+    for (const sc of scenes) {
+      const cell = document.createElement("div");
+      cell.style.textAlign = "center";
+      const c = document.createElement("canvas");
+      const size = 160;
+      c.width = size;
+      c.height = size;
+      c.style.width = size + "px";
+      cell.appendChild(c);
+      cell.appendChild(document.createTextNode(sc.name));
+      grid.appendChild(cell);
+      const e = new eng.PherieEngine(sc.mood as never, "squircle", () => 0.5);
+      e.setScene({ gaming: !!sc.gaming, dancing: !!sc.dancing, muteX: !!sc.muteX, fume: !!sc.fume, beat: sc.beat ?? 0 });
+      if (sc.wave) e.wave(sc.wave);
+      if (sc.putOn) e.setHeadphones(true, true);
+      else if (sc.hp) {
+        e.phA.set(1);
+        e.phA.target = 1;
+      }
+      for (let t = 0; t < sc.t; t += 1 / 60) e.update(1 / 60);
+      const spec = states.MOOD_SPECS[sc.mood as never] as never as { mouth: never; blush: number; extras?: never[] };
+      draw.drawPherie(
+        c.getContext("2d")!,
+        e,
+        {
+          palette,
+          faceColor: palette.face,
+          accentColor: palette.accent,
+          ears: "cat",
+          earAccent: "#e8483f",
+          items: new Set() as never,
+          rgbHeadphones: sc.mood === "gaming",
+          showMic: false,
+          mouth: mouth.mouthShape(spec.mouth, 0),
+          blush: spec.blush,
+          extras: spec.extras ?? [],
+        },
+        size,
+        1,
+      );
+    }
+  });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: path.join(outDir, "pherie-scenes.png"), clip: { x: 0, y: 0, width: 1000, height: 230 } });
+  await context.close();
+});

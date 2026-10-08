@@ -43,6 +43,10 @@ export interface MascotViewProps {
   /** Em chamada: fone com haste de microfone, independente do humor. */
   inCall?: boolean;
   isMusicPlaying?: boolean;
+  /** Microfone mutado: X na boca. */
+  muted?: boolean;
+  /** `true` enquanto a pessoa fala com o microfone mutado: a Pherie tenta falar e se irrita. */
+  mutedSpeechRef?: { current: boolean };
   /** Fones sempre vestidos (ex.: intro de jogo), independente do humor. */
   forceHeadphones?: boolean;
   /**
@@ -193,6 +197,10 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
   useEffect(() => {
     engineRef.current!.setMood(effectiveMood);
   }, [effectiveMood]);
+  // olá! ao aparecer
+  useEffect(() => {
+    engineRef.current!.wave(1.8);
+  }, []);
   useEffect(() => {
     engineRef.current!.setHeadphones(showHeadphones, headphonesDrop);
   }, [showHeadphones, headphonesDrop]);
@@ -218,6 +226,7 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
     let lastBeatAt = 0;
     let nodding = false;
     let clock = 0;
+    let fumeUntil = 0;
     // instâncias pequenas (barra do notch, grade das configs) não precisam de 60 fps
     const divisor = size <= 48 ? 2 : 1;
     let frameNo = 0;
@@ -276,6 +285,19 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
       acc = 0;
 
       aim(now);
+
+      // cenas dos braços: jogar (controle), música (dança), mutado (X) e irritada ao falar mutada
+      const muteX = Boolean(cur.muted) || cur.effectiveMood === "muted";
+      if (muteX && cur.mutedSpeechRef?.current) fumeUntil = now + 1300;
+      const fume = muteX && now < fumeUntil;
+      engine.setMood(fume ? "angry" : cur.effectiveMood);
+      engine.setScene({
+        muteX,
+        fume,
+        gaming: cur.effectiveMood === "gaming",
+        dancing: Boolean(cur.isMusicPlaying) || cur.effectiveMood === "music",
+        beat: beatEnv,
+      });
 
       // headbang: o envelope da batida vira queda/inclinação da cabeça (só com áudio ao vivo)
       const audio = cur.audioRef?.current;
