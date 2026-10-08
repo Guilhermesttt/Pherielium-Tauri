@@ -140,11 +140,26 @@ export const saveCurrentUserProfile = async ({
     }, { onConflict: "uid" });
   } catch {}
 
+  // Banner: gravado à parte, para a falta da coluna (migration ainda não aplicada) não derrubar o resto do perfil.
+  const bannerURL = profile.bannerURL || "";
+  if (profile.bannerURL !== undefined) {
+    const next = bannerURL || null;
+    const [main] = await Promise.all([
+      supabase.from("profiles").update({ banner_url: next }).eq("uid", uid),
+      supabase.from("public_profiles").update({ banner_url: next }).eq("uid", uid),
+    ]);
+    if (main.error) {
+      throw new Error("Não foi possível salvar o banner. Aplique a migration profile_media no Supabase e tente de novo.");
+    }
+  }
+
   if (uid) {
     try {
       localStorage.setItem(`phelierium_custom_display_name_${uid}`, normalized.displayName);
       if (photoURL) {
         localStorage.setItem(`phelierium_custom_avatar_${uid}`, photoURL);
+      } else {
+        localStorage.removeItem(`phelierium_custom_avatar_${uid}`);
       }
       localStorage.setItem(`phelierium_profile_cache_${uid}`, JSON.stringify({
         displayName: normalized.displayName,
@@ -197,6 +212,7 @@ export const saveCurrentUserProfile = async ({
           uid,
           displayName: normalized.displayName,
           photoURL,
+          bannerURL,
           bio: normalized.bio,
           favoriteGenres: normalized.favoriteGenres,
         },
@@ -204,5 +220,5 @@ export const saveCurrentUserProfile = async ({
     );
   }
 
-  return { ...normalized, photoURL };
+  return { ...normalized, photoURL, bannerURL };
 };

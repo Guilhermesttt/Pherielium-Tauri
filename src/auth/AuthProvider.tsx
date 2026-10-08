@@ -40,6 +40,7 @@ const toProfile = (uid: string, data?: Record<string, any>): UserProfile => {
     email: data?.email ?? null,
     displayName: localDisplayName || data?.displayName || data?.display_name || null,
     photoURL: localAvatar || (data?.photoURL ?? data?.photo_url ?? null),
+    bannerURL: data?.bannerURL ?? data?.banner_url ?? null,
     profileVisibility:
       data?.profileVisibility === "private" || data?.profile_visibility === "private"
         ? "private"
@@ -861,6 +862,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         uid: string;
         displayName?: string;
         photoURL?: string;
+        bannerURL?: string;
         bio?: string;
         favoriteGenres?: string[];
       }>;
@@ -873,6 +875,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ...prev,
           displayName: detail.displayName || prev.displayName,
           photoURL: detail.photoURL !== undefined ? detail.photoURL : prev.photoURL,
+          bannerURL: detail.bannerURL !== undefined ? (detail.bannerURL || null) : prev.bannerURL,
           bio: detail.bio !== undefined ? detail.bio : prev.bio,
           favoriteGenres: detail.favoriteGenres !== undefined ? detail.favoriteGenres : prev.favoriteGenres,
         };

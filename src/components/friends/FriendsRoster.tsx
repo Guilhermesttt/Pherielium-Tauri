@@ -6,10 +6,14 @@ import { getCheckpointFriendProfile } from "../../services/checkpointFriends";
 import { friendLevelFromProfile } from "../../utils/friendLevel";
 import type { PlayerLevelInfo } from "../../utils/trophyTiers";
 
-const levelCache = new Map<string, PlayerLevelInfo | null>();
+interface FriendExtras {
+  level: PlayerLevelInfo | null;
+  banner: string | null;
+}
+const levelCache = new Map<string, FriendExtras>();
 
 /** Nível de cada amigo do Pherielium, buscado no perfil público (cache por sessão, 3 por vez). */
-function useFriendLevels(friends: SocialFriend[]): Record<string, PlayerLevelInfo | null> {
+function useFriendLevels(friends: SocialFriend[]): Record<string, FriendExtras> {
   const [, bump] = useState(0);
   const key = friends.map((f) => f.id).join("|");
   useEffect(() => {
@@ -22,9 +26,9 @@ function useFriendLevels(friends: SocialFriend[]): Record<string, PlayerLevelInf
         const uid = id.split(":")[1];
         try {
           const { profile } = await getCheckpointFriendProfile(uid);
-          levelCache.set(id, friendLevelFromProfile(profile));
+          levelCache.set(id, { level: friendLevelFromProfile(profile), banner: profile?.bannerURL ?? null });
         } catch {
-          levelCache.set(id, null);
+          levelCache.set(id, { level: null, banner: null });
         }
         if (!cancelled) bump((n) => n + 1);
       }
@@ -35,7 +39,7 @@ function useFriendLevels(friends: SocialFriend[]): Record<string, PlayerLevelInf
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
-  return Object.fromEntries(friends.map((f) => [f.id, levelCache.get(f.id) ?? null]));
+  return Object.fromEntries(friends.map((f) => [f.id, levelCache.get(f.id) ?? { level: null, banner: null }]));
 }
 
 export type RosterFilter = "ALL" | "ONLINE" | "PLAYING" | "OFFLINE";
@@ -253,9 +257,9 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
                                 <span className="truncate">{statusLine(f)}</span>
                               </span>
                             </span>
-                            {levels[f.id] && (
+                            {levels[f.id]?.level && (
                               <span className="shrink-0 rounded-full bg-white/[0.08] px-2 py-0.5 text-[11px] font-semibold text-white/70">
-                                Nv {levels[f.id]!.level}
+                                Nv {levels[f.id].level!.level}
                               </span>
                             )}
                             {unread(f) > 0 && (
@@ -296,7 +300,8 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
         {selected ? (
           <FriendPanel
             friend={selected}
-            level={levels[selected.id]}
+            level={levels[selected.id]?.level ?? null}
+            banner={levels[selected.id]?.banner ?? null}
             unread={unread(selected)}
             inCall={isCallActiveWith(selected.id)}
             loading={loadingProfileId === selected.id}
@@ -319,6 +324,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
 const FriendPanel: React.FC<{
   friend: SocialFriend;
   level: PlayerLevelInfo | null;
+  banner: string | null;
   unread: number;
   inCall: boolean;
   loading: boolean;
@@ -327,7 +333,7 @@ const FriendPanel: React.FC<{
   onViewProfile: (f: SocialFriend) => void;
   onRemoveFriend: (f: SocialFriend) => void;
   playSound?: (t: SoundEffectType) => void;
-}> = ({ friend, level, unread, inCall, loading, onOpenChat, onStartVoiceCall, onViewProfile, onRemoveFriend, playSound }) => {
+}> = ({ friend, level, banner, unread, inCall, loading, onOpenChat, onStartVoiceCall, onViewProfile, onRemoveFriend, playSound }) => {
   const [confirmRemove, setConfirmRemove] = useState(false);
   useEffect(() => setConfirmRemove(false), [friend.id]);
   const playing = friend.status === "playing";
@@ -340,7 +346,9 @@ const FriendPanel: React.FC<{
     <div>
       {/* faixa: o próprio avatar desfocado dá a cor, o jogo atual aparece em destaque */}
       <div className="relative h-36 overflow-hidden">
-        {friend.avatar && (
+        {banner ? (
+          <img src={banner} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
+        ) : friend.avatar && (
           <img
             src={friend.avatar}
             alt=""
@@ -351,9 +359,11 @@ const FriendPanel: React.FC<{
         <div
           className="absolute inset-0"
           style={{
-            background: playing
-              ? "linear-gradient(180deg, #123a2e, #121216)"
-              : "linear-gradient(180deg, #1d1d24, #121216)",
+            background: banner
+              ? "linear-gradient(180deg, rgba(18,18,22,0) 35%, #121216)"
+              : playing
+                ? "linear-gradient(180deg, #123a2e, #121216)"
+                : "linear-gradient(180deg, #1d1d24, #121216)",
           }}
         />
       </div>

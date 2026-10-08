@@ -106,6 +106,8 @@ export interface UserProfile {
   email?: string | null;
   displayName?: string | null;
   photoURL?: string | null;
+  /** banner do perfil (URL pública; pode ser GIF) */
+  bannerURL?: string | null;
   profileVisibility?: ProfileVisibility;
   bio?: string;
   location?: string;
@@ -175,6 +177,7 @@ export interface UserProfile {
 export interface EditableProfile {
   displayName: string;
   photoURL?: string;
+  bannerURL?: string;
   bio: string;
   location?: string;
   pronouns?: string;

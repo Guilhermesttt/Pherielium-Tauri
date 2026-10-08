@@ -706,8 +706,35 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
           className={`relative rounded-3xl border border-white/[0.08] bg-[#0B0B0B] ${compactProfile ? "p-5 md:p-6" : "p-6 sm:p-8"}`}
           style={{
             boxShadow: "0 24px 64px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.06)",
+            // com banner, o conteúdo desce para o avatar "pousar" na borda do banner (como no Discord)
+            paddingTop: userProfile?.bannerURL ? (compactProfile ? 128 : 156) : undefined,
           }}
         >
+          {userProfile?.bannerURL ? (
+            <div className="absolute inset-x-0 top-0 h-[168px] overflow-hidden rounded-t-3xl">
+              <img
+                src={userProfile.bannerURL}
+                alt=""
+                className="h-full w-full select-none object-cover"
+                draggable={false}
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0B0B0B]" />
+            </div>
+          ) : (
+            editable && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditing(true);
+                  playSound?.("showModal");
+                }}
+                className="absolute right-4 top-4 z-20 inline-flex items-center gap-2 rounded-full bg-white/[0.08] px-3.5 py-2 text-xs font-semibold text-white/80 transition hover:bg-white/[0.16] hover:text-white focus-visible:ring-2 focus-visible:ring-white/40"
+              >
+                <Camera className="h-4 w-4" />
+                Adicionar banner
+              </button>
+            )
+          )}
           {/* Luz ambiente sutil na cor da patente do jogador isolada para não cortar elementos flutuantes */}
           <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
             <div

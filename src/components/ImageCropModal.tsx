@@ -8,14 +8,23 @@ interface ImageCropModalProps {
   imageSrc: string;
   onCropComplete: (croppedDataUrl: string) => void;
   onCancel: () => void;
+  /** "avatar": recorte redondo 1:1 (512 px). "banner": retângulo 3:1 (1200×400). */
+  kind?: "avatar" | "banner";
 }
+
+const CROP_SPECS = {
+  avatar: { boxW: 280, boxH: 280, outW: 512, outH: 512, round: true, title: "Ajustar foto de perfil", maxW: "max-w-md" },
+  banner: { boxW: 420, boxH: 140, outW: 1200, outH: 400, round: false, title: "Ajustar banner", maxW: "max-w-xl" },
+} as const;
 
 export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   isOpen,
   imageSrc,
   onCropComplete,
   onCancel,
+  kind = "avatar",
 }) => {
+  const spec = CROP_SPECS[kind];
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
@@ -119,47 +128,39 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
 
     img.onload = () => {
       try {
-        const OUTPUT_SIZE = 512;
-        const CROP_CONTAINER_SIZE = 280; // Size in UI preview
+        const { boxW, boxH, outW, outH } = spec;
 
         const canvas = document.createElement("canvas");
-        canvas.width = OUTPUT_SIZE;
-        canvas.height = OUTPUT_SIZE;
+        canvas.width = outW;
+        canvas.height = outH;
         const ctx = canvas.getContext("2d");
         if (!ctx) {
           onCropComplete(imageSrc);
           return;
         }
 
-        // Fill with smooth background
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
 
-        // Center the canvas context
-        ctx.translate(OUTPUT_SIZE / 2, OUTPUT_SIZE / 2);
+        // O que se vê no recorte (boxW×boxH) vira a saída (outW×outH) na mesma proporção.
+        ctx.translate(outW / 2, outH / 2);
         ctx.rotate((rotation * Math.PI) / 180);
 
-        // Calculate scale ratio between UI crop box and output size
-        const uiToOutputRatio = OUTPUT_SIZE / CROP_CONTAINER_SIZE;
+        const uiToOutputRatio = outW / boxW;
+        const natW = img.naturalWidth || outW;
+        const natH = img.naturalHeight || outH;
+        // a imagem cobre a caixa por inteiro (cover) antes do zoom do usuário
+        const baseRatio = Math.max(boxW / natW, boxH / natH);
 
-        // Base display scale
-        const baseRatio = Math.max(
-          CROP_CONTAINER_SIZE / (img.naturalWidth || OUTPUT_SIZE),
-          CROP_CONTAINER_SIZE / (img.naturalHeight || OUTPUT_SIZE)
-        );
-
-        const renderWidth = (img.naturalWidth || OUTPUT_SIZE) * baseRatio * scale * uiToOutputRatio;
-        const renderHeight = (img.naturalHeight || OUTPUT_SIZE) * baseRatio * scale * uiToOutputRatio;
-
-        const drawX = position.x * uiToOutputRatio;
-        const drawY = position.y * uiToOutputRatio;
+        const renderWidth = natW * baseRatio * scale * uiToOutputRatio;
+        const renderHeight = natH * baseRatio * scale * uiToOutputRatio;
 
         ctx.drawImage(
           img,
-          drawX - renderWidth / 2,
-          drawY - renderHeight / 2,
+          position.x * uiToOutputRatio - renderWidth / 2,
+          position.y * uiToOutputRatio - renderHeight / 2,
           renderWidth,
-          renderHeight
+          renderHeight,
         );
 
         const croppedDataUrl = canvas.toDataURL("image/webp", 0.9);
@@ -170,15 +171,15 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
       }
     };
     img.src = imageSrc;
-  }, [imageSrc, scale, position, rotation, onCropComplete]);
+  }, [imageSrc, scale, position, rotation, onCropComplete, spec]);
 
   return (
     <ModalShell
       isOpen={isOpen}
       onClose={onCancel}
-      maxWidthClassName="max-w-md"
+      maxWidthClassName={spec.maxW}
       zIndexClassName="z-[130]"
-      ariaLabel="Ajustar e cortar foto de perfil"
+      ariaLabel={spec.title}
     >
       <div className="glass-panel relative w-full overflow-hidden rounded-[22px] border border-white/12 p-6 shadow-[0_25px_70px_rgba(0,0,0,0.85)] text-white">
         <header className="mb-5 flex items-start justify-between">
@@ -187,7 +188,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
               Personalização
             </p>
             <h2 className="mt-0.5 text-xl font-bold text-white tracking-tight">
-              Ajustar foto de perfil
+              {spec.title}
             </h2>
           </div>
           <button
@@ -203,7 +204,8 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
         <div className="flex flex-col items-center justify-center">
           <div
             ref={containerRef}
-            className="relative h-[280px] w-[280px] overflow-hidden rounded-full border-2 border-white/40 shadow-[0_0_50px_rgba(0,0,0,0.9)] bg-black/70 cursor-grab active:cursor-grabbing select-none"
+            className={`relative overflow-hidden border-2 border-white/40 shadow-[0_0_50px_rgba(0,0,0,0.9)] bg-black/70 cursor-grab active:cursor-grabbing select-none ${spec.round ? "rounded-full" : "rounded-2xl"}`}
+            style={{ width: spec.boxW, height: spec.boxH }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -228,17 +230,9 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
                   alt="Ajuste de corte"
                   className="max-w-none pointer-events-none select-none"
                   style={{
-                    width:
-                      naturalSize.width > naturalSize.height
-                        ? "auto"
-                        : "280px",
-                    height:
-                      naturalSize.width > naturalSize.height
-                        ? "280px"
-                        : "auto",
-                    minWidth: "280px",
-                    minHeight: "280px",
-                    objectFit: "cover",
+                    // mesma regra "cover" da exportação: a imagem sempre preenche a caixa
+                    width: naturalSize.width * Math.max(spec.boxW / naturalSize.width, spec.boxH / naturalSize.height),
+                    height: naturalSize.height * Math.max(spec.boxW / naturalSize.width, spec.boxH / naturalSize.height),
                   }}
                   draggable={false}
                 />
@@ -246,7 +240,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
             )}
 
             {/* Subtle Crosshair Guide Overlay */}
-            <div className="pointer-events-none absolute inset-0 rounded-full border border-white/20">
+            <div className={`pointer-events-none absolute inset-0 border border-white/20 ${spec.round ? "rounded-full" : "rounded-2xl"}`}>
               <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-white/10" />
               <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 border-l border-white/10" />
             </div>

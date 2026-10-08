@@ -8,6 +8,14 @@ import {
 import { completeUserQuest } from "../services/userQuests";
 import ModalShell from "./ui/ModalShell";
 import ImageCropModal from "./ImageCropModal";
+import {
+  PROFILE_MEDIA_LIMITS,
+  dataUrlToBlob,
+  isAnimatedImage,
+  uploadProfileMedia,
+  validateProfileMedia,
+  type ProfileMediaKind,
+} from "../services/profileMedia";
 
 interface ProfileEditorModalProps {
   isOpen?: boolean;
@@ -42,6 +50,7 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
   const [form, setForm] = useState<EditableProfile>({
     displayName: cachedDisplayName || profile?.displayName || fallbackName,
     photoURL: cachedAvatar || profile?.photoURL || fallbackPhotoURL || "",
+    bannerURL: profile?.bannerURL || "",
     bio: profile?.bio || "",
     location: profile?.location || "",
     pronouns: profile?.pronouns || "",
@@ -53,6 +62,10 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
   const [error, setError] = useState("");
   const [rawImageForCrop, setRawImageForCrop] = useState<string | null>(null);
   const [isCropOpen, setIsCropOpen] = useState(false);
+  const [cropKind, setCropKind] = useState<ProfileMediaKind>("avatar");
+  // Arquivos escolhidos e ainda não enviados (o envio acontece ao salvar). GIF vai original, sem recorte.
+  const pendingRef = useRef<Partial<Record<ProfileMediaKind, Blob>>>({});
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   const wasOpenRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -66,6 +79,7 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
       setForm({
         displayName: currentCachedName || profile?.displayName || fallbackName,
         photoURL: currentCachedAvatar || profile?.photoURL || fallbackPhotoURL || "",
+        bannerURL: profile?.bannerURL || "",
         bio: profile?.bio || "",
         location: profile?.location || "",
         pronouns: profile?.pronouns || "",
@@ -76,6 +90,7 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
       setSaving(false);
       setRawImageForCrop(null);
       setIsCropOpen(false);
+      pendingRef.current = {};
     } else if (!isOpen) {
       wasOpenRef.current = false;
     }
@@ -84,14 +99,19 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
   const setField = <K extends keyof EditableProfile>(field: K, value: EditableProfile[K]) =>
     setForm((current) => ({ ...current, [field]: value }));
 
-  const handleFile = (file?: File) => {
+  const handleFile = (file: File | undefined, kind: ProfileMediaKind) => {
     if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
-      setError("Use uma imagem JPG, PNG ou WebP.");
+    const invalid = validateProfileMedia(kind, file);
+    if (invalid) {
+      setError(invalid);
       return;
     }
-    if (file.size > PROFILE_LIMITS.avatarBytes) {
-      setError("A imagem deve ter no máximo 5 MB.");
+    setError("");
+
+    // GIF: sobe o arquivo original (o recorte no canvas deixaria só o 1º quadro).
+    if (isAnimatedImage(file)) {
+      pendingRef.current[kind] = file;
+      setField(kind === "banner" ? "bannerURL" : "photoURL", URL.createObjectURL(file));
       return;
     }
 
@@ -99,24 +119,29 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
     reader.onload = (e) => {
       const src = e.target?.result as string;
       if (src) {
+        setCropKind(kind);
         setRawImageForCrop(src);
         setIsCropOpen(true);
-        setError("");
       }
     };
     reader.onerror = () => setError("Erro ao ler imagem.");
     reader.readAsDataURL(file);
   };
 
-  const handleOpenCropCurrent = () => {
-    if (form.photoURL) {
-      setRawImageForCrop(form.photoURL);
+  const handleOpenCropCurrent = (kind: ProfileMediaKind) => {
+    const current = kind === "banner" ? form.bannerURL : form.photoURL;
+    // um GIF atual não pode ser recortado (viraria estático): troque o arquivo para mudar
+    const isGif = pendingRef.current[kind]?.type === "image/gif" || /\.gif($|\?)/i.test(current || "");
+    if (current && !isGif) {
+      setCropKind(kind);
+      setRawImageForCrop(current);
       setIsCropOpen(true);
     }
   };
 
   const handleCropComplete = (croppedDataUrl: string) => {
-    setField("photoURL", croppedDataUrl);
+    pendingRef.current[cropKind] = dataUrlToBlob(croppedDataUrl);
+    setField(cropKind === "banner" ? "bannerURL" : "photoURL", croppedDataUrl);
     setIsCropOpen(false);
     setRawImageForCrop(null);
     setError("");
@@ -126,7 +151,25 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
     setSaving(true);
     setError("");
     try {
-      await saveCurrentUserProfile({ profile: form, userId: profile?.uid });
+      const uid = profile?.uid;
+      const toSave = { ...form };
+      if (uid) {
+        // envia só o que mudou; a foto estática cai no formato antigo (data URL) se o armazenamento não existir
+        for (const kind of ["avatar", "banner"] as const) {
+          const blob = pendingRef.current[kind];
+          if (!blob) continue;
+          try {
+            const url = await uploadProfileMedia(uid, kind, blob);
+            if (kind === "banner") toSave.bannerURL = url;
+            else toSave.photoURL = url;
+          } catch (uploadError) {
+            const canFallBack = kind === "avatar" && !isAnimatedImage(blob) && (form.photoURL || "").startsWith("data:");
+            if (!canFallBack) throw uploadError;
+          }
+        }
+        pendingRef.current = {};
+      }
+      await saveCurrentUserProfile({ profile: toSave, userId: uid });
       if (profile?.uid) {
         completeUserQuest(profile.uid, "customize_profile");
       }
@@ -159,6 +202,47 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
             </button>
           </header>
 
+          <div className="mb-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]">
+            <div className="relative h-32 w-full bg-gradient-to-br from-white/[0.08] to-white/[0.02]">
+              {form.bannerURL ? (
+                <img src={form.bannerURL} alt="Prévia do banner" className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center gap-2 text-sm text-white/40">
+                  <Camera className="h-4 w-4" /> Sem banner
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 p-3">
+              <div className="mr-auto min-w-0">
+                <p className="text-sm font-black text-white">Banner do perfil</p>
+                <p className="text-xs text-white/40">JPG, PNG, WebP ou GIF animado, até {Math.round(PROFILE_MEDIA_LIMITS.bannerBytes / 1048576)} MB.</p>
+              </div>
+              <input
+                ref={bannerInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={(event) => {
+                  handleFile(event.target.files?.[0], "banner");
+                  event.target.value = "";
+                }}
+              />
+              <button type="button" onClick={() => bannerInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-xl bg-white px-3.5 py-2 text-xs font-black text-black hover:bg-white/85 transition active:scale-95">
+                <Camera className="h-4 w-4" /> {form.bannerURL ? "Trocar banner" : "Adicionar banner"}
+              </button>
+              {form.bannerURL && (
+                <>
+                  <button type="button" onClick={() => handleOpenCropCurrent("banner")} className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2 text-xs font-black text-white hover:bg-white/20 transition active:scale-95">
+                    <Crop className="h-4 w-4" /> Ajustar
+                  </button>
+                  <button type="button" onClick={() => { delete pendingRef.current.banner; setField("bannerURL", ""); }} className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-white/55 hover:bg-white/10 hover:text-white transition active:scale-95">
+                    <Trash2 className="h-4 w-4" /> Remover
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
           <div className="mb-6 flex flex-col gap-5 rounded-2xl border border-white/10 bg-white/[0.035] p-4 sm:flex-row sm:items-center">
             <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white/15 bg-white/[0.06] text-2xl font-black text-white/50 aspect-square shadow-inner">
               {form.photoURL ? (
@@ -173,7 +257,7 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
             </div>
             <div className="flex-1">
               <p className="text-sm font-black text-white">Foto de perfil</p>
-              <p className="mt-1 text-xs text-white/35">JPG, PNG ou WebP. Você pode ajustar e recortar a foto perfeitamente.</p>
+              <p className="mt-1 text-xs text-white/35">JPG, PNG, WebP ou GIF animado. Fotos estáticas podem ser recortadas; GIFs sobem como estão.</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <input
                   ref={fileInputRef}
@@ -181,7 +265,7 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
                   accept="image/jpeg,image/png,image/webp,image/gif"
                   className="hidden"
                   onChange={(event) => {
-                    handleFile(event.target.files?.[0]);
+                    handleFile(event.target.files?.[0], "avatar");
                     event.target.value = "";
                   }}
                 />
@@ -196,14 +280,14 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
                   <>
                     <button
                       type="button"
-                      onClick={handleOpenCropCurrent}
+                      onClick={() => handleOpenCropCurrent("avatar")}
                       className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2 text-xs font-black text-white hover:bg-white/20 transition active:scale-95"
                     >
                       <Crop className="h-4 w-4" /> Ajustar / Cortar
                     </button>
                     <button
                       type="button"
-                      onClick={() => setField("photoURL", "")}
+                      onClick={() => { delete pendingRef.current.avatar; setField("photoURL", ""); }}
                       className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-white/55 hover:bg-white/10 hover:text-white transition active:scale-95"
                     >
                       <Trash2 className="h-4 w-4" /> Remover
@@ -280,6 +364,7 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
       <ImageCropModal
         isOpen={isCropOpen}
         imageSrc={rawImageForCrop}
+        kind={cropKind}
         onCropComplete={handleCropComplete}
         onCancel={() => {
           setIsCropOpen(false);

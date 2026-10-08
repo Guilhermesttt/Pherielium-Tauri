@@ -441,6 +441,7 @@ export const getCheckpointFriendProfile = async (
         email: profileRow.email ?? null,
         displayName: profileRow.displayName ?? profileRow.display_name ?? null,
         photoURL: profileRow.photoURL ?? profileRow.photo_url ?? null,
+        bannerURL: profileRow.bannerURL ?? profileRow.banner_url ?? null,
         profileVisibility: profileRow.profileVisibility ?? profileRow.profile_visibility ?? "public",
         bio: profileRow.bio,
         location: profileRow.location,
