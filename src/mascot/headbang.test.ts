@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  EqualizerNormalizer,
   AUDIO_STALE_MS,
   EMPTY_AUDIO,
   equalizerHeights,
@@ -64,5 +65,24 @@ describe("equalizerHeights", () => {
     const bass = equalizerHeights({ low: 0.3, mid: 0.02, high: 0.01, rms: 0.2 });
     expect(bass[0]).toBeGreaterThan(bass[3]);
     for (const h of bass) expect(h).toBeGreaterThanOrEqual(0), expect(h).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("EqualizerNormalizer", () => {
+  it("com volume no máximo as barras ainda variam", () => {
+    const n = new EqualizerNormalizer();
+    let min = 1;
+    let max = 0;
+    for (let i = 0; i < 200; i++) {
+      const loud = 0.8 + (i % 10 === 0 ? 0.2 : 0);
+      const quiet = 0.4;
+      const v = i % 20 < 10 ? loud : quiet;
+      const h = n.heights({ low: v, mid: v, high: v, rms: v }, 0.016)[0];
+      if (i > 100) {
+        min = Math.min(min, h);
+        max = Math.max(max, h);
+      }
+    }
+    expect(max - min).toBeGreaterThan(0.3);
   });
 });

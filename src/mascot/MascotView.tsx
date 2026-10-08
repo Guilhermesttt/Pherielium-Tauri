@@ -5,8 +5,8 @@ import { mouthShape, smoothLevel } from "./mouth";
 import type { MascotMood } from "./moods";
 import { MOOD_SPECS, type BounceKind, type MoodSpec } from "./pherieStates";
 import { subscribeTicker } from "./ticker";
-import { headbangPose, headbangTransform, isAudioLive, nextBeatEnvelope, type AudioReactive } from "./headbang";
-import { BeatClock, DANCE_INTENSITY, DANCE_LEVEL, MusicAnalyzer, type DanceStyle } from "./musicStyle";
+import { isAudioLive, type AudioReactive } from "./headbang";
+import { MusicAnalyzer, type DanceStyle } from "./musicStyle";
 import type { Persona } from "./genrePersona";
 import type { DanceIntensity } from "./notchConfig";
 import type { EarsId, ItemId } from "./notchConfig";
@@ -253,14 +253,9 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
     let rect: DOMRect | null = null;
     let rectAt = 0;
     let acc = 0;
-    let beatEnv = 0;
-    let beatCount = 0;
-    let lastBeatAt = 0;
-    let nodding = false;
     let clock = 0;
     let fumeUntil = 0;
     const analyzer = new MusicAnalyzer();
-    const beatClock = new BeatClock();
     let metalFace = false;
     let danceStyle: DanceStyle = "groove";
     let lastLiveAt = 0;
@@ -324,38 +319,19 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
 
       aim(now);
 
-      // headbang: o envelope da batida vira queda/inclinação da cabeça (só com áudio ao vivo)
+      // áudio ao vivo: só classifica o estilo (rosto); o corpo não acompanha a batida
       const audio = cur.audioRef?.current;
       if (audio && isAudioLive(audio, performance.now())) {
-        // batida real do Rust; se ela some (música densa/alta ou baixinha), um pulso no ritmo
-        // estimado mantém a Pherie se mexendo enquanto há som
-        const isNewBeat = beatClock.tick(performance.now(), audio.rms > 0.0015, audio.beatAt);
-        if (isNewBeat) {
-          lastBeatAt = audio.beatAt;
-          beatCount += 1;
-        }
-        beatEnv = nextBeatEnvelope(beatEnv, step, isNewBeat, beatClock.strength);
-        // o estilo vem do que o som faz: calma, balanço normal ou música pesada (bate cabeça)
+        // O corpo não segue a música (só a expressão muda): o áudio ao vivo serve apenas
+        // para classificar o estilo quando não há gênero identificado.
         danceStyle = analyzer.push(audio, step, performance.now());
-        canvas.style.transformOrigin = "50% 85%";
-        const level = DANCE_LEVEL[cur.danceIntensity ?? "soft"];
-        canvas.style.transform = headbangTransform(
-          headbangPose(beatEnv, beatCount, audio.rms, DANCE_INTENSITY[personaStyle(cur.persona, danceStyle)] * level),
-        );
-        nodding = true;
         lastLiveAt = performance.now();
       } else {
-        if (nodding) {
-          beatEnv = 0;
-          canvas.style.transform = "";
-          nodding = false;
-        }
         // O áudio do PC some por instantes (silêncio entre faixas, troca de dispositivo, medidor
         // reiniciando): mantém o estilo e o histórico por alguns segundos em vez de voltar ao balanço
         // normal na hora, senão ela oscilaria entre bater cabeça e dançar.
         if (lastLiveAt > 0 && performance.now() - lastLiveAt > MUSIC_STYLE_HOLD_MS) {
           analyzer.reset();
-          beatClock.reset();
           danceStyle = "groove";
           lastLiveAt = 0;
         }
@@ -377,7 +353,7 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
         dancing: musicOn && !thinking,
         danceStyle: style,
         persona: musicOn && !thinking ? cur.persona ?? null : null,
-        beat: beatEnv,
+        beat: 0,
       });
       // metal (gênero ou, sem identificação, música pesada pelo som): cara de mau; pop: olhos de estrela; chill: serena
       metalFace = musicOn && !thinking && !fume && (cur.persona === "metal" || (!cur.persona && danceStyle === "headbang"));

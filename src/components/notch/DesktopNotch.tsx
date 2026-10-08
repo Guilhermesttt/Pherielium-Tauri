@@ -39,7 +39,7 @@ import { NOTCH_EVENT_MOOD, NOTCH_EVENT_WIDTH, notchEventWaves } from "./notchEve
 import { AchievementReveal } from "./AchievementReveal";
 import { achievementBoxShadow, tierStyle } from "./achievementTier";
 import { useAudioReactiveRef } from "../../mascot/useAudioReactive";
-import { equalizerHeights, isAudioLive, type AudioReactive } from "../../mascot/headbang";
+import { EqualizerNormalizer, isAudioLive, type AudioReactive } from "../../mascot/headbang";
 import { subscribeTicker } from "../../mascot/ticker";
 import {
   DIZZY_DURATION_MS,
@@ -184,6 +184,7 @@ const Equalizer: React.FC<{
 }> = ({ playing, height = 16, audioRef }) => {
   const barRefs = useRef<Array<HTMLSpanElement | null>>([]);
   const smoothRef = useRef<[number, number, number, number]>([0.25, 0.25, 0.25, 0.25]);
+  const normalizerRef = useRef(new EqualizerNormalizer());
 
   useEffect(() => {
     const smooth = smoothRef.current;
@@ -199,7 +200,7 @@ const Equalizer: React.FC<{
         target = [0.22, 0.22, 0.22, 0.22];
       } else if (isLive && audio) {
         // Áudio ao vivo do sistema (graves → médios → agudos)
-        target = equalizerHeights(audio);
+        target = normalizerRef.current.heights(audio, dt);
       } else {
         // Tocando música no PC: ondulação rítmica e dinâmica estilo equalizador Apple Music
         const t = now * 0.006;
