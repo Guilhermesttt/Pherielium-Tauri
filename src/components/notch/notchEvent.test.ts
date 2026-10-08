@@ -4,6 +4,7 @@ import {
   enqueueNotchEvent,
   notchEventDuration,
   notchEventSubtitle,
+  notchEventWaves,
   parseNotchEvent,
   type NotchEvent,
 } from "./notchEvent";
@@ -20,6 +21,12 @@ describe("parseNotchEvent", () => {
   it("aceita um evento válido e limpa campos", () => {
     const e = parseNotchEvent({ kind: "achievement", title: "  Platina  ", tier: "platinum", id: "x", at: 5 });
     expect(e).toMatchObject({ kind: "achievement", title: "Platina", tier: "platinum", id: "x", at: 5 });
+  });
+
+  it("aceita o evento de boas-vindas e a Pherie acena nele", () => {
+    expect(parseNotchEvent({ kind: "welcome", title: "Divirta-se" })?.kind).toBe("welcome");
+    expect(notchEventWaves("welcome")).toBe(true);
+    expect(notchEventWaves("message")).toBe(false);
   });
 
   it("rejeita tipo desconhecido, sem título e não-objeto", () => {

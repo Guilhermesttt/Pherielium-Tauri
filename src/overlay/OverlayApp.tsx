@@ -802,7 +802,7 @@ const OverlayApp: React.FC = () => {
       );
       // Notch ligado: ele avisa (com a Pherie reagindo); o cartão grande fica só para ouro/platina
       // e para o teste de pré-visualização.
-      if (notchEnabledRef.current && !payload.isTest) {
+      if (notchEnabledRef.current) {
         announceNotchEvent({
           kind: "achievement",
           title: "Conquista desbloqueada",
@@ -861,6 +861,16 @@ const OverlayApp: React.FC = () => {
           ? panelDataRef.current.settings.achievementVolume / 100
           : 0.35;
       playOverlaySound("welcome", activeSoundTheme, activeSoundVolume);
+      // Notch ligado: a Pherie acena e avisa no lugar do cartão social.
+      if (notchEnabledRef.current) {
+        announceNotchEvent({
+          kind: "welcome",
+          title: "Divirta-se",
+          subtitle: toast.description,
+          avatar: payload.userAvatar || null,
+        });
+        return;
+      }
       addToast(toast, 6000);
     });
 

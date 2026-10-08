@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Check, MessageSquare, Trophy, UserPlus, Sparkles } from "lucide-react";
+import { Check, Gamepad2, MessageSquare, Trophy, UserPlus, Sparkles } from "lucide-react";
 import {
   NOTCH_EVENT_TAURI_EVENT,
   NOTCH_EVENT_WINDOW_EVENT,
@@ -79,6 +79,7 @@ const WASH: Record<Exclude<NotchEventKind, "achievement">, string> = {
   "friend-accepted": "34,197,94",
   message: "244,114,182",
   "level-up": "245,165,36",
+  welcome: "56,189,248",
 };
 
 const washFor = (e: NotchEvent) =>
@@ -94,6 +95,8 @@ const KindIcon: React.FC<{ kind: NotchEventKind; size: number }> = ({ kind, size
       return <MessageSquare size={size} />;
     case "achievement":
       return <Trophy size={size} />;
+    case "welcome":
+      return <Gamepad2 size={size} />;
     default:
       return <Sparkles size={size} />;
   }

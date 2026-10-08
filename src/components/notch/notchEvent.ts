@@ -6,9 +6,9 @@ import type { MascotMood } from "../../mascot/moods";
  * (um `emit` chega às duas janelas) e, na mesma janela, por CustomEvent. Sem React, para
  * ser testável; a fila e a regra de agrupamento são funções puras.
  */
-export type NotchEventKind = "friend-request" | "friend-accepted" | "message" | "achievement" | "level-up";
+export type NotchEventKind = "friend-request" | "friend-accepted" | "message" | "achievement" | "level-up" | "welcome";
 
-const KINDS: readonly NotchEventKind[] = ["friend-request", "friend-accepted", "message", "achievement", "level-up"];
+const KINDS: readonly NotchEventKind[] = ["friend-request", "friend-accepted", "message", "achievement", "level-up", "welcome"];
 
 export type AchievementTier = "iron" | "bronze" | "silver" | "gold" | "platinum";
 const TIERS: readonly AchievementTier[] = ["iron", "bronze", "silver", "gold", "platinum"];
@@ -39,6 +39,7 @@ const DURATION_MS: Record<NotchEventKind, number> = {
   message: 3800,
   achievement: 4600,
   "level-up": 4600,
+  welcome: 4200,
 };
 
 export const notchEventDuration = (kind: NotchEventKind) => DURATION_MS[kind];
@@ -50,10 +51,11 @@ export const NOTCH_EVENT_MOOD: Record<NotchEventKind, MascotMood> = {
   message: "curious",
   achievement: "excited",
   "level-up": "proud",
+  welcome: "happy",
 };
 
 /** Eventos em que a Pherie acena. */
-export const notchEventWaves = (kind: NotchEventKind) => kind === "friend-request" || kind === "friend-accepted";
+export const notchEventWaves = (kind: NotchEventKind) => kind === "friend-request" || kind === "friend-accepted" || kind === "welcome";
 
 const isTauri = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
