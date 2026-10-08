@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EMPTY_AUDIO, type AudioReactive } from "./headbang";
-import { BeatClock, FALLBACK_DEFAULT_INTERVAL_MS, MIN_DWELL_MS, MusicAnalyzer, aggressionScore, styleFromScore } from "./musicStyle";
+import { BeatClock, FALLBACK_DEFAULT_INTERVAL_MS, MIN_DWELL_MS, MIN_MOVE_GAP_MS, MusicAnalyzer, aggressionScore, styleFromScore } from "./musicStyle";
 
 const audio = (over: Partial<AudioReactive>): AudioReactive => ({ ...EMPTY_AUDIO, lastAt: 1, ...over });
 
@@ -124,6 +124,26 @@ describe("BeatClock", () => {
     for (let i = 0; i < 6; i++) c.tick(i * 400, true, i * 400 + 1);
     expect(c.interval).toBeGreaterThan(380);
     expect(c.interval).toBeLessThan(420);
+  });
+
+  it("onsets rápidos demais não viram movimento (máx. ~2,5 por segundo)", () => {
+    const c = new BeatClock();
+    let moves = 0;
+    // 8 onsets por segundo durante 5 s
+    for (let t = 0; t < 5000; t += 125) if (c.tick(t, true, t + 1)) moves++;
+    expect(moves).toBeLessThanOrEqual(Math.ceil(5000 / MIN_MOVE_GAP_MS) + 1);
+    expect(moves).toBeGreaterThan(5);
+  });
+
+  it("alterna tempo forte e fraco", () => {
+    const c = new BeatClock();
+    const strengths: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      if (c.tick(i * 500, true, i * 500 + 1)) strengths.push(c.strength);
+    }
+    expect(strengths[0]).toBe(1);
+    expect(strengths[1]).toBeLessThan(strengths[0]);
+    expect(strengths[2]).toBe(1);
   });
 
   it("sem áudio ao vivo não bate", () => {

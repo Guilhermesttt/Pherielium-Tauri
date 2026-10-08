@@ -122,8 +122,15 @@ export class MusicAnalyzer {
 /** Quanto o corpo e a cabeça se mexem em cada estilo (multiplicador do headbang). */
 export const DANCE_INTENSITY: Record<DanceStyle, number> = {
   calm: 0.3,
-  groove: 1,
-  headbang: 2,
+  groove: 0.8,
+  headbang: 1.3,
+};
+
+/** Multiplicador do controle "Intensidade da dança" (Suave é o padrão: discreta). */
+export const DANCE_LEVEL: Record<"soft" | "normal" | "intense", number> = {
+  soft: 0.55,
+  normal: 0.85,
+  intense: 1.2,
 };
 
 /**
@@ -132,11 +139,16 @@ export const DANCE_INTENSITY: Record<DanceStyle, number> = {
  * fica parada enquanto há música tocando.
  */
 export const FALLBACK_DEFAULT_INTERVAL_MS = 480;
+/** Menor intervalo entre movimentos (ms): ~2,5 por segundo no máximo. Onsets mais rápidos são ignorados. */
+export const MIN_MOVE_GAP_MS = 400;
 
 export class BeatClock {
   private intervals: number[] = [];
   private lastBeat = 0;
   private lastReal = 0;
+  private accepted = 0;
+  /** Força do último movimento aceito: tempo forte 1, tempo fraco 0,55 (alternados). */
+  strength = 1;
 
   /** Intervalo estimado (ms): mediana dos últimos reais, ou o padrão (~125 bpm). */
   get interval(): number {
@@ -157,20 +169,29 @@ export class BeatClock {
         }
       }
       this.lastReal = realBeatAt;
-      this.lastBeat = now;
-      return true;
+      // onsets rápidos demais (música densa) alimentam a estimativa de tempo, mas não viram movimento
+      if (now - this.lastBeat < MIN_MOVE_GAP_MS) return false;
+      return this.accept(now, 1);
     }
     // sem batida real por mais de ~1,6 intervalo: pulsa sozinho no ritmo estimado
-    if (now - this.lastBeat > this.interval * 1.6) {
-      this.lastBeat = now;
-      return true;
+    if (now - this.lastBeat > Math.max(MIN_MOVE_GAP_MS, this.interval * 1.6)) {
+      return this.accept(now, 0.6); // pulso de reserva: mais discreto
     }
     return false;
+  }
+
+  private accept(now: number, scale: number): true {
+    this.lastBeat = now;
+    this.accepted += 1;
+    this.strength = (this.accepted % 2 === 1 ? 1 : 0.55) * scale;
+    return true;
   }
 
   reset() {
     this.intervals = [];
     this.lastBeat = 0;
     this.lastReal = 0;
+    this.accepted = 0;
+    this.strength = 1;
   }
 }

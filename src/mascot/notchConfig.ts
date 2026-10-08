@@ -43,7 +43,20 @@ export interface NotchConfig {
   backgroundOpacity: number | null;
   /** Cantos chanfrados (cortados), ou `null` = o do tema. */
   chamfer: boolean | null;
+  /** Quanto a Pherie se mexe ao dançar com a música. */
+  danceIntensity: DanceIntensity;
+  /** Identifica a música (grava ~5 s do áudio do PC e envia à AudD) para dar expressão pelo gênero. */
+  musicIdentify: boolean;
+  /** Chave da AudD (https://audd.io). Fica só neste computador. */
+  auddApiKey: string;
 }
+
+export type DanceIntensity = "soft" | "normal" | "intense";
+export const DANCE_INTENSITY_OPTIONS: { id: DanceIntensity; label: string }[] = [
+  { id: "soft", label: "Suave" },
+  { id: "normal", label: "Normal" },
+  { id: "intense", label: "Intensa" },
+];
 
 export type EarsId = "cat" | "bear" | "robot" | "demon";
 export type ItemId = "sunglasses" | "halo" | "rgbHeadphones";
@@ -90,6 +103,9 @@ export const DEFAULT_NOTCH_CONFIG: NotchConfig = {
   glowIntensity: null,
   backgroundOpacity: null,
   chamfer: null,
+  danceIntensity: "soft",
+  musicIdentify: false,
+  auddApiKey: "",
 };
 
 /** Formas disponíveis, com rótulo em pt-BR (os ids vêm do bloub, em francês). */
@@ -180,6 +196,12 @@ export function sanitizeNotchConfig(raw: unknown, base: NotchConfig = DEFAULT_NO
       BACKGROUND_OPACITY_RANGE.max,
     ),
     chamfer: v.chamfer === null ? null : typeof v.chamfer === "boolean" ? v.chamfer : base.chamfer,
+    danceIntensity:
+      v.danceIntensity === "soft" || v.danceIntensity === "normal" || v.danceIntensity === "intense"
+        ? v.danceIntensity
+        : base.danceIntensity,
+    musicIdentify: bool(v.musicIdentify, base.musicIdentify),
+    auddApiKey: typeof v.auddApiKey === "string" ? v.auddApiKey.trim().slice(0, 128) : base.auddApiKey,
   };
 }
 

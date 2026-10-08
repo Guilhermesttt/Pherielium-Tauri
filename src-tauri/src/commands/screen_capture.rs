@@ -368,6 +368,17 @@ pub fn desktop_audio_start(app: AppHandle) -> Result<Value, String> {
     }
 }
 
+/// Grava alguns segundos do áudio que o PC toca (mono f32 + taxa). Usado para identificar a música.
+#[cfg(windows)]
+pub(crate) fn capture_system_audio(seconds: f32) -> Result<(Vec<f32>, u32), String> {
+    win_loopback::capture_mono(seconds)
+}
+
+#[cfg(not(windows))]
+pub(crate) fn capture_system_audio(_seconds: f32) -> Result<(Vec<f32>, u32), String> {
+    Err("Captura do audio do PC disponivel apenas no Windows.".into())
+}
+
 /// Liga o medidor de nível do áudio do PC (headbang do mascote no overlay). Idempotente.
 #[tauri::command]
 pub fn overlay_audio_level_start(app: AppHandle) -> Result<(), String> {

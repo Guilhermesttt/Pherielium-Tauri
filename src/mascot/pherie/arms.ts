@@ -5,6 +5,7 @@
  * de alvos em função do tempo — pura e testável.
  */
 import type { DanceStyle } from "../musicStyle";
+import type { Persona } from "../genrePersona";
 
 export interface Hand {
   x: number;
@@ -23,6 +24,8 @@ export interface ArmScene {
   dancing: boolean;
   /** jeito de dançar (calmo, balanço, bater cabeça); padrão: balanço */
   danceStyle?: DanceStyle;
+  /** persona do gênero (metal: fogo e chifres; chill: zzz) */
+  persona?: Persona | null;
   /** microfone mutado: X na boca */
   muteX: boolean;
   /** tentou falar mutado: irritada, punhos para cima */

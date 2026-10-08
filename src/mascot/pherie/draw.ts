@@ -143,7 +143,22 @@ function drawEye(ctx: CanvasRenderingContext2D, eye: EyeState, cx: number, cy: n
     ctx.stroke();
   };
 
-  if (shape === "happy") arcEye(true);
+  if (shape === "star") {
+    // olho de estrela: pulsa de leve
+    const pulse = 1 + Math.sin(time * 5) * 0.08;
+    const R = (w / 2) * pulse;
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const ang = -Math.PI / 2 + (i * Math.PI) / 5;
+      const rad = i % 2 === 0 ? R : R * 0.45;
+      const x = Math.cos(ang) * rad;
+      const y = Math.sin(ang) * rad;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+  } else if (shape === "happy") arcEye(true);
   else if (shape === "closed") arcEye(false);
   else if (shape === "spiral") {
     ctx.rotate(time * 7);
@@ -380,6 +395,18 @@ function drawParticles(ctx: CanvasRenderingContext2D, eng: PherieEngine, st: Dra
       ctx.fillStyle = "#f472b6";
       ctx.scale(0.9 + t * 0.5, 0.9 + t * 0.5);
       ctx.fill(new Path2D("M 0 8 C -14 -2 -12 -14 -5 -14 C -1 -14 0 -10 0 -10 C 0 -10 1 -14 5 -14 C 12 -14 14 -2 0 8 Z"));
+    } else if (p.kind === "flame") {
+      // chama: gota que sobe, do amarelo ao vermelho, sumindo
+      const grad = ctx.createLinearGradient(0, 10, 0, -18);
+      grad.addColorStop(0, "#fde047");
+      grad.addColorStop(0.5, "#fb923c");
+      grad.addColorStop(1, "#ef4444");
+      ctx.fillStyle = grad;
+      ctx.shadowColor = "#fb923c";
+      ctx.shadowBlur = 8;
+      const sz = (p.variant === 1 ? 1.5 : 1.05) * (1 - t * 0.55);
+      ctx.scale(sz, sz * 1.15);
+      ctx.fill(new Path2D("M 0 10 C -9 2 -7 -9 0 -20 C 7 -9 9 2 0 10 Z"));
     } else if (p.kind === "note") {
       // cor pelo estilo: calma azul-clara, animada rosa/violeta, pesada vermelho-fogo
       const colors = ["#7dd3fc", "#f0abfc", "#fb7185"] as const;
@@ -455,7 +482,9 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
   ctx.scale(sx, sy);
   ctx.translate(0, -R * 0.9);
 
-  drawEars(ctx, st.ears, p.ear, p.earStroke, st.earAccent);
+  // metal: chifres de demônio vermelhos no lugar das orelhas
+  const metal = eng.scene.persona === "metal";
+  drawEars(ctx, metal ? "demon" : st.ears, p.ear, p.earStroke, metal ? "#ef4444" : st.earAccent);
 
   const body = bodyPath(eng.radii);
   const grad = ctx.createLinearGradient(0, -110, 0, 110);

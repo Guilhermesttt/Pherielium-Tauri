@@ -19,6 +19,7 @@ import {
 import { useVoiceCallContext } from "../../context/VoiceCallContext";
 import { PherieMascot, getMascotBaseMood, type MascotMood, type PherieMascotProps } from "./PherieMascot";
 import { hasTauriRuntime, useVoiceLevelRef } from "../../mascot/useVoiceLevel";
+import { useMusicPersona } from "../../mascot/useMusicPersona";
 import { useNotchConfig, useOverlayAppearance } from "../../mascot/useNotchConfig";
 import {
   EXPANDED_RADIUS_BONUS,
@@ -830,6 +831,16 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   // Áudio do PC: headbang no ritmo e equalizador real (medidor só liga com música tocando).
   const audioRef = useAudioReactiveRef(isPcMediaPlaying && config.showMedia);
 
+  // Gênero da música (AudD, opt-in): define rosto/efeitos; durante a espera ela fica pensativa.
+  const { persona: musicPersona, identifying: musicIdentifying } = useMusicPersona({
+    enabled: config.musicIdentify,
+    apiKey: config.auddApiKey,
+    title: mediaState.title,
+    artist: mediaState.artist,
+    playing: isPcMediaPlaying,
+    blocked: isCallActive || Boolean(activeGameTitle),
+  });
+
   // Tontura: chacoalhar o mouse perto do notch (métricas calculadas no Rust).
   const [dizzy, setDizzy] = useState(false);
   const dizzyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1071,6 +1082,9 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         celebrateAt={notchEvent?.kind === "achievement" ? notchEvent.at : undefined}
         mutedSpeechRef={mutedSpeechRef}
         audioRef={audioRef}
+        persona={musicPersona}
+        identifying={musicIdentifying}
+        danceIntensity={config.danceIntensity}
         isSpeaking={mouthSpeaking}
         onClick={handleMascotPoke}
       />
@@ -1103,6 +1117,9 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         celebrateAt={notchEvent?.kind === "achievement" ? notchEvent.at : undefined}
         mutedSpeechRef={mutedSpeechRef}
         audioRef={audioRef}
+        persona={musicPersona}
+        identifying={musicIdentifying}
+        danceIntensity={config.danceIntensity}
         isSpeaking={mouthSpeaking}
         onClick={handleMascotPoke}
       />

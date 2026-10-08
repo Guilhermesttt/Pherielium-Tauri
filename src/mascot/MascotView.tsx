@@ -6,10 +6,12 @@ import type { MascotMood } from "./moods";
 import { MOOD_SPECS, type BounceKind, type MoodSpec } from "./pherieStates";
 import { subscribeTicker } from "./ticker";
 import { headbangPose, headbangTransform, isAudioLive, nextBeatEnvelope, type AudioReactive } from "./headbang";
-import { BeatClock, DANCE_INTENSITY, MusicAnalyzer, type DanceStyle } from "./musicStyle";
+import { BeatClock, DANCE_INTENSITY, DANCE_LEVEL, MusicAnalyzer, type DanceStyle } from "./musicStyle";
+import type { Persona } from "./genrePersona";
+import type { DanceIntensity } from "./notchConfig";
 import type { EarsId, ItemId } from "./notchConfig";
 import { PherieEngine } from "./pherie/engine";
-import { HEADBANG_FACE } from "./pherie/face";
+import { HEADBANG_FACE, RELAXED_FACE, STAR_FACE } from "./pherie/face";
 import { drawPherie, type DrawStyle } from "./pherie/draw";
 
 export interface MascotPointer {
@@ -47,6 +49,12 @@ export interface MascotViewProps {
   isMusicPlaying?: boolean;
   /** Microfone mutado: X na boca. */
   muted?: boolean;
+  /** Gênero da música (AudD): define rosto, efeitos e estilo. `null` = sem identificação (vale o analisador). */
+  persona?: Persona | null;
+  /** Esperando a identificação da música: fica pensativa, olhando de lado. */
+  identifying?: boolean;
+  /** Quanto ela se mexe ao dançar (padrão: suave). */
+  danceIntensity?: DanceIntensity;
   /** Muda a cada vez que ela deve fazer "tcharam!" (mãos para cima, revelando uma conquista). */
   celebrateAt?: number;
   /** Muda a cada vez que ela deve acenar (ex.: timestamp de um evento). */
@@ -103,6 +111,18 @@ function bounceAnimation(bounce: BounceKind, poked: boolean, speaking: boolean) 
     ? { repeat: Infinity, duration: 1.1, ease: "easeInOut" as const }
     : { repeat: Infinity, duration: 3.5, ease: "easeInOut" as const };
   return { animate, transition };
+}
+
+/**
+ * Estilo de dança: o gênero manda quando há persona (metal bate cabeça, pop dança, chill balança devagar);
+ * "padrão" usa o som, mas nunca bate cabeça (só metal bate). Sem persona vale o analisador.
+ */
+function personaStyle(persona: Persona | null | undefined, analyzed: DanceStyle): DanceStyle {
+  if (persona === "metal") return "headbang";
+  if (persona === "pop") return "groove";
+  if (persona === "chill") return "calm";
+  if (persona === "padrao") return analyzed === "headbang" ? "groove" : analyzed;
+  return analyzed;
 }
 
 export const MascotView: React.FC<MascotViewProps> = (props) => {
@@ -284,7 +304,7 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
         rgbHeadphones: st.rgbHeadphones,
         showMic: st.showMic,
         // música pesada: cara de mau, sorriso de lado a lado e sem bochecha rosada
-        mouth: mouthShape(metalFace ? "grin" : cur.spec.mouth, level),
+        mouth: mouthShape(metalFace ? "grin" : cur.persona === "chill" ? "small" : cur.spec.mouth, level),
         blush: metalFace ? 0.04 : cur.spec.blush,
         extras: cur.spec.extras ?? [],
       };
@@ -314,11 +334,14 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
           lastBeatAt = audio.beatAt;
           beatCount += 1;
         }
-        beatEnv = nextBeatEnvelope(beatEnv, step, isNewBeat);
+        beatEnv = nextBeatEnvelope(beatEnv, step, isNewBeat, beatClock.strength);
         // o estilo vem do que o som faz: calma, balanço normal ou música pesada (bate cabeça)
         danceStyle = analyzer.push(audio, step, performance.now());
         canvas.style.transformOrigin = "50% 85%";
-        canvas.style.transform = headbangTransform(headbangPose(beatEnv, beatCount, audio.rms, DANCE_INTENSITY[danceStyle]));
+        const level = DANCE_LEVEL[cur.danceIntensity ?? "soft"];
+        canvas.style.transform = headbangTransform(
+          headbangPose(beatEnv, beatCount, audio.rms, DANCE_INTENSITY[personaStyle(cur.persona, danceStyle)] * level),
+        );
         nodding = true;
         lastLiveAt = performance.now();
       } else {
@@ -342,17 +365,33 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
       const muteX = Boolean(cur.muted) || cur.effectiveMood === "muted";
       if (muteX && cur.mutedSpeechRef?.current) fumeUntil = now + 1300;
       const fume = muteX && now < fumeUntil;
-      engine.setMood(fume ? "angry" : cur.effectiveMood);
+      // identificando a música: pensativa, olhando de lado, sem dançar
+      const thinking = Boolean(cur.identifying) && !fume;
+      engine.setMood(fume ? "angry" : thinking ? "thinking" : cur.effectiveMood);
+      const musicOn = Boolean(cur.isMusicPlaying) || cur.effectiveMood === "music";
+      const style = personaStyle(cur.persona, danceStyle);
       engine.setScene({
         muteX,
         fume,
         gaming: cur.effectiveMood === "gaming",
-        dancing: Boolean(cur.isMusicPlaying) || cur.effectiveMood === "music",
-        danceStyle,
+        dancing: musicOn && !thinking,
+        danceStyle: style,
+        persona: musicOn && !thinking ? cur.persona ?? null : null,
         beat: beatEnv,
       });
-      metalFace = Boolean(cur.isMusicPlaying || cur.effectiveMood === "music") && danceStyle === "headbang" && !fume;
-      engine.setFaceOverride(metalFace ? HEADBANG_FACE : null);
+      // metal (gênero ou, sem identificação, música pesada pelo som): cara de mau; pop: olhos de estrela; chill: serena
+      metalFace = musicOn && !thinking && !fume && (cur.persona === "metal" || (!cur.persona && danceStyle === "headbang"));
+      const override =
+        !musicOn || thinking || fume
+          ? null
+          : metalFace
+            ? HEADBANG_FACE
+            : cur.persona === "pop"
+              ? STAR_FACE
+              : cur.persona === "chill"
+                ? RELAXED_FACE
+                : null;
+      engine.setFaceOverride(override);
 
       const explicit = Math.max(cur.level ?? 0, cur.levelRef?.current ?? 0);
       const synthetic = cur.isSpeaking && explicit <= 0 ? 0.45 + 0.4 * Math.sin(clock * 18) : 0;

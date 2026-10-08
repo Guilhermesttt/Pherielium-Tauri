@@ -14,7 +14,7 @@ describe("nextBeatEnvelope", () => {
     let env = nextBeatEnvelope(0, 0.033, true);
     expect(env).toBe(1);
     const trail: number[] = [];
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 90; i++) {
       env = nextBeatEnvelope(env, 0.033, false);
       trail.push(env);
     }

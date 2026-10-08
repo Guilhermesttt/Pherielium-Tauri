@@ -20,15 +20,15 @@ export const EMPTY_AUDIO: AudioReactive = { rms: 0, low: 0, mid: 0, high: 0, bea
 /** Sem quadros por mais que isso = sem áudio ao vivo (o notch volta à animação padrão). */
 export const AUDIO_STALE_MS = 450;
 /** Taxa de decaimento do envelope da batida (1/s): ~140 ms para cair a ~37%. */
-export const BEAT_DECAY_RATE = 7;
+export const BEAT_DECAY_RATE = 5;
 
 export function isAudioLive(audio: AudioReactive, now: number): boolean {
   return audio.lastAt > 0 && now - audio.lastAt < AUDIO_STALE_MS;
 }
 
 /** Envelope da batida: sobe a 1 quando há batida nova e decai exponencialmente. */
-export function nextBeatEnvelope(env: number, dtSeconds: number, hasNewBeat: boolean): number {
-  if (hasNewBeat) return 1;
+export function nextBeatEnvelope(env: number, dtSeconds: number, hasNewBeat: boolean, level = 1): number {
+  if (hasNewBeat) return Math.min(1, Math.max(0, level));
   const decayed = env * Math.exp(-BEAT_DECAY_RATE * Math.max(0, dtSeconds));
   return decayed < 0.001 ? 0 : decayed;
 }
