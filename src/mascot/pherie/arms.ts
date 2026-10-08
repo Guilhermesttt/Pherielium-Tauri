@@ -26,6 +26,8 @@ export interface ArmScene {
   /** segundos restantes do aceno / de "pôr os fones" (0 = inativo) */
   wave: number;
   putOn: number;
+  /** segundos restantes de "tcharam!" (mãos abertas para cima, revelando algo) */
+  celebrate: number;
   /** envelope da batida 0..1 (dança acompanha a música) */
   beat: number;
 }
@@ -53,6 +55,11 @@ export function armTargets(scene: ArmScene, t: number): ArmTargets {
     left = { x: -104 + shake, y: -4 + Math.cos(t * 31) * 3 };
     right = mirror({ x: left.x, y: left.y });
     right.x = 104 - shake;
+  } else if (scene.celebrate > 0) {
+    // "tcharam!": as duas mãos abertas para cima e para fora, balançando de leve
+    const wiggle = Math.sin(t * 9) * 5;
+    left = { x: -118, y: -26 + wiggle };
+    right = { x: 118, y: -26 - wiggle };
   } else if (scene.putOn > 0) {
     // mãos sobem até os fones nas orelhas
     left = { x: -118, y: -2 };

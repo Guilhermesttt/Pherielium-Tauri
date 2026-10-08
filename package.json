@@ -13,7 +13,7 @@
     "tauri:dev": "npm run tauri dev",
     "tauri:build": "npm run tauri build",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -114,7 +114,7 @@ describe("formas do corpo", () => {
 
 import { armTargets, REST, type ArmScene } from "./arms";
 
-const calm: ArmScene = { gaming: false, dancing: false, muteX: false, fume: false, wave: 0, putOn: 0, beat: 0 };
+const calm: ArmScene = { gaming: false, dancing: false, muteX: false, fume: false, wave: 0, putOn: 0, celebrate: 0, beat: 0 };
 
 describe("braços", () => {
   it("em repouso as mãos ficam caídas dos lados", () => {
@@ -147,6 +147,14 @@ describe("braços", () => {
     const b = armTargets({ ...calm, fume: true }, 0.05);
     expect(a.left.y).toBeLessThan(20);
     expect(a.left.x).not.toBe(b.left.x);
+  });
+
+  it("tcharam: as duas mãos sobem para os lados", () => {
+    const h = armTargets({ ...calm, celebrate: 1 }, 0.2);
+    expect(h.left.y).toBeLessThan(0);
+    expect(h.right.y).toBeLessThan(0);
+    expect(h.left.x).toBeLessThan(-100);
+    expect(h.right.x).toBeGreaterThan(100);
   });
 
   it("colocar os fones tem prioridade sobre jogar e dançar", () => {

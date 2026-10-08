@@ -80,3 +80,44 @@ describe("duração", () => {
     expect(notchEventDuration("friend-request")).toBeGreaterThan(notchEventDuration("message"));
   });
 });
+
+import { TIER_STYLES, achievementBoxShadow, sparkPositions } from "./achievementTier";
+import { notchEventIsExpanded } from "./notchEvent";
+
+describe("conquista no notch", () => {
+  it("conquista abre o notch inteiro; os outros eventos ficam na barra", () => {
+    expect(notchEventIsExpanded("achievement")).toBe(true);
+    expect(notchEventIsExpanded("message")).toBe(false);
+  });
+
+  it("quanto mais raro o tier, mais tempo na tela e mais efeito", () => {
+    const order = ["iron", "bronze", "silver", "gold", "platinum"] as const;
+    for (let i = 1; i < order.length; i++) {
+      expect(TIER_STYLES[order[i]].durationMs).toBeGreaterThan(TIER_STYLES[order[i - 1]].durationMs);
+      expect(TIER_STYLES[order[i]].sparks).toBeGreaterThanOrEqual(TIER_STYLES[order[i - 1]].sparks);
+    }
+    expect(notchEventDuration("achievement", "platinum")).toBe(TIER_STYLES.platinum.durationMs);
+    expect(notchEventDuration("achievement", "bronze")).toBe(TIER_STYLES.bronze.durationMs);
+  });
+
+  it("cada tier tem um efeito diferente entre ouro e platina", () => {
+    expect(TIER_STYLES.gold.effect).not.toBe(TIER_STYLES.platinum.effect);
+    expect(TIER_STYLES.platinum.pulses).toBeGreaterThan(TIER_STYLES.gold.pulses);
+  });
+
+  it("o aro estático tem 4 camadas (a mola interpola) e usa a cor do tier", () => {
+    const shadow = achievementBoxShadow("gold");
+    expect(shadow.split("), ").length + shadow.split("0 0 0 0 rgba(0,0,0,0)").length - 1).toBeGreaterThanOrEqual(4);
+    expect(shadow).toContain(TIER_STYLES.gold.rgb);
+  });
+
+  it("faíscas são determinísticas", () => {
+    expect(sparkPositions(5)).toEqual(sparkPositions(5));
+    expect(sparkPositions(0)).toEqual([]);
+  });
+
+  it("aceita descrição, jogo e XP da conquista", () => {
+    const e = parseNotchEvent({ kind: "achievement", title: "x", description: "d", gameTitle: "g", xp: 60.4, tier: "gold" });
+    expect(e).toMatchObject({ description: "d", gameTitle: "g", xp: 60, tier: "gold" });
+  });
+});

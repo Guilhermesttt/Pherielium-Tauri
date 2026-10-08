@@ -62,7 +62,7 @@ export class PherieEngine {
   readonly rhx = new Spring(REST.right.x, 0.24, 0.55);
   readonly rhy = new Spring(REST.right.y, 0.24, 0.55);
   readonly ctl = new Spring(0, 0.3, 0.7);
-  readonly scene: ArmScene = { gaming: false, dancing: false, muteX: false, fume: false, wave: 0, putOn: 0, beat: 0 };
+  readonly scene: ArmScene = { gaming: false, dancing: false, muteX: false, fume: false, wave: 0, putOn: 0, celebrate: 0, beat: 0 };
   particles: Particle[] = [];
   time = 0;
   private blinkIn = 2.2;
@@ -122,6 +122,11 @@ export class PherieEngine {
     Object.assign(this.scene, next);
   }
 
+  /** Mãos para cima, revelando algo (conquista) por `seconds`. */
+  celebrate(seconds = 2.2) {
+    this.scene.celebrate = seconds;
+  }
+
   /** Acena por `seconds` (olá!). */
   wave(seconds = 1.8) {
     this.scene.wave = seconds;
@@ -175,6 +180,7 @@ export class PherieEngine {
 
     this.scene.wave = Math.max(0, this.scene.wave - dt);
     this.scene.putOn = Math.max(0, this.scene.putOn - dt);
+    this.scene.celebrate = Math.max(0, this.scene.celebrate - dt);
     const hands = armTargets(this.scene, this.time);
     this.lhx.target = hands.left.x;
     this.lhy.target = hands.left.y;
@@ -231,6 +237,7 @@ export class PherieEngine {
       this.scene.fume ||
       this.scene.wave > 0 ||
       this.scene.putOn > 0 ||
+      this.scene.celebrate > 0 ||
       !this.lhx.settled ||
       !this.rhx.settled ||
       !this.lhy.settled ||

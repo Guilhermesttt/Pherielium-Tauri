@@ -59,7 +59,7 @@ export function useNotchEvent(enabled: boolean, hold = false): NotchEvent | null
   const activeKind = active?.kind ?? null;
   useEffect(() => {
     if (hold || activeAt === null || activeKind === null) return;
-    const id = window.setTimeout(() => setQueue((q) => q.slice(1)), notchEventDuration(activeKind));
+    const id = window.setTimeout(() => setQueue((q) => q.slice(1)), notchEventDuration(activeKind, active?.tier));
     return () => window.clearTimeout(id);
   }, [activeAt, activeKind, hold]);
 

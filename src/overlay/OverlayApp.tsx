@@ -802,15 +802,19 @@ const OverlayApp: React.FC = () => {
       );
       // Notch ligado: ele avisa (com a Pherie reagindo); o cartão grande fica só para ouro/platina
       // e para o teste de pré-visualização.
+      // Notch ligado: ele abre inteiro revelando a conquista (imagem, nome, descrição, tier) e
+      // substitui o cartão do overlay em todos os tiers.
       if (notchEnabledRef.current) {
         announceNotchEvent({
           kind: "achievement",
-          title: "Conquista desbloqueada",
-          subtitle: [toast.title, xpGained ? `+${xpGained} XP` : ""].filter(Boolean).join(" · "),
+          title: toast.title,
+          description: toast.description || undefined,
+          gameTitle: toast.gameTitle,
+          xp: xpGained || undefined,
           avatar: icon || null,
           tier,
         });
-        if (tier !== "platinum" && tier !== "gold") return;
+        return;
       }
       addToast(toast, 6500);
     });

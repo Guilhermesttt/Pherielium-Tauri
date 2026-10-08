@@ -11,7 +11,6 @@ const LOW_BATTERY_PERCENT = 20;
 
 export type InputType = "mouse" | "keyboard" | "gamepad";
 export type GamepadFamily = "playstation" | "xbox" | "generic";
-export type { ControllerConnectionType };
 
 interface GamepadContextValue {
   activeInputType: InputType;

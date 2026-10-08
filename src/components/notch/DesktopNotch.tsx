@@ -13,6 +13,7 @@ import {
   SkipBack,
   SkipForward,
   Sparkles,
+  Trophy,
   Camera,
 } from "../../design-system/sf-symbols/lucideCompat";
 import { useVoiceCallContext } from "../../context/VoiceCallContext";
@@ -34,6 +35,8 @@ import { ControllerFlashBar, FLASH_MASCOT_MOOD, useControllerFlash } from "./Con
 import { CONTROLLER_FLASH_WIDTH } from "./controllerFlash";
 import { NotchEventBar, useNotchEvent } from "./NotchEventBar";
 import { NOTCH_EVENT_MOOD, NOTCH_EVENT_WIDTH, notchEventWaves } from "./notchEvent";
+import { AchievementReveal } from "./AchievementReveal";
+import { achievementBoxShadow, tierStyle } from "./achievementTier";
 import { useAudioReactiveRef } from "../../mascot/useAudioReactive";
 import { equalizerHeights, isAudioLive, type AudioReactive } from "../../mascot/headbang";
 import { subscribeTicker } from "../../mascot/ticker";
@@ -885,6 +888,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   const controllerFlash = useControllerFlash(config.enabled);
   // Eventos do ecossistema (pedido de amizade, mensagem, conquista...): esperam o painel fechar.
   const notchEvent = useNotchEvent(config.enabled, isExpanded);
+  const isAchievement = notchEvent?.kind === "achievement";
 
   const mascotMood: MascotMood = useMemo(() => {
     if (dizzy) return "dizzy"; // chacoalharam o mouse
@@ -1055,6 +1059,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         levelRef={voiceLevelRef}
         muted={isCallActive && isMuted}
         waveAt={notchEvent && notchEventWaves(notchEvent.kind) ? notchEvent.at : undefined}
+        celebrateAt={notchEvent?.kind === "achievement" ? notchEvent.at : undefined}
         mutedSpeechRef={mutedSpeechRef}
         audioRef={audioRef}
         isSpeaking={mouthSpeaking}
@@ -1086,6 +1091,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         levelRef={voiceLevelRef}
         muted={isCallActive && isMuted}
         waveAt={notchEvent && notchEventWaves(notchEvent.kind) ? notchEvent.at : undefined}
+        celebrateAt={notchEvent?.kind === "achievement" ? notchEvent.at : undefined}
         mutedSpeechRef={mutedSpeechRef}
         audioRef={audioRef}
         isSpeaking={mouthSpeaking}
@@ -1097,6 +1103,16 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   const renderBar = () => {
     if (controllerFlash) {
       return <ControllerFlashBar flash={controllerFlash} mascot={barMascot(26)} />;
+    }
+    if (notchEvent?.kind === "achievement") {
+      // a revelação acontece no painel aberto; a barra só diz o que é
+      const ts = tierStyle(notchEvent.tier);
+      return (
+        <div className="flex w-full items-center justify-center gap-2">
+          <Trophy size={13} style={{ color: `rgb(${ts.rgb})` }} />
+          <span className="text-[12px] font-semibold text-white">Conquista desbloqueada</span>
+        </div>
+      );
     }
     if (notchEvent) {
       return <NotchEventBar event={notchEvent} mascot={barMascot(26)} />;
@@ -1184,12 +1200,13 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         <motion.div
           initial={false}
           animate={{
-            width: isExpanded ? NOTCH_EXPANDED_WIDTH : compactWidth,
-            borderBottomLeftRadius: notchStyle.chamfer ? 0 : notchStyle.cornerRadius + (isExpanded ? EXPANDED_RADIUS_BONUS : 0),
-            borderBottomRightRadius: notchStyle.chamfer ? 0 : notchStyle.cornerRadius + (isExpanded ? EXPANDED_RADIUS_BONUS : 0),
-            boxShadow: notchBoxShadow(notchStyle, isExpanded),
+            width: isExpanded || isAchievement ? NOTCH_EXPANDED_WIDTH : compactWidth,
+            borderBottomLeftRadius: notchStyle.chamfer ? 0 : notchStyle.cornerRadius + (isExpanded || isAchievement ? EXPANDED_RADIUS_BONUS : 0),
+            borderBottomRightRadius: notchStyle.chamfer ? 0 : notchStyle.cornerRadius + (isExpanded || isAchievement ? EXPANDED_RADIUS_BONUS : 0),
+            // conquista: aro estático na cor do tier; senão o estilo normal do notch
+            boxShadow: isAchievement ? achievementBoxShadow(notchEvent?.tier) : notchBoxShadow(notchStyle, isExpanded),
           }}
-          transition={geometryTransition(isExpanded)}
+          transition={geometryTransition(isExpanded || isAchievement)}
           style={{
             backgroundColor: chamferBorder ? (notchStyle.borderColor as string) : notchBg,
             clipPath: notchStyle.chamfer ? chamferClipPath(chamferCut) : undefined,
@@ -1238,6 +1255,20 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
           {/* Painel */}
           <AnimatePresence initial={false}>
+            {isAchievement && !isExpanded && notchEvent && (
+              <motion.div
+                key={`achievement-${notchEvent.id}`}
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0, transition: { height: CLOSE_TRANSITION, opacity: { duration: VIEW_OUT_S } } }}
+                transition={{ height: geometryTransition(true), opacity: { duration: VIEW_IN_S, delay: 0.05 } }}
+                className="overflow-hidden"
+              >
+                <div className="px-4 pb-4 pt-1">
+                  <AchievementReveal event={notchEvent} mascot={config.showMascot ? panelMascot(56) : undefined} />
+                </div>
+              </motion.div>
+            )}
             {isExpanded && (
               <motion.div
                 key="panel"

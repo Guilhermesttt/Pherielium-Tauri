@@ -191,9 +191,20 @@ test("notch mostra pedido de amizade, mensagens agrupadas e conquista", async ({
   await page.screenshot({ path: path.join(outDir, "notch-messages.png"), clip });
   await expect(notch.getByText("Leo")).toBeHidden({ timeout: 8000 });
 
-  await fire({ kind: "achievement", title: "Conquista desbloqueada", subtitle: "Primeiro sangue · +60 XP", tier: "gold" });
-  await expect(notch.getByText("Conquista desbloqueada")).toBeVisible();
-  await page.waitForTimeout(900);
-  await page.screenshot({ path: path.join(outDir, "notch-achievement.png"), clip });
+  const tiers = ["bronze", "silver", "gold", "platinum"] as const;
+  for (const tier of tiers) {
+    await fire({
+      kind: "achievement",
+      tier,
+      title: tier === "platinum" ? "Lenda do Pherielium" : "Primeiro sangue",
+      description: "Derrote o chefe da região sem sofrer dano nenhum durante a luta inteira.",
+      gameTitle: "Hades II",
+      xp: 60,
+    });
+    await expect(notch.getByText("Conquista desbloqueada")).toBeVisible();
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: path.join(outDir, `notch-achievement-${tier}.png`), clip: { x: 660, y: 0, width: 600, height: 220 } });
+    await expect(notch.getByText("Conquista desbloqueada")).toBeHidden({ timeout: 12000 });
+  }
   await context.close();
 });

@@ -20,6 +20,10 @@ export interface NotchEvent {
   title: string;
   subtitle?: string;
   avatar?: string | null;
+  /** conquista: descrição, jogo e XP ganho */
+  description?: string;
+  gameTitle?: string;
+  xp?: number;
   tier?: AchievementTier;
   /** agrupa mensagens do mesmo amigo (uma barra com a última, em vez de uma fila de barras) */
   friendId?: string;
@@ -33,6 +37,15 @@ export const NOTCH_EVENT_TAURI_EVENT = "overlay:notch-event";
 export const NOTCH_EVENT_WIDTH = 328;
 export const NOTCH_EVENT_QUEUE_MAX = 4;
 
+/** Mais raro, mais tempo na tela (mantém em sincronia com TIER_STYLES.durationMs). */
+const ACHIEVEMENT_DURATION_MS: Record<AchievementTier, number> = {
+  iron: 4600,
+  bronze: 5200,
+  silver: 5600,
+  gold: 6600,
+  platinum: 7800,
+};
+
 const DURATION_MS: Record<NotchEventKind, number> = {
   "friend-request": 4800,
   "friend-accepted": 3800,
@@ -42,7 +55,11 @@ const DURATION_MS: Record<NotchEventKind, number> = {
   welcome: 4200,
 };
 
-export const notchEventDuration = (kind: NotchEventKind) => DURATION_MS[kind];
+export const notchEventDuration = (kind: NotchEventKind, tier?: AchievementTier) =>
+  kind === "achievement" ? ACHIEVEMENT_DURATION_MS[tier ?? "bronze"] : DURATION_MS[kind];
+
+/** Conquista abre o notch inteiro (mascote + imagem + nome + descrição) em vez da barra compacta. */
+export const notchEventIsExpanded = (kind: NotchEventKind) => kind === "achievement";
 
 /** Humor da Pherie para cada evento. */
 export const NOTCH_EVENT_MOOD: Record<NotchEventKind, MascotMood> = {
@@ -76,6 +93,9 @@ export function parseNotchEvent(raw: unknown): NotchEvent | null {
     title,
     subtitle: str(v.subtitle, 120),
     avatar: typeof v.avatar === "string" && v.avatar ? v.avatar : null,
+    description: str(v.description, 160),
+    gameTitle: str(v.gameTitle, 80),
+    xp: typeof v.xp === "number" && Number.isFinite(v.xp) && v.xp > 0 ? Math.round(v.xp) : undefined,
     tier,
     friendId: str(v.friendId, 80),
     count,
