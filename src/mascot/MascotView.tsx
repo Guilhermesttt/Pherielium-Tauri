@@ -71,6 +71,8 @@ export interface MascotViewProps {
 type LiveState = MascotViewProps & { spec: MoodSpec; effectiveMood: MascotMood; palette: BodyPalette; faceColor: string };
 
 const POINTER_IDLE_MS = 4000;
+/** Quanto tempo o estilo da música é mantido sem áudio ao vivo. */
+const MUSIC_STYLE_HOLD_MS = 8000;
 
 /** Balanço do corpo por humor (carregado do mascote antigo, aplicado ao wrapper). */
 function bounceAnimation(bounce: BounceKind, poked: boolean, speaking: boolean) {
@@ -240,6 +242,7 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
     const analyzer = new MusicAnalyzer();
     let metalFace = false;
     let danceStyle: DanceStyle = "groove";
+    let lastLiveAt = 0;
     // instâncias pequenas (barra do notch, grade das configs) não precisam de 60 fps
     const divisor = size <= 48 ? 2 : 1;
     let frameNo = 0;
@@ -314,12 +317,21 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
         canvas.style.transformOrigin = "50% 85%";
         canvas.style.transform = headbangTransform(headbangPose(beatEnv, beatCount, audio.rms, DANCE_INTENSITY[danceStyle]));
         nodding = true;
-      } else if (nodding) {
-        beatEnv = 0;
-        canvas.style.transform = "";
-        nodding = false;
-        analyzer.reset();
-        danceStyle = "groove";
+        lastLiveAt = performance.now();
+      } else {
+        if (nodding) {
+          beatEnv = 0;
+          canvas.style.transform = "";
+          nodding = false;
+        }
+        // O áudio do PC some por instantes (silêncio entre faixas, troca de dispositivo, medidor
+        // reiniciando): mantém o estilo e o histórico por alguns segundos em vez de voltar ao balanço
+        // normal na hora, senão ela oscilaria entre bater cabeça e dançar.
+        if (lastLiveAt > 0 && performance.now() - lastLiveAt > MUSIC_STYLE_HOLD_MS) {
+          analyzer.reset();
+          danceStyle = "groove";
+          lastLiveAt = 0;
+        }
       }
 
       // cenas dos braços: jogar (controle), música (dança), mutado (X) e irritada ao falar mutada

@@ -588,6 +588,14 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
       return;
     }
     let active = true;
+    // Uma consulta vazia isolada (PowerShell/GSMTC falha de vez em quando, ou a troca de faixa) não
+    // pode apagar a música: só considera "sem mídia" depois de vários resultados vazios seguidos.
+    let misses = 0;
+    const MISSES_TO_CLEAR = 3;
+    const clearIfStillEmpty = () => {
+      misses += 1;
+      if (active && misses >= MISSES_TO_CLEAR) applyMedia(EMPTY_MEDIA);
+    };
 
     const pollPcMedia = async () => {
       if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
@@ -612,6 +620,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
               return;
             }
 
+            misses = 0;
             applyMedia({
               hasMedia: true,
               type: info.playbackType === "video" ? "video" : "music",
@@ -626,7 +635,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         } catch {}
       }
 
-      if (active) applyMedia(EMPTY_MEDIA);
+      clearIfStillEmpty();
     };
 
     pollPcMedia();

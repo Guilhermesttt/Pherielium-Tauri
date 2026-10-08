@@ -7,7 +7,7 @@
 
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use serde_json::json;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 use windows::core::GUID;
@@ -567,24 +567,58 @@ use crate::commands::audio_analysis::{pcm_to_mono_f32, Analyzer, LevelFrame, Pcm
 /// Geração própria: não colide com `DESKTOP_AUDIO_GEN` (compartilhamento de tela da chamada).
 static LEVEL_METER_GEN: AtomicU64 = AtomicU64::new(0);
 
+/// Quantas janelas (hub e overlay têm cada uma o seu notch) pediram o medidor. Sem contagem,
+/// o `stop` de uma janela derrubava o medidor da outra e a Pherie perdia o áudio no meio da música.
+static LEVEL_METER_USERS: AtomicUsize = AtomicUsize::new(0);
+/// Já existe uma thread cuidando do medidor.
+static LEVEL_METER_RUNNING: AtomicBool = AtomicBool::new(false);
+
+/// Libera um pedido do medidor; a medição só para quando ninguém mais precisa dela.
 pub fn stop_level_meter() {
-    LEVEL_METER_GEN.fetch_add(1, Ordering::SeqCst);
+    let prev = LEVEL_METER_USERS
+        .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |n| Some(n.saturating_sub(1)))
+        .unwrap_or(0);
+    if prev <= 1 {
+        LEVEL_METER_GEN.fetch_add(1, Ordering::SeqCst);
+    }
 }
 
 /// Mede o áudio que o PC toca (exceto este processo, quando o Windows suporta) e emite
-/// ~30 Hz `overlay:audio-level` SÓ para a janela do overlay (RMS, pico, 3 bandas e batida).
-/// Substitui qualquer medição anterior (nova geração).
+/// ~30 Hz `overlay:audio-level` (RMS, pico, 3 bandas e batida). Vários pedidos compartilham a
+/// mesma medição; se ela cair por erro (troca de dispositivo, etc.), a thread tenta de novo.
 pub fn start_level_meter(app: AppHandle) -> Result<(), String> {
-    let generation = LEVEL_METER_GEN.fetch_add(1, Ordering::SeqCst) + 1;
+    LEVEL_METER_USERS.fetch_add(1, Ordering::SeqCst);
+    if LEVEL_METER_RUNNING.swap(true, Ordering::SeqCst) {
+        return Ok(());
+    }
     std::thread::Builder::new()
         .name("overlay-audio-level".into())
-        .spawn(move || {
-            if let Err(err) = run_level_meter(app, generation) {
-                eprintln!("[audio-level] {err}");
+        .spawn(move || loop {
+            while LEVEL_METER_USERS.load(Ordering::SeqCst) > 0 {
+                let generation = LEVEL_METER_GEN.load(Ordering::SeqCst);
+                if let Err(err) = run_level_meter(app.clone(), generation) {
+                    eprintln!("[audio-level] {err}");
+                    std::thread::sleep(Duration::from_millis(600));
+                } else if LEVEL_METER_USERS.load(Ordering::SeqCst) > 0
+                    && LEVEL_METER_GEN.load(Ordering::SeqCst) != generation
+                {
+                    // alguém pediu de novo logo depois de o último parar: segue com a nova geração
+                    continue;
+                } else {
+                    std::thread::sleep(Duration::from_millis(300));
+                }
+            }
+            LEVEL_METER_RUNNING.store(false, Ordering::SeqCst);
+            // pedido que chegou entre o último teste e o fim da thread: reassume
+            if LEVEL_METER_USERS.load(Ordering::SeqCst) == 0 || LEVEL_METER_RUNNING.swap(true, Ordering::SeqCst) {
+                break;
             }
         })
         .map(|_| ())
-        .map_err(|e| format!("Falha ao iniciar o medidor de audio: {e}"))
+        .map_err(|e| {
+            LEVEL_METER_RUNNING.store(false, Ordering::SeqCst);
+            format!("Falha ao iniciar o medidor de audio: {e}")
+        })
 }
 
 fn pcm_kind(kind: SampleKind) -> PcmKind {
