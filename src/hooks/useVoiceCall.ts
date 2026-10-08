@@ -4339,7 +4339,6 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     },
     [cleanUpCall, notify, playRingtone, stopRingtone],
   );
-  (simulateIncomingCall as typeof simulateIncomingCall & { isSimulationTool?: boolean }).isSimulationTool = true;
 
   // Calibração de Ruído Ambiente (Mede o ruído por 2s e sugere sensibilidade)
   const calibrateNoiseFloor = useCallback(async (): Promise<{ noiseFloor: number; recommendedSensitivity: number }> => {

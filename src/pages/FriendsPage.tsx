@@ -216,7 +216,7 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
             voiceCall.setIsVoiceWindowOpen(true);
           }}
           onSimulateIncomingCall={
-            (voiceCall.simulateIncomingCall as ({ isSimulationTool?: boolean } & (() => void)) | undefined)?.isSimulationTool
+            import.meta.env.DEV && typeof voiceCall.simulateIncomingCall === "function"
               ? () => voiceCall.simulateIncomingCall(false)
               : undefined
           }

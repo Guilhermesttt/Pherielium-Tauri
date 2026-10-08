@@ -1,3 +1,4 @@
+import { announceNotchEvent } from "../components/notch/notchEvent";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -335,6 +336,8 @@ const OverlayApp: React.FC = () => {
   // Configuração do notch (Configurações → Mascote e Notch), ao vivo via overlay:prefs.
   const appearance = useOverlayAppearance();
   const notchConfig = appearance.config;
+  const notchEnabledRef = useRef(false);
+  notchEnabledRef.current = notchConfig.enabled;
   const panelStyle = panelSurfaceStyle(appearance.style);
   const [activeView, setActiveView] = useState<OverlayView>("home");
   const [interactionSource, setInteractionSource] = useState<InteractionSource>("mouse");
@@ -797,6 +800,18 @@ const OverlayApp: React.FC = () => {
         activeSoundTheme,
         activeSoundVolume,
       );
+      // Notch ligado: ele avisa (com a Pherie reagindo); o cartão grande fica só para ouro/platina
+      // e para o teste de pré-visualização.
+      if (notchEnabledRef.current && !payload.isTest) {
+        announceNotchEvent({
+          kind: "achievement",
+          title: "Conquista desbloqueada",
+          subtitle: [toast.title, xpGained ? `+${xpGained} XP` : ""].filter(Boolean).join(" · "),
+          avatar: icon || null,
+          tier,
+        });
+        if (tier !== "platinum" && tier !== "gold") return;
+      }
       addToast(toast, 6500);
     });
 

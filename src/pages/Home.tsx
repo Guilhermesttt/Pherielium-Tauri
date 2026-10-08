@@ -45,6 +45,7 @@ import DynamicBackground from "../components/DynamicBackground";
 import { GameEnvironment } from "../components/home/GameEnvironment";
 import { HeroGame } from "../components/home/HeroGame";
 import { HomeTopNav } from "../components/home/HomeTopNav";
+import { announceNotchEvent } from "../components/notch/notchEvent";
 import { PlatformShortcutHint } from "../components/home/PlatformShortcutHint";
 import { EpicConnectModal } from "../components/settings/EpicConnectModal";
 import { PlatformLibrarySkeleton } from "../components/PlatformLibrarySkeleton";
@@ -664,6 +665,12 @@ const Home: React.FC = () => {
         xp: playerLevel.xp,
         progress: playerLevel.progress,
       } as any);
+      announceNotchEvent({
+        id: `level-up:${playerLevel.level}`,
+        kind: "level-up",
+        title: `Nível ${playerLevel.level}`,
+        subtitle: playerLevel.rank,
+      });
       setShowLevelUp(true);
       if (levelUpTimerRef.current) window.clearTimeout(levelUpTimerRef.current);
       levelUpTimerRef.current = window.setTimeout(() => setShowLevelUp(false), 6000) as unknown as number;

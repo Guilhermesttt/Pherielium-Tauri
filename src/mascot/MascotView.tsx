@@ -45,6 +45,8 @@ export interface MascotViewProps {
   isMusicPlaying?: boolean;
   /** Microfone mutado: X na boca. */
   muted?: boolean;
+  /** Muda a cada vez que ela deve acenar (ex.: timestamp de um evento). */
+  waveAt?: number;
   /** `true` enquanto a pessoa fala com o microfone mutado: a Pherie tenta falar e se irrita. */
   mutedSpeechRef?: { current: boolean };
   /** Fones sempre vestidos (ex.: intro de jogo), independente do humor. */
@@ -197,10 +199,10 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
   useEffect(() => {
     engineRef.current!.setMood(effectiveMood);
   }, [effectiveMood]);
-  // olá! ao aparecer
+  // olá! ao aparecer e sempre que `waveAt` mudar
   useEffect(() => {
     engineRef.current!.wave(1.8);
-  }, []);
+  }, [props.waveAt]);
   useEffect(() => {
     engineRef.current!.setHeadphones(showHeadphones, headphonesDrop);
   }, [showHeadphones, headphonesDrop]);

@@ -158,3 +158,42 @@ test("notch encena controle conectado e desconectado", async ({ browser }) => {
   await page.screenshot({ path: path.join(outDir, "notch-haptics-off.png"), clip });
   await context.close();
 });
+
+test("notch mostra pedido de amizade, mensagens agrupadas e conquista", async ({ browser }) => {
+  mkdirSync(outDir, { recursive: true });
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  await installHarness(context, { tauri: false });
+  const page = await context.newPage();
+  await page.goto("/");
+  const notch = page.locator("[data-notch-root]");
+  await expect(notch).toBeVisible({ timeout: 45_000 });
+  await page.waitForTimeout(1500);
+  const clip = { x: 660, y: 0, width: 600, height: 120 };
+  const fire = (detail: Record<string, unknown>) =>
+    page.evaluate((d) => {
+      window.dispatchEvent(new CustomEvent("pherielium:notch-event", { detail: d }));
+    }, detail);
+
+  await fire({ id: "fr-1", kind: "friend-request", title: "Marina Lopes", subtitle: "quer ser seu amigo" });
+  await expect(notch.getByText("Marina Lopes")).toBeVisible();
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: path.join(outDir, "notch-friend-request.png"), clip });
+  // o mesmo evento chegando duas vezes (CustomEvent + Tauri emit) não repete a barra
+  await fire({ id: "fr-1", kind: "friend-request", title: "Marina Lopes", subtitle: "quer ser seu amigo" });
+  await expect(notch.getByText("Marina Lopes")).toBeHidden({ timeout: 8000 });
+  await expect(notch.getByText("Marina Lopes")).toBeHidden();
+
+  await fire({ kind: "message", title: "Leo", subtitle: "bora jogar?", friendId: "f1" });
+  await fire({ kind: "message", title: "Leo", subtitle: "tá aí?", friendId: "f1" });
+  await fire({ kind: "message", title: "Leo", subtitle: "ei", friendId: "f1" });
+  await expect(notch.getByText("3 mensagens novas")).toBeVisible();
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: path.join(outDir, "notch-messages.png"), clip });
+  await expect(notch.getByText("Leo")).toBeHidden({ timeout: 8000 });
+
+  await fire({ kind: "achievement", title: "Conquista desbloqueada", subtitle: "Primeiro sangue · +60 XP", tier: "gold" });
+  await expect(notch.getByText("Conquista desbloqueada")).toBeVisible();
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: path.join(outDir, "notch-achievement.png"), clip });
+  await context.close();
+});

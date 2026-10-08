@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNotchConfig } from '../mascot/useNotchConfig';
+import { announceNotchEvent } from '../components/notch/notchEvent';
 import type { AuthUser } from "../auth/AuthProvider";
 import type {
   CheckpointFriendRequest,
@@ -69,6 +71,9 @@ export function useFriendsSystem({
   const [incomingFriendRequests, setIncomingFriendRequests] = useState<CheckpointFriendRequest[]>([]);
   const [activeChatFriend, setActiveChatFriend] = useState<SocialFriend | null>(null);
 
+  // Notch ligado: pedidos, aceites e mensagens aparecem nele (com a Pherie reagindo) em vez do toast do overlay.
+  const notchEnabledRef = useRef(false);
+  notchEnabledRef.current = useNotchConfig().enabled;
   const notifiedMessageIdsRef = useRef<Set<string>>(new Set());
   const isFirstUnreadSnapshotRef = useRef(true);
   const friendPresenceFingerprintRef = useRef<Map<string, string>>(new Map());
@@ -138,6 +143,18 @@ export function useFriendsSystem({
 
           if (!isActiveChat) {
             const displayContent = isImage ? "📷 Enviou uma imagem" : msg.text;
+
+            if (notchEnabledRef.current) {
+              announceNotchEvent({
+                kind: "message",
+                title: senderName,
+                subtitle: displayContent,
+                avatar: avatarUrl || null,
+                friendId: `cp-friend:${msg.senderId}`,
+              });
+              playSound("chatReceived");
+              return;
+            }
 
             // In-game overlay notification
             if ("Notification" in window && Notification.permission === "granted") {
@@ -417,11 +434,22 @@ export function useFriendsSystem({
           ];
         });
         notify(`Novo pedido de amizade de ${req.fromName}`, "friend-request", { sound: false });
-        void window.electronAPI?.showFriendRequestOverlay({
-          playerName: req.fromName,
-          avatarUrl: req.fromAvatar || null,
-          friendId: `cp-friend:${req.fromUid}`,
-        });
+        if (notchEnabledRef.current) {
+          announceNotchEvent({
+            id: `friend-request:${req.fromUid}`,
+            kind: "friend-request",
+            title: req.fromName || "Jogador",
+            subtitle: "quer ser seu amigo",
+            avatar: req.fromAvatar || null,
+            friendId: `cp-friend:${req.fromUid}`,
+          });
+        } else {
+          void window.electronAPI?.showFriendRequestOverlay({
+            playerName: req.fromName,
+            avatarUrl: req.fromAvatar || null,
+            friendId: `cp-friend:${req.fromUid}`,
+          });
+        }
         void refreshProfile();
       },
       onFriendAccepted: (friend) => {
@@ -441,10 +469,21 @@ export function useFriendsSystem({
           ];
         });
         notify(`${friend.friendName} aceitou sua solicitação de amizade!`, "success");
-        void window.electronAPI?.showFriendAcceptedOverlay({
-          playerName: friend.friendName,
-          avatarUrl: friend.friendAvatar || null,
-        });
+        if (notchEnabledRef.current) {
+          announceNotchEvent({
+            id: `friend-accepted:${friend.friendUid}`,
+            kind: "friend-accepted",
+            title: friend.friendName || "Jogador",
+            subtitle: "aceitou seu pedido de amizade",
+            avatar: friend.friendAvatar || null,
+            friendId: `cp-friend:${friend.friendUid}`,
+          });
+        } else {
+          void window.electronAPI?.showFriendAcceptedOverlay({
+            playerName: friend.friendName,
+            avatarUrl: friend.friendAvatar || null,
+          });
+        }
         void refreshProfile();
       },
       onFriendRemoved: (data) => {
@@ -479,11 +518,22 @@ export function useFriendsSystem({
     if (freshRequest) {
       playSound("friendRequest");
       notify(`Novo pedido de amizade de ${freshRequest.displayName}`, "friend-request", { sound: false });
-      void window.electronAPI?.showFriendRequestOverlay({
-        playerName: freshRequest.displayName,
-        avatarUrl: freshRequest.photoURL || null,
-        friendId: `cp-friend:${freshRequest.uid}`,
-      });
+      if (notchEnabledRef.current) {
+        announceNotchEvent({
+          id: `friend-request:${freshRequest.uid}`,
+          kind: "friend-request",
+          title: freshRequest.displayName || "Jogador",
+          subtitle: "quer ser seu amigo",
+          avatar: freshRequest.photoURL || null,
+          friendId: `cp-friend:${freshRequest.uid}`,
+        });
+      } else {
+        void window.electronAPI?.showFriendRequestOverlay({
+          playerName: freshRequest.displayName,
+          avatarUrl: freshRequest.photoURL || null,
+          friendId: `cp-friend:${freshRequest.uid}`,
+        });
+      }
     }
 
     previousIncomingRequestsRef.current = currentIncomingIds;
@@ -510,10 +560,21 @@ export function useFriendsSystem({
         (friend) => !previousFriends.has(friend.uid) && previousOutgoing.has(friend.uid),
       );
       if (acceptedFriend) {
-        void window.electronAPI?.showFriendAcceptedOverlay({
-          playerName: acceptedFriend.displayName,
-          avatarUrl: acceptedFriend.photoURL || null,
-        });
+        if (notchEnabledRef.current) {
+          announceNotchEvent({
+            id: `friend-accepted:${acceptedFriend.uid}`,
+            kind: "friend-accepted",
+            title: acceptedFriend.displayName || "Jogador",
+            subtitle: "aceitou seu pedido de amizade",
+            avatar: acceptedFriend.photoURL || null,
+            friendId: `cp-friend:${acceptedFriend.uid}`,
+          });
+        } else {
+          void window.electronAPI?.showFriendAcceptedOverlay({
+            playerName: acceptedFriend.displayName,
+            avatarUrl: acceptedFriend.photoURL || null,
+          });
+        }
       }
     }
 

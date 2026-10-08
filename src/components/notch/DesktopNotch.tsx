@@ -32,6 +32,8 @@ import { useNotchDropzone } from "./useNotchDropzone";
 import { RetroBubble } from "./RetroBubble";
 import { ControllerFlashBar, FLASH_MASCOT_MOOD, useControllerFlash } from "./ControllerFlashBar";
 import { CONTROLLER_FLASH_WIDTH } from "./controllerFlash";
+import { NotchEventBar, useNotchEvent } from "./NotchEventBar";
+import { NOTCH_EVENT_MOOD, NOTCH_EVENT_WIDTH, notchEventWaves } from "./notchEvent";
 import { useAudioReactiveRef } from "../../mascot/useAudioReactive";
 import { equalizerHeights, isAudioLive, type AudioReactive } from "../../mascot/headbang";
 import { subscribeTicker } from "../../mascot/ticker";
@@ -881,10 +883,13 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   // Controle conectou/desconectou: o notch encena o aviso em vez de um popup no hub.
   const controllerFlash = useControllerFlash(config.enabled);
+  // Eventos do ecossistema (pedido de amizade, mensagem, conquista...): esperam o painel fechar.
+  const notchEvent = useNotchEvent(config.enabled, isExpanded);
 
   const mascotMood: MascotMood = useMemo(() => {
     if (dizzy) return "dizzy"; // chacoalharam o mouse
     if (controllerFlash) return FLASH_MASCOT_MOOD[controllerFlash.kind];
+    if (notchEvent) return NOTCH_EVENT_MOOD[notchEvent.kind];
     if (dropzone.armed || dropzone.over || dropzone.importing) return "surprised"; // boca aberta
     if (digested) return "happy"; // "digeriu" o arquivo
     if (isCallActive) return isMuted ? "muted" : "calling";
@@ -892,7 +897,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     if (isPcMediaPlaying) return "music";
     if (curious && !baseMood) return "curious";
     return baseMood ?? "idle";
-  }, [dizzy, controllerFlash, dropzone.armed, dropzone.over, dropzone.importing, digested, isCallActive, isMuted, activeGameTitle, isPcMediaPlaying, curious, baseMood]);
+  }, [dizzy, controllerFlash, notchEvent, dropzone.armed, dropzone.over, dropzone.importing, digested, isCallActive, isMuted, activeGameTitle, isPcMediaPlaying, curious, baseMood]);
 
   // Boca do mascote: no Tauri o volume do microfone chega por evento dedicado
   // (overlay:voice-level, ref sem re-render). Fora do Tauri (dev no navegador) cai
@@ -915,8 +920,10 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     () =>
       controllerFlash
         ? CONTROLLER_FLASH_WIDTH
-        : resolveNotchCompactWidth({ isCallActive, activeGameTitle, isPcMediaPlaying }),
-    [controllerFlash, isCallActive, activeGameTitle, isPcMediaPlaying],
+        : notchEvent
+          ? NOTCH_EVENT_WIDTH
+          : resolveNotchCompactWidth({ isCallActive, activeGameTitle, isPcMediaPlaying }),
+    [controllerFlash, notchEvent, isCallActive, activeGameTitle, isPcMediaPlaying],
   );
 
   // Oculta o Notch no topo se houver janela sobreposta e o cursor não estiver na área
@@ -950,6 +957,18 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
       hideTimerRef.current = setTimeout(() => setIsRevealed(false), 250);
     };
   }, [flashAt, flashKind, revealNotch]);
+
+  // Evento do ecossistema: o notch desce se estava escondido, expande e recolhe ao fim.
+  const eventId = notchEvent?.id ?? null;
+  useEffect(() => {
+    if (eventId === null) return;
+    revealNotch();
+    notchSoundRef.current("expand");
+    return () => {
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = setTimeout(() => setIsRevealed(false), 250);
+    };
+  }, [eventId, revealNotch]);
 
   // Cutucar a Pherie: pop a cada clique, som próprio no 3º clique seguido (ela fica tonta).
   const pokeClicksRef = useRef<number[]>([]);
@@ -1035,6 +1054,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         isMusicPlaying={isPcMediaPlaying}
         levelRef={voiceLevelRef}
         muted={isCallActive && isMuted}
+        waveAt={notchEvent && notchEventWaves(notchEvent.kind) ? notchEvent.at : undefined}
         mutedSpeechRef={mutedSpeechRef}
         audioRef={audioRef}
         isSpeaking={mouthSpeaking}
@@ -1065,6 +1085,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         isMusicPlaying={isPcMediaPlaying}
         levelRef={voiceLevelRef}
         muted={isCallActive && isMuted}
+        waveAt={notchEvent && notchEventWaves(notchEvent.kind) ? notchEvent.at : undefined}
         mutedSpeechRef={mutedSpeechRef}
         audioRef={audioRef}
         isSpeaking={mouthSpeaking}
@@ -1076,6 +1097,9 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   const renderBar = () => {
     if (controllerFlash) {
       return <ControllerFlashBar flash={controllerFlash} mascot={barMascot(26)} />;
+    }
+    if (notchEvent) {
+      return <NotchEventBar event={notchEvent} mascot={barMascot(26)} />;
     }
     if (isCallActive) {
       return (

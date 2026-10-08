@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from "react";
 import { Toaster, toast } from "./ui/Shandc/toast";
 import { soundThemes } from "../hooks/useSoundEffects";
+import { useNotchConfig } from "../mascot/useNotchConfig";
 
 export type NotificationType =
   | "success"
@@ -62,6 +63,9 @@ interface NotificationContextValue {
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Com o notch ligado, pedidos de amizade e mensagens aparecem nele (src/components/notch/notchEvent.ts).
+  const notchEnabledRef = React.useRef(false);
+  notchEnabledRef.current = useNotchConfig().enabled;
   const [preferences, setPreferences] = useState<NotificationPreferences>(() => {
     try {
       const saved = localStorage.getItem("notification_preferences");
@@ -114,6 +118,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       // Accessibility: announce to screen readers
       setSrAnnouncement(`${options?.title ? options.title + ": " : ""}${shortMessage}`);
+
+      if (
+        notchEnabledRef.current &&
+        (type === "friend-request" || type === "friend-accepted" || type === "message")
+      ) {
+        return;
+      }
 
       if (isOverlayType && preferences.showInOverlay && window.electronAPI?.showNotificationOverlay) {
         void window.electronAPI.showNotificationOverlay({
