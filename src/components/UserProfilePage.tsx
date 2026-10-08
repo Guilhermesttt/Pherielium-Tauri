@@ -204,24 +204,23 @@ const ProfileAvatar: React.FC<{
   return (
     <div
       onClick={editable ? onEditClick : undefined}
-      className={`group relative shrink-0 aspect-square overflow-hidden rounded-2xl border border-white/15 bg-neutral-900 shadow-[0_16px_40px_rgba(0,0,0,.5)] ${compact ? "h-[76px] w-[76px]" : "h-[92px] w-[92px]"
+      className={`group relative shrink-0 aspect-square overflow-hidden rounded-[28%] bg-[#0d0d10] ring-4 ring-[#121216] ${compact ? "h-[88px] w-[88px]" : "h-[116px] w-[116px]"
         } ${editable ? "cursor-pointer" : ""}`}
       title={editable ? "Clique para editar perfil e foto" : undefined}
     >
       {src ? (
         <img src={src} alt="" className="h-full w-full object-cover object-center aspect-square select-none transition-transform duration-300 group-hover:scale-105" />
       ) : (
-        <div className="flex h-full w-full items-center justify-center text-xl font-black text-white/70 select-none">
+        <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-white/70 select-none">
           {initialsFor(displayName)}
         </div>
       )}
       {editable && (
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white z-10">
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white z-10">
           <Camera className="h-5 w-5 text-white" />
-          <span className="text-[10px] font-bold uppercase tracking-wider">Editar</span>
+          <span className="text-[12px] font-semibold">Editar</span>
         </div>
       )}
-      <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl pointer-events-none z-20" />
     </div>
   );
 };
@@ -237,21 +236,21 @@ const PlatformRow: React.FC<{
   compact?: boolean;
 }> = ({ name, connected, username, avatar, icon, connectedLabel, disconnectedLabel, compact = false }) => (
   <div
-    className={`flex items-center bg-[#0E0E0E] justify-between transition-colors hover:bg-white/[0.03] rounded-xl ${compact ? "py-2 px-2.5 gap-2.5" : "py-2.5 px-3 gap-3"
+    className={`flex items-center bg-[#0d0d10] justify-between transition-colors hover:bg-[#17171d] rounded-2xl ${compact ? "py-2.5 px-3 gap-2.5" : "py-3 px-3.5 gap-3"
       }`}
   >
     <div className="flex min-w-0 items-center gap-3">
-      <div className={`flex shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#0E0E0E] text-neutral-300 ${compact ? "h-8 w-8" : "h-9 w-9"}`}>
+      <div className={`flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/[0.06] text-neutral-200 ${compact ? "h-9 w-9" : "h-11 w-11"}`}>
         {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover rounded-lg" /> : icon}
       </div>
       <div className="min-w-0">
-        <p className="truncate text-xs font-bold text-white leading-tight">{name}</p>
-        <p className="truncate text-[11px] font-medium text-neutral-400 mt-0.5">
+        <p className="truncate text-[15px] font-semibold text-white leading-tight">{name}</p>
+        <p className="truncate text-[13px] text-neutral-400 mt-0.5">
           {connected ? username || connectedLabel : disconnectedLabel}
         </p>
       </div>
     </div>
-    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${connected ? "bg-white shadow-[0_0_6px_rgba(255,255,255,0.7)]" : "bg-white/20"}`} />
+    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${connected ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]" : "bg-white/20"}`} />
   </div>
 );
 
@@ -262,34 +261,18 @@ const MetricsCluster: React.FC<{
   copy: { games: string; hours: string; favorites: string };
   compact?: boolean;
 }> = ({ games, hours, favorites, copy, compact = false }) => (
-  <div className={`flex items-center justify-between sm:justify-start gap-5 sm:gap-7 rounded-2xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-md ${compact ? "px-4 py-2.5" : "px-5 py-3"}`}>
-    <div className="flex flex-col">
-      <span className={`${compact ? "text-base" : "text-lg sm:text-xl"} font-black text-white tabular-nums tracking-tight leading-none`}>
-        {games}
-      </span>
-      <span className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-400 mt-1">
-        {copy.games}
-      </span>
-    </div>
-    <div className="h-6 w-px bg-white/10 shrink-0" />
-    <div className="flex flex-col">
-      <span className={`${compact ? "text-base" : "text-lg sm:text-xl"} font-black text-white tabular-nums tracking-tight leading-none`}>
-        {hours}
-      </span>
-      <span className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-400 mt-1">
-        {copy.hours}
-      </span>
-    </div>
-    <div className="h-6 w-px bg-white/10 shrink-0" />
-    <div className="flex flex-col">
-      <span className={`${compact ? "text-base" : "text-lg sm:text-xl"} font-black text-white tabular-nums tracking-tight leading-none`}>
-        {favorites}
-      </span>
-      <span className="text-[9px] font-extrabold uppercase tracking-widest text-neutral-400 mt-1">
-        {copy.favorites}
-      </span>
-    </div>
-  </div>
+  <dl className={`grid grid-cols-3 gap-px overflow-hidden rounded-[20px] bg-white/[0.06] ${compact ? "text-[26px]" : "text-[32px]"}`}>
+    {[
+      [games, copy.games],
+      [hours, copy.hours],
+      [favorites, copy.favorites],
+    ].map(([value, label]) => (
+      <div key={String(label)} className={`bg-[#0d0d10] ${compact ? "px-5 py-3" : "px-6 py-4"}`}>
+        <dd className="font-display font-bold leading-none tabular-nums text-white">{value}</dd>
+        <dt className="mt-1.5 text-[13px] text-white/50">{label}</dt>
+      </div>
+    ))}
+  </dl>
 );
 
 interface SectionProps {
@@ -308,18 +291,15 @@ const Section: React.FC<SectionProps> = ({
   compact = false,
 }) => (
   <section
-    className={`${compact ? "rounded-2xl p-4 md:p-5" : "rounded-2xl p-5 md:p-6"} bg-[#0E0E0E] border border-[var(--color-border)] ${className}`}
-    style={{
-      boxShadow: "0 24px 64px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.06)",
-    }}
+    className={`${compact ? "rounded-[22px] p-4 md:p-5" : "rounded-[22px] p-5 md:p-6"} bg-[#121216] ring-1 ring-white/[0.07] ${className}`}
   >
     <div className={`${compact ? "mb-3" : "mb-4"} flex items-center gap-2.5`}>
       {icon && (
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] border border-white/[0.08] text-neutral-300">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#0d0d10] text-white/70">
           {icon}
         </div>
       )}
-      <h2 className="text-xs sm:text-sm font-display font-semibold text-white/90 tracking-wide uppercase">{title}</h2>
+      <h2 className="font-display text-[18px] font-semibold leading-tight text-white">{title}</h2>
     </div>
     {children}
   </section>
@@ -703,40 +683,25 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
       <div className={`relative mx-auto max-w-6xl ${compactProfile ? "space-y-4" : "space-y-6"}`}>
         {/* HERO SECTION EDITORIAL MINIMALISTA */}
         <section
-          className={`relative rounded-3xl border border-white/[0.08] bg-[#0B0B0B] ${compactProfile ? "p-5 md:p-6" : "p-6 sm:p-8"}`}
+          className={`relative rounded-[28px] bg-[#121216] ring-1 ring-white/[0.07] ${compactProfile ? "p-5 md:p-6" : "p-6 sm:p-8"}`}
           style={{
-            boxShadow: "0 24px 64px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.06)",
             // com banner, o conteúdo desce para o avatar "pousar" na borda do banner (como no Discord)
             paddingTop: userProfile?.bannerURL ? (compactProfile ? 128 : 156) : undefined,
           }}
         >
           {userProfile?.bannerURL ? (
-            <div className="absolute inset-x-0 top-0 h-[168px] overflow-hidden rounded-t-3xl">
+            <div className="absolute inset-x-0 top-0 h-[176px] overflow-hidden rounded-t-[28px]">
               <img
                 src={userProfile.bannerURL}
                 alt=""
                 className="h-full w-full select-none object-cover"
                 draggable={false}
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0B0B0B]" />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#121216]" />
             </div>
-          ) : (
-            editable && (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsEditing(true);
-                  playSound?.("showModal");
-                }}
-                className="absolute right-4 top-4 z-20 inline-flex items-center gap-2 rounded-full bg-white/[0.08] px-3.5 py-2 text-xs font-semibold text-white/80 transition hover:bg-white/[0.16] hover:text-white focus-visible:ring-2 focus-visible:ring-white/40"
-              >
-                <Camera className="h-4 w-4" />
-                Adicionar banner
-              </button>
-            )
-          )}
+          ) : null}
           {/* Luz ambiente sutil na cor da patente do jogador isolada para não cortar elementos flutuantes */}
-          <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+          <div className="absolute inset-0 rounded-[28px] overflow-hidden pointer-events-none">
             <div
               className="absolute -top-32 -left-32 w-80 h-80 rounded-full blur-[110px] opacity-15 pointer-events-none transition-all duration-700"
               style={{ background: playerLevel.tierInfo.gradientFrom }}
@@ -748,7 +713,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
 
               {/* BLOCO DE IDENTIDADE: Avatar + Informações unificadas */}
-              <div className="flex items-start sm:items-center gap-5 sm:gap-6 min-w-0 flex-1">
+              <div className="flex items-start sm:items-end gap-5 sm:gap-6 min-w-0 flex-1">
                 <ProfileAvatar
                   profile={userProfile}
                   authPhotoURL={user?.photoURL}
@@ -764,7 +729,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 <div className="min-w-0 flex-1">
                   {/* Nível 1: Nome do Jogador */}
                   <div className="flex items-center gap-3">
-                    <h1 className={`${compactProfile ? "text-2xl" : "text-3xl sm:text-4xl"} font-black tracking-tight bg-gradient-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent leading-none truncate`}>
+                    <h1 className={`${compactProfile ? "text-[30px]" : "text-[40px]"} font-display font-bold tracking-tight text-white leading-none truncate`}>
                       {displayName}
                     </h1>
                   </div>
@@ -812,7 +777,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                     </motion.div>
 
                     <span
-                      className="text-sm font-black tracking-wide transition-colors duration-500"
+                      className="text-[15px] font-bold transition-colors duration-500"
                       style={{ color: effectiveTierInfo.hexColor }}
                     >
                       {effectiveTierInfo.name}
@@ -824,7 +789,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                       key={effectiveLevel}
                       initial={{ y: -4, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      className="text-xs font-extrabold text-neutral-300 font-mono"
+                      className="text-[13px] font-bold text-neutral-300 tabular-nums"
                     >
                       Lv. {effectiveLevel}
                     </motion.span>
@@ -832,7 +797,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
 
                   {/* Barra de Progressão da Patente (Clean & Minimal) */}
                   <div className="mt-2.5 space-y-1 max-w-sm">
-                    <div className="h-1.5 w-full sm:w-72 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div className="h-2 w-full sm:w-80 rounded-full bg-white/[0.07] overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${Math.min(100, Math.max(0, playerLevel.progress))}%` }}
@@ -844,7 +809,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                         }}
                       />
                     </div>
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-neutral-400">
+                    <div className="flex items-center justify-between text-[13px] text-neutral-400">
                       <span>{playerLevel.progress}% para {nextTierInfo?.name || "Nível Máximo"}</span>
                       {playerLevel.currentLevelXp > 0 && playerLevel.xpForNextLevel > 0 && (
                         <span className="text-[10px] text-neutral-500 font-mono">
@@ -856,7 +821,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
 
                   {/* Nível 3: Bio */}
                   {userProfile?.bio && (
-                    <p className="mt-3 text-xs sm:text-[13px] text-neutral-300 leading-relaxed max-w-xl font-normal">
+                    <p className="mt-3.5 max-w-xl text-[15px] leading-relaxed text-neutral-200">
                       {userProfile.bio}
                     </p>
                   )}
@@ -867,7 +832,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                       <button
                         type="button"
                         onClick={() => void openExternalProfile(`https://steamcommunity.com/profiles/${steamId}`)}
-                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-semibold text-neutral-300 transition-colors hover:bg-white/10 hover:text-white"
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white/[0.07] px-3.5 py-1.5 text-[13px] font-semibold text-neutral-200 transition-colors hover:bg-white/[0.13] hover:text-white"
                       >
                         <FontAwesomeIcon icon={faSteam} className="h-3 w-3 text-neutral-400" />
                         <span>{userProfile?.steamUsername || "Steam"}</span>
@@ -890,7 +855,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                             })
                             .catch(() => onNotify?.(copy.copyError, "error"));
                         }}
-                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-semibold text-neutral-300 transition-colors hover:bg-white/10 hover:text-white"
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white/[0.07] px-3.5 py-1.5 text-[13px] font-semibold text-neutral-200 transition-colors hover:bg-white/[0.13] hover:text-white"
                       >
                         <FontAwesomeIcon icon={faDiscord} className="h-3 w-3 text-neutral-400" />
                         <span>{discordDisplayName}</span>
@@ -899,7 +864,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                     {userProfile?.website && /^https:\/\//i.test(userProfile.website) && (
                       <button
                         type="button"
-                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-semibold text-neutral-300 transition-colors hover:bg-white/10 hover:text-white"
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white/[0.07] px-3.5 py-1.5 text-[13px] font-semibold text-neutral-200 transition-colors hover:bg-white/[0.13] hover:text-white"
                         onClick={() => window.electronAPI?.openExternalUrl(userProfile.website as string)}
                       >
                         <ExternalLink className="h-3 w-3 text-neutral-400" />
@@ -914,7 +879,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                       {userProfile?.favoriteGenres?.map((genre) => (
                         <span
                           key={genre}
-                          className="rounded-md border border-white/[0.06] bg-white/[0.03] px-2 py-0.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider"
+                          className="rounded-full bg-white/[0.06] px-3 py-1 text-[12px] font-semibold text-neutral-300"
                         >
                           {genre}
                         </span>
@@ -1014,6 +979,20 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                     </div>
                   )}
 
+                  {editable && !userProfile?.bannerURL && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditing(true);
+                        playSound?.("showModal");
+                      }}
+                      className="inline-flex h-11 items-center gap-2 rounded-full bg-white/[0.08] px-5 text-[13px] font-semibold text-white/80 transition hover:bg-white/[0.15] hover:text-white active:scale-95 cursor-pointer"
+                    >
+                      <Camera className="h-4 w-4" />
+                      Adicionar banner
+                    </button>
+                  )}
+
                   {editable && (
                     <button
                       type="button"
@@ -1021,9 +1000,9 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                         setIsEditing(true);
                         playSound?.("showModal");
                       }}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs font-bold text-neutral-300 transition hover:bg-white/10 hover:text-white cursor-pointer"
+                      className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-[13px] font-semibold text-black transition hover:bg-white/90 active:scale-95 cursor-pointer"
                     >
-                      <Pencil className="h-3.5 w-3.5 text-neutral-400" />
+                      <Pencil className="h-4 w-4" />
                       <span>{copy.edit}</span>
                     </button>
                   )}
@@ -1032,7 +1011,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 {isPrivateProfile ? (
                   <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-neutral-400">
                     <Lock className="h-4 w-4 text-neutral-400" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Perfil Privado</span>
+                    <span className="text-[13px] font-semibold">Perfil privado</span>
                   </div>
                 ) : (
                   <MetricsCluster
@@ -1049,7 +1028,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
         </section>
 
         {isPrivateProfile ? (
-          <section className="bg-[#0B0B0B] flex flex-col items-center justify-center rounded-2xl border border-white/10 p-12 text-center shadow-[0_24px_90px_rgba(0,0,0,0.55)]">
+          <section className="bg-[#121216] ring-1 ring-white/[0.07] flex flex-col items-center justify-center rounded-[22px] p-12 text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-white/15 bg-white/[0.06] text-white/60 shadow-inner">
               <Lock className="h-8 w-8 text-white/80" />
             </div>
@@ -1065,9 +1044,9 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 <div className="flex items-center justify-end mb-2">
                   <button
                     onClick={toggleQuestsVisibility}
-                    className="text-[10px] uppercase tracking-wider font-bold text-white/50 hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
+                    className="text-[13px] font-semibold text-white/55 hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
                   >
-                    {isQuestsVisible ? "Ocultar Missões" : "Mostrar Missões"}
+                    {isQuestsVisible ? "Ocultar missões" : "Mostrar missões"}
                   </button>
                 </div>
                 {isQuestsVisible && (
@@ -1096,7 +1075,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
               <section aria-label="Atividade do jogador" className="space-y-5">
                 <Section
                   compact={compactProfile}
-                  title={activeGameTab === "mostPlayed" ? copy.mostPlayed : `${copy.allGames} (${normalizedGames.length})`}
+                  title={copy.games}
                   icon={activeGameTab === "mostPlayed" ? <TrendingUp className="h-4 w-4" /> : <Layers className="h-4 w-4" />}
                   className={compactProfile ? "min-h-[260px]" : "min-h-[346px]"}
                 >
@@ -1110,7 +1089,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                           playSound?.("select");
                         }}
                         onMouseEnter={() => playSound?.("hover")}
-                        className={`relative pb-3 text-xs font-bold transition-colors cursor-pointer ${activeGameTab === "mostPlayed" ? "text-white" : "text-neutral-500 hover:text-neutral-300"
+                        className={`relative pb-3 text-[15px] font-semibold transition-colors cursor-pointer ${activeGameTab === "mostPlayed" ? "text-white" : "text-neutral-500 hover:text-neutral-300"
                           }`}
                       >
                         <span>{copy.mostPlayed}</span>
@@ -1130,7 +1109,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                           playSound?.("select");
                         }}
                         onMouseEnter={() => playSound?.("hover")}
-                        className={`relative pb-3 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${activeGameTab === "allGames" ? "text-white" : "text-neutral-500 hover:text-neutral-300"
+                        className={`relative pb-3 text-[15px] font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${activeGameTab === "allGames" ? "text-white" : "text-neutral-500 hover:text-neutral-300"
                           }`}
                       >
                         <span>{copy.allGames}</span>
@@ -1168,10 +1147,10 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                           const itemProps = canOpenGames
                             ? {
                                 onClick: () => onOpenGame?.(game),
-                                className: "group grid w-full grid-cols-[20px_42px_1fr_auto] items-center gap-3.5 rounded-xl p-2.5 text-left transition-colors hover:bg-white/[0.04] cursor-pointer",
+                                className: "group grid w-full grid-cols-[24px_56px_1fr_auto] items-center gap-4 rounded-2xl p-2.5 text-left transition-colors hover:bg-white/[0.05] cursor-pointer",
                               }
                             : {
-                                className: "grid w-full grid-cols-[20px_42px_1fr_auto] items-center gap-3.5 rounded-xl p-2.5 text-left cursor-default select-none",
+                                className: "grid w-full grid-cols-[24px_56px_1fr_auto] items-center gap-4 rounded-2xl p-2.5 text-left cursor-default select-none",
                               };
 
                           const Component = canOpenGames ? "button" : "div";
@@ -1182,8 +1161,8 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                               {...(canOpenGames ? { type: "button" } : {})}
                               {...itemProps}
                             >
-                              <span className="text-right text-xs font-mono font-bold text-neutral-500">{index + 1}</span>
-                              <div className="h-12 w-9 overflow-hidden rounded-lg bg-white/5 border border-white/10 shrink-0">
+                              <span className="text-right text-[14px] font-semibold tabular-nums text-neutral-500">{index + 1}</span>
+                              <div className="h-[72px] w-[54px] overflow-hidden rounded-xl bg-white/5 shrink-0">
                                 {(game.cardImage || game.image) && (
                                   <img
                                     src={game.cardImage || game.image}
@@ -1196,21 +1175,21 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                                 )}
                               </div>
                               <div className="min-w-0 pr-2">
-                                <p className="truncate text-xs sm:text-sm font-bold text-white">{game.title}</p>
+                                <p className="truncate text-[16px] font-semibold text-white">{game.title}</p>
                                 {/* Barra sutil de distribuição relativa de tempo jogado */}
-                                <div className="mt-2 flex items-center gap-2">
-                                  <div className="h-1 w-full max-w-xs overflow-hidden rounded-full bg-white/[0.05]">
+                                <div className="mt-2.5 flex items-center gap-2">
+                                  <div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-white/[0.07]">
                                     <motion.div
                                       initial={{ width: 0 }}
                                       animate={{ width: `${pct}%` }}
                                       transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1], delay: index * 0.05 }}
-                                      className="h-full rounded-full bg-white/30"
+                                      className="h-full rounded-full bg-white/55"
                                     />
                                   </div>
                                 </div>
                               </div>
-                              <span className="flex items-center gap-1.5 text-xs font-mono font-bold text-neutral-300">
-                                <Clock className="h-3 w-3 text-neutral-500" />
+                              <span className="flex items-center gap-1.5 text-[15px] font-semibold tabular-nums text-neutral-200">
+                                <Clock className="h-3.5 w-3.5 text-neutral-500" />
                                 {formatPlayedHours(playedHours)}h
                               </span>
                             </Component>
@@ -1236,10 +1215,10 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                           const itemProps = canOpenGames
                             ? {
                                 onClick: () => onOpenGame?.(game),
-                                className: "flex items-center gap-3 p-2.5 rounded-xl border border-white/5 bg-white/[0.03] hover:bg-white/[0.07] hover:border-white/12 transition text-left cursor-pointer group",
+                                className: "flex items-center gap-3.5 p-3 rounded-2xl bg-[#0d0d10] hover:bg-[#17171d] transition text-left cursor-pointer group",
                               }
                             : {
-                                className: "flex items-center gap-3 p-2.5 rounded-xl border border-white/5 bg-white/[0.03] text-left cursor-default select-none",
+                                className: "flex items-center gap-3.5 p-3 rounded-2xl bg-[#0d0d10] text-left cursor-default select-none",
                               };
 
                           return (
@@ -1248,7 +1227,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                               {...(canOpenGames ? { type: "button" } : {})}
                               {...itemProps}
                             >
-                              <div className="h-14 w-11 rounded-lg overflow-hidden bg-white/8 shrink-0 relative">
+                              <div className="h-[72px] w-[54px] rounded-xl overflow-hidden bg-white/8 shrink-0 relative">
                                 {(game.cardImage || game.image) ? (
                                   <img
                                     src={game.cardImage || game.image}
@@ -1270,18 +1249,18 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                                 )}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="truncate text-xs font-bold text-white">{game.title}</p>
+                                <p className="truncate text-[14px] font-semibold text-white">{game.title}</p>
                                 <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-[10px] font-medium text-white/40 flex items-center gap-1">
+                                  <span className="text-[12px] text-white/50 flex items-center gap-1">
                                     <Clock className="h-2.5 w-2.5" />
                                     {formatPlayedHours(playedHours)}h
                                   </span>
-                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/5 text-white/50 uppercase tracking-wider">
+                                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/[0.07] text-white/60">
                                     {launcherBadge}
                                   </span>
                                 </div>
                                 {(game.totalAchievements || 0) > 0 && (
-                                  <div className="flex items-center gap-1 mt-1 text-[10px] text-white/40">
+                                  <div className="flex items-center gap-1 mt-1 text-[12px] text-white/45">
                                     <Trophy className="h-2.5 w-2.5 text-yellow-500/80" />
                                     <span>{game.completedAchievements || 0} / {game.totalAchievements}</span>
                                   </div>
@@ -1304,7 +1283,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400/20" />
-                      <h3 className="text-xs font-display font-semibold text-white/90 tracking-wide uppercase">{copy.favorites}</h3>
+                      <h3 className="font-display text-[18px] font-semibold text-white">{copy.favorites}</h3>
                     </div>
                     {favoriteGames.length > 0 && (
                       <span className="text-[11px] font-medium text-white/50">
@@ -1368,7 +1347,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
 
               <aside aria-label="Resumo do perfil" className="space-y-5">
                 <Section compact={compactProfile} title={copy.platforms}>
-                  <div className="divide-y divide-white/[0.05]">
+                  <div className="space-y-2">
                     <PlatformRow
                       name="Steam"
                       connected={Boolean(userProfile?.steamId)}
@@ -1404,15 +1383,15 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 <Section compact={compactProfile} title={copy.achievements}>
                   <div className="mb-3 flex items-end justify-between">
                     <div>
-                      <span className="text-4xl font-black text-white">{stats.totalAchievements}</span>
-                      <span className="ml-1 text-sm font-bold text-white/35">/ {stats.totalPossible}</span>
+                      <span className="font-display text-[44px] font-bold leading-none tabular-nums text-white">{stats.totalAchievements}</span>
+                      <span className="ml-1.5 text-[16px] text-white/40">/ {stats.totalPossible}</span>
                     </div>
-                    <span className="text-sm font-black text-white/45">{achievementPercent}%</span>
+                    <span className="text-[18px] font-semibold text-white/60 tabular-nums">{achievementPercent}%</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-white/8">
                     <motion.div initial={{ width: 0 }} animate={{ width: `${achievementPercent}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} className="h-full rounded-full bg-white" />
                   </div>
-                  <p className="mt-3 flex items-center gap-1.5 text-[10px] text-white/35">
+                  <p className="mt-3 flex items-center gap-1.5 text-[13px] text-white/45">
                     <Trophy className="h-3 w-3" /> {stats.totalAchievements} {copy.unlocked}
                   </p>
                 </Section>
@@ -1422,8 +1401,8 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                   <div className="space-y-4">
                     {/* Header de Distribuição */}
                     <div className="flex items-baseline justify-between">
-                      <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-neutral-400">Distribuição</span>
-                      <span className="text-xs font-mono font-black text-white">{stats.totalGames} {stats.totalGames === 1 ? "jogo" : "jogos"}</span>
+                      <span className="text-[13px] text-neutral-400">Distribuição</span>
+                      <span className="text-[14px] font-semibold tabular-nums text-white">{stats.totalGames} {stats.totalGames === 1 ? "jogo" : "jogos"}</span>
                     </div>
 
                     {/* Stacked bar única de distribuição */}
@@ -1459,7 +1438,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                         const pct = stats.totalGames > 0 ? (row.value / stats.totalGames) * 100 : 0;
                         return (
                           <div key={row.label} className="group">
-                            <div className="flex items-center justify-between text-xs font-bold mb-1">
+                            <div className="flex items-center justify-between text-[14px] font-medium mb-1.5">
                               <span className="text-neutral-300 group-hover:text-white transition-colors">{row.label}</span>
                               <span className="font-mono text-neutral-400 group-hover:text-white tabular-nums transition-colors">{row.value}</span>
                             </div>

@@ -230,7 +230,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: isModal ? 0.96 : 1, y: isModal ? 0 : -12 }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className={`rounded-[16px] border border-[#292d30] bg-black p-5 sm:p-6 relative overflow-hidden ${
+      className={`rounded-[22px] bg-[#121216] ring-1 ring-white/[0.07] p-5 sm:p-6 relative overflow-hidden ${
         isModal
           ? "w-full max-w-5xl max-h-[85vh] overflow-y-auto thin-scrollbar"
           : "mx-6 sm:mx-10 mb-8"
@@ -249,10 +249,10 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-black tracking-tight text-white">
+              <h2 className="font-display text-[20px] font-bold text-white">
                 Guia de Iniciação & Missões
               </h2>
-              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-400">
+              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-amber-400">
                 Novos Jogadores
               </span>
             </div>
@@ -264,17 +264,17 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
 
         {/* Status + Ações do cabeçalho */}
         <div className="flex items-center gap-3 shrink-0">
-          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-3.5 py-1.5 backdrop-blur-md">
+          <div className="flex items-center gap-3 rounded-2xl bg-[#0d0d10] px-3.5 py-2">
             <div className="flex flex-col">
               <span className="text-[11px] font-extrabold text-white">
                 {completedCount} de {totalCount} Concluídas
               </span>
-              <span className="text-[10px] font-mono font-bold text-amber-400">
+              <span className="text-[12px] font-semibold text-amber-400">
                 +{earnedXp} XP Acumulado
               </span>
             </div>
             <div className="h-4 w-px bg-white/10" />
-            <span className="font-mono text-xs font-black text-amber-400">
+            <span className="text-[13px] font-semibold tabular-nums text-amber-400">
               {progressPercent}%
             </span>
           </div>
@@ -314,7 +314,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 mt-5 flex items-center justify-between gap-4 rounded-2xl border border-emerald-500/30 bg-emerald-950/40 p-4 backdrop-blur-md"
+          className="relative z-10 mt-5 flex items-center justify-between gap-4 rounded-2xl bg-[#123a2e] p-4"
         >
           <div className="flex items-center gap-3">
             <PartyPopper className="h-6 w-6 text-emerald-400 shrink-0" />
@@ -362,7 +362,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
                     {/* Header do Card */}
                     <div className="flex items-start justify-between gap-2">
                       <div
-                        className={`flex h-8 w-8 items-center justify-center rounded-xl shrink-0 transition-colors ${
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl shrink-0 transition-colors ${
                           q.completed
                             ? "border border-emerald-500/30 bg-emerald-500/20 text-emerald-400"
                             : "border border-white/10 bg-white/[0.06] text-white/80 group-hover:border-amber-500/40 group-hover:text-amber-400"
@@ -373,12 +373,12 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
 
                       <div className="flex items-center gap-1.5">
                         {q.instantLevelUp && !q.completed && (
-                          <span className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-cyan-300">
+                          <span className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[11px] font-semibold text-cyan-300">
                             ★ Level UP
                           </span>
                         )}
                         <span
-                          className={`font-mono text-xs font-black ${
+                          className={`text-[13px] font-semibold tabular-nums ${
                             q.completed ? "text-emerald-400" : "text-amber-400"
                           }`}
                         >
@@ -390,13 +390,13 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
                     {/* Conteúdo */}
                     <div className="mt-3">
                       <h3
-                        className={`text-xs sm:text-sm font-bold tracking-tight ${
+                        className={`text-[15px] font-semibold ${
                           q.completed ? "line-through text-neutral-400" : "text-white"
                         }`}
                       >
                         {q.title}
                       </h3>
-                      <p className="mt-1 text-[11px] leading-relaxed text-neutral-400 line-clamp-2">
+                      <p className="mt-1 text-[13px] leading-relaxed text-neutral-400 line-clamp-2">
                         {q.description}
                       </p>
                     </div>
@@ -405,7 +405,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
                   {/* Ação ou Badge de Concluído */}
                   <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between">
                     {q.completed ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400">
+                      <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-emerald-400">
                         <CheckCircle2 className="h-3 w-3" />
                         Concluída
                       </span>
@@ -413,7 +413,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
                       <button
                         type="button"
                         onClick={() => handleAction(q.id)}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-white hover:text-black transition active:scale-95 group/btn"
+                        className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.09] px-4 py-2 text-[13px] font-semibold text-white hover:bg-white hover:text-black transition active:scale-95 group/btn"
                       >
                         <span>Realizar</span>
                         <ArrowRight className="h-3 w-3 transition-transform group-hover/btn:translate-x-0.5" />
