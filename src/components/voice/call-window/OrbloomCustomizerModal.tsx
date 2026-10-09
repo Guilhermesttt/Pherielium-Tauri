@@ -545,7 +545,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                         {(Object.keys(groupedPresets) as Array<keyof typeof groupedPresets>).map(
                           (category) => (
                             <div key={category} className="mb-2 last:mb-0">
-                              <div className="px-3 py-1.5 text-[10px] font-bold tracking-wider text-white/35 uppercase">
+                              <div className="px-3 py-1.5 text-[11px] font-medium text-white/40">
                                 {category}
                               </div>
                               <div className="space-y-0.5">
@@ -613,7 +613,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                     >
                       {/* Appearance (Cores e Parâmetros) */}
                       <div className="space-y-3 p-4 rounded-[18px] bg-[#181818] border border-white/[0.06]">
-                        <h4 className="text-xs font-bold text-white tracking-wider uppercase">Aparência</h4>
+                        <h4 className="text-[13px] font-semibold text-white">Aparência</h4>
 
                         {/* Cores */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
@@ -780,7 +780,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
 
                       {/* Voice response */}
                       <div className="space-y-3 p-4 rounded-[18px] bg-[#181818] border border-white/[0.06]">
-                        <h4 className="text-xs font-bold text-white tracking-wider uppercase">Resposta à voz</h4>
+                        <h4 className="text-[13px] font-semibold text-white">Resposta à voz</h4>
                         <div className="grid grid-cols-3 gap-3 text-xs">
                           <div>
                             <div className="flex justify-between text-white/50 mb-1">
@@ -849,7 +849,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
 
                       {/* Motion & Rendering */}
                       <div className="space-y-3 p-4 rounded-[18px] bg-[#181818] border border-white/[0.06]">
-                        <h4 className="text-xs font-bold text-white tracking-wider uppercase">Movimento & Qualidade</h4>
+                        <h4 className="text-[13px] font-semibold text-white">Movimento & Qualidade</h4>
                         <div className="grid grid-cols-2 gap-3 text-xs">
                           <div>
                             <div className="flex justify-between text-white/50 mb-1">

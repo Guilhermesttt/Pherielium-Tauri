@@ -71,10 +71,7 @@ export const CallControlDock: React.FC<CallControlDockProps> = ({
   return (
     <nav
       aria-label="Controles da chamada"
-      style={{
-        cornerShape: "squircle",
-      } as React.CSSProperties}
-      className="flex items-center gap-1.5 sm:gap-2 px-3 py-2 rounded-[22px] bg-[#0F0F0F] border border-[#161616] shadow-[0_20px_50px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.06)] select-none shrink-0"
+      className="flex shrink-0 select-none items-center gap-2 rounded-full border border-white/10 bg-[#161618]/80 px-3 py-2.5 shadow-[0_24px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
     >
       {/* Grupo Principal: Comunicação Ativa (Microfone, Som, Câmera, Transmissão) */}
       <div className="flex items-center gap-1.5" role="group" aria-label="Controles de mídia">
@@ -130,7 +127,7 @@ export const CallControlDock: React.FC<CallControlDockProps> = ({
       </div>
 
       {/* Divisor Visual Sutil Base 4/8 */}
-      <div className="w-px h-6 bg-white/[0.08] mx-1 shrink-0" aria-hidden="true" />
+      <div className="mx-1 h-6 w-px shrink-0 bg-white/[0.1]" aria-hidden="true" />
 
       {/* Grupo Secundário: Ajustes & Personalização da Esfera */}
       <div className="flex items-center gap-1.5" role="group" aria-label="Ajustes e efeitos">
@@ -152,15 +149,13 @@ export const CallControlDock: React.FC<CallControlDockProps> = ({
       </div>
 
       {/* Divisor Visual Sutil Base 4/8 */}
-      <div className="w-px h-6 bg-white/[0.08] mx-1 shrink-0" aria-hidden="true" />
+      <div className="mx-1 h-6 w-px shrink-0 bg-white/[0.1]" aria-hidden="true" />
 
       {/* Grupo Destrutivo: Sair da Chamada */}
       <CallControlButton
-        icon={<PhoneOff className="h-4 w-4" />}
-        label="Sair da chamada"
+        icon={<PhoneOff className="h-5 w-5" />}
         tooltip="Sair da chamada"
         variant="danger"
-        size="lg"
         onClick={onHangUp}
       />
     </nav>

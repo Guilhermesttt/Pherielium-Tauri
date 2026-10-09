@@ -35,36 +35,30 @@ export const CallControlButton: React.FC<CallControlButtonProps> = ({
   // Solid surface by default (#333333) with inset light bevel (inset 0 1px 0 rgba(255,255,255,0.08))
   // Active/Pressed physics with instant response on pointerdown (scale 0.96)
   const variantStyles: Record<CallButtonVariant, string> = {
-    default:
-      "bg-white/[0.05] text-white/90 hover:bg-white/[0.09] hover:text-white border border-[#161616] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
-    active:
-      "bg-white text-black font-semibold border border-white shadow-[0_2px_8px_rgba(255,255,255,0.14)]",
-    muted:
-      "bg-[#261619] text-[#FF6B81] border border-[#FF3B5C]/25 hover:bg-[#331C21] shadow-[inset_0_1px_0_rgba(255,59,92,0.12)]",
-    danger:
-      "bg-[#E02424] text-white font-medium hover:bg-[#C81E1E] active:bg-[#B91C1C] border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]",
-    ghost:
-      "bg-transparent text-white/60 hover:text-white hover:bg-white/[0.08] border border-transparent",
+    default: "bg-white/[0.09] text-white/90 hover:bg-white/[0.16] hover:text-white",
+    active: "bg-white text-black font-semibold hover:bg-white/90",
+    muted: "bg-[#ff453a]/18 text-[#ff7a72] hover:bg-[#ff453a]/28",
+    danger: "bg-[#ff453a] text-white font-medium hover:brightness-110",
+    ghost: "bg-transparent text-white/55 hover:text-white hover:bg-white/[0.08]",
   };
 
+  // botões só com ícone são círculos (como o FaceTime); com rótulo viram pílula
   const sizeStyles = {
-    md: "h-11 min-w-[44px] px-3 rounded-[16px]",
-    lg: "h-11 px-5 rounded-[18px]",
+    md: label ? "h-12 gap-2 rounded-full px-4" : "h-12 w-12 rounded-full",
+    lg: "h-12 gap-2 rounded-full px-5",
   };
 
   return (
     <motion.button
       type="button"
-      whileTap={!disabled ? { scale: 0.96 } : undefined}
-      transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
+      whileHover={!disabled ? { scale: 1.06 } : undefined}
+      whileTap={!disabled ? { scale: 0.9 } : undefined}
+      transition={{ type: "spring", stiffness: 520, damping: 24 }}
       onClick={onClick}
       disabled={disabled}
       title={tooltip}
       aria-label={tooltip}
-      style={{
-        cornerShape: "squircle",
-      } as React.CSSProperties}
-      className={`relative inline-flex items-center justify-center gap-2 select-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F0F0F] disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-medium tracking-tight ${
+      className={`relative inline-flex items-center justify-center select-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c0c0e] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 text-[13px] font-medium ${
         variantStyles[variant]
       } ${sizeStyles[size]} ${className}`}
       {...props}
