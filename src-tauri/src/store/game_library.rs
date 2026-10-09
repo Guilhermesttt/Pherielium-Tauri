@@ -154,7 +154,7 @@ pub fn open(uid: &str) -> Result<Connection> {
     Ok(conn)
 }
 
-fn migrate(conn: &Connection) -> Result<()> {
+pub(crate) fn migrate(conn: &Connection) -> Result<()> {
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS games (
             id                  TEXT PRIMARY KEY,
@@ -183,6 +183,15 @@ fn migrate(conn: &Connection) -> Result<()> {
             ended_at    TEXT NOT NULL,
             duration_minutes INTEGER NOT NULL,
             created_at  TEXT NOT NULL
+        );
+
+        -- sessão em andamento: sobrevive a crash/queda de energia (heartbeat periódico)
+        CREATE TABLE IF NOT EXISTS open_sessions (
+            uid             TEXT PRIMARY KEY,
+            game_id         TEXT NOT NULL,
+            title           TEXT NOT NULL,
+            started_at      INTEGER NOT NULL,
+            last_heartbeat  INTEGER NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS library_meta (
