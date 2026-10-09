@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -83,8 +84,8 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isJoiningWithPassword, setIsJoiningWithPassword] = useState(false);
 
-  const fetchRooms = useCallback(async () => {
-    setIsLoading(true);
+  const fetchRooms = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [pub, mine] = await Promise.all([
         listPublicVoiceRooms({
@@ -107,8 +108,9 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
   }, [fetchRooms]);
 
   useEffect(() => {
+    // entrar/sair/editar em tempo real, sem piscar o "carregando"
     const unsubscribe = subscribeToVoiceRoomTableChanges(() => {
-      void fetchRooms();
+      void fetchRooms(true);
     });
     return unsubscribe;
   }, [fetchRooms]);
@@ -132,9 +134,19 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
       setInputPassword("");
       setPasswordError(null);
     } else {
-      void onJoinRoom(room.id);
+      onJoinRoom(room.id).catch(() => {
+        /* o hook já avisou o usuário */
+      });
     }
   };
+
+  // Entrou na sala (a sessão passou a existir): fecha o modal de senha sem esperar o resto da conexão
+  useEffect(() => {
+    if (passwordModalRoom && currentRoomId === passwordModalRoom.id) {
+      setPasswordModalRoom(null);
+      setIsJoiningWithPassword(false);
+    }
+  }, [currentRoomId, passwordModalRoom]);
 
   const handlePasswordSubmit = async () => {
     if (!passwordModalRoom) return;
@@ -180,7 +192,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
         <div className="flex items-center gap-2.5 w-full md:w-auto">
           <button
             type="button"
-            onClick={fetchRooms}
+            onClick={() => void fetchRooms()}
             disabled={isLoading}
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition cursor-pointer"
             title="Atualizar lista de salas"
@@ -314,6 +326,9 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                       : "bg-[var(--surface-raised)] hover:bg-[var(--surface-overlay)] border-white/[0.07] hover:border-white/20"
                   }`}
                 >
+                  {room.bannerUrl ? (
+                    <img src={room.bannerUrl} alt="" loading="lazy" className="-mx-4.5 -mt-4.5 mb-3 aspect-[3/1] w-[calc(100%+2.25rem)] max-w-none rounded-t-[22px] object-cover" />
+                  ) : null}
                   <div className="space-y-2.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5 font-bold text-sm text-white truncate min-w-0">
@@ -358,6 +373,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                       </div>
                     </div>
 
+                    {room.description ? <p className="line-clamp-2 text-[12px] leading-snug text-white/50">{room.description}</p> : null}
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border border-white/10 bg-white/5 text-white/80">
                         {meta.icon}
@@ -448,6 +464,9 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                     : "bg-[var(--surface-raised)] hover:bg-[var(--surface-overlay)] border-white/[0.07] hover:border-white/20"
                 }`}
               >
+                {room.bannerUrl ? (
+                    <img src={room.bannerUrl} alt="" loading="lazy" className="-mx-4.5 -mt-4.5 mb-3 aspect-[3/1] w-[calc(100%+2.25rem)] max-w-none rounded-t-[22px] object-cover" />
+                  ) : null}
                 <div className="space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5 font-bold text-sm text-white truncate min-w-0">
@@ -471,6 +490,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                     )}
                   </div>
 
+                  {room.description ? <p className="line-clamp-2 text-[12px] leading-snug text-white/50">{room.description}</p> : null}
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border border-white/10 bg-white/5 text-white/80">
                       {meta.icon}
@@ -555,13 +575,15 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
             icon: editingRoom.icon,
             avatarUrl: editingRoom.avatarUrl,
             themeColor: editingRoom.themeColor,
+            description: editingRoom.description,
+            bannerUrl: editingRoom.bannerUrl,
             isPrivate: editingRoom.isPrivate,
             password: editingRoom.hasPassword ? "" : undefined,
           }}
           onCreateChannel={async (config) => {
             try {
               await updateVoiceRoom(editingRoom.id, config);
-              notify("Aparência e configurações da sala atualizadas!", "success");
+              notify("Sala atualizada.", "success");
               void fetchRooms();
             } catch (err: any) {
               notify(err?.message || "Erro ao atualizar sala.", "error");
@@ -635,7 +657,14 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                   disabled={isJoiningWithPassword}
                   className="flex-1 py-2 rounded-xl bg-white text-black font-bold text-xs hover:bg-white/90 transition shadow-sm disabled:opacity-50 cursor-pointer"
                 >
-                  {isJoiningWithPassword ? "Entrando..." : "Entrar"}
+                  {isJoiningWithPassword ? (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                      Conectando…
+                    </span>
+                  ) : (
+                    "Entrar"
+                  )}
                 </button>
               </div>
             </motion.div>

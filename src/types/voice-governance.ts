@@ -76,6 +76,12 @@ export interface CallRoomConfig {
   icon?: string;
   avatarUrl?: string;
   themeColor?: string;
+  description?: string;
+  bannerUrl?: string;
+  /** edição: remove o banner atual */
+  clearBanner?: boolean;
+  /** edição: remove a senha atual */
+  clearPassword?: boolean;
 }
 
 export interface CallInviteMeta {
@@ -119,6 +125,10 @@ export interface VoiceRoom {
   icon?: string;
   avatarUrl?: string;
   themeColor?: string;
+  /** descrição curta da sala (até 200 caracteres) */
+  description?: string;
+  /** banner (imagem larga no topo do cartão da sala) */
+  bannerUrl?: string;
 }
 
 export type PublicVoiceRoom = VoiceRoom;

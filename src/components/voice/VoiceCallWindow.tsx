@@ -19,6 +19,8 @@ import { ParticipantContextMenu } from "./ParticipantContextMenu";
 import { ChannelInviteModal } from "./ChannelInviteModal";
 import { CallPrivacyPanel } from "./CallPrivacyPanel";
 import { CreateChannelModal } from "./CreateChannelModal";
+import { getVoiceRoomDetails } from "../../services/voiceRooms";
+import type { VoiceRoom } from "../../types/voice-governance";
 
 // Modular Presentation Components
 import { CallHeader } from "./call-window/CallHeader";
@@ -242,6 +244,17 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const [isEditAppearanceModalOpen, setIsEditAppearanceModalOpen] = useState(false);
+  const [savedRoom, setSavedRoom] = React.useState<VoiceRoom | null>(null);
+  React.useEffect(() => {
+    if (!isEditAppearanceModalOpen || !session?.chatId) return;
+    let cancelled = false;
+    void getVoiceRoomDetails(session.chatId).then((room) => {
+      if (!cancelled) setSavedRoom(room);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isEditAppearanceModalOpen, session?.chatId]);
   const [isOrbloomModalOpen, setIsOrbloomModalOpen] = useState(false);
   const [isCompactMode, setIsCompactMode] = useState<boolean>(() => {
     try {
@@ -1171,7 +1184,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
               }}
             />
 
-            {/* Edit Appearance Modal */}
+            {/* Edit Appearance Modal: preenchido com o que está salvo no banco */}
             {isEditAppearanceModalOpen && (
               <CreateChannelModal
                 isOpen={isEditAppearanceModalOpen}
@@ -1179,19 +1192,19 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                 userProfile={userProfile}
                 isEditing={true}
                 initialConfig={{
-                  roomName:
-                    session?.roomName || roomConfig?.roomName || session?.friendName,
-                  category:
-                    session?.category || roomConfig?.category || "resenha_games",
-                  icon: session?.icon || roomConfig?.icon || "🎮",
-                  avatarUrl: session?.avatarUrl || roomConfig?.avatarUrl,
-                  themeColor: session?.themeColor || roomConfig?.themeColor || "#8B5CF6",
-                  isPrivate: Boolean(session?.isPrivate || roomConfig?.isPrivate),
-                  password: session?.password || roomConfig?.password,
+                  roomName: savedRoom?.name || session?.roomName || roomConfig?.roomName || session?.friendName,
+                  category: savedRoom?.category || session?.category || roomConfig?.category || "resenha_games",
+                  icon: savedRoom?.icon || session?.icon || roomConfig?.icon || "gamepad",
+                  avatarUrl: savedRoom?.avatarUrl ?? session?.avatarUrl ?? roomConfig?.avatarUrl,
+                  themeColor: savedRoom?.themeColor || session?.themeColor || roomConfig?.themeColor || "#8B5CF6",
+                  isPrivate: Boolean(savedRoom?.isPrivate ?? session?.isPrivate ?? roomConfig?.isPrivate),
+                  // "" = a sala tem senha (em branco mantém); undefined = sem senha
+                  password: savedRoom ? (savedRoom.hasPassword ? "" : undefined) : session?.password || roomConfig?.password,
+                  description: savedRoom?.description,
+                  bannerUrl: savedRoom?.bannerUrl,
                 }}
-                onCreateChannel={(updatedConfig) => {
-                  void onUpdateRoomAppearance?.(updatedConfig);
-                  setIsEditAppearanceModalOpen(false);
+                onCreateChannel={async (updatedConfig) => {
+                  await onUpdateRoomAppearance?.(updatedConfig);
                 }}
               />
             )}

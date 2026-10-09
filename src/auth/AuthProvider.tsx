@@ -280,6 +280,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAuthIssue(null);
   }, []);
 
+  // Perfil salvo no editor: aplica na hora (foto, banner, nome...) em vez de esperar o próximo refetch.
+  useEffect(() => {
+    const onSaved = (e: Event) => {
+      const patch = (e as CustomEvent<Partial<UserProfile> | undefined>).detail;
+      const current = userProfileRef.current;
+      if (!patch || !current) return;
+      commitUserProfile({ ...current, ...patch });
+    };
+    window.addEventListener("pherielium:profile-saved", onSaved);
+    return () => window.removeEventListener("pherielium:profile-saved", onSaved);
+  }, [commitUserProfile]);
+
   // Mantem o ref coerente inclusive para atualizacoes feitas por outros handlers.
   useEffect(() => {
     userProfileRef.current = userProfile;

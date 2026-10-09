@@ -57,7 +57,7 @@ import {
 import { startDesktopAudioCapture } from "../services/voiceCall/desktopAudioCapture";
 import { publishVoiceLevel } from "../services/voiceCall/voiceLevelBridge";
 import { emptyCallMediaStats, summarizeRtcStats, type ByteSample, type CallMediaStats } from "../services/voiceCall/mediaStats";
-import { createVoiceRoom, joinVoiceRoom, leaveVoiceRoom } from "../services/voiceRooms";
+import { createVoiceRoom, joinVoiceRoom, leaveVoiceRoom, updateVoiceRoom } from "../services/voiceRooms";
 import {
   detachCameraTrackFromPeers,
   attachScreenTracksToPeer,
@@ -1803,6 +1803,8 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   }, [cleanUpCall]);
 
   // Connect and manage LiveKit SFU Room for low-latency voice and video
+  const prefetchedLiveKitTokenRef = useRef<{ room: string; promise: ReturnType<typeof fetchLiveKitToken> } | null>(null);
+
   const connectLiveKitRoom = useCallback(
     async (roomName: string, identity: string, displayName: string, avatarUrl?: string) => {
       try {
@@ -1816,7 +1818,12 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         if (!isLiveKitCompatibleRoom(roomName) || isLocalTestCall(roomName)) {
           throw new Error("Chamada local de teste — LiveKit não se aplica.");
         }
-        const { token, serverUrl } = await fetchLiveKitToken(roomName, identity, displayName, { avatar: avatarUrl });
+        // o token pode já ter sido pedido em paralelo ao microfone (ver joinRoom)
+        const warm = prefetchedLiveKitTokenRef.current;
+        prefetchedLiveKitTokenRef.current = null;
+        const { token, serverUrl } = await (warm && warm.room === roomName
+          ? warm.promise
+          : fetchLiveKitToken(roomName, identity, displayName, { avatar: avatarUrl }));
         const room = new LiveKitRoom({
           adaptiveStream: true,
           dynacast: true,
@@ -3197,7 +3204,16 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   // JOIN ROOM (Persistente / Multi-Participante)
   const joinRoom = useCallback(
     async (roomId: string, password?: string) => {
-      if (!user?.uid || callState !== "idle") return;
+      if (!user?.uid) return;
+      if (callState !== "idle") {
+        // já está nesta sala: só reabre a janela; em outra chamada, avisa em vez de não fazer nada
+        if (sessionRef.current?.chatId === roomId) {
+          setIsVoiceWindowOpen(true);
+        } else {
+          notify("Você já está em uma chamada. Saia dela para entrar nesta sala.", "info");
+        }
+        return;
+      }
 
       try {
         setCallState("connecting");
@@ -3239,6 +3255,15 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           category: room.category,
           isPrivate: room.isPrivate,
         });
+        // senha/limite validados: abre a janela já, com o estado "Conectando…" (sem esperar o LiveKit)
+        setIsVoiceWindowOpen(true);
+
+        // pede o token do LiveKit já (acorda o servidor) enquanto o microfone é preparado
+        if (isLiveKitCompatibleRoom(room.id) && !isLocalTestCall(room.id)) {
+          const promise = fetchLiveKitToken(room.id, user.uid, displayName, { avatar: avatarUrl });
+          promise.catch(() => undefined);
+          prefetchedLiveKitTokenRef.current = { room: room.id, promise };
+        }
 
         const rawAudioStream = await acquireAudioStream();
         if (rawAudioStream) {
@@ -3257,10 +3282,10 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         }
 
         // ICE Preflight Check for rooms
-        const preflight = await runIcePreflightCheck();
-        if (!preflight.success) {
-          console.warn("[ICE Preflight] Warning:", preflight.error);
-        }
+        // só diagnóstico: não faz o usuário esperar (levava até ~1,5 s por entrada)
+        void runIcePreflightCheck().then((preflight) => {
+          if (!preflight.success) console.warn("[ICE Preflight] Warning:", preflight.error);
+        });
 
         // Connect to LiveKit SFU FIRST (primary transport for rooms)
         let livekitConnected = false;
@@ -3289,13 +3314,13 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           createUnifiedSessionHandlers(room.id),
         );
 
-        // Notifica a sala que entramos
-        await announceMemberJoinedOnce(room.id, {
+        // Notifica a sala que entramos (sem bloquear a entrada: o canal pode demorar a assinar)
+        void announceMemberJoinedOnce(room.id, {
           uid: user.uid,
           name: displayName,
           avatar: avatarUrl || null,
           chatId: room.id,
-        });
+        }).catch((err) => console.warn("[useVoiceCall] announceMemberJoined falhou:", err));
 
         // If LiveKit failed, fall back to P2P mesh for media
         if (!livekitConnected) {
@@ -3327,6 +3352,9 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         console.error("[useVoiceCall] joinRoom failed:", err);
         notify(err?.message || "Não foi possível entrar na sala de voz.", "error");
         cleanUpCall();
+        setIsVoiceWindowOpen(false);
+        // quem chamou (ex.: modal de senha) precisa saber que falhou
+        throw err instanceof Error ? err : new Error(String(err?.message || "Não foi possível entrar na sala de voz."));
       }
     },
     [acquireAudioStream, announceMemberJoinedOnce, applyAudioProcessingChain, callState, cleanUpCall, createPeerConnectionForPeer, createUnifiedSessionHandlers, inputMode, notify, playRingtone, setupVoiceAnalyzer, user, userProfile],
@@ -3348,7 +3376,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
       }
 
       if (isPersistentVoiceRoomId(chatId)) {
-        await joinRoom(chatId, password);
+        await joinRoom(chatId, password).catch(() => undefined); // já notificou
         return;
       }
 
@@ -3504,7 +3532,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
 
   // CREATE AND JOIN ROOM (Criação de Sala Persistente)
   const createAndJoinRoom = useCallback(
-    async (config: CallRoomConfig | { name?: string; roomName?: string; category?: RoomCategory; isPrivate?: boolean; password?: string; icon?: string; avatarUrl?: string; themeColor?: string }) => {
+    async (config: CallRoomConfig | { name?: string; roomName?: string; category?: RoomCategory; isPrivate?: boolean; password?: string; icon?: string; avatarUrl?: string; themeColor?: string; description?: string; bannerUrl?: string }) => {
       try {
         const newRoom = await createVoiceRoom(config);
         // Host já é isento da senha no servidor; não enviar flags de confiança do cliente.
@@ -4252,6 +4280,40 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   const updateRoomAppearance = useCallback(
     async (newConfig: CallRoomConfig) => {
       if (!session?.chatId || !user?.uid) return;
+
+      // Sala persistente: grava no banco (antes só mudava na tela e voltava ao nome antigo)
+      if (isPersistentVoiceRoomId(session.chatId)) {
+        try {
+          const saved = await updateVoiceRoom(session.chatId, {
+            roomName: newConfig.roomName,
+            category: newConfig.category,
+            isPrivate: newConfig.isPrivate,
+            password: newConfig.password,
+            clearPassword: newConfig.clearPassword,
+            icon: newConfig.icon,
+            avatarUrl: newConfig.avatarUrl,
+            themeColor: newConfig.themeColor,
+            description: newConfig.description,
+            bannerUrl: newConfig.bannerUrl,
+            clearBanner: newConfig.clearBanner,
+          });
+          newConfig = {
+            ...newConfig,
+            roomName: saved.name,
+            category: saved.category,
+            isPrivate: saved.isPrivate,
+            icon: saved.icon,
+            avatarUrl: saved.avatarUrl,
+            themeColor: saved.themeColor,
+            description: saved.description,
+            bannerUrl: saved.bannerUrl,
+          };
+        } catch (err: any) {
+          notify(err?.message || "Não foi possível salvar o canal.", "error");
+          throw err instanceof Error ? err : new Error(String(err?.message || "Não foi possível salvar o canal."));
+        }
+      }
+
       setRoomConfig((prev) => (prev ? { ...prev, ...newConfig } : newConfig));
       setSession((prev) =>
         prev
@@ -4277,7 +4339,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         roomName: newConfig.roomName,
       });
 
-      notify("Aparência e configurações do canal atualizadas!", "success");
+      notify("Canal atualizado.", "success");
     },
     [notify, session?.chatId, user?.uid],
   );

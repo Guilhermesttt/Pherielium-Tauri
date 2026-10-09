@@ -7,6 +7,15 @@ let roomsChannel: any = null;
 let currentTrackedRoom: PublicVoiceRoom | null = null;
 let voiceRoomsTableChannel: ReturnType<typeof supabase.channel> | null = null;
 
+const friendlyRoomError = (message?: string): string => {
+  const m = (message || "").toLowerCase();
+  if (m.includes("nao e o dono")) return "Só o dono da sala pode editá-la.";
+  if (m.includes("exige uma senha")) return "Uma sala privada precisa de senha.";
+  if (m.includes("descricao muito longa")) return "A descrição pode ter no máximo 200 caracteres.";
+  if (m.includes("nome da sala")) return "Dê um nome à sala.";
+  return message || "";
+};
+
 const parseErrorPayload = async (res: Response, fallback: string) => {
   const data = (await res.json().catch(() => ({}))) as { error?: string };
   return data.error || fallback;
@@ -27,6 +36,8 @@ type VoiceRoomRow = {
   icon?: string | null;
   avatar_url?: string | null;
   theme_color?: string | null;
+  description?: string | null;
+  banner_url?: string | null;
   voice_room_members?: Array<{
     user_id: string;
     display_name: string;
@@ -65,6 +76,8 @@ const mapVoiceRoomFromDb = (
     icon: row.icon || undefined,
     avatarUrl: row.avatar_url || undefined,
     themeColor: row.theme_color || undefined,
+    description: row.description || undefined,
+    bannerUrl: row.banner_url || undefined,
     isHost: options?.hostUid ? row.host_uid === options.hostUid : undefined,
   };
 };
@@ -152,7 +165,7 @@ const listPublicVoiceRoomsViaSupabase = async (filters?: {
     .from("voice_rooms")
     .select(`
       id, host_uid, room_name, category, is_private, has_password,
-      max_participants, status, created_at, updated_at, icon, avatar_url, theme_color,
+      max_participants, status, created_at, updated_at, icon, avatar_url, theme_color, description, banner_url,
       voice_room_members ( user_id, display_name, avatar_url, joined_at, removed_at )
     `)
     .eq("status", "active")
@@ -183,7 +196,7 @@ const getMyVoiceRoomsViaSupabase = async (): Promise<VoiceRoom[]> => {
     .from("voice_rooms")
     .select(`
       id, host_uid, room_name, category, is_private, has_password,
-      max_participants, status, created_at, updated_at, icon, avatar_url, theme_color,
+      max_participants, status, created_at, updated_at, icon, avatar_url, theme_color, description, banner_url,
       voice_room_members ( user_id, display_name, avatar_url, joined_at, removed_at )
     `)
     .eq("host_uid", uid)
@@ -200,7 +213,7 @@ const getMyVoiceRoomsViaSupabase = async (): Promise<VoiceRoom[]> => {
 /**
  * Cria uma nova sala persistente no backend
  */
-export const createVoiceRoom = async (config: {
+const createVoiceRoomCore = async (config: {
   name?: string;
   roomName?: string;
   category?: RoomCategory;
@@ -265,6 +278,37 @@ export const createVoiceRoom = async (config: {
 /**
  * Atualiza configurações e aparência de uma sala existente
  */
+/** Dados atuais da sala direto do banco (para preencher o editor com o que está salvo de verdade). */
+export const getVoiceRoomDetails = async (roomId: string): Promise<VoiceRoom | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("voice_rooms")
+      .select("id, host_uid, room_name, category, is_private, has_password, max_participants, status, created_at, updated_at, icon, avatar_url, theme_color, description, banner_url")
+      .eq("id", roomId)
+      .maybeSingle();
+    if (error || !data) return null;
+    const session = await supabase.auth.getSession();
+    return mapVoiceRoomFromDb(data as VoiceRoomRow, { hostUid: session.data.session?.user.id });
+  } catch {
+    return null;
+  }
+};
+
+/** Cria a sala; descrição e banner (que a API não conhece) entram logo depois, pelo RPC do host. */
+export const createVoiceRoom = async (
+  config: Parameters<typeof createVoiceRoomCore>[0] & { description?: string; bannerUrl?: string },
+): Promise<VoiceRoom> => {
+  const room = await createVoiceRoomCore(config);
+  if (config.description?.trim() || config.bannerUrl) {
+    try {
+      return await updateVoiceRoom(room.id, { description: config.description, bannerUrl: config.bannerUrl });
+    } catch (err) {
+      console.warn("[voiceRooms] sala criada, mas descrição/banner não foram salvos:", err);
+    }
+  }
+  return room;
+};
+
 export const updateVoiceRoom = async (
   roomId: string,
   config: {
@@ -273,41 +317,59 @@ export const updateVoiceRoom = async (
     category?: RoomCategory;
     isPrivate?: boolean;
     password?: string;
+    /** remove a senha atual (a sala deixa de exigir senha) */
+    clearPassword?: boolean;
     icon?: string;
     avatarUrl?: string;
     themeColor?: string;
+    description?: string;
+    bannerUrl?: string;
+    clearBanner?: boolean;
   },
-): Promise<VoiceRoom | null> => {
-  try {
-    const finalName = (config.name || config.roomName || "").trim();
-    const res = await apiFetch(`/api/voice/rooms/${roomId}`, {
-      method: "PATCH",
-      authenticated: true,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: finalName,
-        category: config.category,
-        isPrivate: config.isPrivate,
-        password: config.password,
-        icon: config.icon,
-        avatarUrl: config.avatarUrl,
-        themeColor: config.themeColor,
-      }),
-    });
-
-    if (res.ok) {
-      const data = (await res.json()) as { room?: VoiceRoom };
-      return (data.room || null) as VoiceRoom | null;
-    }
-  } catch (err) {
-    console.warn("[voiceRooms] updateVoiceRoom error:", err);
-  }
-  return null;
+): Promise<VoiceRoom> => {
+  // Edição direto no banco (RPC do host): é a fonte de verdade e devolve o erro real. A API do
+  // Render falhava com "Validação falhou" e o app dizia que tinha salvo.
+  const { data, error } = await supabase.rpc("update_voice_room", {
+    p_room_id: roomId,
+    p_name: (config.name || config.roomName || "").trim() || null,
+    p_category: config.category ?? null,
+    p_is_private: config.isPrivate ?? null,
+    p_password: config.password?.trim() || null,
+    p_clear_password: Boolean(config.clearPassword),
+    p_icon: config.icon ?? null,
+    p_avatar_url: config.avatarUrl ?? null,
+    p_theme_color: config.themeColor ?? null,
+    p_description: config.description ?? null,
+    p_banner_url: config.bannerUrl ?? null,
+    p_clear_banner: Boolean(config.clearBanner),
+  });
+  if (error || !data) throw new Error(friendlyRoomError(error?.message) || "Não foi possível salvar a sala.");
+  const session = await supabase.auth.getSession();
+  return mapVoiceRoomFromDb(data as VoiceRoomRow, { hostUid: session.data.session?.user.id });
 };
 
 /**
  * Lista as salas públicas ativas no backend
  */
+/**
+ * A API do Render não conhece descrição/banner: completa as salas com esses campos direto do
+ * Supabase (uma consulta por lista). Se falhar, devolve as salas como vieram.
+ */
+const withRoomExtras = async (rooms: VoiceRoom[]): Promise<VoiceRoom[]> => {
+  const ids = rooms.map((r) => r.id).filter(Boolean);
+  if (ids.length === 0) return rooms;
+  try {
+    const { data } = await supabase.from("voice_rooms").select("id, description, banner_url").in("id", ids);
+    const byId = new Map((data ?? []).map((d) => [d.id as string, d as { description?: string | null; banner_url?: string | null }]));
+    return rooms.map((r) => {
+      const extra = byId.get(r.id);
+      return extra ? { ...r, description: extra.description || undefined, bannerUrl: extra.banner_url || undefined } : r;
+    });
+  } catch {
+    return rooms;
+  }
+};
+
 export const listPublicVoiceRooms = async (filters?: {
   category?: string;
   search?: string;
@@ -333,7 +395,7 @@ export const listPublicVoiceRooms = async (filters?: {
       }
 
       const data = (await res.json()) as { rooms?: VoiceRoom[] };
-      return (data.rooms || []) as VoiceRoom[];
+      return withRoomExtras((data.rooms || []) as VoiceRoom[]);
     } catch (err) {
       if (!shouldUseSupabaseVoiceFallback(err)) {
         throw err;
@@ -363,7 +425,7 @@ export const getMyVoiceRooms = async (): Promise<VoiceRoom[]> => {
       }
 
       const data = (await res.json()) as { rooms?: VoiceRoom[] };
-      return (data.rooms || []) as VoiceRoom[];
+      return withRoomExtras((data.rooms || []) as VoiceRoom[]);
     } catch (err) {
       if (!shouldUseSupabaseVoiceFallback(err)) {
         throw err;
@@ -449,13 +511,28 @@ export const joinVoiceRoom = async (
  * Registra saída da sala de voz
  */
 export const leaveVoiceRoom = async (roomId: string): Promise<void> => {
+  let ok = false;
   try {
-    await apiFetch(`/api/voice/rooms/${roomId}/leave`, {
-      method: "POST",
-      authenticated: true,
-    });
+    const res = await apiFetch(`/api/voice/rooms/${roomId}/leave`, { method: "POST", authenticated: true });
+    ok = res.ok;
   } catch (err) {
-    console.warn("[voiceRooms] leaveVoiceRoom failed:", err);
+    console.warn("[voiceRooms] leaveVoiceRoom API failed:", err);
+  }
+  if (ok) return;
+  // a API falhou: marca a saída direto no banco, para o cartão da sala atualizar mesmo assim
+  try {
+    const { data } = await supabase.auth.getSession();
+    const uid = data.session?.user.id;
+    if (uid) {
+      await supabase
+        .from("voice_room_members")
+        .update({ removed_at: new Date().toISOString() })
+        .eq("room_id", roomId)
+        .eq("user_id", uid)
+        .is("removed_at", null);
+    }
+  } catch (err) {
+    console.warn("[voiceRooms] leaveVoiceRoom fallback failed:", err);
   }
 };
 
@@ -587,34 +664,31 @@ export const unpublishPublicVoiceRoom = async () => {
 /**
  * Refreshes voice room lists when voice_rooms / voice_room_members change in Postgres.
  */
+const tableChangeListeners = new Set<() => void>();
+
+/**
+ * Avisa quando salas ou membros mudam no banco (entrar/sair/editar). Vários componentes podem
+ * assinar ao mesmo tempo: o canal é um só e fecha quando o último sai.
+ */
 export const subscribeToVoiceRoomTableChanges = (onChange: () => void) => {
-  if (voiceRoomsTableChannel) {
-    return () => undefined;
+  tableChangeListeners.add(onChange);
+
+  if (!voiceRoomsTableChannel) {
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const schedule = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => tableChangeListeners.forEach((fn) => fn()), 250);
+    };
+    voiceRoomsTableChannel = supabase
+      .channel("voice_rooms_table_sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "voice_rooms" }, schedule)
+      .on("postgres_changes", { event: "*", schema: "public", table: "voice_room_members" }, schedule)
+      .subscribe();
   }
 
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  const schedule = () => {
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => onChange(), 250);
-  };
-
-  voiceRoomsTableChannel = supabase
-    .channel("voice_rooms_table_sync")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "voice_rooms" },
-      schedule,
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "voice_room_members" },
-      schedule,
-    )
-    .subscribe();
-
   return () => {
-    if (debounceTimer) clearTimeout(debounceTimer);
-    if (voiceRoomsTableChannel) {
+    tableChangeListeners.delete(onChange);
+    if (tableChangeListeners.size === 0 && voiceRoomsTableChannel) {
       supabase.removeChannel(voiceRoomsTableChannel);
       voiceRoomsTableChannel = null;
     }

@@ -173,7 +173,7 @@ export const ConsoleLibraryTabs: React.FC<ConsoleLibraryTabsProps> = ({
                     }
                   }}
                   title={tab.label}
-                  className={`relative flex h-[calc(var(--control-h)-10px)] items-center gap-1.5 px-[var(--space-4)] rounded-full text-[length:var(--fs-label)] font-semibold whitespace-nowrap transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] cursor-pointer select-none ${
+                  className={`relative flex h-[calc(var(--control-h)-10px)] items-center gap-1.5 pl-[var(--space-4)] ${"isCustom" in tab && tab.filter ? "pr-8" : "pr-[var(--space-4)]"} rounded-full text-[length:var(--fs-label)] font-semibold whitespace-nowrap transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] cursor-pointer select-none ${
                     isActive
                       ? "text-white"
                       : "text-[#8E8E93] hover:text-white/90 hover:bg-white/[0.04]"
@@ -192,18 +192,18 @@ export const ConsoleLibraryTabs: React.FC<ConsoleLibraryTabsProps> = ({
                   )}
                   <span className="max-w-[18ch] truncate">{tab.label}</span>
 
-                  {/* Botão de edição para filtros personalizados */}
+                </button>
+                {/* Botão de edição para filtros personalizados */}
                   {"isCustom" in tab && tab.filter && (
                     <button
                       type="button"
                       onClick={(e) => handleOpenEdit(tab.filter, e)}
                       title="Editar este filtro"
-                      className="opacity-0 group-hover/tab:opacity-100 p-0.5 rounded-full hover:bg-white/15 text-white/50 hover:text-white transition-opacity"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/tab:opacity-100 focus-visible:opacity-100 p-0.5 rounded-full hover:bg-white/15 text-white/50 hover:text-white transition-opacity"
                     >
                       <Settings2 className="h-[1.1em] w-[1.1em]" />
                     </button>
                   )}
-                </button>
               </div>
             );
           })}
