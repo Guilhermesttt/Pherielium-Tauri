@@ -1154,8 +1154,9 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         shape={mascotShape}
         hat={config.hat}
         items={config.items}
-        inCall={isCallActive}
-        isMusicPlaying={isPcMediaPlaying}
+        inCall={opts?.mood ? false : isCallActive}
+        // com humor forçado (aba Controle) ela não dança com a música: só segura o controle
+        isMusicPlaying={opts?.mood ? false : isPcMediaPlaying}
         levelRef={voiceLevelRef}
         muted={isCallActive && isMuted}
         waveAt={notchEvent && notchEventWaves(notchEvent.kind) ? notchEvent.at : undefined}
