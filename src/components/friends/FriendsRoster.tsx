@@ -75,13 +75,24 @@ const PresenceDot: React.FC<{ friend: SocialFriend; size?: number }> = ({ friend
 };
 
 /** Avatar quadrado arredondado. */
-const Avatar: React.FC<{ friend: SocialFriend; size: number; ring?: boolean }> = ({ friend, size, ring }) => (
+const Avatar: React.FC<{ friend: SocialFriend; size: number; ring?: boolean }> = ({ friend, size, ring }) => {
+  // foto que não carrega (URL quebrada) cai no ícone em vez do ícone de imagem quebrada
+  const [broken, setBroken] = React.useState(false);
+  React.useEffect(() => setBroken(false), [friend.avatar]);
+  return (
   <span className="relative inline-block shrink-0 align-middle" style={{ width: size, height: size }}>
     <span
       className={`block h-full w-full overflow-hidden rounded-[28%] bg-white/[0.06] ${ring ? "ring-2 ring-[rgb(var(--launcher-accent))]" : ""}`}
     >
-      {friend.avatar ? (
-        <img src={friend.avatar} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+      {friend.avatar && !broken ? (
+        <img
+          src={friend.avatar}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setBroken(true)}
+          className="h-full w-full object-cover"
+        />
       ) : (
         <span className="flex h-full w-full items-center justify-center text-white/45">
           <User style={{ width: size * 0.5, height: size * 0.5 }} />
@@ -90,6 +101,7 @@ const Avatar: React.FC<{ friend: SocialFriend; size: number; ring?: boolean }> =
     </span>
   </span>
 );
+};
 
 const FILTERS: { id: RosterFilter; label: string }[] = [
   { id: "ALL", label: "Todos" },
@@ -215,7 +227,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
         </div>
 
         {visible.length === 0 ? (
-          <p className="rounded-[24px] bg-[var(--surface-raised)] px-6 py-14 text-center text-[14px] text-white/45 ring-1 ring-[color:var(--border-subtle)]">
+          <p className="rounded-[24px] bg-[var(--surface-raised)] px-6 py-14 text-center text-[14px] text-white/45 border border-white/[0.10]">
             Ninguém por aqui com esse filtro. Tente outro nome ou volte para Todos.
           </p>
         ) : (
@@ -295,7 +307,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
         )}
 
         {discord && (
-          <div className="mt-8 flex items-center justify-between gap-3 rounded-[20px] bg-[var(--surface-raised)] px-5 py-3.5 text-[14px] ring-1 ring-[color:var(--border-subtle)]">
+          <div className="mt-8 flex items-center justify-between gap-3 rounded-[20px] bg-[var(--surface-raised)] px-5 py-3.5 text-[14px] border border-white/[0.10]">
             <span className="text-white/60">{discord.connected ? "Discord conectado" : "Veja seus amigos do Discord aqui"}</span>
             {!discord.connected && (
               <button
@@ -327,7 +339,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
             playSound={playSound}
           />
         ) : (
-          <div className="flex min-h-[18rem] items-center justify-center rounded-[28px] bg-[var(--surface-raised)] px-8 text-center text-[14px] text-white/45 ring-1 ring-[color:var(--border-subtle)]">
+          <div className="flex min-h-[18rem] items-center justify-center rounded-[28px] bg-[var(--surface-raised)] px-8 text-center text-[14px] text-white/45 border border-white/[0.10]">
             Selecione um amigo para conversar, ligar ou ver o perfil.
           </div>
         )}
@@ -344,7 +356,7 @@ const GameBlock: React.FC<{
   unread: (f: SocialFriend) => number;
 }> = ({ group, selectedId, onPick, unread }) => {
   return (
-    <article className="overflow-hidden rounded-[26px] bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)]">
+    <article className="overflow-hidden rounded-[26px] bg-[var(--surface-raised)] border border-white/[0.10]">
       <div
         className="relative h-[120px] overflow-hidden"
         style={{ background: "linear-gradient(120deg, var(--surface-overlay), var(--surface-raised))" }}
@@ -408,7 +420,7 @@ const FriendDrawer: React.FC<{
     "inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-white/[0.09] px-4 text-[13px] font-semibold text-white transition hover:bg-white/[0.16] active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-white/50";
 
   return (
-    <div className="overflow-hidden rounded-[28px] bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)]">
+    <div className="overflow-hidden rounded-[28px] bg-[var(--surface-raised)] border border-white/[0.10]">
       {/* Capa: avatar e nome ficam juntos na base, alinhados pelo centro */}
       <div className="relative h-[168px] overflow-hidden bg-[var(--surface-overlay)]">
         {banner ? (

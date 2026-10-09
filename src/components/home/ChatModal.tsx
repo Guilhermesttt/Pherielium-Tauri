@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ImagePlus, MessageSquare, Phone, Send, Video, X, User } from "lucide-react";
+import { animated, useSpring, useSprings } from "@react-spring/web";
+import { ImagePlus, MessageSquare, Pencil, Phone, Send, Trash2, Video, X, User } from "lucide-react";
 import ModalShell from "../ui/ModalShell";
 import { LoadingState } from "../ui/loading-state";
 import { useNotification } from "../NotificationCenter";
@@ -34,6 +35,8 @@ import type { SoundEffectType } from "../../hooks/useSoundEffects";
 import { CONTROLLER_KEYBOARD_VISIBILITY_EVENT } from "../../utils/controllerTextInput";
 import { CallInviteCard, parseCallInviteText } from "../voice/CallInviteCard";
 import type { CallInviteMeta } from "../../types/voice-governance";
+import { bubbleOrigin, groupInfo, messageSignature } from "./chat/bubbles";
+import { useBubbleSpring } from "./chat/useBubbleSpring";
 
 const LINK_PATTERN = /(https?:\/\/[^\s]+)|(www\.[^\s]+)/gi;
 const IMAGE_LINK_PATTERN = /^https?:\/\/[^\s]+\.(png|jpe?g|gif|webp|bmp|svg)(\?[^\s]*)?$/i;
@@ -247,36 +250,34 @@ const ChatHeaderBar: React.FC<{
   };
 
   return (
-    <div className="flex shrink-0 items-center justify-between border-b border-white/8 bg-[#080808] px-5 py-3.5 md:px-7">
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <ChatAvatar
-            avatarUrl={friend.avatar}
-            name={friend.name}
-            sizeClassName="h-9 w-9"
-            className="ring-1 ring-white/15"
-            iconClassName="h-4 w-4"
-          />
-          <span
-            className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#080808] ${
-              isCallActiveWithFriend
-                ? "bg-[#23a55a] animate-pulse ring-2 ring-[#23a55a]/40"
+    <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] bg-[#0a0a0b]/90 px-5 py-3 backdrop-blur-xl md:px-7">
+      <div className="flex min-w-0 items-center gap-3">
+        <ChatAvatar
+          avatarUrl={friend.avatar}
+          name={friend.name}
+          sizeClassName="h-10 w-10"
+          className="ring-1 ring-white/12"
+          iconClassName="h-4 w-4"
+        />
+        <div className="min-w-0">
+          <h4 className="truncate text-[15px] font-semibold leading-tight text-white">{friend.name}</h4>
+          <span className="mt-0.5 flex items-center gap-1.5 text-[12px] leading-none text-white/50">
+            <span
+              aria-hidden
+              className="inline-block h-[7px] w-[7px] shrink-0 rounded-full"
+              style={{ backgroundColor: friend.status === "online" || friend.status === "playing" || friend.status === "idle" || friend.status === "dnd" || friend.status === "in_call" || friend.status === "streaming" ? "#30d158" : "#ef4444" }}
+            />
+            <span className="truncate">
+              {isCallActiveWithFriend
+                ? "Em chamada de voz"
                 : friend.status === "playing"
-                ? "animate-pulse bg-emerald-400"
-                : friend.status === "online"
-                ? "bg-emerald-400"
-                : "bg-white/20"
-            }`}
-          />
-        </div>
-        <div>
-          <h4 className="text-sm font-bold leading-none text-white">{friend.name}</h4>
-          <span className="mt-1 block text-[10px] uppercase tracking-wider text-white/40 font-body">
-            {isCallActiveWithFriend
-              ? "🟢 Em Chamada de Voz"
-              : friend.status === "playing"
-              ? `Jogando ${friend.playing}`
-              : friend.status}
+                ? `Jogando ${friend.playing || "um jogo"}`
+                : friend.status === "offline"
+                ? "Offline"
+                : friend.status === "idle"
+                ? "Ausente"
+                : "Online"}
+            </span>
           </span>
         </div>
       </div>
@@ -367,39 +368,77 @@ const ChatIdentityHero: React.FC<{ friend: SocialFriend }> = ({ friend }) => (
 const DaySeparator: React.FC<{ label: string }> = ({ label }) => (
   <div className="flex items-center gap-3 py-2" role="separator" aria-label={label}>
     <span className="h-px flex-1 bg-white/6" />
-    <span className="text-[9px] font-semibold uppercase tracking-[0.24em] text-white/30">{label}</span>
+    <span className="text-[11px] font-medium text-white/35">{label}</span>
     <span className="h-px flex-1 bg-white/6" />
   </div>
 );
 
-const TypingBubble: React.FC<{ friendName: string; avatarUrl?: string | null }> = ({ friendName, avatarUrl }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 6 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: 6 }}
-    transition={{ duration: 0.2, ease: "easeOut" }}
-    className="flex items-center gap-2.5 py-1 px-1"
-    role="status"
-    aria-label={`${friendName} está digitando`}
-  >
-    <ChatAvatar
-      avatarUrl={avatarUrl}
-      name={friendName}
-      sizeClassName="h-6 w-6"
-      iconClassName="h-3 w-3"
-      className="border border-white/10"
-    />
-    <span className="text-[12px] font-medium text-white/40 italic">
-      {friendName} está digitando...
+/** Três pontinhos que "quicam" em onda, com mola. */
+const TypingDots: React.FC = () => {
+  const [springs] = useSprings(
+    3,
+    (i) => ({
+      loop: true,
+      from: { y: 0 },
+      to: [{ y: -4 }, { y: 0 }],
+      delay: i * 130,
+      config: { tension: 320, friction: 11 },
+    }),
+    [],
+  );
+  return (
+    <span className="flex items-center gap-[5px]" aria-hidden>
+      {springs.map((style, i) => (
+        <animated.span key={i} style={style} className="inline-block h-[6px] w-[6px] rounded-full bg-white/55" />
+      ))}
     </span>
-  </motion.div>
+  );
+};
+
+const TypingBubble: React.FC<{ friendName: string; avatarUrl?: string | null }> = ({ friendName, avatarUrl }) => {
+  const style = useBubbleSpring(false, true);
+  return (
+    <animated.div
+      style={{ ...style, transformOrigin: bubbleOrigin(false) }}
+      className="mt-3 flex items-end gap-2.5"
+      role="status"
+      aria-label={`${friendName} está digitando`}
+    >
+      <ChatAvatar
+        avatarUrl={avatarUrl}
+        name={friendName}
+        sizeClassName="h-7 w-7"
+        iconClassName="h-3.5 w-3.5"
+        className="ring-1 ring-white/10"
+      />
+      <span className="flex h-[34px] items-center rounded-[18px] rounded-bl-[6px] bg-white/[0.08] px-3.5">
+        <TypingDots />
+      </span>
+    </animated.div>
+  );
+};
+
+/** Seta de "responder" (o conjunto de SF Symbols do app não traz uma equivalente). */
+const Reply: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+    <path d="M9 14 4 9l5-5" />
+    <path d="M4 9h10a6 6 0 0 1 6 6v3" />
+  </svg>
 );
+
+const ACTION_BTN =
+  "flex h-7 w-7 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40";
 
 const ChatMessageRow: React.FC<{
   msg: ChatMessage;
   isMe: boolean;
   friend: SocialFriend;
   selfAvatarUrl?: string | null;
+  /** primeira / última do bloco de mensagens seguidas do mesmo autor */
+  startsGroup: boolean;
+  endsGroup: boolean;
+  /** só mensagens que chegam agora animam; o histórico entra direto */
+  animateIn: boolean;
   onViewImage: (image: ViewingImage) => void;
   onJoinCall: (invite: CallInviteMeta, password?: string) => void;
   playSound: (type: SoundEffectType) => void;
@@ -408,145 +447,162 @@ const ChatMessageRow: React.FC<{
   onEdit?: (message: ChatMessage) => void;
   onDelete?: (message: ChatMessage) => void;
   onReact?: (message: ChatMessage) => void;
-}> = ({ msg, isMe, friend, selfAvatarUrl, onViewImage, onJoinCall, playSound, replyPreview, onReply, onEdit, onDelete, onReact }) => {
+}> = ({ msg, isMe, friend, selfAvatarUrl, startsGroup, endsGroup, animateIn, onViewImage, onJoinCall, playSound, replyPreview, onReply, onEdit, onDelete, onReact }) => {
+  const spring = useBubbleSpring(isMe, animateIn);
   const inviteMeta = parseCallInviteText(msg.text);
   const inlineImageLinks = extractImageLinks(msg.text);
   const visibleImages = Array.from(
     new Set([...(msg.attachmentUrl ? [msg.attachmentUrl] : []), ...inlineImageLinks]),
   );
+  const deleted = Boolean(msg.deletedAt);
+  const rowSpacing = startsGroup ? "mt-3.5" : "mt-0.5";
 
   if (inviteMeta) {
     return (
-      <Message align={isMe ? "end" : "start"} className="my-1.5">
-        <MessageContent>
-          <CallInviteCard invite={inviteMeta} isSelf={isMe} onJoinCall={onJoinCall} />
-        </MessageContent>
-      </Message>
+      <animated.div style={{ ...spring, transformOrigin: bubbleOrigin(isMe) }} className={rowSpacing}>
+        <Message align={isMe ? "end" : "start"}>
+          <MessageContent>
+            <CallInviteCard invite={inviteMeta} isSelf={isMe} onJoinCall={onJoinCall} />
+          </MessageContent>
+        </Message>
+      </animated.div>
     );
   }
 
+  const reactions = Object.entries(msg.reactions || {}).filter(([, users]) => (users?.length || 0) > 0);
+  const radius = isMe
+    ? `rounded-[18px] rounded-br-[6px] ${startsGroup ? "" : "rounded-tr-[6px]"}`
+    : `rounded-[18px] rounded-bl-[6px] ${startsGroup ? "" : "rounded-tl-[6px]"}`;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 6, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.18, ease: "easeOut" }}
-    >
+    <animated.div style={{ ...spring, transformOrigin: bubbleOrigin(isMe) }} className={rowSpacing}>
       <Message align={isMe ? "end" : "start"} className="gap-2.5">
-        <MessageAvatar className="h-7 w-7 min-w-7 border border-white/10 translate-y-0!">
-          <ChatAvatar
-            avatarUrl={isMe ? selfAvatarUrl : friend.avatar}
-            name={isMe ? "Você" : friend.name}
-            sizeClassName="h-full w-full"
-            iconClassName="h-3.5 w-3.5"
-          />
+        {/* avatar só na última do bloco (as outras mantêm o espaço, o texto fica alinhado) */}
+        <MessageAvatar className="h-7 w-7 min-w-7 translate-y-0! bg-transparent">
+          {endsGroup ? (
+            <ChatAvatar
+              avatarUrl={isMe ? selfAvatarUrl : friend.avatar}
+              name={isMe ? "Você" : friend.name}
+              sizeClassName="h-full w-full"
+              iconClassName="h-3.5 w-3.5"
+              className="ring-1 ring-white/10"
+            />
+          ) : null}
         </MessageAvatar>
 
-        <MessageContent className="max-w-[76%] gap-1">
-          <div className={`px-1 text-[11px] font-medium text-white/38 ${isMe ? "text-right" : "text-left"}`}>
-            {isMe ? "Você" : friend.name}
+        <MessageContent className="max-w-[74%] gap-0.5">
+          {!isMe && startsGroup ? (
+            <div className="px-1 pb-0.5 text-[11px] font-medium text-white/40">{friend.name}</div>
+          ) : null}
+
+          <div className={`group/bubble relative flex items-center gap-1.5 ${isMe ? "flex-row-reverse" : ""}`}>
+            <Bubble
+              align={isMe ? "end" : "start"}
+              variant={isMe ? "default" : "outline"}
+              className={`${radius} border-0 ${isMe ? "bg-white text-black" : "bg-white/[0.08] text-white"}`}
+            >
+              <BubbleContent className="px-3.5 py-2 text-[14px]">
+                {replyPreview ? (
+                  <p className={`mb-1.5 border-l-2 pl-2 text-[11.5px] ${isMe ? "border-black/25 text-black/55" : "border-white/30 text-white/55"}`}>
+                    {replyPreview}
+                  </p>
+                ) : null}
+                {deleted ? (
+                  <p className="italic opacity-55">Mensagem apagada</p>
+                ) : msg.text ? (
+                  <p className="select-text cursor-text font-sans leading-[1.45] wrap-break-words selection:bg-black/20">
+                    {renderMessageText(msg.text)}
+                  </p>
+                ) : null}
+
+                {visibleImages.length > 0 && (
+                  <div
+                    className={`grid gap-2 ${visibleImages.length === 1 ? "grid-cols-1" : "grid-cols-2"} ${msg.text ? "mt-2" : ""}`}
+                  >
+                    {visibleImages.map((imageUrl, imgIdx) => (
+                      <button
+                        key={`${imageUrl}-${imgIdx}`}
+                        type="button"
+                        onClick={() => {
+                          playSound("select");
+                          onViewImage({ url: imageUrl, text: msg.text, createdAt: msg.createdAt });
+                        }}
+                        className="group/img relative overflow-hidden rounded-xl bg-black/30 text-left transition-transform hover:scale-[1.01] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                      >
+                        <img src={imageUrl} alt="Imagem enviada no chat" loading="lazy" className="max-h-64 w-full rounded-xl object-cover" />
+                        <span className="pointer-events-none absolute inset-0 bg-black/0 transition-colors group-hover/img:bg-black/15" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </BubbleContent>
+            </Bubble>
+
+            {/* ações: aparecem ao passar o mouse / focar, sem poluir a conversa */}
+            {!deleted && (onReply || onReact || (isMe && (onEdit || onDelete))) ? (
+              <div
+                className="flex shrink-0 items-center rounded-full border border-white/10 bg-[#161618]/95 p-0.5 opacity-0 shadow-lg backdrop-blur transition-opacity duration-150 group-hover/bubble:opacity-100 group-focus-within/bubble:opacity-100"
+                role="toolbar"
+                aria-label="Ações da mensagem"
+              >
+                {onReply ? (
+                  <button type="button" className={ACTION_BTN} onClick={() => onReply(msg)} title="Responder" aria-label="Responder">
+                    <Reply className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+                {onReact ? (
+                  <button type="button" className={`${ACTION_BTN} text-[13px]`} onClick={() => onReact(msg)} title="Curtir" aria-label="Curtir">
+                    👍
+                  </button>
+                ) : null}
+                {isMe && onEdit ? (
+                  <button type="button" className={ACTION_BTN} onClick={() => onEdit(msg)} title="Editar" aria-label="Editar">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+                {isMe && onDelete ? (
+                  <button type="button" className={`${ACTION_BTN} hover:text-red-300`} onClick={() => onDelete(msg)} title="Apagar" aria-label="Apagar">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
-          <Bubble
-            align={isMe ? "end" : "start"}
-            variant={isMe ? "default" : "outline"}
-            className={
-              isMe
-                ? "rounded-lg rounded-br-none bg-white text-black border border-transparent"
-                : "rounded-lg rounded-tl-none border border-[#292d30] bg-black text-white"
-            }
-          >
-            <BubbleContent className="p-3 text-sm">
-              {replyPreview ? (
-                <p className={`mb-2 border-l-2 pl-2 text-[11px] ${isMe ? "border-black/30 text-black/60" : "border-white/30 text-white/50"}`}>
-                  {replyPreview}
-                </p>
-              ) : null}
-              {msg.deletedAt ? (
-                <p className="italic opacity-60">Mensagem apagada</p>
-              ) : msg.text ? (
-                <p className="leading-relaxed select-text cursor-text selection:bg-black/20 wrap-break-words font-sans">
-                  {renderMessageText(msg.text)}
-                </p>
-              ) : null}
-
-              {visibleImages.length > 0 && (
-                <div
-                  className={`grid gap-2 ${
-                    visibleImages.length === 1 ? "grid-cols-1" : "grid-cols-2"
-                  } ${msg.text ? "mt-2 pt-2 border-t border-white/10" : ""}`}
+          {reactions.length > 0 ? (
+            <div className={`flex flex-wrap gap-1 px-1 ${isMe ? "justify-end" : "justify-start"}`}>
+              {reactions.map(([emoji, users]) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => onReact?.(msg)}
+                  className="rounded-full bg-white/[0.08] px-2 py-0.5 text-[11px] text-white/80 transition-colors hover:bg-white/[0.14]"
                 >
-                  {visibleImages.map((imageUrl, imgIdx) => (
-                    <button
-                      key={`${imageUrl}-${imgIdx}`}
-                      type="button"
-                      onClick={() => {
-                        playSound("select");
-                        onViewImage({
-                          url: imageUrl,
-                          text: msg.text,
-                          createdAt: msg.createdAt,
-                        });
-                      }}
-                      className="group/img relative overflow-hidden rounded-xl border border-white/10 bg-black/40 text-left transition-transform hover:scale-[1.01] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-                    >
-                      <img
-                        src={imageUrl}
-                        alt="Imagem enviada no chat"
-                        loading="lazy"
-                        className="max-h-64 w-full object-cover rounded-xl"
-                      />
-                      <span className="pointer-events-none absolute inset-0 bg-black/0 transition-colors group-hover/img:bg-black/20" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </BubbleContent>
-          </Bubble>
+                  {emoji} {users.length}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
-          <MessageFooter
-            className={`px-1 text-[10px] text-white/30 ${
-              isMe ? "justify-end" : "justify-start"
-            }`}
-          >
-            {msg.editedAt && !msg.deletedAt ? <span>editada</span> : null}
-            {!msg.deletedAt && onReply ? (
-              <button type="button" className="hover:text-white" onClick={() => onReply(msg)}>responder</button>
-            ) : null}
-            {!msg.deletedAt && onReact ? (
-              <button type="button" className="hover:text-white" onClick={() => onReact(msg)}>
-                {(msg.reactions?.["👍"]?.length || 0) > 0 ? `👍 ${msg.reactions?.["👍"]?.length}` : "👍"}
-              </button>
-            ) : null}
-            {isMe && !msg.deletedAt && onEdit ? (
-              <button type="button" className="hover:text-white" onClick={() => onEdit(msg)}>editar</button>
-            ) : null}
-            {isMe && !msg.deletedAt && onDelete ? (
-              <button type="button" className="hover:text-white" onClick={() => onDelete(msg)}>apagar</button>
-            ) : null}
-            {isMe ? (
-              <span>
-                {msg.id?.startsWith("local-")
-                  ? "Enviando..."
-                  : msg.read
-                  ? "Lida"
-                  : "Enviada"}
-              </span>
-            ) : (
-              <span>
-                {new Date(msg.createdAt).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-            )}
-          </MessageFooter>
+          {endsGroup ? (
+            <MessageFooter className={`gap-1.5 px-1 pt-0.5 text-[10.5px] text-white/32 ${isMe ? "justify-end" : "justify-start"}`}>
+              {msg.editedAt && !deleted ? <span>editada ·</span> : null}
+              {isMe ? (
+                <span>{msg.id?.startsWith("local-") ? "Enviando…" : msg.read ? "Lida" : "Enviada"}</span>
+              ) : (
+                <span>
+                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
+            </MessageFooter>
+          ) : null}
         </MessageContent>
       </Message>
-    </motion.div>
+    </animated.div>
   );
 };
 
-const ChatMessageList: React.FC<{
+export const ChatMessageList: React.FC<{
   isLoading: boolean;
   loadError: string | null;
   onRetryLoad: () => void;
@@ -580,8 +636,30 @@ const ChatMessageList: React.FC<{
   onEdit,
   onDelete,
   onReact,
-}) => (
-  <div className="chat-scrollbar flex-1 space-y-2 overflow-y-auto px-7 py-6 pr-4 md:px-9">
+}) => {
+  // Mensagens que já estavam na conversa ao abrir não animam; só as que chegam depois.
+  const seenKeys = React.useRef<Set<string> | null>(null);
+  const recentSignatures = React.useRef<Map<string, number>>(new Map());
+  if (!isLoading && seenKeys.current === null) {
+    seenKeys.current = new Set(messages.map((m) => m.id || ""));
+    for (const m of messages) recentSignatures.current.set(messageSignature(m), 0);
+  }
+  const shouldAnimate = (m: ChatMessage): boolean => {
+    const seen = seenKeys.current;
+    if (!seen) return false;
+    const key = m.id || "";
+    if (seen.has(key)) return false;
+    // o mesmo balão que ganhou o id real do servidor (era "local-…") não anima de novo
+    const sig = messageSignature(m);
+    const at = recentSignatures.current.get(sig);
+    seen.add(key);
+    if (at !== undefined && Date.now() - at < 15_000) return false;
+    recentSignatures.current.set(sig, Date.now());
+    return true;
+  };
+
+  return (
+  <div className="chat-scrollbar flex-1 overflow-y-auto px-7 py-5 pr-4 md:px-9">
     {isLoading ? (
       <div className="flex flex-1 min-h-65 flex-col items-center justify-center space-y-3 py-16 text-center">
         <LoadingState label="Carregando conversa..." variant="searching" size="md" showTimer={false} />
@@ -606,13 +684,18 @@ const ChatMessageList: React.FC<{
         <p className="text-xs uppercase tracking-wider">Nenhuma mensagem ainda</p>
       </div>
     ) : (
-      <MessageGroup className="space-y-3">
+      <MessageGroup className="gap-0">
         {messages.map((msg, index) => {
+          const { startsGroup, endsGroup } = groupInfo(
+            messages.map((x) => ({ senderId: x.senderId, createdAt: x.createdAt })),
+            index,
+          );
           const isMe = msg.senderId !== friendUid;
           const messageDate = new Date(msg.createdAt);
           const previousDate = index > 0 ? new Date(messages[index - 1].createdAt) : null;
           const showDaySeparator =
             index === 0 || !previousDate || !isSameDay(messageDate, previousDate);
+          const animateIn = shouldAnimate(msg);
 
           return (
             <React.Fragment key={msg.id || index}>
@@ -624,6 +707,9 @@ const ChatMessageList: React.FC<{
                 isMe={isMe}
                 friend={friend}
                 selfAvatarUrl={selfAvatarUrl}
+                startsGroup={startsGroup || showDaySeparator}
+                endsGroup={endsGroup}
+                animateIn={animateIn}
                 onViewImage={onViewImage}
                 onJoinCall={onJoinCall}
                 playSound={playSound}
@@ -642,9 +728,30 @@ const ChatMessageList: React.FC<{
     {!isLoading && friendTyping && <TypingBubble friendName={friend.name} avatarUrl={friend.avatar} />}
     <div ref={messagesEndRef} />
   </div>
-);
+  );
+};
 
-const ChatComposer: React.FC<{
+/** Botão de enviar: acorda com uma mola quando há o que enviar e "afunda" ao apertar. */
+const SendButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
+  const style = useSpring({
+    scale: disabled ? 0.86 : 1,
+    opacity: disabled ? 0.38 : 1,
+    config: { tension: 420, friction: 16 },
+  });
+  return (
+    <animated.button
+      type="submit"
+      disabled={disabled}
+      style={style}
+      aria-label="Enviar mensagem"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-black transition-[filter] enabled:cursor-pointer enabled:hover:brightness-95 enabled:active:scale-90 disabled:cursor-not-allowed"
+    >
+      <Send className="h-4 w-4" />
+    </animated.button>
+  );
+};
+
+export const ChatComposer: React.FC<{
   inputText: string;
   onChangeInputText: (val: string) => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -680,15 +787,12 @@ const ChatComposer: React.FC<{
     const isSpamLocked = Boolean(spamLockedUntil && spamLockedUntil > Date.now());
 
     return (
-      <form onSubmit={onSubmit} className="shrink-0 border-t border-white/8 bg-[#080808] px-5 py-4 md:px-7">
-        <div className="mb-2 flex min-h-4 items-center justify-between px-1">
-          <span className="text-[10px] uppercase tracking-[0.24em] text-white/30 font-body">
-            Chat em tempo real
-          </span>
-          {isSpamLocked ? (
-            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-400">DEVAGAR PAE</span>
-          ) : null}
-        </div>
+      <form onSubmit={onSubmit} className="shrink-0 border-t border-white/[0.06] bg-[#0a0a0b]/90 px-5 py-3.5 backdrop-blur-xl md:px-7">
+        {isSpamLocked ? (
+          <p className="mb-2 px-1 text-[12px] font-medium text-amber-300/90" role="status">
+            Calma, você está enviando rápido demais.
+          </p>
+        ) : null}
 
         {contextLabel ? (
           <div className="mb-2 flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[11px] text-white/70">
@@ -713,7 +817,7 @@ const ChatComposer: React.FC<{
           </div>
         ) : null}
 
-        <div className="flex items-center gap-2 rounded-md border border-[#292d30] bg-black p-1.5">
+        <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] p-1.5 transition-colors focus-within:border-white/25 focus-within:bg-white/[0.07]">
           <input
             ref={imageInputRef}
             type="file"
@@ -729,7 +833,7 @@ const ChatComposer: React.FC<{
             disabled={isSendingImage}
             aria-label="Anexar imagem"
             title="Anexar imagem"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/55 transition-colors hover:bg-white/10 hover:text-white"
           >
             <ImagePlus className="h-4 w-4" />
           </motion.button>
@@ -739,19 +843,10 @@ const ChatComposer: React.FC<{
             disabled={isSendingImage}
             onChange={(e) => onChangeInputText(e.target.value)}
             onPaste={onPasteImage}
-            placeholder={pendingImage ? "Adicionar uma legenda (opcional)..." : "Digite sua mensagem..."}
-            className="h-10 flex-1 rounded-full border-0 bg-transparent px-3 text-[13px] text-white placeholder-white/30 outline-none ring-0 focus:outline-none focus:ring-0 disabled:cursor-wait"
+            placeholder={pendingImage ? "Adicionar uma legenda (opcional)" : "Mensagem"}
+            className="h-9 flex-1 rounded-full border-0 bg-transparent px-3 text-[13px] text-white placeholder-white/30 outline-none ring-0 focus:outline-none focus:ring-0 disabled:cursor-wait"
           />
-          <motion.button
-            type="submit"
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.94 }}
-            disabled={isSendingImage || (!inputText.trim() && !pendingImage) || isSpamLocked}
-            aria-label="Enviar mensagem"
-            className="flex h-10 w-10 items-center justify-center rounded-md bg-white text-black transition-all hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
-          >
-            <Send className="h-4 w-4" />
-          </motion.button>
+          <SendButton disabled={isSendingImage || (!inputText.trim() && !pendingImage) || isSpamLocked} />
         </div>
       </form>
     );
@@ -1185,7 +1280,7 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
         containerClassName={
           controllerKeyboardOpen ? "items-start justify-center p-2 md:items-center md:justify-start md:p-3" : undefined
         }
-        className="t-modal-panel overflow-hidden rounded-2xl border border-[#292d30] bg-black p-0"
+        className="t-modal-panel overflow-hidden rounded-[26px] border border-white/10 bg-black p-0"
         ariaLabel={`Conversa com ${friend.name}`}
       >
         <div className="flex h-[calc(100dvh-2rem)] max-h-200 min-h-140 w-full flex-col bg-[#050505] md:h-[calc(100dvh-4rem)]">

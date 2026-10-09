@@ -291,7 +291,7 @@ const Section: React.FC<SectionProps> = ({
   compact = false,
 }) => (
   <section
-    className={`${compact ? "rounded-[22px] p-4 md:p-5" : "rounded-[22px] p-5 md:p-6"} bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)] ${className}`}
+    className={`${compact ? "rounded-[22px] p-4 md:p-5" : "rounded-[22px] p-5 md:p-6"} bg-[var(--surface-raised)] border border-white/[0.10] ${className}`}
   >
     <div className={`${compact ? "mb-3" : "mb-4"} flex items-center gap-2.5`}>
       {icon && (
@@ -682,7 +682,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
 
       <div className={`relative mx-auto max-w-6xl ${compactProfile ? "space-y-4" : "space-y-6"}`}>
         {/* HERO: capa com avatar e nome alinhados pelo centro na base; o resto vem abaixo */}
-        <section className="relative overflow-hidden rounded-[28px] bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)]">
+        <section className="relative overflow-hidden rounded-[28px] bg-[var(--surface-raised)] border border-white/[0.10]">
           <div
             className={`relative ${compactProfile ? "h-[190px]" : "h-[240px]"}`}
             style={{
@@ -697,7 +697,29 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 draggable={false}
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--surface-raised)]/30 to-[var(--surface-raised)]" />
+            {/* desfoque sutil que cresce para baixo + degradê até a cor do cartão (o banner "derrete" no conteúdo) */}
+            {userProfile?.bannerURL && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%] backdrop-blur-[12px]"
+                style={{
+                  maskImage: "linear-gradient(to top, black 0%, black 25%, transparent 100%)",
+                  WebkitMaskImage: "linear-gradient(to top, black 0%, black 25%, transparent 100%)",
+                }}
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--surface-raised)]/35 to-[var(--surface-raised)]" />
+            {userProfile?.bannerURL && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(90deg, var(--surface-raised) 0%, transparent 14%, transparent 86%, var(--surface-raised) 100%)",
+                  opacity: 0.55,
+                }}
+              />
+            )}
             <div className="absolute inset-x-6 bottom-5 flex items-center gap-5 sm:inset-x-8 sm:gap-6">
               <ProfileAvatar
                 profile={userProfile}
@@ -1014,7 +1036,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
         </section>
 
         {isPrivateProfile ? (
-          <section className="bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)] flex flex-col items-center justify-center rounded-[22px] p-12 text-center">
+          <section className="bg-[var(--surface-raised)] border border-white/[0.10] flex flex-col items-center justify-center rounded-[22px] p-12 text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-white/15 bg-white/[0.06] text-white/60 shadow-inner">
               <Lock className="h-8 w-8 text-white/80" />
             </div>
