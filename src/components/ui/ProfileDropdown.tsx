@@ -83,6 +83,7 @@ export function ProfileDropdown({
       <div className="font-ui">
         <DropdownMenuTrigger asChild>
           <button
+            data-tour="profile"
             onPointerEnter={() => playSound("hover")}
             onClick={() => playSound("select")}
             className="group flex cursor-pointer items-center gap-[var(--gap-inline)] rounded-[var(--radius-control)] p-1 -m-1 transition-[background-color,transform] duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:bg-white/10 active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-white/20"

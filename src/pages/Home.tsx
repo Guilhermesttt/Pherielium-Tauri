@@ -58,6 +58,7 @@ import { HomeOverviewPanels } from "../components/HomeOverviewPanels";
 import DashboardContinuePlaying from "../components/DashboardContinuePlaying";
 import type { LibraryFilters } from "../components/LibraryFilterModal";
 import { HomeOnboardingQuests } from "../components/home/HomeOnboardingQuests";
+import { OnboardingTour } from "../tour/OnboardingTour";
 import { getAllQuestsWithStatus, shouldShowOnboardingQuests, areAllQuestsCompleted } from "../services/userQuests";
 
 import { PHERIELIUM_LOGO_PATH } from "../constants/assets";
@@ -511,14 +512,20 @@ const Home: React.FC = () => {
 
   const [isWelcomeModalOpen, setIsWelcomeModalOpen] = useState(false);
 
+  // "Rever tutorial" (configurações): volta para a biblioteca, onde ficam os botões do tutorial
+  useEffect(() => {
+    const backToLibrary = () => setActiveCategory("ALL");
+    window.addEventListener("pherielium:restart-tour", backToLibrary);
+    return () => window.removeEventListener("pherielium:restart-tour", backToLibrary);
+  }, []);
+
   useEffect(() => {
     if (!user?.uid) return;
     const seenKey = `phelierium_welcome_modal_seen_${user.uid}`;
     try {
-      const seen = localStorage.getItem(seenKey);
-      if (!seen) {
-        setIsWelcomeModalOpen(true);
-      }
+      // O tutorial interativo (OnboardingTour) substituiu o slideshow automático; o modal antigo
+      // continua acessível pelo evento "phelierium:open-welcome-modal".
+      if (!localStorage.getItem(seenKey)) localStorage.setItem(seenKey, "true");
     } catch {}
   }, [user?.uid]);
 
@@ -3750,6 +3757,14 @@ const Home: React.FC = () => {
           </button>
         )
       }
+
+      {/* Tutorial de boas-vindas (novos usuários; "Rever tutorial" nas configurações) */}
+      <OnboardingTour
+        uid={user?.uid}
+        eligible={isQuestsEligible}
+        blocked={isWelcomeModalOpen}
+        playSound={(name) => playSound(name)}
+      />
 
       {/* Modal/Overlay Flutuante de Missões */}
       {

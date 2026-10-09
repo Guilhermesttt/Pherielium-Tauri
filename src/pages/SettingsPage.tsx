@@ -1,3 +1,4 @@
+import { restartTour } from "../tour/tourSteps";
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -1762,19 +1763,20 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(({
 
                   <SettingsRow
                     icon={<Sparkles className="h-4 w-4" />}
-                    title="Guia do Ecossistema Pherielium"
-                    description="Veja novamente o tour interativo explicando como adicionar jogos, conectar plataformas e usar o overlay."
+                    title="Rever tutorial"
+                    description="A Pherie mostra de novo como adicionar jogos, sincronizar Steam e Epic, usar filtros, perfil, amigos e mods."
                     action={
                       <button
                         type="button"
                         onClick={() => {
                           playSound?.("select");
-                          window.dispatchEvent(new CustomEvent("phelierium:open-welcome-modal"));
+                          if (user?.uid) restartTour(user.uid, localStorage);
+                          window.dispatchEvent(new CustomEvent("pherielium:restart-tour"));
                         }}
                         className="inline-flex h-8 items-center justify-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 px-3.5 text-xs font-semibold text-white transition-colors cursor-pointer active:scale-95"
                       >
                         <Sparkles className="h-3.5 w-3.5" />
-                        <span>Abrir Guia</span>
+                        <span>Rever tutorial</span>
                       </button>
                     }
                     hasBorder={false}
