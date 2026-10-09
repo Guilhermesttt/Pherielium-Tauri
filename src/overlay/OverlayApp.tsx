@@ -1,3 +1,4 @@
+import { IntroMascot } from "./components/IntroMascot";
 import { announceNotchEvent } from "../components/notch/notchEvent";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -328,6 +329,8 @@ const OverlayApp: React.FC = () => {
   const [overlayMode, setOverlayMode] = useState<OverlayMode>("passive");
   // Intro de lançamento: o mascote vindo da janela principal voa até o notch.
   const [launchHandoff, setLaunchHandoff] = useState<LaunchHandoff | null>(null);
+  // abertura da primeira vez (a janela principal manda `overlay:intro`)
+  const [introId, setIntroId] = useState<string | null>(null);
   useEffect(() => {
     if (launchHandoff) document.body.setAttribute("data-launch-handoff", "true");
     else document.body.removeAttribute("data-launch-handoff");
@@ -1101,6 +1104,8 @@ const OverlayApp: React.FC = () => {
       }
     });
 
+    const unbindIntro = api.onIntro?.(() => setIntroId(String(Date.now())));
+
     const unbindHandoff = api.onLaunchHandoff?.((payload: any) => {
       if (payload && Number.isFinite(payload.x) && Number.isFinite(payload.y) && Number.isFinite(payload.size)) {
         setLaunchHandoff({ x: payload.x, y: payload.y, size: Math.max(16, payload.size), id: String(payload.id ?? Date.now()) });
@@ -1108,6 +1113,7 @@ const OverlayApp: React.FC = () => {
     });
 
     return () => {
+      unbindIntro?.();
       unbindHandoff?.();
       unbindUnlock?.();
       unbindPlaySound?.();
@@ -1643,6 +1649,18 @@ const OverlayApp: React.FC = () => {
       )}
 
       {/* ─── DESKTOP NOTCH / DYNAMIC ISLAND WIDGET (VISÍVEL NO DESKTOP) ─── */}
+      {introId && (
+        <IntroMascot
+          key={introId}
+          config={notchConfig}
+          notchEnabled={notchConfig.enabled}
+          onDone={() => {
+            setIntroId(null);
+            void import("@tauri-apps/api/event").then(({ emit }) => emit("overlay:intro-done", {}));
+          }}
+        />
+      )}
+
       {launchHandoff && (
         <FlyingMascot
           key={launchHandoff.id}
@@ -1688,6 +1706,7 @@ const OverlayApp: React.FC = () => {
               }
             : null
         }
+        overlayActive={overlayMode !== "passive"}
         onOverlayMute={toggleMute}
         onOverlayDeafen={toggleDeafen}
         onOverlayHangUp={handleEndCall}

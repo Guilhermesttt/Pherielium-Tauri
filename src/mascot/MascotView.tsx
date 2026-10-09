@@ -279,11 +279,25 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
       drawPherie(ctx, engine, style, size, dpr);
     };
 
+    let pausedKey = "";
     render(0);
 
     const unsubscribe = subscribeTicker((dt, now) => {
       const cur = live.current;
-      if (cur.paused) return;
+      if (cur.paused) {
+        // Pausada (grades de prévia): não anima, mas mostra a expressão/aparência CERTAS. Aplica o
+        // humor, adianta o motor ~2 s de uma vez (as molas assentam) e desenha um quadro só.
+        const st = styleRef.current;
+        const key = `${cur.effectiveMood}|${cur.palette.top}|${st.hat}|${[...st.itemSet].join(",")}|${st.rgbHeadphones}|${st.showMic}`;
+        if (key !== pausedKey) {
+          pausedKey = key;
+          engine.setMood(cur.effectiveMood);
+          for (let i = 0; i < 75; i++) engine.update(1 / 30);
+          render(0);
+        }
+        return;
+      }
+      pausedKey = "";
       clock += dt;
       acc += dt;
       if (++frameNo % divisor !== 0) return;

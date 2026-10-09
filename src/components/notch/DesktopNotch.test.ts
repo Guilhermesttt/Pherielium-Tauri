@@ -46,13 +46,13 @@ describe("DesktopNotch & PherieMascot Logic", () => {
     expect(w(true, "Hades II", true)).toBe(368);
   });
 
-  it("auto-hides only when another app overlaps and nothing keeps the notch pinned", () => {
+  it("auto-hides when another app overlaps unless a call pins the notch", () => {
     const hide = (o: Partial<Parameters<typeof shouldAutoHide>[0]>) =>
       shouldAutoHide({ isWindowOverlapping: true, isCallActive: false, isGameRunning: false, disabled: false, ...o });
     expect(hide({})).toBe(true);
     expect(hide({ isWindowOverlapping: false })).toBe(false);
     expect(hide({ isCallActive: true })).toBe(false);
-    expect(hide({ isGameRunning: true })).toBe(false);
+    expect(hide({ isGameRunning: true })).toBe(true); // jogo não fixa mais o notch: segue o auto-hide
     expect(hide({ disabled: true })).toBe(false);
   });
 
