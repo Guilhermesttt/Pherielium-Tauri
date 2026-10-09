@@ -1706,6 +1706,7 @@ const OverlayApp: React.FC = () => {
               }
             : null
         }
+        overlayActive={overlayMode !== "passive"}
         onOverlayMute={toggleMute}
         onOverlayDeafen={toggleDeafen}
         onOverlayHangUp={handleEndCall}

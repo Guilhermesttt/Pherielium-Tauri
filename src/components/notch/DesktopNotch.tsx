@@ -77,6 +77,8 @@ export interface DesktopNotchProps {
   onOverlayMute?: () => void;
   onOverlayDeafen?: () => void;
   onOverlayHangUp?: () => void;
+  /** Overlay do jogo aberto (painel rápido/completo): único momento em que o mouse revela o notch no jogo. */
+  overlayActive?: boolean;
   /** Overlay: pede ao hub para abrir a janela da chamada. */
   onOverlayOpenCall?: () => void;
   /** Overlay: chamada recebida (vinda do hub) com as ações de atender/recusar. */
@@ -415,6 +417,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   isOverlay = false,
   overlayCall = null,
   overlayIncomingCall = null,
+  overlayActive = false,
   onOverlayMute,
   onOverlayDeafen,
   onOverlayHangUp,
@@ -521,12 +524,20 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     ? (overlayCall.durationSeconds || 0)
     : voiceCall.callDuration;
 
-  const autoHideActive = shouldAutoHide({
-    isWindowOverlapping,
-    isCallActive,
-    isGameRunning: Boolean(activeGameTitle),
-    disabled: autoHideDisabled || !config.autoHide,
-  });
+  // Em jogo, o notch do overlay fica recolhido: só aparece com o overlay aberto, numa conquista
+  // (ou outro aviso) ou numa chamada. Encostar o mouse no topo da tela não o revela.
+  const inGameQuiet = isOverlay && Boolean(activeGameTitle) && !overlayActive && !isCallActive && !autoHideDisabled && config.autoHide;
+  const autoHideActive =
+    shouldAutoHide({
+      isWindowOverlapping,
+      isCallActive,
+      isGameRunning: Boolean(activeGameTitle),
+      disabled: autoHideDisabled || !config.autoHide,
+    }) || inGameQuiet;
+  // com outro app em foco (tela cheia) também não revela pelo mouse, a menos que o overlay esteja aberto
+  const pointerRevealAllowed = !isOverlay || overlayActive || !(inGameQuiet || (isWindowOverlapping && config.autoHide && !autoHideDisabled));
+  const pointerRevealRef = useRef(pointerRevealAllowed);
+  pointerRevealRef.current = pointerRevealAllowed;
 
   const handleToggleMute = () => {
     if (onOverlayMute) onOverlayMute();
@@ -705,7 +716,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         void listen<{ x: number; y: number }>("overlay:cursor", (event) => {
           const { x, y } = event.payload;
           const screenCenter = window.innerWidth / 2;
-          if (y <= 16 && Math.abs(x - screenCenter) <= 160) {
+          if (y <= 16 && Math.abs(x - screenCenter) <= 160 && pointerRevealRef.current) {
             revealNotch();
           }
         }).then((fn) => {
@@ -715,7 +726,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     }
 
     const handleMouseMove = (e: MouseEvent) => {
-      if (e.clientY <= 14) {
+      if (e.clientY <= 14 && pointerRevealRef.current) {
         revealNotch();
       }
     };
@@ -779,6 +790,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   // EXPANSÃO E RECOLHIMENTO SEQUENCIAL
   const handleMouseEnter = () => {
+    if (!pointerRevealRef.current) return;
     if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     // Só espera a animação de descida se o notch estava de fato escondido.
@@ -1057,6 +1069,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   }, [notchSound, revealNotch, reactMood]);
 
   const openNotch = () => {
+    if (!pointerRevealRef.current) return;
     revealNotch();
     setIsExpanded(true);
   };
