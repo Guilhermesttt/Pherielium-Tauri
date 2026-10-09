@@ -223,6 +223,8 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
     canvas.height = Math.round(size * dpr);
 
     let aiming = false;
+    let lastNx = 0;
+    let lastNy = 0;
     let rect: DOMRect | null = null;
     let rectAt = 0;
     let acc = 0;
@@ -248,10 +250,15 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
         rectAt = now;
       }
       if (!rect || rect.width === 0 || rect.height === 0) return;
-      const half = Math.max(240, window.innerWidth / 2);
-      const nx = Math.max(-1, Math.min(1, (pointer.x - (rect.left + rect.width / 2)) / half));
-      const ny = Math.max(-1, Math.min(1, (pointer.y - (rect.top + rect.height / 2)) / half));
-      engine.setLook(nx, ny * 0.8);
+      // olhar bem explícito: desvia por completo já a ~280 px do cursor (antes dependia da largura da tela)
+      const reach = 280;
+      const nx = Math.max(-1, Math.min(1, (pointer.x - (rect.left + rect.width / 2)) / reach));
+      const ny = Math.max(-1, Math.min(1, (pointer.y - (rect.top + rect.height / 2)) / reach));
+      // pisca quando o olhar muda de lado de uma vez
+      if (!aiming || Math.abs(nx - lastNx) > 0.7 || Math.abs(ny - lastNy) > 0.9) engine.blink();
+      lastNx = nx;
+      lastNy = ny;
+      engine.setLook(nx, ny * 0.85);
       aiming = true;
     };
 

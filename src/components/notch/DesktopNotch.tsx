@@ -40,6 +40,8 @@ import { NOTCH_EVENT_MOOD, NOTCH_EVENT_WIDTH, notchEventWaves } from "./notchEve
 import { AchievementReveal } from "./AchievementReveal";
 import { achievementBoxShadow, tierStyle } from "./achievementTier";
 import { subscribeTicker } from "../../mascot/ticker";
+import { useAudioReactiveRef } from "../../mascot/useAudioReactive";
+import { MusicWaveform } from "./MusicWaveform";
 import {
   DIZZY_DURATION_MS,
   distanceToRect,
@@ -387,7 +389,7 @@ export const NotchCard: React.FC<{
   children: React.ReactNode;
 }> = ({ tone = "neutral", children }) => (
   <section
-    className="rounded-[20px] border border-white/[0.035] bg-[#141518] p-3"
+    className="overflow-hidden rounded-[20px] border border-white/[0.035] bg-[#141518] p-3"
     style={{
       backgroundImage: `radial-gradient(120% 140% at 50% 130%, rgba(${CARD_WASH[tone]}, ${tone === "neutral" ? 0.08 : 0.38}) 0%, transparent 62%)`,
     }}
@@ -810,6 +812,8 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   };
 
   const isPcMediaPlaying = mediaState.hasMedia && mediaState.isPlaying;
+  // Áudio do PC: só alimenta a forma de onda do cartão de música (o medidor liga só com música tocando).
+  const audioRef = useAudioReactiveRef(isPcMediaPlaying && config.showMedia && isExpanded);
 
   // Humor dinâmico do mascote Pherie quando aparece (Coucou-style)
   // Áudio do PC: headbang no ritmo e equalizador real (medidor só liga com música tocando).
@@ -1429,7 +1433,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                       <SectionLabel>{sourceLabel ? `Tocando · ${sourceLabel}` : "Tocando no PC"}</SectionLabel>
                       <div className="flex items-center gap-3">
                         <div
-                          className={`relative w-16 h-16 shrink-0 flex items-center justify-center text-white/60 ${
+                          className={`relative w-[76px] h-[76px] shrink-0 flex items-center justify-center text-white/60 ${
                             mascotHost === "media" && !mediaState.thumbnail
                               ? "" // a Pherie ocupa o lugar da capa SEM caixa em volta
                               : "rounded-2xl bg-gradient-to-br from-white/[0.14] to-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
@@ -1460,22 +1464,16 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                             </>
                           ) : mascotHost === "media" ? (
                             // sem capa: a Pherie ocupa o lugar dela, de fone, no ritmo da música
-                            panelMascot(64)
+                            panelMascot(76)
                           ) : (
-                            // sem capa e sem mascote no slot: o equalizador animado (o mesmo da direita)
                             <Equalizer playing={isPcMediaPlaying} height={26} />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-[14px] font-semibold text-white truncate leading-tight">{mediaState.title}</p>
                           <p className="text-[11px] text-white/55 truncate leading-snug">{mediaState.artist}</p>
-                        </div>
-                        {/* o equalizador vai no slot da capa quando ele está livre; senão fica aqui */}
-                        {(mediaState.thumbnail || mascotHost === "media") && (
-                          <Equalizer playing={isPcMediaPlaying} height={18} />
-                        )}
-                      </div>
-                      <div className="flex items-center justify-center gap-5 mt-3">
+                        
+                      <div className="mt-2 flex items-center gap-4">
                         <button
                           type="button"
                           onClick={handleSkipPrev}
@@ -1488,7 +1486,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                         <button
                           type="button"
                           onClick={handleTogglePlayPause}
-                          className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-all active:scale-90"
+                          className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-all active:scale-90"
                           title={mediaState.isPlaying ? "Pausar" : "Reproduzir"}
                           aria-label={mediaState.isPlaying ? "Pausar" : "Reproduzir"}
                         >
@@ -1507,6 +1505,11 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                         >
                           <SkipForward size={18} className="fill-current" />
                         </button>
+                      </div>
+                        </div>
+                      </div>
+                      <div className="-mx-3 -mb-3 mt-2" style={{ maskImage: "linear-gradient(180deg, transparent 0%, #000 55%)", WebkitMaskImage: "linear-gradient(180deg, transparent 0%, #000 55%)" }}>
+                        <MusicWaveform playing={isPcMediaPlaying} audioRef={audioRef} />
                       </div>
                     </NotchCard>
                   )}
