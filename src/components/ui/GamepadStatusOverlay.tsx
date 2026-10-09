@@ -5,6 +5,7 @@ import { useGamepad, playHapticPattern } from "../../context/GamepadContext";
 import { usePreferences } from "../../context/PreferencesContext";
 import { useNotchConfig } from "../../mascot/useNotchConfig";
 import { announceControllerFlash } from "../notch/controllerFlash";
+import { announceControllerState, cleanControllerName, detectControllerBrand } from "../notch/controllerState";
 
 type OverlayKind = "connected" | "disconnected" | "hapticsOn" | "hapticsOff" | "batteryLow" | "batteryStatus";
 
@@ -16,7 +17,7 @@ interface OverlayState {
 }
 
 export const GamepadStatusOverlay: React.FC = () => {
-  const { isGamepadConnected, batteryLevel, batteryCharging, batteryApproximate } = useGamepad();
+  const { isGamepadConnected, batteryLevel, batteryCharging, batteryApproximate, connectionType, connectedGamepadId } = useGamepad();
   const { hapticsEnabled } = usePreferences();
   // Com o notch ligado, conectar/desconectar vira animação nele (sem popup no hub).
   const notchEnabled = useNotchConfig().enabled;
@@ -33,11 +34,13 @@ export const GamepadStatusOverlay: React.FC = () => {
 
   const showOverlay = (state: OverlayState, ms = 3000) => {
     if (notchEnabled && state.kind !== "batteryStatus") {
+      // conectar/desconectar não vira barra: o controle fica na aba "Controle" do notch expandido
+      if (state.kind === "connected" || state.kind === "disconnected") return;
       announceControllerFlash({
         kind: state.kind,
-        battery: state.kind === "connected" || state.kind === "batteryLow" ? (state.batteryLevel ?? null) : null,
+        battery: state.kind === "batteryLow" ? (state.batteryLevel ?? null) : null,
         approximate: state.batteryApproximate ?? batteryApproximate,
-        charging: state.kind === "connected" ? Boolean(state.batteryCharging) : false,
+        charging: false,
       });
       return;
     }
@@ -45,6 +48,19 @@ export const GamepadStatusOverlay: React.FC = () => {
     setShow(true);
     scheduleHide(ms);
   };
+
+  // O notch guarda o último estado do controle (aba "Controle" e atalho com a bateria)
+  useEffect(() => {
+    announceControllerState({
+      connected: isGamepadConnected,
+      brand: detectControllerBrand(connectedGamepadId),
+      link: connectionType === "usb" || connectionType === "bluetooth" ? connectionType : "unknown",
+      name: cleanControllerName(connectedGamepadId),
+      battery: isGamepadConnected ? batteryLevel : null,
+      charging: isGamepadConnected && batteryCharging,
+      approximate: isGamepadConnected && batteryApproximate,
+    });
+  }, [isGamepadConnected, batteryLevel, batteryCharging, batteryApproximate, connectionType, connectedGamepadId]);
 
   // Listener para evento customizado de bateria fraca
   useEffect(() => {

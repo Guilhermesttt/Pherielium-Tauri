@@ -23,3 +23,36 @@ test("notch: atividades vivas (chamada recebida/em andamento, progresso da músi
   await page.screenshot({ path: path.join(outDir, "notch-live.png") });
   await context.close();
 });
+
+test("notch: aba Controle (Xbox, PlayStation, desconectado)", async ({ browser }) => {
+  mkdirSync(outDir, { recursive: true });
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 2 });
+  await installHarness(context, { tauri: false });
+  const page = await context.newPage();
+  await page.goto("/");
+  const notch = page.locator("[data-notch-root]");
+  await expect(notch).toBeVisible({ timeout: 45_000 });
+  await page.waitForTimeout(1500);
+  const send = (detail: Record<string, unknown>) =>
+    page.evaluate((d) => window.dispatchEvent(new CustomEvent("pherielium:controller-state", { detail: d })), detail);
+  await notch.locator("div.cursor-pointer").first().click();
+  await page.waitForTimeout(900);
+  const clip = { x: 660, y: 0, width: 600, height: 300 };
+
+  await send({ connected: true, brand: "xbox", link: "bluetooth", name: "Xbox Wireless Controller", battery: 85, charging: false });
+  await notch.getByRole("tab", { name: "Controle" }).click();
+  await expect(notch.getByText("Controle Xbox")).toBeVisible();
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: path.join(outDir, "notch-controller-xbox.png"), clip });
+
+  await send({ connected: true, brand: "playstation", link: "usb", name: "DualSense Wireless Controller", battery: 24, charging: true });
+  await expect(notch.getByText("Controle PlayStation")).toBeVisible();
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: path.join(outDir, "notch-controller-ps.png"), clip });
+
+  await send({ connected: false, brand: "generic", link: "unknown", name: "", battery: null });
+  await expect(notch.getByText("Nenhum controle")).toBeVisible();
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: path.join(outDir, "notch-controller-none.png"), clip });
+  await context.close();
+});

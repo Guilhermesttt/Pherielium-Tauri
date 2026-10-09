@@ -7,12 +7,12 @@ import { batteryTone, clampBattery } from "./battery";
  * Barra de carga estilo ilha dinâmica: trilho escuro, preenchimento colorido com brilho e a
  * porcentagem numa pílula na ponta (com o raio quando está carregando).
  */
-export const BatteryMeter: React.FC<{ level: number; charging?: boolean; approximate?: boolean }> = ({ level, charging = false, approximate = false }) => {
+export const BatteryMeter: React.FC<{ level: number; charging?: boolean; approximate?: boolean; width?: number }> = ({ level, charging = false, approximate = false, width = 74 }) => {
   const pct = clampBattery(level);
   const { rgb, critical } = batteryTone(pct, charging);
   return (
     <div className="flex shrink-0 items-center" role="img" aria-label={`Bateria ${approximate ? "aproximadamente " : ""}${pct}%`}>
-      <div className="relative h-[8px] w-[74px] rounded-full bg-white/[0.14]">
+      <div className="relative h-[8px] rounded-full bg-white/[0.14]" style={{ width }}>
         <motion.span
           className="absolute inset-y-0 left-0 rounded-full"
           style={{ backgroundColor: `rgb(${rgb})`, boxShadow: `0 0 10px rgba(${rgb},0.75)` }}

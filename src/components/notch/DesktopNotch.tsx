@@ -46,6 +46,8 @@ import { MediaProgress } from "./live/MediaProgress";
 import { CallIncomingBar } from "./live/CallIncomingBar";
 import { VoiceBars } from "./live/VoiceBars";
 import { LIVE_WIDTH, resolveLiveActivity } from "./live/liveActivity";
+import { ControllerTab } from "./live/ControllerTab";
+import { useControllerState } from "./controllerState";
 import { parseTimeline, type MediaTimeline } from "./live/progressMath";
 import {
   DIZZY_DURATION_MS,
@@ -834,6 +836,8 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   const [dizzy, setDizzy] = useState(false);
   const dizzyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [overloaded, setOverloaded] = useState(false);
+  const [tab, setTab] = useState<"home" | "controller">("home");
+  const controller = useControllerState();
   // Curiosidade: cursor chegou ao topo, na altura do notch.
   const [curious, setCurious] = useState(false);
   const curiousTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1126,7 +1130,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   );
 
   // Mascote dentro do painel: "pula" para o lugar (slot da capa / chamada / balão).
-  const panelMascot = (size: number) => (
+  const panelMascot = (size: number, opts?: { mood?: MascotMood; headphones?: boolean }) => (
     <motion.div
       data-notch-panel-mascot="true"
       className="shrink-0"
@@ -1137,7 +1141,8 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
       <GazingMascot
         cursor={gazeCursor}
         size={size}
-        mood={mascotMood}
+        mood={opts?.mood ?? mascotMood}
+        forceHeadphones={opts?.headphones}
         isHovered={isHovered}
         bodyColor={mascotBodyColor}
         shape={mascotShape}
@@ -1206,19 +1211,48 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
       );
     }
     if (isExpanded) {
-      // cabeçalho estilo Coucou: aba "Início" à esquerda, atalhos à direita
+      // cabeçalho estilo Coucou: abas só com ícone à esquerda, atalhos à direita
+      const tabBtn = (id: "home" | "controller", label: string, icon: React.ReactNode) => (
+        <button
+          key={id}
+          type="button"
+          role="tab"
+          aria-selected={tab === id}
+          aria-label={label}
+          title={label}
+          onClick={(e) => {
+            e.stopPropagation();
+            setTab(id);
+          }}
+          className={`flex h-9 w-11 items-center justify-center rounded-full transition-colors ${
+            tab === id ? "bg-white/[0.10] text-white" : "text-white/55 hover:bg-white/[0.06] hover:text-white"
+          }`}
+        >
+          {icon}
+        </button>
+      );
       return (
         <div className="flex w-full items-center justify-between">
-          <span
-            role="tab"
-            aria-selected="true"
-            aria-label="Início"
-            title="Início"
-            className="flex h-9 w-11 items-center justify-center rounded-full bg-white/[0.10] text-white"
-          >
-            <Home size={17} />
-          </span>
+          <div className="flex items-center gap-1" role="tablist">
+            {tabBtn("home", "Início", <Home size={17} />)}
+            {tabBtn("controller", "Controle", <Gamepad2 size={17} />)}
+          </div>
           <div className="flex items-center gap-1 text-white/60">
+            {controller.connected && controller.battery != null && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTab("controller");
+                }}
+                title="Controle conectado"
+                aria-label={`Controle conectado, bateria ${controller.battery}%`}
+                className="mr-1 flex h-7 items-center gap-1 rounded-full bg-white/[0.07] px-2 text-[11px] font-semibold tabular-nums text-[#30d158] transition-colors hover:bg-white/[0.12]"
+              >
+                <Gamepad2 size={13} />
+                {controller.battery}%
+              </button>
+            )}
             {config.showClock && (
               <span className="mr-1 text-[12px] font-semibold tabular-nums text-white/70">{currentTime}</span>
             )}
@@ -1412,7 +1446,13 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                       </div>
                     </NotchCard>
                   )}
-                  <div className={dropzone.active || overloaded ? "hidden" : "contents"}>
+                  {tab === "controller" && !overloaded && !dropzone.active && (
+                    <ControllerTab
+                      state={controller}
+                      mascot={panelMascot(96, { mood: controller.connected ? "gaming" : "sad", headphones: true })}
+                    />
+                  )}
+                  <div className={dropzone.active || overloaded || tab === "controller" ? "hidden" : "contents"}>
                   {/* ── Chamada de voz ── */}
                   {isCallActive && (
                     <NotchCard tone="green">
