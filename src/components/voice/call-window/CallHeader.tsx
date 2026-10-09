@@ -75,7 +75,7 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
     : session.friendName || "Chamada Direta";
 
   return (
-    <header className="h-14 w-full flex items-center justify-between px-6 border-b border-[#161616] bg-[#0F0F0F]/80 backdrop-blur-md z-20 select-none shrink-0">
+    <header className="h-14 w-full flex items-center justify-between px-6 border-b border-white/[0.06] bg-transparent backdrop-blur-xl z-20 select-none shrink-0">
       {/* Left: Call Title, Duration and Connection Status */}
       <div className="flex items-center gap-3 min-w-0">
         <div className="flex flex-col min-w-0">
@@ -101,7 +101,7 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
                 Conectando…
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/[0.06] border border-[#161616] text-[10px] font-mono tabular-nums font-medium text-white/90">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/[0.07] text-[11px] font-mono tabular-nums font-medium text-white/90">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 {formatDuration(duration)}
               </span>
@@ -155,7 +155,7 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
             className={`hidden md:inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-[10px] border transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
               session.isPrivate || roomConfig?.isPrivate
                 ? "bg-amber-500/10 border-amber-500/25 text-amber-300 hover:bg-amber-500/20"
-                : "bg-white/[0.04] border-[#161616] text-white/70 hover:bg-white/[0.08] hover:text-white"
+                : "bg-white/[0.05] border-white/10 text-white/70 hover:bg-white/[0.09] hover:text-white"
             }`}
             title="Configurar privacidade e senha da sala"
             aria-label="Configurar privacidade da sala"
@@ -180,7 +180,7 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
             type="button"
             onClick={onOpenAppearance}
             style={{ cornerShape: "squircle" } as React.CSSProperties}
-            className="hidden lg:inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-[10px] bg-white/[0.04] hover:bg-white/[0.08] border border-[#161616] text-white/80 hover:text-white transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+            className="hidden lg:inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/[0.05] hover:bg-white/[0.09] border border-white/10 text-white/80 hover:text-white transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             title="Editar aparência da sala"
             aria-label="Editar aparência da sala"
           >
@@ -209,7 +209,7 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
             type="button"
             onClick={onOpenInvite}
             style={{ cornerShape: "squircle" } as React.CSSProperties}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[12px] bg-white/[0.06] hover:bg-white/[0.12] border border-[#161616] text-xs font-semibold text-white transition active:scale-96 cursor-pointer shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] text-[13px] font-semibold text-white transition active:scale-95 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             title="Convidar amigos para a chamada"
             aria-label="Convidar amigos para a chamada"
           >

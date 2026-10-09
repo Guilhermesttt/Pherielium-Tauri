@@ -8,6 +8,7 @@ import {
   MicOff,
   Volume2,
   VolumeX,
+  Phone,
   PhoneOff,
   Gamepad2,
   Play,
@@ -1169,11 +1170,13 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   );
 
   const renderBar = () => {
-    if (incomingInvite) {
+    // compacto: a barra de atender/recusar; expandido: o cartão no painel (o cabeçalho com as abas fica)
+    if (incomingInvite && !isExpanded) {
       return (
         <CallIncomingBar
           name={incomingInvite.callerName || "Alguém"}
-          avatar={<CallAvatar src={incomingInvite.callerAvatar || undefined} name={incomingInvite.callerName} size={34} />}
+          mascot={barMascot(30)}
+          avatar={<CallAvatar src={incomingInvite.callerAvatar || undefined} name={incomingInvite.callerName} size={30} />}
           onAccept={() => (overlayIncomingCall ? overlayIncomingCall.onAccept() : void voiceCall.answerCall())}
           onReject={() => (overlayIncomingCall ? overlayIncomingCall.onReject() : void voiceCall.rejectCall())}
         />
@@ -1465,13 +1468,46 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                       </div>
                     </NotchCard>
                   )}
-                  {tab === "controller" && !overloaded && !dropzone.active && (
+                  {incomingInvite && !overloaded && !dropzone.active && (
+                    <NotchCard tone="green">
+                      <SectionLabel>Chamada recebida</SectionLabel>
+                      <div className="flex items-center gap-3">
+                        {config.showMascot && panelMascot(64, { mood: "excited" })}
+                        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                          <CallAvatar src={incomingInvite.callerAvatar || undefined} name={incomingInvite.callerName} size={34} />
+                          <div className="min-w-0 leading-tight">
+                            <p className="truncate text-[15px] font-semibold text-white">{incomingInvite.callerName || "Alguém"}</p>
+                            <p className="text-[12px] text-white/50">está te ligando</p>
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 items-start gap-4">
+                          <button
+                            type="button"
+                            onClick={() => (overlayIncomingCall ? overlayIncomingCall.onReject() : void voiceCall.rejectCall())}
+                            aria-label="Recusar"
+                            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#ff453a] text-white transition-all hover:brightness-110 active:scale-90"
+                          >
+                            <PhoneOff size={19} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => (overlayIncomingCall ? overlayIncomingCall.onAccept() : void voiceCall.answerCall())}
+                            aria-label="Atender"
+                            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#30d158] text-white transition-all hover:brightness-110 active:scale-90"
+                          >
+                            <Phone size={19} />
+                          </button>
+                        </div>
+                      </div>
+                    </NotchCard>
+                  )}
+                  {tab === "controller" && !incomingInvite && !overloaded && !dropzone.active && (
                     <ControllerTab
                       state={controller}
                       mascot={panelMascot(96, { mood: controller.connected ? "gaming" : "sad", headphones: true })}
                     />
                   )}
-                  <div className={dropzone.active || overloaded || tab === "controller" ? "hidden" : "contents"}>
+                  <div className={dropzone.active || overloaded || tab === "controller" || Boolean(incomingInvite) ? "hidden" : "contents"}>
                   {/* ── Chamada de voz ── */}
                   {isCallActive && (
                     <NotchCard tone="green">

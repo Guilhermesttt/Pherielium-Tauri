@@ -28,7 +28,7 @@ export function resolveLiveActivity(s: LiveState): LiveKind {
 
 /** Largura da barra compacta de cada atividade (px). */
 export const LIVE_WIDTH: Record<LiveKind, number> = {
-  "call-incoming": 392,
+  "call-incoming": 436,
   call: 368,
   event: 344,
   controller: 320,

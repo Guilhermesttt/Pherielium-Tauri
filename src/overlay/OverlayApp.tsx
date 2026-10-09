@@ -991,10 +991,15 @@ const OverlayApp: React.FC = () => {
         );
       }
       const payloadDuration = Number(payload?.duration);
+      // chamada recebida: fica até atender/recusar/expirar (o hub manda "dismiss" ao encerrar o toque);
+      // com 5 s ela sumia do notch no meio do toque
+      const RING_MIN_MS = 40_000;
       const toastDurationMs =
-        Number.isFinite(payloadDuration) && payloadDuration > 0
+        kind === "incoming-call"
+          ? Math.max(RING_MIN_MS, Number.isFinite(payloadDuration) ? payloadDuration : 0)
+          : Number.isFinite(payloadDuration) && payloadDuration > 0
           ? payloadDuration
-          : kind === "incoming-call" || kind === "call"
+          : kind === "call"
             ? 5000
             : kind === "friend-request"
               ? 12000

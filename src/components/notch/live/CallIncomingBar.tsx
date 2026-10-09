@@ -8,10 +8,13 @@ import { Phone, PhoneOff } from "../../../design-system/sf-symbols/lucideCompat"
 export const CallIncomingBar: React.FC<{
   name: string;
   avatar: React.ReactNode;
+  /** a Pherie reagindo (animada) à esquerda */
+  mascot?: React.ReactNode;
   onAccept: () => void;
   onReject: () => void;
-}> = ({ name, avatar, onAccept, onReject }) => (
+}> = ({ name, avatar, mascot, onAccept, onReject }) => (
   <div className="flex w-full items-center gap-2.5" role="alertdialog" aria-label={`${name} está te ligando`}>
+    {mascot ? <div className="shrink-0">{mascot}</div> : null}
     {avatar}
     <div className="min-w-0 flex-1 leading-tight">
       <p className="text-[10.5px] font-medium text-white/50">Chamada de voz</p>

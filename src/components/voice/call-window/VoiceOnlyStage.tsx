@@ -124,10 +124,10 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
               onContextMenu?.(e as any, single);
             }
           }}
-          className={`relative group flex flex-col items-center justify-center rounded-[24px] bg-[#121212] border transition-all duration-300 w-64 sm:w-72 h-[290px] sm:h-[310px] p-5 text-center shadow-[0_16px_50px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 overflow-hidden ${
+          className={`relative group flex flex-col items-center justify-center rounded-[30px] bg-white/[0.04] ring-1 transition-[background-color,box-shadow] duration-300 w-64 sm:w-72 h-[290px] sm:h-[310px] p-5 text-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 overflow-hidden ${
             isSpeaking
-              ? "border-white/20 shadow-[0_20px_60px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.08)]"
-              : "border-white/[0.06] hover:border-white/15 hover:bg-[#151515]"
+              ? "ring-white/45 shadow-[0_0_44px_rgba(255,255,255,0.1)]"
+              : "ring-white/[0.07] hover:ring-white/15 hover:bg-white/[0.06]"
           }`}
         >
           {single?.cameraStream ? (
@@ -421,12 +421,12 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                     onContextMenu?.(e as any, feed);
                   }
                 }}
-                className={`group relative flex flex-col items-center justify-center rounded-[24px] bg-[#121212] border transition-all duration-300 text-center shadow-[0_12px_36px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.05)] outline-none focus-visible:ring-2 focus-visible:ring-white/40 overflow-hidden ${
+                className={`group relative flex flex-col items-center justify-center rounded-[28px] bg-white/[0.04] ring-1 transition-[background-color,box-shadow] duration-300 text-center outline-none focus-visible:ring-2 focus-visible:ring-white/40 overflow-hidden ${
                   isPresenting
-                    ? "border-sky-400/60 shadow-[0_0_24px_rgba(56,189,248,0.2),inset_0_1px_0_rgba(255,255,255,0.08)] cursor-pointer"
+                    ? "ring-sky-400/60 shadow-[0_0_28px_rgba(56,189,248,0.2)] cursor-pointer"
                     : isSpeaking
-                      ? "border-white/20 shadow-[0_16px_44px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.08)]"
-                      : "border-white/[0.06] hover:border-white/15 hover:bg-[#151515] cursor-default"
+                      ? "ring-white/45 shadow-[0_0_40px_rgba(255,255,255,0.1)]"
+                      : "ring-white/[0.07] hover:ring-white/15 hover:bg-white/[0.06] cursor-default"
                 }`}
               >
                 {/* Botão de 3 pontos — morph plus-to-menu */}

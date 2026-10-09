@@ -890,7 +890,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             style={{
               cornerShape: "squircle",
             } as React.CSSProperties}
-            className={`relative flex flex-col w-full overflow-hidden bg-[#0F0F0F] border border-[#161616] shadow-[0_30px_90px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-300 ${
+            className={`relative flex flex-col w-full overflow-hidden bg-[#0c0c0e] border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.8)] transition-all duration-300 ${
               isCompactMode
                 ? "max-w-xl h-[440px] sm:h-[460px] rounded-[24px]"
                 : "max-w-5xl h-[84vh] rounded-[28px]"
