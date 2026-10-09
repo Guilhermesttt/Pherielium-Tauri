@@ -33,6 +33,7 @@ fn now_secs() -> i64 {
 /// Abre (ou substitui) a sessão do usuário. Se havia outra aberta, ela é fechada antes.
 pub fn open_at(conn: &Connection, uid: &str, game_id: &str, title: &str, now: i64) -> Result<Option<ClosedSession>> {
     let previous = finish(conn, uid, now, false)?;
+    eprintln!("[sessions] abrindo '{title}' ({game_id}) uid={uid} inicio={now}");
     conn.execute(
         "INSERT INTO open_sessions (uid, game_id, title, started_at, last_heartbeat) VALUES (?1, ?2, ?3, ?4, ?4)",
         params![uid, game_id, title, now],
@@ -58,6 +59,7 @@ fn finish(conn: &Connection, uid: &str, end: i64, recovered: bool) -> Result<Opt
         return Ok(None);
     };
 
+    eprintln!("[sessions] fechando '{title}' ({game_id}) uid={uid} inicio={started} fim={end} recuperada={recovered}");
     let tx = conn.unchecked_transaction()?;
     tx.execute("DELETE FROM open_sessions WHERE uid = ?1", params![uid])?;
 
@@ -76,6 +78,7 @@ fn finish(conn: &Connection, uid: &str, end: i64, recovered: bool) -> Result<Opt
         return Ok(None);
     }
 
+    eprintln!("[sessions] creditando {minutes} min em '{title}'");
     let ended_iso = rfc3339_from_unix(end.max(0) as u64);
     tx.execute(
         "INSERT INTO sessions (id, uid, game_id, started_at, ended_at, duration_minutes, created_at)

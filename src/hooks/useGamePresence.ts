@@ -180,7 +180,8 @@ export function useGamePresence({
       return true;
     }
 
-    void finalizeActiveSession().catch(() => undefined);
+    // a sessão anterior fecha ANTES de a nova abrir (comandos do Rust podem rodar fora de ordem)
+    const closingPrevious = finalizeActiveSession().catch(() => undefined);
     activeSessionRef.current = {
       title,
       startedAt,
@@ -192,9 +193,11 @@ export function useGamePresence({
       ? games.find((candidate) => candidate.title.trim().toLowerCase() === title.trim().toLowerCase())
       : undefined;
     if (userUid && sessionGame) {
-      void window.electronAPI
-        ?.sessionOpen?.(userUid, sessionGame.id, title, Math.floor(startedAt / 1000))
-        .catch(() => undefined);
+      void closingPrevious
+        .then(() => window.electronAPI?.sessionOpen?.(userUid, sessionGame.id, title, Math.floor(startedAt / 1000)))
+        .catch((error) => console.warn("[sessions] falha ao abrir a sessão:", error));
+    } else {
+      console.warn("[sessions] jogo não encontrado na biblioteca pelo título; o tempo não será contado:", title);
     }
     pendingLaunchRef.current = null;
     setActiveSessionPid(pid ?? null);
