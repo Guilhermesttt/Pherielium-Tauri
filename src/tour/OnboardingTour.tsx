@@ -16,6 +16,7 @@ import {
   type TourStep,
 } from "./tourSteps";
 
+const INTRO_KEY = "pherielium_intro_v1";
 const Z = 320; // acima de ModalShell (100) e GameLaunchIntro (200)
 const HOLE_PAD = 8;
 const COACH = { width: 360, height: 188 };
@@ -55,6 +56,33 @@ function useTargetRect(selector: string | null): Rect | null {
 
 /** Tem algum diálogo modal aberto? (o tour espera ele fechar antes de seguir) */
 const modalOpen = () => document.querySelector('[aria-modal="true"], [role="dialog"][data-state="open"]') !== null;
+
+/** Abertura no overlay (a Pherie na área de trabalho → notch). Só no app instalado e só na 1ª vez. */
+async function playIntroOnce(force: boolean): Promise<void> {
+  if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
+  try {
+    if (!force && localStorage.getItem(INTRO_KEY)) return;
+    localStorage.setItem(INTRO_KEY, "1");
+    const { emit, listen } = await import("@tauri-apps/api/event");
+    await new Promise<void>((resolve) => {
+      let unlisten: (() => void) | undefined;
+      const finish = () => {
+        unlisten?.();
+        resolve();
+      };
+      const timer = window.setTimeout(finish, 12_000);
+      void listen("overlay:intro-done", () => {
+        window.clearTimeout(timer);
+        finish();
+      }).then((fn) => {
+        unlisten = fn;
+      });
+      void emit("overlay:intro", {});
+    });
+  } catch {
+    /* sem overlay: segue direto para o tutorial */
+  }
+}
 
 const hasTarget = (selector: string) => document.querySelector(selector) !== null;
 
@@ -123,11 +151,12 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
   // inicia: novo usuário não concluído, ou refazer forçado pelas configurações
   useEffect(() => {
     if (!uid) return;
-    const start = () => {
+    const start = async () => {
       const forced = localStorage.getItem(tourForceKey(uid)) === "1";
       const state = loadTourState(uid, localStorage);
       if ((forced || (eligible && !state.done)) && !(state.done && !forced)) {
         localStorage.removeItem(tourForceKey(uid));
+        await playIntroOnce(forced);
         setIndex(state.step);
         setActive(true);
       }

@@ -39,6 +39,7 @@ export function installOverlayBridge(): void {
     onPanelState: (callback: OverlayCallback) => bindEvent("overlay:panel-state", callback),
     onPanelCommand: (callback: OverlayCallback) => bindEvent("overlay:panel-command", callback),
     onLaunchHandoff: (callback: OverlayCallback) => bindEvent("overlay:launch-handoff", callback),
+    onIntro: (callback: OverlayCallback) => bindEvent("overlay:intro", callback),
     panelAction: (action: unknown) => invoke("overlay_panel_action", { action }),
   };
 }
