@@ -115,8 +115,11 @@ pub fn recover_orphans_at(conn: &Connection, uid: &str) -> Result<Option<ClosedS
 
 // ── envoltórios por usuário (abrem o SQLite) ─────────────────────────────────
 
-pub fn open_session(uid: &str, game_id: &str, title: &str) -> Result<Option<ClosedSession>> {
-    open_at(&game_library::open(uid)?, uid, game_id, title, now_secs())
+pub fn open_session(uid: &str, game_id: &str, title: &str, started_at_secs: Option<i64>) -> Result<Option<ClosedSession>> {
+    let now = now_secs();
+    // o jogo pode ter aberto antes de o app detectar; nunca no futuro
+    let started = started_at_secs.map(|s| s.min(now).max(0)).unwrap_or(now);
+    open_at(&game_library::open(uid)?, uid, game_id, title, started)
 }
 pub fn heartbeat(uid: &str) -> Result<()> {
     heartbeat_at(&game_library::open(uid)?, uid, now_secs())

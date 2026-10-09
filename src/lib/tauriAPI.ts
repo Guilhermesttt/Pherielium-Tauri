@@ -26,6 +26,14 @@ import {
 
 // ── tauriAPI object ───────────────────────────────────────────────────────────
 
+export interface ClosedGameSession {
+  gameId: string;
+  title: string;
+  durationMinutes: number;
+  /** veio da recuperação de uma sessão interrompida (crash) */
+  recovered: boolean;
+}
+
 export const tauriAPI = {
 
   // ─── Launcher ─────────────────────────────────────────────────────────────
@@ -118,6 +126,13 @@ export const tauriAPI = {
 
   recordLocalGameSession: (uid: string, gameId: string, session: unknown) =>
     invoke<string>("library_record_session", { uid, gameId, session }),
+
+  // sessões que sobrevivem a crash (heartbeat + recuperação)
+  sessionOpen: (uid: string, gameId: string, title: string, startedAtSecs?: number) =>
+    invoke<unknown>("session_open", { uid, gameId, title, startedAtSecs: startedAtSecs ?? null }),
+  sessionHeartbeat: (uid: string) => invoke<void>("session_heartbeat", { uid }),
+  sessionClose: (uid: string) => invoke<ClosedGameSession | null>("session_close", { uid }),
+  sessionRecoverOrphans: (uid: string) => invoke<ClosedGameSession | null>("session_recover_orphans", { uid }),
 
   bulkUpsertLocalGames: (uid: string, games: unknown[]) => {
     const payload = Array.isArray(games)

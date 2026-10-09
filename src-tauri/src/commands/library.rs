@@ -457,8 +457,8 @@ pub async fn steam_fetch_app_details(
 // ── Sessões de jogo (sobrevivem a crash) ─────────────────────────────────────
 
 #[command]
-pub async fn session_open(uid: String, game_id: String, title: String) -> Result<Option<crate::store::sessions::ClosedSession>, String> {
-    crate::store::sessions::open_session(&uid, &game_id, &title).map_err(|e| e.to_string())
+pub async fn session_open(uid: String, game_id: String, title: String, started_at_secs: Option<i64>) -> Result<Option<crate::store::sessions::ClosedSession>, String> {
+    crate::store::sessions::open_session(&uid, &game_id, &title, started_at_secs).map_err(|e| e.to_string())
 }
 
 #[command]
