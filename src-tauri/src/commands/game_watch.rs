@@ -171,6 +171,10 @@ fn locate_target_process(
     None
 }
 
+/// Quando o processo que sumiu era o próprio executável do jogo, espera poucos ticks (1 s cada) antes
+/// de encerrar a sessão; launchers/bootstrappers continuam com a espera longa de 15 s.
+const EXACT_EXE_GRACE_TICKS: u32 = 3;
+
 pub fn start_game_watch(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         let refresh_kind = ProcessRefreshKind::new().with_exe(sysinfo::UpdateKind::Always);
@@ -181,6 +185,8 @@ pub fn start_game_watch(app: AppHandle) {
         let mut last_target: Option<String> = None;
         let mut tracked_pid: Option<sysinfo::Pid> = None;
         let mut handoff_grace_ticks: u32 = 0;
+        // o processo achado é exatamente o executável alvo (não um bootstrapper): termina rápido
+        let mut tracked_exact = false;
 
         loop {
             let sleep_ms = if was_running { 1000 } else { 500 };
@@ -250,6 +256,7 @@ pub fn start_game_watch(app: AppHandle) {
             if let Some((pid, matched_path, start_ms)) = located {
                 tracked_pid = Some(pid);
                 handoff_grace_ticks = 0;
+                tracked_exact = matched_path.to_string_lossy().eq_ignore_ascii_case(&target);
 
                 if !was_running {
                     was_running = true;
@@ -272,7 +279,8 @@ pub fn start_game_watch(app: AppHandle) {
 
             // Launcher helpers/bootstrappers die before the real game exe. Wait ~15s before ending,
             // preventing the window from bouncing open/shut prematurely while the game loads.
-            if handoff_grace_ticks < 15 {
+            let grace_limit: u32 = if tracked_exact { EXACT_EXE_GRACE_TICKS } else { 15 };
+            if handoff_grace_ticks < grace_limit {
                 handoff_grace_ticks += 1;
                 continue;
             }

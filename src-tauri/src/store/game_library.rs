@@ -154,7 +154,7 @@ pub fn open(uid: &str) -> Result<Connection> {
     Ok(conn)
 }
 
-fn migrate(conn: &Connection) -> Result<()> {
+pub(crate) fn migrate(conn: &Connection) -> Result<()> {
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS games (
             id                  TEXT PRIMARY KEY,
@@ -183,6 +183,15 @@ fn migrate(conn: &Connection) -> Result<()> {
             ended_at    TEXT NOT NULL,
             duration_minutes INTEGER NOT NULL,
             created_at  TEXT NOT NULL
+        );
+
+        -- sessão em andamento: sobrevive a crash/queda de energia (heartbeat periódico)
+        CREATE TABLE IF NOT EXISTS open_sessions (
+            uid             TEXT PRIMARY KEY,
+            game_id         TEXT NOT NULL,
+            title           TEXT NOT NULL,
+            started_at      INTEGER NOT NULL,
+            last_heartbeat  INTEGER NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS library_meta (
@@ -235,9 +244,11 @@ pub fn list_games(uid: &str) -> Result<Vec<Game>> {
                     extra.insert("cardImage".to_string(), serde_json::json!(url));
                 }
             }
-            if !extra.contains_key("hoursPlayed") {
-                extra.insert("hoursPlayed".to_string(), serde_json::json!(total_playtime / 60));
-            }
+            // A coluna total_playtime_minutes é a fonte do tempo (as sessões somam nela). O metadata
+            // guarda uma cópia antiga de hoursPlayed que o front lê com prioridade: sem sobrescrever,
+            // os minutos de uma sessão nova não apareciam. Também não truncamos mais para horas inteiras.
+            let column_hours = ((total_playtime as f64 / 60.0) * 10.0).round() / 10.0;
+            extra.insert("hoursPlayed".to_string(), serde_json::json!(column_hours));
             if !extra.contains_key("steamPlaytimeMinutes") {
                 extra.insert("steamPlaytimeMinutes".to_string(), serde_json::json!(total_playtime));
             }

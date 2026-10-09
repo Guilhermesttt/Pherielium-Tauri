@@ -9,8 +9,6 @@ import {
 import { fetchSteamAchievementDetails, fetchSteamCurrentGame } from "../services/steam";
 import { fetchEpicAchievements } from "../services/epic";
 import {
-  recordLibrarySession,
-  updateLibraryGame,
 } from "../services/localLibrary";
 import {
   executablePathsEqual,
@@ -114,33 +112,32 @@ export function useGamePresence({
     const session = activeSessionRef.current;
     activeSessionRef.current = null;
     if (!session || !userUid) return;
-    const durationMinutes = Math.max(
-      0,
-      Math.round((Date.now() - session.startedAt) / 60_000),
-    );
-    if (durationMinutes < 1) return;
-    const game = games.find((candidate) =>
-      candidate.title.trim().toLowerCase() === session.title.trim().toLowerCase());
-    if (!game) return;
-    const knownMinutes = Math.max(
-      Number(game.locallyTrackedMinutes) || 0,
-      Number(game.steamPlaytimeMinutes) || 0,
-      Math.round((Number(game.hoursPlayed) || 0) * 60),
-    );
-    const locallyTrackedMinutes = knownMinutes + durationMinutes;
-    const endedAt = new Date().toISOString();
-    await recordLibrarySession(userUid, game.id, {
-      startedAt: new Date(session.startedAt).toISOString(),
-      endedAt,
-      durationMinutes,
-    });
-    await updateLibraryGame(userUid, game.id, {
-      locallyTrackedMinutes,
-      hoursPlayed: Math.round((locallyTrackedMinutes / 60) * 10) / 10,
-      lastPlayedAt: endedAt,
-    });
-    await onLibraryChanged?.();
-  }, [games, onLibraryChanged, userUid]);
+    // O Rust soma os minutos uma única vez (em transação) e fecha a linha de sessão aberta.
+    // Antes o front somava e depois sobrescrevia o total com um valor arredondado a 0,1 h.
+    const closed = await window.electronAPI?.sessionClose?.(userUid);
+    if (closed && closed.durationMinutes > 0) await onLibraryChanged?.();
+  }, [onLibraryChanged, userUid]);
+
+  // Sessão aberta por um crash/queda de energia: recupera o tempo até o último heartbeat.
+  useEffect(() => {
+    if (!userUid) return;
+    void window.electronAPI?.sessionRecoverOrphans?.(userUid)
+      .then((recovered) => {
+        if (recovered && recovered.durationMinutes > 0) void onLibraryChanged?.();
+      })
+      .catch(() => undefined);
+    // só na entrada do usuário
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userUid]);
+
+  // Heartbeat enquanto há sessão: se o app morrer, no máximo ~30 s se perdem.
+  useEffect(() => {
+    if (!userUid) return;
+    const id = window.setInterval(() => {
+      if (activeSessionRef.current) void window.electronAPI?.sessionHeartbeat?.(userUid).catch(() => undefined);
+    }, 30_000);
+    return () => window.clearInterval(id);
+  }, [userUid]);
 
   const clearCurrentPresence = useCallback(() => {
     void finalizeActiveSession().catch((error) => {
@@ -183,18 +180,30 @@ export function useGamePresence({
       return true;
     }
 
-    void finalizeActiveSession().catch(() => undefined);
+    // a sessão anterior fecha ANTES de a nova abrir (comandos do Rust podem rodar fora de ordem)
+    const closingPrevious = finalizeActiveSession().catch(() => undefined);
     activeSessionRef.current = {
       title,
       startedAt,
       executablePath: normalizedExecutablePath,
       pid: pid ?? undefined,
     };
+    // registra a sessão no Rust já (sobrevive a crash). O jogo é achado uma vez, aqui.
+    const sessionGame = userUid
+      ? games.find((candidate) => candidate.title.trim().toLowerCase() === title.trim().toLowerCase())
+      : undefined;
+    if (userUid && sessionGame) {
+      void closingPrevious
+        .then(() => window.electronAPI?.sessionOpen?.(userUid, sessionGame.id, title, Math.floor(startedAt / 1000)))
+        .catch((error) => console.warn("[sessions] falha ao abrir a sessão:", error));
+    } else {
+      console.warn("[sessions] jogo não encontrado na biblioteca pelo título; o tempo não será contado:", title);
+    }
     pendingLaunchRef.current = null;
     setActiveSessionPid(pid ?? null);
     setSessionStartedAt(new Date(startedAt).toISOString());
     return true;
-  }, [finalizeActiveSession]);
+  }, [finalizeActiveSession, games, userUid]);
 
   const markCurrentPresence = useCallback((
     title: string,

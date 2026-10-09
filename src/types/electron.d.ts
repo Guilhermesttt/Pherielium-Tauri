@@ -770,6 +770,10 @@ declare global {
       deleteLocalGame?: (uid: string, gameId: string) => Promise<boolean>;
       deleteLocalGamesByLauncher?: (uid: string, launcherType: string) => Promise<number>;
       recordLocalGameSession?: (uid: string, gameId: string, session: any) => Promise<string>;
+      sessionOpen?: (uid: string, gameId: string, title: string, startedAtSecs?: number) => Promise<unknown>;
+      sessionHeartbeat?: (uid: string) => Promise<void>;
+      sessionClose?: (uid: string) => Promise<{ gameId: string; title: string; durationMinutes: number; recovered: boolean } | null>;
+      sessionRecoverOrphans?: (uid: string) => Promise<{ gameId: string; title: string; durationMinutes: number; recovered: boolean } | null>;
       bulkUpsertLocalGames?: (uid: string, games: any[]) => Promise<any[]>;
       importLegacyGames?: (uid: string, games: any[]) => Promise<any>;
       needsLegacyGameImport?: (uid: string) => Promise<boolean>;
