@@ -40,6 +40,7 @@ import { NOTCH_EVENT_MOOD, NOTCH_EVENT_WIDTH, notchEventWaves } from "./notchEve
 import { AchievementReveal } from "./AchievementReveal";
 import { achievementBoxShadow, tierStyle } from "./achievementTier";
 import { subscribeTicker } from "../../mascot/ticker";
+import { useSituationMood } from "../../mascot/useSituationMood";
 import { MusicWaveform } from "./MusicWaveform";
 import {
   DIZZY_DURATION_MS,
@@ -885,18 +886,34 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   const notchEvent = useNotchEvent(config.enabled, isExpanded);
   const isAchievement = notchEvent?.kind === "achievement";
 
+  const situation = useSituationMood({
+    isCallActive,
+    callDurationSeconds: callDuration,
+    activeGameTitle,
+    gameElapsedSeconds: activeGameElapsedSeconds,
+    hasMedia: mediaState.hasMedia,
+    isMediaPlaying: isPcMediaPlaying,
+    isExpanded,
+    isHovered,
+    busy: isCallActive || Boolean(activeGameTitle) || isPcMediaPlaying || Boolean(notchEvent) || Boolean(controllerFlash),
+  });
+  const reactMood = situation.react;
+
   const mascotMood: MascotMood = useMemo(() => {
     if (dizzy) return "dizzy"; // chacoalharam o mouse
     if (controllerFlash) return FLASH_MASCOT_MOOD[controllerFlash.kind];
     if (notchEvent) return NOTCH_EVENT_MOOD[notchEvent.kind];
     if (dropzone.armed || dropzone.over || dropzone.importing) return "surprised"; // boca aberta
     if (digested) return "happy"; // "digeriu" o arquivo
+    if (situation.transient) return situation.transient; // reação curta (cutucada, fim de jogo/chamada...)
     if (isCallActive) return isMuted ? "muted" : "calling";
     if (activeGameTitle) return "gaming";
     if (isPcMediaPlaying) return "music";
     if (curious && !baseMood) return "curious";
-    return baseMood ?? "idle";
-  }, [dizzy, controllerFlash, notchEvent, dropzone.armed, dropzone.over, dropzone.importing, digested, isCallActive, isMuted, activeGameTitle, isPcMediaPlaying, curious, baseMood]);
+    if (baseMood) return baseMood;
+    if (isHovered && !situation.ambient) return "attentive"; // o cursor está no notch
+    return situation.ambient ?? "idle"; // parada: entedia, dá sono, dorme
+  }, [situation.transient, situation.ambient, isHovered, dizzy, controllerFlash, notchEvent, dropzone.armed, dropzone.over, dropzone.importing, digested, isCallActive, isMuted, activeGameTitle, isPcMediaPlaying, curious, baseMood]);
 
   // Boca do mascote: no Tauri o volume do microfone chega por evento dedicado
   // (overlay:voice-level, ref sem re-render). Fora do Tauri (dev no navegador) cai
@@ -987,7 +1004,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     if (recent.length >= 3) {
       pokeClicksRef.current = [];
       notchSound("mascotDizzy");
-      // cliques demais: o notch treme e ela fica tonta por 3 s, com um aviso
+      // cliques demais: ela fica tonta por 3 s, com um aviso, e depois confusa
       overloadedRef.current = true;
       setOverloaded(true);
       setDizzy(true);
@@ -998,11 +1015,13 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         overloadedRef.current = false;
         setOverloaded(false);
         setDizzy(false);
+        reactMood("confused");
       }, OVERLOAD_MS);
     } else {
       notchSound("mascotPoke");
+      reactMood(recent.length === 1 ? "surprised" : "annoyed");
     }
-  }, [notchSound, revealNotch]);
+  }, [notchSound, revealNotch, reactMood]);
 
   const openNotch = () => {
     revealNotch();
@@ -1265,7 +1284,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             backdropFilter: frosted ? "blur(18px)" : undefined,
             WebkitBackdropFilter: frosted ? "blur(18px)" : undefined,
           }}
-          className={`relative text-white ${overloaded ? "notch-shake" : ""}`}
+          className="relative text-white"
         >
           <div
             style={
