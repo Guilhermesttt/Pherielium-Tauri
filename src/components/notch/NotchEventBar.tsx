@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Gamepad2, MessageSquare, Trophy, UserPlus, Sparkles } from "lucide-react";
+import { Camera, Check, Gamepad2, MessageSquare, Trophy, UserPlus, Sparkles } from "lucide-react";
 import {
   NOTCH_EVENT_TAURI_EVENT,
   NOTCH_EVENT_WINDOW_EVENT,
@@ -77,6 +77,8 @@ const TIER_COLOR: Record<AchievementTier, string> = {
 const WASH: Record<Exclude<NotchEventKind, "achievement">, string> = {
   "friend-request": "99,102,241",
   "friend-accepted": "34,197,94",
+  "friend-online": "48,209,88",
+  "capture-saved": "125,249,255",
   message: "244,114,182",
   "level-up": "245,165,36",
   welcome: "56,189,248",
@@ -90,7 +92,10 @@ const KindIcon: React.FC<{ kind: NotchEventKind; size: number }> = ({ kind, size
     case "friend-request":
       return <UserPlus size={size} />;
     case "friend-accepted":
+    case "friend-online":
       return <Check size={size} />;
+    case "capture-saved":
+      return <Camera size={size} />;
     case "message":
       return <MessageSquare size={size} />;
     case "achievement":

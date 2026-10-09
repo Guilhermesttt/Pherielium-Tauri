@@ -1110,6 +1110,12 @@ const OverlayApp: React.FC = () => {
       const item = await invoke<{ id: string; url: string; name?: string; gameTitle?: string }>("capture_screen", {
         gameTitle: panelDataRef.current.gameTitle || panelDataRef.current.playingGame?.title || null,
       });
+      announceNotchEvent({
+        kind: "capture-saved",
+        title: "Captura salva",
+        subtitle: item?.gameTitle || item?.name || "Pictures/Phelierium Captures",
+        avatar: item?.url ?? null,
+      });
       addToast(
         {
           id: String(Date.now() + Math.random()),

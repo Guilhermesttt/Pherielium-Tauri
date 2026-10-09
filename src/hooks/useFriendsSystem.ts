@@ -243,6 +243,14 @@ export function useFriendsSystem({
                 if (now - lastToast > 90_000) {
                   lastOnlineToastRef.current.set(friend.id, now);
                   notify(`${newFriend.name} ficou online`, "success");
+                  announceNotchEvent({
+                    id: `friend-online:${friend.id}:${now}`,
+                    kind: "friend-online",
+                    title: `${newFriend.name} entrou`,
+                    subtitle: "Online agora",
+                    avatar: newFriend.avatar || null,
+                    friendId: friend.id,
+                  });
                 }
               }
 
@@ -396,6 +404,14 @@ export function useFriendsSystem({
                 if (now - lastToast > 90_000) {
                   lastOnlineToastRef.current.set(friend.id, now);
                   notify(`${newFriend.name} ficou online`, "success");
+                  announceNotchEvent({
+                    id: `friend-online:${friend.id}:${now}`,
+                    kind: "friend-online",
+                    title: `${newFriend.name} entrou`,
+                    subtitle: "Online agora",
+                    avatar: newFriend.avatar || null,
+                    friendId: friend.id,
+                  });
                 }
               }
 

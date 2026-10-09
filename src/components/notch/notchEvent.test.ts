@@ -119,3 +119,14 @@ describe("conquista no notch", () => {
     expect(e).toMatchObject({ description: "d", gameTitle: "g", xp: 60, tier: "gold" });
   });
 });
+
+describe("novos eventos da ilha", () => {
+  it("amigo entrou e captura salva são aceitos, têm duração e o amigo acena", () => {
+    expect(parseNotchEvent({ kind: "friend-online", title: "Ana entrou", id: "a", at: 1 })).toMatchObject({ kind: "friend-online" });
+    expect(parseNotchEvent({ kind: "capture-saved", title: "Captura salva", id: "b", at: 1 })).toMatchObject({ kind: "capture-saved" });
+    expect(notchEventDuration("friend-online")).toBeGreaterThan(0);
+    expect(notchEventDuration("capture-saved")).toBeGreaterThan(0);
+    expect(notchEventWaves("friend-online")).toBe(true);
+    expect(notchEventWaves("capture-saved")).toBe(false);
+  });
+});

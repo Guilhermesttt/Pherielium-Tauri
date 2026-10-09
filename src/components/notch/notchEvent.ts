@@ -7,9 +7,26 @@ import { TIER_STYLES } from "./achievementTier";
  * (um `emit` chega às duas janelas) e, na mesma janela, por CustomEvent. Sem React, para
  * ser testável; a fila e a regra de agrupamento são funções puras.
  */
-export type NotchEventKind = "friend-request" | "friend-accepted" | "message" | "achievement" | "level-up" | "welcome";
+export type NotchEventKind =
+  | "friend-request"
+  | "friend-accepted"
+  | "friend-online"
+  | "message"
+  | "achievement"
+  | "level-up"
+  | "welcome"
+  | "capture-saved";
 
-const KINDS: readonly NotchEventKind[] = ["friend-request", "friend-accepted", "message", "achievement", "level-up", "welcome"];
+const KINDS: readonly NotchEventKind[] = [
+  "friend-request",
+  "friend-accepted",
+  "friend-online",
+  "message",
+  "achievement",
+  "level-up",
+  "welcome",
+  "capture-saved",
+];
 
 export type AchievementTier = "iron" | "bronze" | "silver" | "gold" | "platinum";
 const TIERS: readonly AchievementTier[] = ["iron", "bronze", "silver", "gold", "platinum"];
@@ -41,6 +58,8 @@ export const NOTCH_EVENT_QUEUE_MAX = 4;
 const DURATION_MS: Record<NotchEventKind, number> = {
   "friend-request": 4800,
   "friend-accepted": 3800,
+  "friend-online": 3200,
+  "capture-saved": 3600,
   message: 3800,
   achievement: 4600,
   "level-up": 4600,
@@ -57,6 +76,8 @@ export const notchEventIsExpanded = (kind: NotchEventKind) => kind === "achievem
 export const NOTCH_EVENT_MOOD: Record<NotchEventKind, MascotMood> = {
   "friend-request": "excited",
   "friend-accepted": "happy",
+  "friend-online": "happy",
+  "capture-saved": "wink",
   message: "curious",
   achievement: "excited",
   "level-up": "proud",
@@ -64,7 +85,7 @@ export const NOTCH_EVENT_MOOD: Record<NotchEventKind, MascotMood> = {
 };
 
 /** Eventos em que a Pherie acena. */
-export const notchEventWaves = (kind: NotchEventKind) => kind === "friend-request" || kind === "friend-accepted" || kind === "welcome";
+export const notchEventWaves = (kind: NotchEventKind) => kind === "friend-request" || kind === "friend-accepted" || kind === "friend-online" || kind === "welcome";
 
 const isTauri = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
