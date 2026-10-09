@@ -2,7 +2,6 @@
 //! Substitui a lógica de launch do electron/main.cjs
 
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use tauri::{command, AppHandle, Manager};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -34,9 +33,14 @@ pub async fn launcher_open_executable(
     profile: Option<GameLaunchProfile>,
     opts: Option<LaunchOptions>,
 ) -> Result<(), String> {
-    let exe = PathBuf::from(&path);
-    if !exe.exists() {
-        return Err(format!("Executable not found: {path}"));
+    let exe = super::launch_guard::validate_executable(&path)?;
+    if let Some(p) = profile.as_ref() {
+        super::launch_guard::validate_args(&p.launch_args)?;
+        if let Some(env_vars) = p.env_vars.as_ref() {
+            for (k, v) in env_vars {
+                super::launch_guard::validate_env(k, v)?;
+            }
+        }
     }
 
     let mut cmd = tokio::process::Command::new(&exe);
