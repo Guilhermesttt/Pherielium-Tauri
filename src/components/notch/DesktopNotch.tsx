@@ -1006,6 +1006,17 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     prevHiddenRef.current = isHiddenByWindow;
   }, [isHiddenByWindow, isHovered, notchSound]);
 
+  // Outra janela ganhou o foco: o notch recolhe. `isRevealed` só voltava a falso no mouseleave, e
+  // como o overlay é click-through esse evento quase nunca vinha (o notch ficava aberto para sempre).
+  // Quando nada o segura (mouse, painel, aviso, chamada), ele sobe sozinho depois de um instante.
+  const holdsNotchOpen =
+    isHovered || isExpanded || Boolean(notchEvent) || Boolean(controllerFlash) || Boolean(incomingInvite) || isCallActive || overlayActive;
+  useEffect(() => {
+    if (!autoHideActive || !isRevealed || holdsNotchOpen) return;
+    const id = window.setTimeout(() => setIsRevealed(false), 900);
+    return () => window.clearTimeout(id);
+  }, [autoHideActive, isRevealed, holdsNotchOpen]);
+
   // Aviso de controle: o notch desce se estava escondido, toca o som e recolhe ao fim.
   const flashAt = controllerFlash?.at ?? null;
   const flashKind = controllerFlash?.kind ?? null;
