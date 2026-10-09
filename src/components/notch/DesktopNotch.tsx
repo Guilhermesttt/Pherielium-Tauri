@@ -43,6 +43,9 @@ import { subscribeTicker } from "../../mascot/ticker";
 import { useSituationMood } from "../../mascot/useSituationMood";
 import { MusicWaveform } from "./MusicWaveform";
 import { MediaProgress } from "./live/MediaProgress";
+import { CallIncomingBar } from "./live/CallIncomingBar";
+import { VoiceBars } from "./live/VoiceBars";
+import { LIVE_WIDTH, resolveLiveActivity } from "./live/liveActivity";
 import { parseTimeline, type MediaTimeline } from "./live/progressMath";
 import {
   DIZZY_DURATION_MS,
@@ -175,10 +178,10 @@ export function resolveNotchCompactWidth(params: {
   activeGameTitle: string | null;
   isPcMediaPlaying: boolean;
 }): number {
-  if (params.isCallActive) return 320;
-  if (params.activeGameTitle) return 284;
-  if (params.isPcMediaPlaying) return 256;
-  return 216;
+  if (params.isCallActive) return LIVE_WIDTH.call;
+  if (params.activeGameTitle) return LIVE_WIDTH.game;
+  if (params.isPcMediaPlaying) return LIVE_WIDTH.music;
+  return LIVE_WIDTH.idle;
 }
 
 /** Indicador de música: 4 barras com ondulação própria (não segue o som). Ao começar a tocar,
@@ -897,6 +900,9 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   const notchEvent = useNotchEvent(config.enabled, isExpanded);
   const isAchievement = notchEvent?.kind === "achievement";
 
+  // Chamada recebendo (janela principal): o notch mostra quem liga com atender/recusar
+  const incomingInvite = !overlayCall && voiceCall.callState === "ringing-in" ? voiceCall.incomingInvite : null;
+
   const situation = useSituationMood({
     isCallActive,
     callDurationSeconds: callDuration,
@@ -906,12 +912,13 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     isMediaPlaying: isPcMediaPlaying,
     isExpanded,
     isHovered,
-    busy: isCallActive || Boolean(activeGameTitle) || isPcMediaPlaying || Boolean(notchEvent) || Boolean(controllerFlash),
+    busy: isCallActive || Boolean(incomingInvite) || Boolean(activeGameTitle) || isPcMediaPlaying || Boolean(notchEvent) || Boolean(controllerFlash),
   });
   const reactMood = situation.react;
 
   const mascotMood: MascotMood = useMemo(() => {
     if (dizzy) return "dizzy"; // chacoalharam o mouse
+    if (incomingInvite) return "excited"; // alguém está ligando
     if (controllerFlash) return FLASH_MASCOT_MOOD[controllerFlash.kind];
     if (notchEvent) return NOTCH_EVENT_MOOD[notchEvent.kind];
     if (dropzone.armed || dropzone.over || dropzone.importing) return "surprised"; // boca aberta
@@ -924,7 +931,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     if (baseMood) return baseMood;
     if (isHovered && !situation.ambient) return "attentive"; // o cursor está no notch
     return situation.ambient ?? "idle"; // parada: entedia, dá sono, dorme
-  }, [situation.transient, situation.ambient, isHovered, dizzy, controllerFlash, notchEvent, dropzone.armed, dropzone.over, dropzone.importing, digested, isCallActive, isMuted, activeGameTitle, isPcMediaPlaying, curious, baseMood]);
+  }, [incomingInvite, situation.transient, situation.ambient, isHovered, dizzy, controllerFlash, notchEvent, dropzone.armed, dropzone.over, dropzone.importing, digested, isCallActive, isMuted, activeGameTitle, isPcMediaPlaying, curious, baseMood]);
 
   // Boca do mascote: no Tauri o volume do microfone chega por evento dedicado
   // (overlay:voice-level, ref sem re-render). Fora do Tauri (dev no navegador) cai
@@ -943,15 +950,19 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     return () => window.clearInterval(id);
   }, [isExpanded, config.showBubbleTips]);
 
-  const compactWidth = useMemo(
-    () =>
-      controllerFlash
-        ? CONTROLLER_FLASH_WIDTH
-        : notchEvent
-          ? NOTCH_EVENT_WIDTH
-          : resolveNotchCompactWidth({ isCallActive, activeGameTitle, isPcMediaPlaying }),
-    [controllerFlash, notchEvent, isCallActive, activeGameTitle, isPcMediaPlaying],
-  );
+  const liveKind = resolveLiveActivity({
+    incomingCall: Boolean(incomingInvite),
+    callActive: isCallActive,
+    event: Boolean(notchEvent),
+    controllerFlash: Boolean(controllerFlash),
+    gameActive: Boolean(activeGameTitle),
+    musicPlaying: isPcMediaPlaying,
+  });
+  const compactWidth = LIVE_WIDTH[liveKind];
+  // chamada tocando: o notch aparece sozinho (mesmo escondido por outra janela)
+  useEffect(() => {
+    if (incomingInvite) revealNotch();
+  }, [incomingInvite, revealNotch]);
 
   // Oculta o Notch no topo se houver janela sobreposta e o cursor não estiver na área
   // (nunca durante chamada ou jogo — ver shouldAutoHide).
@@ -1146,6 +1157,16 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   );
 
   const renderBar = () => {
+    if (incomingInvite) {
+      return (
+        <CallIncomingBar
+          name={incomingInvite.callerName || "Alguém"}
+          avatar={<CallAvatar src={incomingInvite.callerAvatar || undefined} name={incomingInvite.callerName} size={34} />}
+          onAccept={() => void voiceCall.answerCall()}
+          onReject={() => void voiceCall.rejectCall()}
+        />
+      );
+    }
     if (controllerFlash) {
       return <ControllerFlashBar flash={controllerFlash} mascot={barMascot(BAR_MASCOT)} />;
     }
@@ -1167,18 +1188,20 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         <>
           <div className="flex items-center gap-2 min-w-0 flex-1">
             {barMascot(BAR_MASCOT)}
-            <span className="relative flex h-1.5 w-1.5 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
-            </span>
-            <span className="text-[11px] font-semibold text-white/90 truncate">{callFriendName || "Voz"}</span>
+            <CallAvatar src={callFriendAvatar} name={callFriendName} size={22} speaking={isSpeaking && !isMuted} />
+            <span className="text-[12px] font-semibold text-white/90 truncate">{callFriendName || "Voz"}</span>
           </div>
-          <span className="text-[12px] font-semibold font-mono tabular-nums text-white shrink-0 px-2">
+          {isMuted ? (
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#f4505e]/20 px-2 py-1 text-[10.5px] font-semibold text-[#ff7a85]">
+              <MicOff size={12} />
+              Silencioso
+            </span>
+          ) : (
+            <VoiceBars levelRef={voiceLevelRef} speaking={isSpeaking} />
+          )}
+          <span className="shrink-0 pl-2.5 text-[12px] font-semibold font-mono tabular-nums text-white">
             {formatSeconds(callDuration)}
           </span>
-          <div className="flex-1 flex justify-end">
-            <CallAvatar src={callFriendAvatar} name={callFriendName} size={20} speaking={isSpeaking && !isMuted} />
-          </div>
         </>
       );
     }
