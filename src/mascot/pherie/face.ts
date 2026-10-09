@@ -28,7 +28,7 @@ const both = (spec: EyeSpec, gazeX = 0, gazeY = 0): FaceSpec => ({
   gazeY,
 });
 
-const PILL = e("pill", 21, 44);
+const PILL = e("pill", 26, 32);
 
 /** Rosto de cada humor: a forma do olho já conta a emoção. */
 export const FACES: Record<MascotMood, FaceSpec> = {

@@ -3,7 +3,6 @@ import type { EarsId, ItemId } from "../notchConfig";
 import type { MascotExtra } from "../pherieStates";
 import type { MouthShape } from "../mouth";
 import { spiralPath } from "../spiral";
-import { PROFILE_SAMPLES } from "../engine/profiles";
 import { SHOULDER_X, SHOULDER_Y } from "./arms";
 import { R, type EyeState, type PherieEngine } from "./engine";
 
@@ -29,27 +28,73 @@ export interface DrawStyle {
   extras: readonly MascotExtra[];
 }
 
-function bodyPath(radii: readonly number[]): Path2D {
-  const n = PROFILE_SAMPLES;
-  const pt = (i: number) => {
-    const a = ((i % n) / n) * TAU;
-    const r = radii[i % n] * R;
-    return [Math.cos(a) * r, Math.sin(a) * r] as const;
-  };
-  const path = new Path2D();
-  const [sx, sy] = pt(0);
-  const [nx, ny] = pt(1);
-  path.moveTo((sx + nx) / 2, (sy + ny) / 2);
-  for (let i = 1; i <= n; i++) {
-    const [cx, cy] = pt(i);
-    const [ex, ey] = pt(i + 1);
-    path.quadraticCurveTo(cx, cy, (cx + ex) / 2, (cy + ey) / 2);
-  }
-  path.closePath();
-  return path;
+/** Posição e inclinação do rosto: sobre a borda superior do anel, como no logo do Pherielium. */
+const FACE_X = 24;
+const FACE_Y = -15;
+const FACE_TILT = (-17 * Math.PI) / 180;
+const EYE_GAP = 25;
+/** Anel: elipse inclinada que atravessa o planeta e sai dos dois lados. */
+const RING = { cx: 0, cy: 19, rx: 120, ry: 20 };
+const RING_GAP = 7;
+
+/** Inclinação do anel por humor: balança ao dançar, gira tonta, deita quando dorme. */
+function ringAngle(eng: PherieEngine): number {
+  const base = (-23 * Math.PI) / 180;
+  if (eng.mood === "dizzy") return base + Math.sin(eng.time * 9) * 0.5;
+  if (eng.mood === "sleeping") return base * 0.35;
+  if (eng.scene.dancing) return base + Math.sin(eng.time * 5) * 0.12;
+  return base + Math.sin(eng.time * 1.3) * 0.025;
+}
+
+/**
+ * O corpo do Pherielium: um planeta (disco) cortado por um anel inclinado. Só a borda de cima do
+ * anel tem a fresta (um recorte transparente); embaixo o anel se funde com o planeta. O recorte é
+ * feito com clip (não com composição), então nada que já foi desenhado é apagado.
+ */
+function drawPlanet(ctx: CanvasRenderingContext2D, st: DrawStyle, eng: PherieEngine) {
+  const p = st.palette;
+  const angle = ringAngle(eng);
+  const grad = ctx.createLinearGradient(0, -110, 0, 110);
+  grad.addColorStop(0, p.top);
+  grad.addColorStop(1, p.bottom);
+
+  // fresta = metade de cima da elipse "inchada" (o anel é desenhado por cima dela)
+  const halo = new Path2D();
+  halo.ellipse(RING.cx, RING.cy, RING.rx + RING_GAP, RING.ry + RING_GAP, angle, Math.PI, TAU);
+  halo.closePath();
+
+  ctx.save();
+  const outside = new Path2D();
+  outside.rect(-400, -400, 800, 800);
+  outside.addPath(halo);
+  ctx.clip(outside, "evenodd");
+  const disc = new Path2D();
+  disc.arc(0, 0, R, 0, TAU);
+  ctx.fillStyle = grad;
+  ctx.fill(disc);
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = p.rim;
+  ctx.stroke(disc);
+  ctx.restore();
+
+  const ring = new Path2D();
+  ring.ellipse(RING.cx, RING.cy, RING.rx, RING.ry, angle, 0, TAU);
+  ctx.fillStyle = grad;
+  ctx.fill(ring);
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = p.rim;
+  // contorno só onde o anel está fora do planeta (dentro dele funde com o branco)
+  ctx.save();
+  const outsideDisc = new Path2D();
+  outsideDisc.rect(-400, -400, 800, 800);
+  outsideDisc.arc(0, 0, R, 0, TAU);
+  ctx.clip(outsideDisc, "evenodd");
+  ctx.stroke(ring);
+  ctx.restore();
 }
 
 function drawEars(ctx: CanvasRenderingContext2D, variant: EarsId, fill: string, stroke: string, accent: string) {
+  if (variant === "none") return;
   ctx.lineWidth = 3;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
@@ -457,41 +502,36 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
 
   drawEars(ctx, st.ears, p.ear, p.earStroke, st.earAccent);
 
-  const body = bodyPath(eng.radii);
-  const grad = ctx.createLinearGradient(0, -110, 0, 110);
-  grad.addColorStop(0, p.top);
-  grad.addColorStop(1, p.bottom);
-  ctx.fillStyle = grad;
-  ctx.fill(body);
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = p.rim;
-  ctx.stroke(body);
+  drawPlanet(ctx, st, eng);
 
-  // rosto: acompanha o olhar com leve paralaxe (olhos andam mais que a boca)
+  // rosto: fica sobre a borda do anel (como no logo), inclinado junto; acompanha o olhar com paralaxe
   const lx = eng.lookX.value;
   const ly = eng.lookY.value;
   const eyeX = lx * 14;
-  const eyeY = -6 + ly * 9;
+  const eyeY = ly * 9;
   const open = Math.max(0, Math.min(1, eng.open.value));
   const sleepy = eng.sleepy;
   const lids = sleepy ? Math.min(open, 0.15) : open;
-  drawEye(ctx, eng.left, -34 + eyeX, eyeY, lids, st.faceColor, eng.time);
-  drawEye(ctx, eng.right, 34 + eyeX, eyeY, lids, st.faceColor, eng.time);
+  ctx.save();
+  ctx.translate(FACE_X, FACE_Y);
+  ctx.rotate(FACE_TILT);
+  drawEye(ctx, eng.left, -EYE_GAP + eyeX, eyeY, lids, st.faceColor, eng.time);
+  drawEye(ctx, eng.right, EYE_GAP + eyeX, eyeY, lids, st.faceColor, eng.time);
 
   if (st.blush > 0.02) {
     ctx.fillStyle = p.cheek;
     ctx.globalAlpha = Math.min(1, st.blush * p.cheekScale);
     for (const s of [-1, 1]) {
       ctx.beginPath();
-      ctx.ellipse(s * 62 + lx * 10, 22 + ly * 6, 14, 8, 0, 0, TAU);
+      ctx.ellipse(s * 50 + lx * 10, 20 + ly * 6, 11, 6.5, 0, 0, TAU);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
   }
 
   ctx.save();
-  ctx.translate(lx * 9, 36 + ly * 5);
-  ctx.scale(64, 64);
+  ctx.translate(EYE_GAP * 0.0 + lx * 9, 34 + ly * 5);
+  ctx.scale(52, 52);
   const mouth = new Path2D(st.mouth.d);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
@@ -514,29 +554,31 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
     ctx.stroke(mouth);
   }
   ctx.restore();
+  ctx.restore();
 
   if (st.items.has("sunglasses") && eng.mood !== "dizzy") {
     ctx.save();
-    ctx.translate(eyeX, eyeY);
+    ctx.translate(FACE_X + eyeX, FACE_Y + eyeY);
+    ctx.rotate(FACE_TILT);
     ctx.fillStyle = "rgba(11,11,14,0.94)";
-    roundRect(ctx, -86, -26, 68, 52, 16);
+    roundRect(ctx, -EYE_GAP - 24, -20, 48, 40, 13);
     ctx.fill();
-    roundRect(ctx, 18, -26, 68, 52, 16);
+    roundRect(ctx, EYE_GAP - 24, -20, 48, 40, 13);
     ctx.fill();
     ctx.strokeStyle = "#0b0b0e";
-    ctx.lineWidth = 7;
+    ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.moveTo(-20, -8);
-    ctx.quadraticCurveTo(0, -20, 20, -8);
+    ctx.moveTo(-EYE_GAP + 24, -6);
+    ctx.quadraticCurveTo(0, -14, EYE_GAP - 24, -6);
     ctx.stroke();
     ctx.strokeStyle = "rgba(255,255,255,0.4)";
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 4;
     ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.moveTo(-74, -12);
-    ctx.lineTo(-52, -12);
-    ctx.moveTo(30, -12);
-    ctx.lineTo(52, -12);
+    ctx.moveTo(-EYE_GAP - 14, -9);
+    ctx.lineTo(-EYE_GAP + 2, -9);
+    ctx.moveTo(EYE_GAP - 14, -9);
+    ctx.lineTo(EYE_GAP + 2, -9);
     ctx.stroke();
     ctx.restore();
   }

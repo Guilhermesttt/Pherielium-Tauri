@@ -112,7 +112,7 @@ describe("helpers de estilo", () => {
 describe("sanitizeNotchConfig — novos campos", () => {
   it("padrões novos não mudam o visual de quem já usava o notch", () => {
     const c = sanitizeNotchConfig({});
-    expect(c.ears).toBe("cat");
+    expect(c.ears).toBe("none");
     expect(c.items).toEqual([]);
     expect(c.useThemeStyle).toBe(true);
     expect(c.cornerRadius).toBeNull();
@@ -126,7 +126,7 @@ describe("sanitizeNotchConfig — novos campos", () => {
     expect(c.gameHud).toBe("compact");
     expect(c.bubbleStyle).toBe("retro");
     expect(sanitizeNotchConfig({ ears: "dragão", gameHud: "x", bubbleStyle: "y" })).toMatchObject({
-      ears: "cat",
+      ears: "none",
       gameHud: "line",
       bubbleStyle: "soft",
     });

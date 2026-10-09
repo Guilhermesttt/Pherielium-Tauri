@@ -75,21 +75,21 @@ export interface BodyPalette {
   light: boolean;
 }
 
-/** O visual original da Pherie (corpo grafite, rosto branco). */
+/** O visual padrão da Pherie: o planeta branco do logo, com rosto preto. */
 export const DEFAULT_PALETTE: BodyPalette = {
-  top: "#34343a",
-  bottom: "#16161a",
-  rim: "rgba(255,255,255,0.16)",
-  ear: "#1e1e22",
-  earStroke: "#3e3e46",
-  face: "#ffffff",
-  accent: "#ffffff",
-  headphoneBand: "#d9d9de",
-  headphoneCup: "#eeeeee",
-  headphoneStroke: "#1a1a1e",
+  top: "#ffffff",
+  bottom: "#e8e8ee",
+  rim: "rgba(20,20,26,0.22)",
+  ear: "#f2f2f6",
+  earStroke: "#bdbdc6",
+  face: "#0b0b0f",
+  accent: "#0b0b0f",
+  headphoneBand: "#2b2b31",
+  headphoneCup: "#3a3a42",
+  headphoneStroke: "#d9d9de",
   cheek: "rgb(255,140,160)",
   cheekScale: 1,
-  light: false,
+  light: true,
 };
 
 /** Cor mais escura que isso some no preto do notch (#050506): o corpo nunca desce abaixo. */

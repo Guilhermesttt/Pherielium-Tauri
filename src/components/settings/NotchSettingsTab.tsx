@@ -9,7 +9,6 @@ import { normalizeHex } from "../../mascot/mascotColor";
 import {
   DEFAULT_NOTCH_CONFIG,
   NOTCH_BODY_PRESETS,
-  NOTCH_SHAPES,
   type NotchConfig,
 } from "../../mascot/notchConfig";
 import { saveNotchConfig, useNotchConfig } from "../../mascot/useNotchConfig";
@@ -276,32 +275,6 @@ export const NotchSettingsTab: React.FC = () => {
             <p className="mt-2 text-[11.5px] text-white/40">
               O rosto, o fone e as orelhas se ajustam sozinhos para continuar legíveis em qualquer cor.
             </p>
-          </div>
-
-          <div className="mt-6">
-            <div className="text-[13px] font-medium text-white/90 mb-2.5">Forma</div>
-            <div className="grid grid-cols-4 gap-2.5">
-              {NOTCH_SHAPES.map(({ id, label }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => {
-                    update({ shape: id });
-                    playSound("hover");
-                  }}
-                  aria-pressed={draft.shape === id}
-                  className={cn(
-                    "flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 transition-all cursor-pointer",
-                    draft.shape === id
-                      ? "border-white/40 bg-white/[0.08]"
-                      : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:scale-[1.03]",
-                  )}
-                >
-                  <HoverMascot size={46} mood="idle" bodyColor={draft.bodyColor} shape={id} />
-                  <span className="text-[10px] font-medium text-white/60 leading-none">{label}</span>
-                </button>
-              ))}
-            </div>
           </div>
         </Card>
 

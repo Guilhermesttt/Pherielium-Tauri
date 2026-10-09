@@ -45,12 +45,13 @@ export interface NotchConfig {
   chamfer: boolean | null;
 }
 
-export type EarsId = "cat" | "bear" | "robot" | "demon";
+export type EarsId = "none" | "cat" | "bear" | "robot" | "demon";
 export type ItemId = "sunglasses" | "halo" | "rgbHeadphones";
 export type BubbleStyle = "retro" | "soft";
 export type GameHudMode = "line" | "compact" | "off";
 
 export const EARS_OPTIONS: { id: EarsId; label: string }[] = [
+  { id: "none", label: "Sem orelhas" },
   { id: "cat", label: "Gato" },
   { id: "bear", label: "Urso" },
   { id: "robot", label: "Robô" },
@@ -81,7 +82,7 @@ export const DEFAULT_NOTCH_CONFIG: NotchConfig = {
   followCursor: true,
   bodyColor: null,
   shape: DEFAULT_NOTCH_SHAPE,
-  ears: "cat",
+  ears: "none",
   items: [],
   bubbleStyle: "soft",
   gameHud: "line",
