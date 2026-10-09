@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -83,8 +84,8 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isJoiningWithPassword, setIsJoiningWithPassword] = useState(false);
 
-  const fetchRooms = useCallback(async () => {
-    setIsLoading(true);
+  const fetchRooms = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [pub, mine] = await Promise.all([
         listPublicVoiceRooms({
@@ -107,8 +108,9 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
   }, [fetchRooms]);
 
   useEffect(() => {
+    // entrar/sair/editar em tempo real, sem piscar o "carregando"
     const unsubscribe = subscribeToVoiceRoomTableChanges(() => {
-      void fetchRooms();
+      void fetchRooms(true);
     });
     return unsubscribe;
   }, [fetchRooms]);
@@ -132,9 +134,19 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
       setInputPassword("");
       setPasswordError(null);
     } else {
-      void onJoinRoom(room.id);
+      onJoinRoom(room.id).catch(() => {
+        /* o hook já avisou o usuário */
+      });
     }
   };
+
+  // Entrou na sala (a sessão passou a existir): fecha o modal de senha sem esperar o resto da conexão
+  useEffect(() => {
+    if (passwordModalRoom && currentRoomId === passwordModalRoom.id) {
+      setPasswordModalRoom(null);
+      setIsJoiningWithPassword(false);
+    }
+  }, [currentRoomId, passwordModalRoom]);
 
   const handlePasswordSubmit = async () => {
     if (!passwordModalRoom) return;
@@ -180,7 +192,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
         <div className="flex items-center gap-2.5 w-full md:w-auto">
           <button
             type="button"
-            onClick={fetchRooms}
+            onClick={() => void fetchRooms()}
             disabled={isLoading}
             className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition cursor-pointer"
             title="Atualizar lista de salas"
@@ -645,7 +657,14 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                   disabled={isJoiningWithPassword}
                   className="flex-1 py-2 rounded-xl bg-white text-black font-bold text-xs hover:bg-white/90 transition shadow-sm disabled:opacity-50 cursor-pointer"
                 >
-                  {isJoiningWithPassword ? "Entrando..." : "Entrar"}
+                  {isJoiningWithPassword ? (
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                      Conectando…
+                    </span>
+                  ) : (
+                    "Entrar"
+                  )}
                 </button>
               </div>
             </motion.div>

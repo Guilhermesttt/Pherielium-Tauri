@@ -170,6 +170,8 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
         pendingRef.current = {};
       }
       await saveCurrentUserProfile({ profile: toSave, userId: uid });
+      // atualiza o app inteiro agora (Home, chamada, notch...), antes do refetch do servidor
+      window.dispatchEvent(new CustomEvent("pherielium:profile-saved", { detail: toSave }));
       if (profile?.uid) {
         completeUserQuest(profile.uid, "customize_profile");
       }

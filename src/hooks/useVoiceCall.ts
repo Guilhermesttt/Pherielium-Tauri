@@ -3197,7 +3197,16 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   // JOIN ROOM (Persistente / Multi-Participante)
   const joinRoom = useCallback(
     async (roomId: string, password?: string) => {
-      if (!user?.uid || callState !== "idle") return;
+      if (!user?.uid) return;
+      if (callState !== "idle") {
+        // já está nesta sala: só reabre a janela; em outra chamada, avisa em vez de não fazer nada
+        if (sessionRef.current?.chatId === roomId) {
+          setIsVoiceWindowOpen(true);
+        } else {
+          notify("Você já está em uma chamada. Saia dela para entrar nesta sala.", "info");
+        }
+        return;
+      }
 
       try {
         setCallState("connecting");
@@ -3239,6 +3248,8 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           category: room.category,
           isPrivate: room.isPrivate,
         });
+        // senha/limite validados: abre a janela já, com o estado "Conectando…" (sem esperar o LiveKit)
+        setIsVoiceWindowOpen(true);
 
         const rawAudioStream = await acquireAudioStream();
         if (rawAudioStream) {
@@ -3327,6 +3338,9 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         console.error("[useVoiceCall] joinRoom failed:", err);
         notify(err?.message || "Não foi possível entrar na sala de voz.", "error");
         cleanUpCall();
+        setIsVoiceWindowOpen(false);
+        // quem chamou (ex.: modal de senha) precisa saber que falhou
+        throw err instanceof Error ? err : new Error(String(err?.message || "Não foi possível entrar na sala de voz."));
       }
     },
     [acquireAudioStream, announceMemberJoinedOnce, applyAudioProcessingChain, callState, cleanUpCall, createPeerConnectionForPeer, createUnifiedSessionHandlers, inputMode, notify, playRingtone, setupVoiceAnalyzer, user, userProfile],
@@ -3348,7 +3362,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
       }
 
       if (isPersistentVoiceRoomId(chatId)) {
-        await joinRoom(chatId, password);
+        await joinRoom(chatId, password).catch(() => undefined); // já notificou
         return;
       }
 

@@ -495,13 +495,28 @@ export const joinVoiceRoom = async (
  * Registra saída da sala de voz
  */
 export const leaveVoiceRoom = async (roomId: string): Promise<void> => {
+  let ok = false;
   try {
-    await apiFetch(`/api/voice/rooms/${roomId}/leave`, {
-      method: "POST",
-      authenticated: true,
-    });
+    const res = await apiFetch(`/api/voice/rooms/${roomId}/leave`, { method: "POST", authenticated: true });
+    ok = res.ok;
   } catch (err) {
-    console.warn("[voiceRooms] leaveVoiceRoom failed:", err);
+    console.warn("[voiceRooms] leaveVoiceRoom API failed:", err);
+  }
+  if (ok) return;
+  // a API falhou: marca a saída direto no banco, para o cartão da sala atualizar mesmo assim
+  try {
+    const { data } = await supabase.auth.getSession();
+    const uid = data.session?.user.id;
+    if (uid) {
+      await supabase
+        .from("voice_room_members")
+        .update({ removed_at: new Date().toISOString() })
+        .eq("room_id", roomId)
+        .eq("user_id", uid)
+        .is("removed_at", null);
+    }
+  } catch (err) {
+    console.warn("[voiceRooms] leaveVoiceRoom fallback failed:", err);
   }
 };
 
@@ -633,34 +648,31 @@ export const unpublishPublicVoiceRoom = async () => {
 /**
  * Refreshes voice room lists when voice_rooms / voice_room_members change in Postgres.
  */
+const tableChangeListeners = new Set<() => void>();
+
+/**
+ * Avisa quando salas ou membros mudam no banco (entrar/sair/editar). Vários componentes podem
+ * assinar ao mesmo tempo: o canal é um só e fecha quando o último sai.
+ */
 export const subscribeToVoiceRoomTableChanges = (onChange: () => void) => {
-  if (voiceRoomsTableChannel) {
-    return () => undefined;
+  tableChangeListeners.add(onChange);
+
+  if (!voiceRoomsTableChannel) {
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const schedule = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => tableChangeListeners.forEach((fn) => fn()), 250);
+    };
+    voiceRoomsTableChannel = supabase
+      .channel("voice_rooms_table_sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "voice_rooms" }, schedule)
+      .on("postgres_changes", { event: "*", schema: "public", table: "voice_room_members" }, schedule)
+      .subscribe();
   }
 
-  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  const schedule = () => {
-    if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => onChange(), 250);
-  };
-
-  voiceRoomsTableChannel = supabase
-    .channel("voice_rooms_table_sync")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "voice_rooms" },
-      schedule,
-    )
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "voice_room_members" },
-      schedule,
-    )
-    .subscribe();
-
   return () => {
-    if (debounceTimer) clearTimeout(debounceTimer);
-    if (voiceRoomsTableChannel) {
+    tableChangeListeners.delete(onChange);
+    if (tableChangeListeners.size === 0 && voiceRoomsTableChannel) {
       supabase.removeChannel(voiceRoomsTableChannel);
       voiceRoomsTableChannel = null;
     }
