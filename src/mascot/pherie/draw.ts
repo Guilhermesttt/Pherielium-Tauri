@@ -1,6 +1,8 @@
 import type { BodyPalette } from "../mascotColor";
 import type { HatId, ItemId } from "../notchConfig";
 import type { MascotExtra } from "../pherieStates";
+import type { MouthShape } from "../mouth";
+import { SHOULDER_X, SHOULDER_Y } from "./arms";
 import { spiralPath } from "../spiral";
 import { R, type EyeState, type PherieEngine } from "./engine";
 
@@ -20,120 +22,135 @@ export interface DrawStyle {
   items: ReadonlySet<ItemId>;
   rgbHeadphones: boolean;
   showMic: boolean;
-  /** volume da voz 0..1: os olhos pulsam enquanto ela fala (sem boca) */
-  voice: number;
+  mouth: MouthShape;
+  blush: number;
   extras: readonly MascotExtra[];
 }
 
-/** Rosto sobre a faixa preta (folha de design): olhos grandes, no alto, inclinados junto com a faixa. */
-const FACE_X = 30;
-const FACE_Y = -42;
-const FACE_TILT = (-19 * Math.PI) / 180;
-const EYE_GAP = 35;
-/** Ancoragem das asas coladas ao corpo: a esquerda (maior) embaixo, a direita (menor) no alto. */
-const WING_ANCHOR = { left: { x: -88, y: 26 }, right: { x: 86, y: -38 } } as const;
-const WING_LEN = { left: 62, right: 50 } as const;
-const WING_BASE = { left: 25, right: 20 } as const;
-const WING_TIP = { left: 13, right: 11 } as const;
+/** Crateras da lua: [x, y, raio]. Ficam longe da região do rosto (olhos em y≈-6, boca em y≈36). */
+const CRATERS: ReadonlyArray<readonly [number, number, number]> = [
+  [-68, 30, 15], [60, 44, 12], [-34, 70, 10], [26, 74, 13], [-76, -22, 10], [70, -34, 9], [-6, -70, 8], [38, -72, 6], [86, 6, 7], [-90, 62, 6],
+];
+/** Mares (manchas largas e suaves): [x, y, raio]. */
+const MARIA: ReadonlyArray<readonly [number, number, number]> = [[-40, -38, 40], [46, 24, 46], [-6, 62, 34]];
 
-/** Corpo: asas atrás, disco com volume suave e a faixa preta diagonal que passa pelos olhos. */
+/** Órbita do planetinha: centro, semi-eixos e inclinação. */
+const ORBIT = { cx: 0, cy: 34, rx: 1.34 * R, ry: 0.27 * R, tilt: (-17 * Math.PI) / 180 };
+
+/** Posição do planetinha na órbita (e se está na frente ou atrás da lua). */
+function orbitPoint(eng: PherieEngine) {
+  const speed = eng.scene.dancing ? 2.1 : 0.85;
+  const a = eng.time * speed;
+  const ex = Math.cos(a) * ORBIT.rx;
+  const ey = Math.sin(a) * ORBIT.ry;
+  const c = Math.cos(ORBIT.tilt);
+  const s = Math.sin(ORBIT.tilt);
+  return { x: ORBIT.cx + ex * c - ey * s, y: ORBIT.cy + ex * s + ey * c, front: Math.sin(a) > 0, depth: 0.5 + 0.5 * Math.sin(a) };
+}
+
+/** Planetinha com anel que gira ao redor da lua, passando por trás e pela frente. */
+function drawOrbitPlanet(ctx: CanvasRenderingContext2D, eng: PherieEngine, front: boolean) {
+  const o = orbitPoint(eng);
+  if (o.front !== front) return;
+  const scale = 0.82 + 0.3 * o.depth;
+  ctx.save();
+  ctx.translate(o.x, o.y);
+  ctx.scale(scale, scale);
+  const ringTilt = ORBIT.tilt - 0.25;
+  // anel (metade de trás por baixo do planeta, a da frente por cima)
+  const ring = (from: number, to: number) => {
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 25, 7, ringTilt, from, to);
+    ctx.stroke();
+  };
+  ctx.lineWidth = 4;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "#fcd34d";
+  ring(Math.PI, TAU);
+  const g = ctx.createRadialGradient(-5, -5, 2, 0, 0, 15);
+  g.addColorStop(0, "#ddd6fe");
+  g.addColorStop(1, "#7c3aed");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0, 0, 14, 0, TAU);
+  ctx.fill();
+  ctx.strokeStyle = "#fde68a";
+  ring(0, Math.PI);
+  ctx.restore();
+}
+
+/** Corpo: uma lua com volume suave, mares e crateras (bordas claras embaixo, sombra em cima). */
 function drawBody(ctx: CanvasRenderingContext2D, st: DrawStyle, eng: PherieEngine) {
   const p = st.palette;
-  const flat = ctx.createLinearGradient(0, -110, 0, 110);
-  flat.addColorStop(0, p.top);
-  flat.addColorStop(1, p.bottom);
-
-  drawWings(ctx, flat, eng);
-
-  // disco: luz no alto-esquerda, sombra suave embaixo-direita
   const vol = ctx.createRadialGradient(-34, -46, 8, 0, 0, R * 1.12);
   vol.addColorStop(0, p.top);
-  vol.addColorStop(0.62, p.top);
+  vol.addColorStop(0.6, p.top);
   vol.addColorStop(1, p.bottom);
   const disc = new Path2D();
   disc.arc(0, 0, R, 0, TAU);
   ctx.fillStyle = vol;
   ctx.fill(disc);
+
+  ctx.save();
+  ctx.clip(disc);
+  const dark = p.light ? "rgba(70,72,96," : "rgba(0,0,0,";
+  for (const [x, y, r] of MARIA) {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `${dark}0.16)`);
+    g.addColorStop(1, `${dark}0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, TAU);
+    ctx.fill();
+  }
+  for (const [x, y, r] of CRATERS) {
+    ctx.fillStyle = `${dark}0.14)`;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, TAU);
+    ctx.fill();
+    // sombra interna no lado da luz (alto-esquerda) e borda clara no oposto
+    ctx.lineWidth = Math.max(1.6, r * 0.2);
+    ctx.lineCap = "round";
+    ctx.strokeStyle = `${dark}0.28)`;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.86, Math.PI * 0.95, Math.PI * 1.65);
+    ctx.stroke();
+    ctx.strokeStyle = p.light ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.22)";
+    ctx.beginPath();
+    ctx.arc(x, y, r * 0.86, Math.PI * 0.05, Math.PI * 0.6);
+    ctx.stroke();
+  }
+  ctx.restore();
+
   ctx.lineWidth = 2;
   ctx.strokeStyle = p.rim;
   ctx.stroke(disc);
-
-  // faixa preta: grossa à esquerda, afinando à direita; recortada pelo disco
-  ctx.save();
-  ctx.clip(disc);
-  const dir = FACE_TILT;
-  const cos = Math.cos(dir);
-  const sin = Math.sin(dir);
-  const at = (t: number, off: number) => [FACE_X + cos * t - sin * off, FACE_Y + sin * t + cos * off] as const;
-  const [x1, y1] = at(-150, -9);
-  const [x2, y2] = at(150, -4.5);
-  const [x3, y3] = at(150, 4.5);
-  const [x4, y4] = at(-150, 9);
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.lineTo(x3, y3);
-  ctx.lineTo(x4, y4);
-  ctx.closePath();
-  ctx.fillStyle = st.faceColor;
-  ctx.fill();
-  // brilho fino na borda de cima da faixa
-  ctx.strokeStyle = p.light ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.25)";
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.moveTo(x1, y1 + 2);
-  ctx.lineTo(x2, y2 + 2);
-  ctx.stroke();
-  ctx.restore();
 }
 
-/** Asa colada ao corpo: lóbulo afilado e arredondado, da âncora até a ponta (mola do engine). */
-function drawWings(ctx: CanvasRenderingContext2D, fill: CanvasGradient, eng: PherieEngine) {
-  ctx.fillStyle = fill;
-  for (const side of ["left", "right"] as const) {
-    const a = WING_ANCHOR[side];
-    const tx = side === "left" ? eng.lhx.value : eng.rhx.value;
-    const ty = side === "left" ? eng.lhy.value : eng.rhy.value;
-    let dx = tx - a.x;
-    let dy = ty - a.y;
-    const dist = Math.hypot(dx, dy) || 1;
-    const len = Math.min(WING_LEN[side], dist);
-    dx /= dist;
-    dy /= dist;
-    const nx = -dy;
-    const ny = dx;
-    const wb = WING_BASE[side];
-    const rt = WING_TIP[side];
-    const tipX = a.x + dx * len;
-    const tipY = a.y + dy * len;
-    const ang = Math.atan2(dy, dx);
-    ctx.beginPath();
-    ctx.moveTo(a.x + nx * wb, a.y + ny * wb);
-    ctx.quadraticCurveTo(a.x + dx * len * 0.55 + nx * wb * 0.95, a.y + dy * len * 0.55 + ny * wb * 0.95, tipX + nx * rt, tipY + ny * rt);
-    ctx.arc(tipX, tipY, rt, ang + Math.PI / 2, ang - Math.PI / 2, true);
-    ctx.quadraticCurveTo(a.x + dx * len * 0.55 - nx * wb * 0.95, a.y + dy * len * 0.55 - ny * wb * 0.95, a.x - nx * wb, a.y - ny * wb);
-    ctx.closePath();
-    ctx.fill();
-  }
-}
-
-/** Anel e órbitas roxas que pulsam ao redor dela enquanto toca música ("Pulsando"). */
-function drawPulse(ctx: CanvasRenderingContext2D, eng: PherieEngine) {
-  const beat = 0.5 + 0.5 * Math.sin(eng.time * 5);
+/** Braço-pílula solto: só aparece (alpha) quando ela gesticula. */
+function drawArms(ctx: CanvasRenderingContext2D, st: DrawStyle, eng: PherieEngine) {
+  const alpha = Math.max(0, Math.min(1, eng.armA.value));
+  if (alpha < 0.02) return;
+  const p = st.palette;
   ctx.save();
-  ctx.strokeStyle = `rgba(192,132,252,${(0.35 + 0.35 * beat).toFixed(3)})`;
-  ctx.shadowColor = "#c084fc";
-  ctx.shadowBlur = 14;
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(0, 0, R * (1.2 + 0.03 * beat), 0, TAU);
-  ctx.stroke();
-  ctx.fillStyle = "#e9d5ff";
-  for (let i = 0; i < 3; i++) {
-    const a = eng.time * 1.6 + (i * TAU) / 3;
-    ctx.beginPath();
-    ctx.arc(Math.cos(a) * R * 1.2, Math.sin(a) * R * 1.2, 4.5, 0, TAU);
-    ctx.fill();
+  ctx.globalAlpha = alpha;
+  drawController(ctx, st, eng);
+  ctx.lineCap = "round";
+  for (const s of [-1, 1] as const) {
+    const hx = s === -1 ? eng.lhx.value : eng.rhx.value;
+    const hy = s === -1 ? eng.lhy.value : eng.rhy.value;
+    const ang = Math.atan2(hy - SHOULDER_Y, hx - s * SHOULDER_X);
+    const dx = Math.cos(ang) * 11;
+    const dy = Math.sin(ang) * 11;
+    const pill = new Path2D();
+    pill.moveTo(hx - dx, hy - dy);
+    pill.lineTo(hx + dx, hy + dy);
+    ctx.strokeStyle = p.rim;
+    ctx.lineWidth = 25;
+    ctx.stroke(pill);
+    ctx.strokeStyle = p.earStroke;
+    ctx.lineWidth = 21;
+    ctx.stroke(pill);
   }
   ctx.restore();
 }
@@ -202,10 +219,10 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-function drawEye(ctx: CanvasRenderingContext2D, eye: EyeState, cx: number, cy: number, open: number, color: string, time: number, gloss: boolean, scale: number, halo: string) {
+function drawEye(ctx: CanvasRenderingContext2D, eye: EyeState, cx: number, cy: number, open: number, color: string, time: number) {
   const { shape } = eye.spec;
-  const w = Math.max(1, eye.w.value) * scale;
-  const baseH = Math.max(1, eye.h.value) * scale;
+  const w = Math.max(1, eye.w.value);
+  const baseH = Math.max(1, eye.h.value);
   const lid = eye.lid.value;
   ctx.save();
   ctx.translate(cx, cy);
@@ -213,25 +230,7 @@ function drawEye(ctx: CanvasRenderingContext2D, eye: EyeState, cx: number, cy: n
   ctx.strokeStyle = color;
   ctx.lineCap = "round";
 
-  // olhos que não são "bolinhas" (arcos, sonolento, espiral) ganham um halo da cor do corpo:
-  // sem ele sumiriam na faixa preta
-  const cutout = (draw: () => void) => {
-    const keep = ctx.fillStyle;
-    const keepStroke = ctx.strokeStyle;
-    ctx.fillStyle = halo;
-    ctx.strokeStyle = halo;
-    draw();
-    ctx.fillStyle = keep;
-    ctx.strokeStyle = keepStroke;
-  };
   const arcEye = (up: boolean) => {
-    cutout(() => {
-      ctx.lineWidth = 17;
-      ctx.beginPath();
-      if (up) ctx.arc(0, baseH * 0.35, w * 0.5, Math.PI * 1.12, Math.PI * 1.88);
-      else ctx.arc(0, -baseH * 0.5, w * 0.5, Math.PI * 0.12, Math.PI * 0.88);
-      ctx.stroke();
-    });
     ctx.lineWidth = 8;
     ctx.beginPath();
     if (up) ctx.arc(0, baseH * 0.35, w * 0.5, Math.PI * 1.12, Math.PI * 1.88);
@@ -241,25 +240,7 @@ function drawEye(ctx: CanvasRenderingContext2D, eye: EyeState, cx: number, cy: n
 
   if (shape === "happy") arcEye(true);
   else if (shape === "closed") arcEye(false);
-  else if (shape === "star") {
-    // olho de estrela: pulsa de leve
-    const R2 = (w / 2) * (1 + Math.sin(time * 5) * 0.08);
-    ctx.beginPath();
-    for (let i = 0; i < 10; i++) {
-      const ang = -Math.PI / 2 + (i * Math.PI) / 5;
-      const rad = i % 2 === 0 ? R2 : R2 * 0.45;
-      if (i === 0) ctx.moveTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
-      else ctx.lineTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
-    }
-    ctx.closePath();
-    ctx.fill();
-  }
   else if (shape === "spiral") {
-    cutout(() => {
-      ctx.beginPath();
-      ctx.arc(0, 0, w * 0.58, 0, TAU);
-      ctx.fill();
-    });
     ctx.rotate(time * 7);
     ctx.scale(w * 0.5, w * 0.5);
     ctx.lineWidth = 0.26;
@@ -284,10 +265,6 @@ function drawEye(ctx: CanvasRenderingContext2D, eye: EyeState, cx: number, cy: n
       ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, TAU);
       ctx.fill();
     } else if (shape === "tired") {
-      cutout(() => {
-        roundRect(ctx, -w / 2 - 4, -h / 2 - 4, w + 8, h + 8, w / 2 + 4);
-        ctx.fill();
-      });
       ctx.save();
       ctx.beginPath();
       ctx.rect(-w, -h * 0.05, w * 2, h);
@@ -297,13 +274,6 @@ function drawEye(ctx: CanvasRenderingContext2D, eye: EyeState, cx: number, cy: n
       ctx.restore();
     } else {
       roundRect(ctx, -w / 2, -h / 2, w, h, w / 2);
-      ctx.fill();
-    }
-    // reflexo: dá o brilho de "bolinha de vidro" dos olhos da folha
-    if (gloss && (shape === "pill" || shape === "wide" || shape === "dot") && open > 0.35) {
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
-      ctx.beginPath();
-      ctx.arc(-w * 0.17, -h * 0.2, Math.max(2, w * 0.1), 0, TAU);
       ctx.fill();
     }
   }
@@ -413,54 +383,6 @@ function drawExtras(ctx: CanvasRenderingContext2D, st: DrawStyle, time: number) 
     }
     ctx.restore();
   }
-  if (has("ticks")) {
-    // surpreso: três tracinhos de susto acima da cabeça
-    ctx.strokeStyle = "rgba(255,255,255,0.85)";
-    ctx.lineWidth = 5;
-    ctx.lineCap = "round";
-    for (const [x, y, ang] of [[40, -118, -0.5], [62, -124, 0], [84, -116, 0.5]] as const) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(ang);
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(0, -16);
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-  if (has("sparkle")) {
-    // animado: dois tracinhos de brilho de cada lado
-    ctx.strokeStyle = "rgba(255,255,255,0.85)";
-    ctx.lineWidth = 5;
-    ctx.lineCap = "round";
-    for (const s of [-1, 1] as const) {
-      for (const [dx, dy, ex, ey] of [[96, -78, 112, -92], [104, -58, 124, -62]] as const) {
-        ctx.beginPath();
-        ctx.moveTo(s * dx, dy);
-        ctx.lineTo(s * ex, ey);
-        ctx.stroke();
-      }
-    }
-  }
-  if (has("stars")) {
-    // empolgado: faíscas de quatro pontas ao redor
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    for (const [x, y, r, ph] of [[-110, -76, 12, 0], [112, -96, 10, 1.3], [-118, 40, 8, 2.1], [108, 52, 9, 3.2]] as const) {
-      const k = 0.75 + 0.25 * Math.sin(time * 4 + ph);
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.scale(k, k);
-      ctx.beginPath();
-      ctx.moveTo(0, -r);
-      ctx.quadraticCurveTo(0, 0, r, 0);
-      ctx.quadraticCurveTo(0, 0, 0, r);
-      ctx.quadraticCurveTo(0, 0, -r, 0);
-      ctx.quadraticCurveTo(0, 0, 0, -r);
-      ctx.fill();
-      ctx.restore();
-    }
-  }
   if (has("question")) {
     ctx.fillStyle = "rgba(255,255,255,0.78)";
     ctx.font = "bold 58px system-ui, sans-serif";
@@ -540,6 +462,7 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
   ctx.setTransform(k, 0, 0, k, (px * dpr) / 2, (px * dpr) / 2);
   ctx.clearRect(-HALF, -HALF, HALF * 2, HALF * 2);
 
+  const p = st.palette;
   const breathe = 1 + 0.014 * Math.sin(eng.time * 2.1);
   const sy = eng.squashY.value * breathe;
   const sx = eng.squashX.value * (2 - breathe);
@@ -555,51 +478,83 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
   ctx.scale(sx, sy);
   ctx.translate(0, -R * 0.9);
 
-  if (eng.scene.dancing) drawPulse(ctx, eng);
+  drawOrbitPlanet(ctx, eng, false);
   drawBody(ctx, st, eng);
 
-  // rosto: olhos sobre a faixa, inclinados junto; acompanham o olhar com paralaxe. Sem boca.
+  // rosto: acompanha o olhar com leve paralaxe (olhos andam mais que a boca)
   const lx = eng.lookX.value;
   const ly = eng.lookY.value;
-  const eyeX = lx * 12;
-  const eyeY = ly * 8;
+  const eyeX = lx * 14;
+  const eyeY = -6 + ly * 9;
   const open = Math.max(0, Math.min(1, eng.open.value));
   const lids = eng.sleepy ? Math.min(open, 0.15) : open;
-  const pulse = 1 + Math.min(1, Math.max(0, st.voice || 0)) * 0.16;
-  ctx.save();
-  ctx.translate(FACE_X, FACE_Y);
-  ctx.rotate(FACE_TILT);
-  drawEye(ctx, eng.left, -EYE_GAP + eyeX, eyeY, lids, st.faceColor, eng.time, st.palette.light, pulse, st.palette.top);
-  drawEye(ctx, eng.right, EYE_GAP + eyeX, eyeY, lids, st.faceColor, eng.time, st.palette.light, pulse, st.palette.top);
-  ctx.restore();
+  drawEye(ctx, eng.left, -34 + eyeX, eyeY, lids, st.faceColor, eng.time);
+  drawEye(ctx, eng.right, 34 + eyeX, eyeY, lids, st.faceColor, eng.time);
 
-  if (eng.scene.muteX) {
-    // microfone mutado: um X vermelho no meio do corpo
+  if (st.blush > 0.02) {
+    ctx.fillStyle = p.cheek;
+    ctx.globalAlpha = Math.min(1, st.blush * p.cheekScale);
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(s * 62 + lx * 10, 22 + ly * 6, 14, 8, 0, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // boca: só em chamada (mexe com a voz); fora dela o rosto é só olhos
+  if (st.showMic) {
+    ctx.save();
+    ctx.translate(lx * 9, 36 + ly * 5);
+    ctx.scale(64, 64);
+    const mouth = new Path2D(st.mouth.d);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    if (eng.scene.muteX) {
+      // microfone mutado: um X vermelho no lugar da boca
+      ctx.strokeStyle = "#f4505e";
+      ctx.lineWidth = 0.12;
+      ctx.beginPath();
+      ctx.moveTo(-0.16, -0.14);
+      ctx.lineTo(0.16, 0.14);
+      ctx.moveTo(0.16, -0.14);
+      ctx.lineTo(-0.16, 0.14);
+      ctx.stroke();
+    } else if (st.mouth.fill) {
+      ctx.fillStyle = st.faceColor;
+      ctx.fill(mouth);
+    } else {
+      ctx.strokeStyle = st.faceColor;
+      ctx.lineWidth = st.mouth.stroke;
+      ctx.stroke(mouth);
+    }
+    ctx.restore();
+  } else if (eng.scene.muteX) {
+    // mutado fora de chamada: o X vermelho no meio do corpo
     ctx.strokeStyle = "#f4505e";
     ctx.lineWidth = 7;
     ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.moveTo(-14, 34);
-    ctx.lineTo(14, 62);
-    ctx.moveTo(14, 34);
-    ctx.lineTo(-14, 62);
+    ctx.moveTo(-12, 30);
+    ctx.lineTo(12, 54);
+    ctx.moveTo(12, 30);
+    ctx.lineTo(-12, 54);
     ctx.stroke();
   }
 
   if (st.items.has("sunglasses") && eng.mood !== "dizzy") {
     ctx.save();
-    ctx.translate(FACE_X + eyeX, FACE_Y + eyeY);
-    ctx.rotate(FACE_TILT);
+    ctx.translate(eyeX, eyeY);
     ctx.fillStyle = "rgba(11,11,14,0.94)";
-    roundRect(ctx, -EYE_GAP - 26, -22, 52, 44, 14);
+    roundRect(ctx, -86, -26, 68, 52, 16);
     ctx.fill();
-    roundRect(ctx, EYE_GAP - 26, -22, 52, 44, 14);
+    roundRect(ctx, 18, -26, 68, 52, 16);
     ctx.fill();
     ctx.strokeStyle = "#0b0b0e";
-    ctx.lineWidth = 6;
+    ctx.lineWidth = 7;
     ctx.beginPath();
-    ctx.moveTo(-EYE_GAP + 26, -6);
-    ctx.quadraticCurveTo(0, -14, EYE_GAP - 26, -6);
+    ctx.moveTo(-20, -8);
+    ctx.quadraticCurveTo(0, -20, 20, -8);
     ctx.stroke();
     ctx.restore();
   }
@@ -617,9 +572,10 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
     ctx.restore();
   }
 
-  drawController(ctx, st, eng);
+  drawArms(ctx, st, eng);
   drawHeadphones(ctx, st, eng);
   drawHat(ctx, st.hat, eng);
+  drawOrbitPlanet(ctx, eng, true);
   drawExtras(ctx, st, eng.time);
   ctx.restore();
 

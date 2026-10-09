@@ -75,13 +75,13 @@ export interface BodyPalette {
   light: boolean;
 }
 
-/** O visual padrão da Pherie: o planeta branco do logo, com rosto preto. */
+/** O visual padrão da Pherie: uma lua clara (com crateras), rosto escuro. */
 export const DEFAULT_PALETTE: BodyPalette = {
-  top: "#ffffff",
-  bottom: "#e8e8ee",
-  rim: "rgba(20,20,26,0.22)",
-  ear: "#f2f2f6",
-  earStroke: "#bdbdc6",
+  top: "#f4f4f7",
+  bottom: "#c6c7d1",
+  rim: "rgba(30,30,44,0.28)",
+  ear: "#d9dae2",
+  earStroke: "#b5b6c2",
   face: "#0b0b0f",
   accent: "#0b0b0f",
   headphoneBand: "#2b2b31",

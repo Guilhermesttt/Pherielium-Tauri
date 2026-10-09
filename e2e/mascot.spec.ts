@@ -56,7 +56,8 @@ test("pherie: os 24 humores desenham sem erro", async ({ browser }) => {
           items: items as never,
           rgbHeadphones: m.id === "gaming",
           showMic: m.id === "calling",
-          voice: 0,
+          mouth: (await import("/src/mascot/mouth.ts")).mouthShape(spec.mouth, 0),
+          blush: spec.blush,
           extras: spec.extras ?? [],
         },
         size,
@@ -121,7 +122,7 @@ test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)"
       }
       const heavy = (sc as { style?: string }).style === "headbang";
       if (heavy) e.setFaceOverride(faces.HEADBANG_FACE);
-      const steps = Math.round((sc.t < 2 ? 2.2 : sc.t) * 60);
+      const steps = sc.wave ? 40 : Math.round((sc.t < 2 ? 2.2 : sc.t) * 60); // olá: capta durante o aceno
       for (let i = 0; i < steps; i++) {
         if ((sc as { style?: string }).style) e.setScene({ beat: i % 18 < 3 ? 1 : 0 });
         e.update(1 / 60);
@@ -138,7 +139,8 @@ test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)"
           items: new Set() as never,
           rgbHeadphones: sc.mood === "gaming",
           showMic: false,
-          voice: 0,
+          mouth: (await import("/src/mascot/mouth.ts")).mouthShape(spec.mouth, 0),
+          blush: spec.blush,
           extras: spec.extras ?? [],
         },
         size,
@@ -198,7 +200,8 @@ test("pherie: chapéus desenham sem erro", async ({ browser }) => {
           items: new Set<string>() as never,
           rgbHeadphones: false,
           showMic: false,
-          voice: 0,
+          mouth: (await import("/src/mascot/mouth.ts")).mouthShape("smile", 0),
+          blush: 0.3,
           extras: states.MOOD_SPECS.happy.extras ?? [],
         },
         150,

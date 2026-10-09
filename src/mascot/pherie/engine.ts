@@ -67,6 +67,8 @@ export class PherieEngine {
   readonly rhx = new Spring(REST.right.x, 0.24, 0.55);
   readonly rhy = new Spring(REST.right.y, 0.24, 0.55);
   readonly ctl = new Spring(0, 0.3, 0.7);
+  /** visibilidade dos braços 0..1: só aparecem ao gesticular (olá, fones, controle...) */
+  readonly armA = new Spring(0, 0.22, 0.8);
   readonly scene: ArmScene = { gaming: false, dancing: false, muteX: false, fume: false, wave: 0, putOn: 0, celebrate: 0, beat: 0 };
   particles: Particle[] = [];
   time = 0;
@@ -220,7 +222,9 @@ export class PherieEngine {
     this.rhx.target = hands.right.x;
     this.rhy.target = hands.right.y;
     this.ctl.target = hands.controller;
-    for (const sp of [this.lhx, this.lhy, this.rhx, this.rhy, this.ctl]) sp.step(dt);
+    const s = this.scene;
+    this.armA.target = s.gaming || s.fume || s.wave > 0 || s.putOn > 0 || s.celebrate > 0 ? 1 : 0;
+    for (const sp of [this.lhx, this.lhy, this.rhx, this.rhy, this.ctl, this.armA]) sp.step(dt);
 
     // piscar: sono mantém fechado; senão a cada 2.5–5 s
     this.open.step(dt);

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { deriveBodyPalette, type BodyPalette } from "./mascotColor";
-import { smoothLevel } from "./mouth";
+import { mouthShape, smoothLevel } from "./mouth";
 import type { MascotMood } from "./moods";
 import { MOOD_SPECS, type BounceKind, type MoodSpec } from "./pherieStates";
 import { subscribeTicker } from "./ticker";
@@ -270,7 +270,8 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
         items: st.itemSet,
         rgbHeadphones: st.rgbHeadphones,
         showMic: st.showMic,
-        voice: level,
+        mouth: mouthShape(cur.spec.mouth, level),
+        blush: cur.spec.blush,
         extras: cur.spec.extras ?? [],
       };
       drawPherie(ctx, engine, style, size, dpr);
