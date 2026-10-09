@@ -273,7 +273,7 @@ export const NotchSettingsTab: React.FC = () => {
               />
             </div>
             <p className="mt-2 text-[11.5px] text-white/40">
-              O rosto, o fone e as orelhas se ajustam sozinhos para continuar legíveis em qualquer cor.
+              O rosto e o fone se ajustam sozinhos para continuar legíveis em qualquer cor.
             </p>
           </div>
         </Card>
@@ -325,7 +325,7 @@ export const NotchSettingsTab: React.FC = () => {
           </div>
         </Card>
 
-        <Card title="Visual avançado" hint="Orelhas, itens, balão de fala e o estilo do notch (cantos, brilho, opacidade).">
+        <Card title="Visual avançado" hint="Chapéu, itens, balão de fala e o estilo do notch (cantos, brilho, opacidade).">
           <MascotCustomizer />
         </Card>
 

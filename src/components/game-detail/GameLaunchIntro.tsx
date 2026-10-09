@@ -131,7 +131,7 @@ export const GameLaunchIntro: React.FC<GameLaunchIntroProps> = ({
             headphonesDrop={dropped}
             bodyColor={config.bodyColor}
             shape={config.shape}
-            ears={config.ears}
+            hat={config.hat}
             items={config.items}
           />
         </motion.div>

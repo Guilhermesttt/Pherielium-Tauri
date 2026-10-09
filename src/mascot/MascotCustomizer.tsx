@@ -4,7 +4,7 @@ import {
   BACKGROUND_OPACITY_RANGE,
   CORNER_RADIUS_RANGE,
   DEFAULT_NOTCH_CONFIG,
-  EARS_OPTIONS,
+  HAT_OPTIONS,
   ITEM_OPTIONS,
   NOTCH_BODY_PRESETS,
   NOTCH_SHAPES,
@@ -121,9 +121,8 @@ export const MascotCustomizer: React.FC<{ compact?: boolean }> = ({ compact = fa
           mood="idle"
           bodyColor={draft.bodyColor}
           shape={draft.shape}
-          ears={draft.ears}
+          hat={draft.hat}
           items={draft.items}
-          earAccent={themed.accent}
         />
       </div>
 
@@ -152,10 +151,10 @@ export const MascotCustomizer: React.FC<{ compact?: boolean }> = ({ compact = fa
         </div>
       </Section>
 
-      <Section title="Orelhas">
+      <Section title="Chapéu">
         <div className="flex flex-wrap gap-1.5">
-          {EARS_OPTIONS.map(({ id, label }) => (
-            <button key={id} type="button" onClick={() => update({ ears: id })} className={chip(draft.ears === id)}>
+          {HAT_OPTIONS.map(({ id, label }) => (
+            <button key={id} type="button" onClick={() => update({ hat: id })} className={chip(draft.hat === id)}>
               {label}
             </button>
           ))}
@@ -250,7 +249,7 @@ export const MascotCustomizer: React.FC<{ compact?: boolean }> = ({ compact = fa
         type="button"
         onClick={() =>
           update({
-            ears: DEFAULT_NOTCH_CONFIG.ears,
+            hat: DEFAULT_NOTCH_CONFIG.hat,
             items: [],
             bubbleStyle: DEFAULT_NOTCH_CONFIG.bubbleStyle,
             useThemeStyle: true,

@@ -1,9 +1,7 @@
 import type { BodyPalette } from "../mascotColor";
-import type { EarsId, ItemId } from "../notchConfig";
+import type { HatId, ItemId } from "../notchConfig";
 import type { MascotExtra } from "../pherieStates";
-import type { MouthShape } from "../mouth";
 import { spiralPath } from "../spiral";
-import { SHOULDER_X, SHOULDER_Y } from "./arms";
 import { R, type EyeState, type PherieEngine } from "./engine";
 
 /** Metade do lado da área de desenho (o corpo tem raio 100; orelhas/halo/fones cabem em ±158). */
@@ -18,144 +16,179 @@ export interface DrawStyle {
   palette: BodyPalette;
   faceColor: string;
   accentColor: string;
-  ears: EarsId;
-  earAccent: string;
+  hat: HatId;
   items: ReadonlySet<ItemId>;
   rgbHeadphones: boolean;
   showMic: boolean;
-  mouth: MouthShape;
-  blush: number;
+  /** volume da voz 0..1: os olhos pulsam enquanto ela fala (sem boca) */
+  voice: number;
   extras: readonly MascotExtra[];
 }
 
-/** Posição e inclinação do rosto: sobre a borda superior do anel, como no logo do Pherielium. */
-const FACE_X = 24;
-const FACE_Y = -15;
-const FACE_TILT = (-17 * Math.PI) / 180;
-const EYE_GAP = 25;
-/** Anel: elipse inclinada que atravessa o planeta e sai dos dois lados. */
-const RING = { cx: 0, cy: 19, rx: 120, ry: 20 };
-const RING_GAP = 7;
+/** Rosto sobre a faixa preta (folha de design): olhos grandes, no alto, inclinados junto com a faixa. */
+const FACE_X = 30;
+const FACE_Y = -42;
+const FACE_TILT = (-19 * Math.PI) / 180;
+const EYE_GAP = 35;
+/** Ancoragem das asas coladas ao corpo: a esquerda (maior) embaixo, a direita (menor) no alto. */
+const WING_ANCHOR = { left: { x: -88, y: 26 }, right: { x: 86, y: -38 } } as const;
+const WING_LEN = { left: 62, right: 50 } as const;
+const WING_BASE = { left: 25, right: 20 } as const;
+const WING_TIP = { left: 13, right: 11 } as const;
 
-/** Inclinação do anel por humor: balança ao dançar, gira tonta, deita quando dorme. */
-function ringAngle(eng: PherieEngine): number {
-  const base = (-23 * Math.PI) / 180;
-  if (eng.mood === "dizzy") return base + Math.sin(eng.time * 9) * 0.5;
-  if (eng.mood === "sleeping") return base * 0.35;
-  if (eng.scene.dancing) return base + Math.sin(eng.time * 5) * 0.12;
-  return base + Math.sin(eng.time * 1.3) * 0.025;
-}
-
-/**
- * O corpo do Pherielium: um planeta (disco) cortado por um anel inclinado. Só a borda de cima do
- * anel tem a fresta (um recorte transparente); embaixo o anel se funde com o planeta. O recorte é
- * feito com clip (não com composição), então nada que já foi desenhado é apagado.
- */
-function drawPlanet(ctx: CanvasRenderingContext2D, st: DrawStyle, eng: PherieEngine) {
+/** Corpo: asas atrás, disco com volume suave e a faixa preta diagonal que passa pelos olhos. */
+function drawBody(ctx: CanvasRenderingContext2D, st: DrawStyle, eng: PherieEngine) {
   const p = st.palette;
-  const angle = ringAngle(eng);
-  const grad = ctx.createLinearGradient(0, -110, 0, 110);
-  grad.addColorStop(0, p.top);
-  grad.addColorStop(1, p.bottom);
+  const flat = ctx.createLinearGradient(0, -110, 0, 110);
+  flat.addColorStop(0, p.top);
+  flat.addColorStop(1, p.bottom);
 
-  // fresta = metade de cima da elipse "inchada" (o anel é desenhado por cima dela)
-  const halo = new Path2D();
-  halo.ellipse(RING.cx, RING.cy, RING.rx + RING_GAP, RING.ry + RING_GAP, angle, Math.PI, TAU);
-  halo.closePath();
+  drawWings(ctx, flat, eng);
 
-  ctx.save();
-  const outside = new Path2D();
-  outside.rect(-400, -400, 800, 800);
-  outside.addPath(halo);
-  ctx.clip(outside, "evenodd");
+  // disco: luz no alto-esquerda, sombra suave embaixo-direita
+  const vol = ctx.createRadialGradient(-34, -46, 8, 0, 0, R * 1.12);
+  vol.addColorStop(0, p.top);
+  vol.addColorStop(0.62, p.top);
+  vol.addColorStop(1, p.bottom);
   const disc = new Path2D();
   disc.arc(0, 0, R, 0, TAU);
-  ctx.fillStyle = grad;
+  ctx.fillStyle = vol;
   ctx.fill(disc);
-  ctx.lineWidth = 2.5;
+  ctx.lineWidth = 2;
   ctx.strokeStyle = p.rim;
   ctx.stroke(disc);
-  ctx.restore();
 
-  const ring = new Path2D();
-  ring.ellipse(RING.cx, RING.cy, RING.rx, RING.ry, angle, 0, TAU);
-  ctx.fillStyle = grad;
-  ctx.fill(ring);
-  ctx.lineWidth = 2.5;
-  ctx.strokeStyle = p.rim;
-  // contorno só onde o anel está fora do planeta (dentro dele funde com o branco)
+  // faixa preta: grossa à esquerda, afinando à direita; recortada pelo disco
   ctx.save();
-  const outsideDisc = new Path2D();
-  outsideDisc.rect(-400, -400, 800, 800);
-  outsideDisc.arc(0, 0, R, 0, TAU);
-  ctx.clip(outsideDisc, "evenodd");
-  ctx.stroke(ring);
+  ctx.clip(disc);
+  const dir = FACE_TILT;
+  const cos = Math.cos(dir);
+  const sin = Math.sin(dir);
+  const at = (t: number, off: number) => [FACE_X + cos * t - sin * off, FACE_Y + sin * t + cos * off] as const;
+  const [x1, y1] = at(-150, -9);
+  const [x2, y2] = at(150, -4.5);
+  const [x3, y3] = at(150, 4.5);
+  const [x4, y4] = at(-150, 9);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.lineTo(x3, y3);
+  ctx.lineTo(x4, y4);
+  ctx.closePath();
+  ctx.fillStyle = st.faceColor;
+  ctx.fill();
+  // brilho fino na borda de cima da faixa
+  ctx.strokeStyle = p.light ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.25)";
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1 + 2);
+  ctx.lineTo(x2, y2 + 2);
+  ctx.stroke();
   ctx.restore();
 }
 
-function drawEars(ctx: CanvasRenderingContext2D, variant: EarsId, fill: string, stroke: string, accent: string) {
-  if (variant === "none") return;
+/** Asa colada ao corpo: lóbulo afilado e arredondado, da âncora até a ponta (mola do engine). */
+function drawWings(ctx: CanvasRenderingContext2D, fill: CanvasGradient, eng: PherieEngine) {
+  ctx.fillStyle = fill;
+  for (const side of ["left", "right"] as const) {
+    const a = WING_ANCHOR[side];
+    const tx = side === "left" ? eng.lhx.value : eng.rhx.value;
+    const ty = side === "left" ? eng.lhy.value : eng.rhy.value;
+    let dx = tx - a.x;
+    let dy = ty - a.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const len = Math.min(WING_LEN[side], dist);
+    dx /= dist;
+    dy /= dist;
+    const nx = -dy;
+    const ny = dx;
+    const wb = WING_BASE[side];
+    const rt = WING_TIP[side];
+    const tipX = a.x + dx * len;
+    const tipY = a.y + dy * len;
+    const ang = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(a.x + nx * wb, a.y + ny * wb);
+    ctx.quadraticCurveTo(a.x + dx * len * 0.55 + nx * wb * 0.95, a.y + dy * len * 0.55 + ny * wb * 0.95, tipX + nx * rt, tipY + ny * rt);
+    ctx.arc(tipX, tipY, rt, ang + Math.PI / 2, ang - Math.PI / 2, true);
+    ctx.quadraticCurveTo(a.x + dx * len * 0.55 - nx * wb * 0.95, a.y + dy * len * 0.55 - ny * wb * 0.95, a.x - nx * wb, a.y - ny * wb);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+/** Anel e órbitas roxas que pulsam ao redor dela enquanto toca música ("Pulsando"). */
+function drawPulse(ctx: CanvasRenderingContext2D, eng: PherieEngine) {
+  const beat = 0.5 + 0.5 * Math.sin(eng.time * 5);
+  ctx.save();
+  ctx.strokeStyle = `rgba(192,132,252,${(0.35 + 0.35 * beat).toFixed(3)})`;
+  ctx.shadowColor = "#c084fc";
+  ctx.shadowBlur = 14;
   ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(0, 0, R * (1.2 + 0.03 * beat), 0, TAU);
+  ctx.stroke();
+  ctx.fillStyle = "#e9d5ff";
+  for (let i = 0; i < 3; i++) {
+    const a = eng.time * 1.6 + (i * TAU) / 3;
+    ctx.beginPath();
+    ctx.arc(Math.cos(a) * R * 1.2, Math.sin(a) * R * 1.2, 4.5, 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/** Chapéu no topo da cabeça (no lugar das orelhas). */
+function drawHat(ctx: CanvasRenderingContext2D, id: HatId, eng: PherieEngine) {
+  if (id === "none") return;
+  ctx.save();
+  ctx.translate(-6, -90);
+  ctx.rotate((-9 * Math.PI) / 180 + Math.sin(eng.time * 1.7) * 0.015);
+  ctx.scale(0.8, 0.8); // cabe na área de desenho (HALF)
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
-  switch (variant) {
-    case "bear":
-      ctx.fillStyle = fill;
-      ctx.strokeStyle = stroke;
-      for (const x of [-68, 68]) {
+  const fillPath = (d: string, color: string) => {
+    ctx.fillStyle = color;
+    ctx.fill(new Path2D(d));
+  };
+  switch (id) {
+    case "witch":
+      fillPath("M -40 0 C -34 -38 -10 -62 26 -80 C 20 -60 38 -38 44 0 Z", "#6d28d9");
+      fillPath("M -41 -6 L 44 -6 L 44 -22 C 20 -30 -16 -30 -40 -22 Z", "#f97316");
+      fillPath("M -82 4 C -60 -14 60 -14 84 4 C 62 22 -62 22 -82 4 Z", "#5b21b6");
+      break;
+    case "party":
+      fillPath("M -36 0 L 36 0 L 0 -80 Z", "#f472b6");
+      fillPath("M -20 -52 L 20 -52 L 28 -36 L -28 -36 Z", "#fde047");
+      ctx.fillStyle = "#fde047";
+      ctx.beginPath();
+      ctx.arc(0, -82, 9, 0, TAU);
+      ctx.fill();
+      break;
+    case "crown":
+      fillPath("M -48 6 L -48 -40 L -24 -16 L 0 -50 L 24 -16 L 48 -40 L 48 6 Z", "#fbbf24");
+      ctx.fillStyle = "#ef4444";
+      for (const x of [-26, 0, 26]) {
         ctx.beginPath();
-        ctx.arc(x, -94, 27, 0, TAU);
+        ctx.arc(x, -6, 5, 0, TAU);
         ctx.fill();
-        ctx.stroke();
-        ctx.globalAlpha = 0.45;
-        ctx.fillStyle = stroke;
-        ctx.beginPath();
-        ctx.arc(x, -94, 12, 0, TAU);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = fill;
       }
       break;
-    case "robot":
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = 6;
-      for (const s of [-1, 1]) {
-        ctx.beginPath();
-        ctx.moveTo(s * 52, -98);
-        ctx.lineTo(s * 64, -142);
-        ctx.stroke();
-      }
-      ctx.lineWidth = 3;
-      ctx.fillStyle = accent;
-      for (const s of [-1, 1]) {
-        ctx.beginPath();
-        ctx.arc(s * 65, -148, 10, 0, TAU);
-        ctx.fill();
-        ctx.stroke();
-      }
+    case "beanie":
+      fillPath("M -56 0 C -58 -44 -18 -66 0 -66 C 18 -66 58 -44 56 0 Z", "#ef4444");
+      fillPath("M -60 6 L 60 6 L 60 -16 L -60 -16 Z", "#b91c1c");
+      ctx.fillStyle = "#fee2e2";
+      ctx.beginPath();
+      ctx.arc(0, -70, 11, 0, TAU);
+      ctx.fill();
       break;
-    case "demon": {
-      ctx.fillStyle = accent;
-      ctx.strokeStyle = stroke;
-      const l = new Path2D("M -74 -80 C -102 -108 -98 -144 -62 -158 C -70 -130 -60 -104 -46 -90 Z");
-      const r = new Path2D("M 74 -80 C 102 -108 98 -144 62 -158 C 70 -130 60 -104 46 -90 Z");
-      for (const p of [l, r]) {
-        ctx.fill(p);
-        ctx.stroke(p);
-      }
+    case "top":
+      fillPath("M -66 8 C -40 -4 40 -4 66 8 C 40 20 -40 20 -66 8 Z", "#18181b");
+      fillPath("M -40 4 L -40 -80 L 40 -80 L 40 4 Z", "#27272a");
+      fillPath("M -40 -8 L 40 -8 L 40 -26 L -40 -26 Z", "#dc2626");
       break;
-    }
-    default: {
-      ctx.fillStyle = fill;
-      ctx.strokeStyle = stroke;
-      const l = new Path2D("M -88 -66 C -100 -104 -78 -128 -58 -104 Z");
-      const r = new Path2D("M 88 -66 C 100 -104 78 -128 58 -104 Z");
-      for (const p of [l, r]) {
-        ctx.fill(p);
-        ctx.stroke(p);
-      }
-    }
   }
+  ctx.restore();
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -169,10 +202,10 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-function drawEye(ctx: CanvasRenderingContext2D, eye: EyeState, cx: number, cy: number, open: number, color: string, time: number) {
+function drawEye(ctx: CanvasRenderingContext2D, eye: EyeState, cx: number, cy: number, open: number, color: string, time: number, gloss: boolean, scale: number, halo: string) {
   const { shape } = eye.spec;
-  const w = Math.max(1, eye.w.value);
-  const baseH = Math.max(1, eye.h.value);
+  const w = Math.max(1, eye.w.value) * scale;
+  const baseH = Math.max(1, eye.h.value) * scale;
   const lid = eye.lid.value;
   ctx.save();
   ctx.translate(cx, cy);
@@ -180,7 +213,25 @@ function drawEye(ctx: CanvasRenderingContext2D, eye: EyeState, cx: number, cy: n
   ctx.strokeStyle = color;
   ctx.lineCap = "round";
 
+  // olhos que não são "bolinhas" (arcos, sonolento, espiral) ganham um halo da cor do corpo:
+  // sem ele sumiriam na faixa preta
+  const cutout = (draw: () => void) => {
+    const keep = ctx.fillStyle;
+    const keepStroke = ctx.strokeStyle;
+    ctx.fillStyle = halo;
+    ctx.strokeStyle = halo;
+    draw();
+    ctx.fillStyle = keep;
+    ctx.strokeStyle = keepStroke;
+  };
   const arcEye = (up: boolean) => {
+    cutout(() => {
+      ctx.lineWidth = 17;
+      ctx.beginPath();
+      if (up) ctx.arc(0, baseH * 0.35, w * 0.5, Math.PI * 1.12, Math.PI * 1.88);
+      else ctx.arc(0, -baseH * 0.5, w * 0.5, Math.PI * 0.12, Math.PI * 0.88);
+      ctx.stroke();
+    });
     ctx.lineWidth = 8;
     ctx.beginPath();
     if (up) ctx.arc(0, baseH * 0.35, w * 0.5, Math.PI * 1.12, Math.PI * 1.88);
@@ -190,7 +241,25 @@ function drawEye(ctx: CanvasRenderingContext2D, eye: EyeState, cx: number, cy: n
 
   if (shape === "happy") arcEye(true);
   else if (shape === "closed") arcEye(false);
+  else if (shape === "star") {
+    // olho de estrela: pulsa de leve
+    const R2 = (w / 2) * (1 + Math.sin(time * 5) * 0.08);
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+      const ang = -Math.PI / 2 + (i * Math.PI) / 5;
+      const rad = i % 2 === 0 ? R2 : R2 * 0.45;
+      if (i === 0) ctx.moveTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
+      else ctx.lineTo(Math.cos(ang) * rad, Math.sin(ang) * rad);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
   else if (shape === "spiral") {
+    cutout(() => {
+      ctx.beginPath();
+      ctx.arc(0, 0, w * 0.58, 0, TAU);
+      ctx.fill();
+    });
     ctx.rotate(time * 7);
     ctx.scale(w * 0.5, w * 0.5);
     ctx.lineWidth = 0.26;
@@ -215,6 +284,10 @@ function drawEye(ctx: CanvasRenderingContext2D, eye: EyeState, cx: number, cy: n
       ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, TAU);
       ctx.fill();
     } else if (shape === "tired") {
+      cutout(() => {
+        roundRect(ctx, -w / 2 - 4, -h / 2 - 4, w + 8, h + 8, w / 2 + 4);
+        ctx.fill();
+      });
       ctx.save();
       ctx.beginPath();
       ctx.rect(-w, -h * 0.05, w * 2, h);
@@ -224,6 +297,13 @@ function drawEye(ctx: CanvasRenderingContext2D, eye: EyeState, cx: number, cy: n
       ctx.restore();
     } else {
       roundRect(ctx, -w / 2, -h / 2, w, h, w / 2);
+      ctx.fill();
+    }
+    // reflexo: dá o brilho de "bolinha de vidro" dos olhos da folha
+    if (gloss && (shape === "pill" || shape === "wide" || shape === "dot") && open > 0.35) {
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.beginPath();
+      ctx.arc(-w * 0.17, -h * 0.2, Math.max(2, w * 0.1), 0, TAU);
       ctx.fill();
     }
   }
@@ -261,77 +341,6 @@ function drawController(ctx: CanvasRenderingContext2D, st: DrawStyle, eng: Pheri
     ctx.fill();
   }
   ctx.restore();
-}
-
-/** Mão fazendo o sinal de rock (🤘): indicador e mindinho de pé, polegar sobre os dedos do meio. */
-function drawRockHand(ctx: CanvasRenderingContext2D, x: number, y: number, side: -1 | 1, p: BodyPalette) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(side * 0.22);
-  ctx.scale(1.35, 1.35);
-  ctx.lineCap = "round";
-  const finger = (x1: number, y1: number, x2: number, y2: number, w: number, color: string) => {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = w;
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-  };
-  for (const [color, grow] of [[p.rim, 5], [p.earStroke, 0]] as const) {
-    // dedos esticados (chifres)
-    finger(-8, -2, -9.5, -22, 8 + grow, color);
-    finger(8, -2, 10.5, -19, 7 + grow, color);
-    // palma
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.roundRect(-14 - grow / 2, -5 - grow / 2, 28 + grow, 26 + grow, 11);
-    ctx.fill();
-  }
-  // dedos do meio dobrados + polegar por cima
-  ctx.fillStyle = p.top;
-  for (const cx of [-2.5, 3.5]) {
-    ctx.beginPath();
-    ctx.arc(cx, 2, 3.4, 0, TAU);
-    ctx.fill();
-  }
-  ctx.fillStyle = p.earStroke;
-  ctx.strokeStyle = p.rim;
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.ellipse(0, 11, 8.5, 5.2, -0.25, 0, TAU);
-  ctx.fill();
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawArms(ctx: CanvasRenderingContext2D, st: DrawStyle, eng: PherieEngine) {
-  const p = st.palette;
-  drawController(ctx, st, eng);
-  ctx.lineCap = "round";
-  const rock = eng.scene.dancing && eng.scene.danceStyle === "headbang";
-  for (const s of [-1, 1] as const) {
-    const hx = s === -1 ? eng.lhx.value : eng.rhx.value;
-    const hy = s === -1 ? eng.lhy.value : eng.rhy.value;
-    // música pesada: as duas mãos fazem o sinal de rock
-    if (rock) {
-      drawRockHand(ctx, hx, hy, s, p);
-      continue;
-    }
-    // braço-pílula solto (sem ligação com o corpo): uma cápsula apontando do ombro para a mão
-    const ang = Math.atan2(hy - SHOULDER_Y, hx - s * SHOULDER_X);
-    const dx = Math.cos(ang) * 11;
-    const dy = Math.sin(ang) * 11;
-    const pill = new Path2D();
-    pill.moveTo(hx - dx, hy - dy);
-    pill.lineTo(hx + dx, hy + dy);
-    ctx.strokeStyle = p.rim;
-    ctx.lineWidth = 25;
-    ctx.stroke(pill);
-    ctx.strokeStyle = p.earStroke;
-    ctx.lineWidth = 21;
-    ctx.stroke(pill);
-  }
 }
 
 function drawHeadphones(ctx: CanvasRenderingContext2D, st: DrawStyle, eng: PherieEngine) {
@@ -403,6 +412,54 @@ function drawExtras(ctx: CanvasRenderingContext2D, st: DrawStyle, time: number) 
       ctx.fill();
     }
     ctx.restore();
+  }
+  if (has("ticks")) {
+    // surpreso: três tracinhos de susto acima da cabeça
+    ctx.strokeStyle = "rgba(255,255,255,0.85)";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    for (const [x, y, ang] of [[40, -118, -0.5], [62, -124, 0], [84, -116, 0.5]] as const) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(ang);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -16);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+  if (has("sparkle")) {
+    // animado: dois tracinhos de brilho de cada lado
+    ctx.strokeStyle = "rgba(255,255,255,0.85)";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    for (const s of [-1, 1] as const) {
+      for (const [dx, dy, ex, ey] of [[96, -78, 112, -92], [104, -58, 124, -62]] as const) {
+        ctx.beginPath();
+        ctx.moveTo(s * dx, dy);
+        ctx.lineTo(s * ex, ey);
+        ctx.stroke();
+      }
+    }
+  }
+  if (has("stars")) {
+    // empolgado: faíscas de quatro pontas ao redor
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    for (const [x, y, r, ph] of [[-110, -76, 12, 0], [112, -96, 10, 1.3], [-118, 40, 8, 2.1], [108, 52, 9, 3.2]] as const) {
+      const k = 0.75 + 0.25 * Math.sin(time * 4 + ph);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(k, k);
+      ctx.beginPath();
+      ctx.moveTo(0, -r);
+      ctx.quadraticCurveTo(0, 0, r, 0);
+      ctx.quadraticCurveTo(0, 0, 0, r);
+      ctx.quadraticCurveTo(0, 0, -r, 0);
+      ctx.quadraticCurveTo(0, 0, 0, -r);
+      ctx.fill();
+      ctx.restore();
+    }
   }
   if (has("question")) {
     ctx.fillStyle = "rgba(255,255,255,0.78)";
@@ -483,7 +540,6 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
   ctx.setTransform(k, 0, 0, k, (px * dpr) / 2, (px * dpr) / 2);
   ctx.clearRect(-HALF, -HALF, HALF * 2, HALF * 2);
 
-  const p = st.palette;
   const breathe = 1 + 0.014 * Math.sin(eng.time * 2.1);
   const sy = eng.squashY.value * breathe;
   const sx = eng.squashX.value * (2 - breathe);
@@ -493,92 +549,57 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
   ctx.translate(0, R * 0.9);
   if (eng.scene.dancing) {
     const style = eng.scene.danceStyle ?? "groove";
-    // calma: balanço lento e curto; balanço normal; pesada: cabeça e corpo batendo mais rápido
-    const [freq, amp] = style === "calm" ? [2.2, 0.035] : style === "headbang" ? [11, 0.06 + 0.06 * eng.scene.beat] : [6.5, 0.05 + 0.05 * eng.scene.beat];
+    const [freq, amp] = style === "calm" ? [2.2, 0.035] : [6.5, 0.05 + 0.05 * eng.scene.beat];
     ctx.rotate(Math.sin(eng.time * freq) * amp);
   }
   ctx.scale(sx, sy);
   ctx.translate(0, -R * 0.9);
 
-  drawEars(ctx, st.ears, p.ear, p.earStroke, st.earAccent);
+  if (eng.scene.dancing) drawPulse(ctx, eng);
+  drawBody(ctx, st, eng);
 
-  drawPlanet(ctx, st, eng);
-
-  // rosto: fica sobre a borda do anel (como no logo), inclinado junto; acompanha o olhar com paralaxe
+  // rosto: olhos sobre a faixa, inclinados junto; acompanham o olhar com paralaxe. Sem boca.
   const lx = eng.lookX.value;
   const ly = eng.lookY.value;
-  const eyeX = lx * 14;
-  const eyeY = ly * 9;
+  const eyeX = lx * 12;
+  const eyeY = ly * 8;
   const open = Math.max(0, Math.min(1, eng.open.value));
-  const sleepy = eng.sleepy;
-  const lids = sleepy ? Math.min(open, 0.15) : open;
+  const lids = eng.sleepy ? Math.min(open, 0.15) : open;
+  const pulse = 1 + Math.min(1, Math.max(0, st.voice || 0)) * 0.16;
   ctx.save();
   ctx.translate(FACE_X, FACE_Y);
   ctx.rotate(FACE_TILT);
-  drawEye(ctx, eng.left, -EYE_GAP + eyeX, eyeY, lids, st.faceColor, eng.time);
-  drawEye(ctx, eng.right, EYE_GAP + eyeX, eyeY, lids, st.faceColor, eng.time);
+  drawEye(ctx, eng.left, -EYE_GAP + eyeX, eyeY, lids, st.faceColor, eng.time, st.palette.light, pulse, st.palette.top);
+  drawEye(ctx, eng.right, EYE_GAP + eyeX, eyeY, lids, st.faceColor, eng.time, st.palette.light, pulse, st.palette.top);
+  ctx.restore();
 
-  if (st.blush > 0.02) {
-    ctx.fillStyle = p.cheek;
-    ctx.globalAlpha = Math.min(1, st.blush * p.cheekScale);
-    for (const s of [-1, 1]) {
-      ctx.beginPath();
-      ctx.ellipse(s * 50 + lx * 10, 20 + ly * 6, 11, 6.5, 0, 0, TAU);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  ctx.save();
-  ctx.translate(EYE_GAP * 0.0 + lx * 9, 34 + ly * 5);
-  ctx.scale(52, 52);
-  const mouth = new Path2D(st.mouth.d);
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
   if (eng.scene.muteX) {
-    // microfone mutado: um X vermelho no lugar da boca
+    // microfone mutado: um X vermelho no meio do corpo
     ctx.strokeStyle = "#f4505e";
-    ctx.lineWidth = 0.12;
+    ctx.lineWidth = 7;
+    ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.moveTo(-0.16, -0.14);
-    ctx.lineTo(0.16, 0.14);
-    ctx.moveTo(0.16, -0.14);
-    ctx.lineTo(-0.16, 0.14);
+    ctx.moveTo(-14, 34);
+    ctx.lineTo(14, 62);
+    ctx.moveTo(14, 34);
+    ctx.lineTo(-14, 62);
     ctx.stroke();
-  } else if (st.mouth.fill) {
-    ctx.fillStyle = st.faceColor;
-    ctx.fill(mouth);
-  } else {
-    ctx.strokeStyle = st.faceColor;
-    ctx.lineWidth = st.mouth.stroke;
-    ctx.stroke(mouth);
   }
-  ctx.restore();
-  ctx.restore();
 
   if (st.items.has("sunglasses") && eng.mood !== "dizzy") {
     ctx.save();
     ctx.translate(FACE_X + eyeX, FACE_Y + eyeY);
     ctx.rotate(FACE_TILT);
     ctx.fillStyle = "rgba(11,11,14,0.94)";
-    roundRect(ctx, -EYE_GAP - 24, -20, 48, 40, 13);
+    roundRect(ctx, -EYE_GAP - 26, -22, 52, 44, 14);
     ctx.fill();
-    roundRect(ctx, EYE_GAP - 24, -20, 48, 40, 13);
+    roundRect(ctx, EYE_GAP - 26, -22, 52, 44, 14);
     ctx.fill();
     ctx.strokeStyle = "#0b0b0e";
     ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.moveTo(-EYE_GAP + 24, -6);
-    ctx.quadraticCurveTo(0, -14, EYE_GAP - 24, -6);
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(255,255,255,0.4)";
-    ctx.lineWidth = 4;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(-EYE_GAP - 14, -9);
-    ctx.lineTo(-EYE_GAP + 2, -9);
-    ctx.moveTo(EYE_GAP - 14, -9);
-    ctx.lineTo(EYE_GAP + 2, -9);
+    ctx.moveTo(-EYE_GAP + 26, -6);
+    ctx.quadraticCurveTo(0, -14, EYE_GAP - 26, -6);
     ctx.stroke();
     ctx.restore();
   }
@@ -596,11 +617,9 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
     ctx.restore();
   }
 
-  // mão de rock fica na frente dos fones; os braços normais ficam atrás
-  const rockHands = eng.scene.dancing && eng.scene.danceStyle === "headbang";
-  if (!rockHands) drawArms(ctx, st, eng);
+  drawController(ctx, st, eng);
   drawHeadphones(ctx, st, eng);
-  if (rockHands) drawArms(ctx, st, eng);
+  drawHat(ctx, st.hat, eng);
   drawExtras(ctx, st, eng.time);
   ctx.restore();
 

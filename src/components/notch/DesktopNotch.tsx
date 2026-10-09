@@ -1088,9 +1088,8 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         isHovered={isHovered}
         bodyColor={mascotBodyColor}
         shape={mascotShape}
-        ears={config.ears}
+        hat={config.hat}
         items={config.items}
-        earAccent={notchStyle.accent}
         inCall={isCallActive}
         isMusicPlaying={isPcMediaPlaying}
         levelRef={voiceLevelRef}
@@ -1120,9 +1119,8 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         isHovered={isHovered}
         bodyColor={mascotBodyColor}
         shape={mascotShape}
-        ears={config.ears}
+        hat={config.hat}
         items={config.items}
-        earAccent={notchStyle.accent}
         inCall={isCallActive}
         isMusicPlaying={isPcMediaPlaying}
         levelRef={voiceLevelRef}
@@ -1293,7 +1291,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                 : undefined
             }
           >
-          {/* Orelhas côncavas: a ilha "nasce" da borda da tela (sem traço, sem emenda) */}
+          {/* Cantos côncavos: a ilha "nasce" da borda da tela (sem traço, sem emenda) */}
           <svg
             width="14"
             height="14"
@@ -1471,9 +1469,8 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                                   isHovered={isHovered}
                                   bodyColor={mascotBodyColor}
         shape={mascotShape}
-        ears={config.ears}
+        hat={config.hat}
         items={config.items}
-        earAccent={notchStyle.accent}
                                   isMusicPlaying={isPcMediaPlaying}
                                 />
                               </div>

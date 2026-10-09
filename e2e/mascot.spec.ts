@@ -22,7 +22,6 @@ test("pherie: os 24 humores desenham sem erro", async ({ browser }) => {
     const draw = await import("/src/mascot/pherie/draw.ts");
     const moods = await import("/src/mascot/moods.ts");
     const states = await import("/src/mascot/pherieStates.ts");
-    const mouth = await import("/src/mascot/mouth.ts");
     const color = await import("/src/mascot/mascotColor.ts");
     document.body.innerHTML = "";
     const grid = document.createElement("div");
@@ -53,13 +52,11 @@ test("pherie: os 24 humores desenham sem erro", async ({ browser }) => {
           palette,
           faceColor: palette.face,
           accentColor: palette.accent,
-          ears: "cat",
-          earAccent: "#e8483f",
+          hat: "none",
           items: items as never,
           rgbHeadphones: m.id === "gaming",
           showMic: m.id === "calling",
-          mouth: mouth.mouthShape(spec.mouth, 0),
-          blush: spec.blush,
+          voice: 0,
           extras: spec.extras ?? [],
         },
         size,
@@ -84,7 +81,6 @@ test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)"
     const eng = await import("/src/mascot/pherie/engine.ts");
     const draw = await import("/src/mascot/pherie/draw.ts");
     const states = await import("/src/mascot/pherieStates.ts");
-    const mouth = await import("/src/mascot/mouth.ts");
     const color = await import("/src/mascot/mascotColor.ts");
     const faces = await import("/src/mascot/pherie/face.ts");
     document.body.innerHTML = "";
@@ -138,13 +134,11 @@ test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)"
           palette,
           faceColor: palette.face,
           accentColor: palette.accent,
-          ears: "cat",
-          earAccent: "#e8483f",
+          hat: "none",
           items: new Set() as never,
           rgbHeadphones: sc.mood === "gaming",
           showMic: false,
-          mouth: mouth.mouthShape(heavy ? ("grin" as never) : spec.mouth, 0),
-          blush: heavy ? 0.04 : spec.blush,
+          voice: 0,
           extras: spec.extras ?? [],
         },
         size,
@@ -154,5 +148,66 @@ test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)"
   });
   await page.waitForTimeout(300);
   await page.screenshot({ path: path.join(outDir, "pherie-scenes.png"), clip: { x: 0, y: 0, width: 1000, height: 420 } });
+  await context.close();
+});
+
+test("pherie: chapéus desenham sem erro", async ({ browser }) => {
+  mkdirSync(outDir, { recursive: true });
+  const context = await browser.newContext({ viewport: { width: 1000, height: 340 } });
+  await installHarness(context, { tauri: false });
+  const page = await context.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => {
+    if (!/transformCallback|invoke/.test(e.message)) errors.push(e.message);
+  });
+  await page.goto("/");
+  await page.waitForTimeout(3000);
+
+  await page.evaluate(async () => {
+    const eng = await import("/src/mascot/pherie/engine.ts");
+    const draw = await import("/src/mascot/pherie/draw.ts");
+    const states = await import("/src/mascot/pherieStates.ts");
+    const color = await import("/src/mascot/mascotColor.ts");
+    const cfg = await import("/src/mascot/notchConfig.ts");
+    document.body.innerHTML = "";
+    const grid = document.createElement("div");
+    grid.style.cssText =
+      "position:fixed;inset:0;z-index:99999;background:#1b1b20;display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:8px;font:11px system-ui;color:#aaa";
+    document.body.appendChild(grid);
+    const palette = color.deriveBodyPalette(null);
+    for (const h of cfg.HAT_OPTIONS) {
+      const cell = document.createElement("div");
+      cell.style.textAlign = "center";
+      const c = document.createElement("canvas");
+      c.width = 150;
+      c.height = 150;
+      c.style.width = "150px";
+      cell.appendChild(c);
+      cell.appendChild(document.createTextNode(h.label));
+      grid.appendChild(cell);
+      const e = new eng.PherieEngine("happy", "squircle", () => 0.5);
+      for (let t = 0; t < 2.5; t += 1 / 60) e.update(1 / 60);
+      draw.drawPherie(
+        c.getContext("2d")!,
+        e,
+        {
+          palette,
+          faceColor: palette.face,
+          accentColor: palette.accent,
+          hat: h.id,
+          items: new Set<string>() as never,
+          rgbHeadphones: false,
+          showMic: false,
+          voice: 0,
+          extras: states.MOOD_SPECS.happy.extras ?? [],
+        },
+        150,
+        1,
+      );
+    }
+  });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: path.join(outDir, "pherie-hats.png") });
+  expect(errors).toEqual([]);
   await context.close();
 });

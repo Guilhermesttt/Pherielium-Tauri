@@ -1,6 +1,7 @@
 /**
- * Braços da Pherie: cada mão é um alvo (x, y) em unidades do corpo (raio 100); o desenho
- * liga o ombro à mão com uma curva e as molas do engine suavizam o caminho. As cenas
+ * Asas da Pherie (coladas ao corpo): cada "mão" é o alvo (x, y) da ponta da asa, em unidades do
+ * corpo (raio 100); o desenho estica a asa da âncora até lá (com comprimento máximo) e as molas
+ * do engine suavizam o caminho. As cenas
  * (acenar, segurar o controle, colocar os fones, dançar, bufar de raiva) são só uma tabela
  * de alvos em função do tempo — pura e testável.
  */
@@ -40,8 +41,8 @@ export const SHOULDER_X = 94;
 export const SHOULDER_Y = 34;
 
 export const REST: ArmTargets = {
-  left: { x: -120, y: 74 },
-  right: { x: 120, y: 74 },
+  left: { x: -128, y: 64 },
+  right: { x: 124, y: -22 },
   controller: 0,
 };
 

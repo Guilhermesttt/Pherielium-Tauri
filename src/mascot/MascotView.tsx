@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { deriveBodyPalette, type BodyPalette } from "./mascotColor";
-import { mouthShape, smoothLevel } from "./mouth";
+import { smoothLevel } from "./mouth";
 import type { MascotMood } from "./moods";
 import { MOOD_SPECS, type BounceKind, type MoodSpec } from "./pherieStates";
 import { subscribeTicker } from "./ticker";
-import type { EarsId, ItemId } from "./notchConfig";
+import type { HatId, ItemId } from "./notchConfig";
 import { PherieEngine } from "./pherie/engine";
 import { drawPherie, type DrawStyle } from "./pherie/draw";
 
@@ -26,12 +26,10 @@ export interface MascotViewProps {
   bodyColor?: string | null;
   /** Forma do corpo (ids do bloub: cercle, galet, squircle, capsule, triangle, hexagone, nuage, goutte). */
   shape?: string;
-  /** Orelhas: gato (padrão), urso, robô ou demônio. */
-  ears?: EarsId;
+  /** Chapéu: nenhum (padrão), bruxa, festa, coroa, gorro ou cartola. */
+  hat?: HatId;
   /** Itens vestidos: óculos escuros, halo neon, fones RGB. */
   items?: ItemId[];
-  /** Cor de destaque das orelhas de robô/demônio (acento do tema). */
-  earAccent?: string;
   /** Volume da voz 0..1 (estado do React). Para volume ao vivo sem re-render use `levelRef`. */
   level?: number;
   levelRef?: { current: number };
@@ -105,9 +103,8 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
     color,
     bodyColor = null,
     shape,
-    ears = "cat",
+    hat = "none",
     items,
-    earAccent = "#e8483f",
     isSpeaking = false,
     inCall = false,
     isMusicPlaying = false,
@@ -189,8 +186,8 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
   const accentColor = color ?? palette.accent;
   const live = useRef<LiveState>({ ...props, spec, effectiveMood, palette, faceColor });
   live.current = { ...props, spec, effectiveMood, palette, faceColor };
-  const styleRef = useRef({ accentColor, rgbHeadphones, showMic, earAccent, ears, itemSet });
-  styleRef.current = { accentColor, rgbHeadphones, showMic, earAccent, ears, itemSet };
+  const styleRef = useRef({ accentColor, rgbHeadphones, showMic, hat, itemSet });
+  styleRef.current = { accentColor, rgbHeadphones, showMic, hat, itemSet };
 
   useEffect(() => {
     engineRef.current!.setShape(shape);
@@ -269,13 +266,11 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
         palette: cur.palette,
         faceColor: cur.faceColor,
         accentColor: st.accentColor,
-        ears: st.ears,
-        earAccent: st.earAccent,
+        hat: st.hat,
         items: st.itemSet,
         rgbHeadphones: st.rgbHeadphones,
         showMic: st.showMic,
-        mouth: mouthShape(cur.spec.mouth, level),
-        blush: cur.spec.blush,
+        voice: level,
         extras: cur.spec.extras ?? [],
       };
       drawPherie(ctx, engine, style, size, dpr);

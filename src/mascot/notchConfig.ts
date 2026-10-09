@@ -25,8 +25,8 @@ export interface NotchConfig {
   bodyColor: string | null;
   /** Id de forma do bloub. */
   shape: string;
-  /** Orelhas do mascote. */
-  ears: EarsId;
+  /** Chapéu do mascote. */
+  hat: HatId;
   /** Itens vestidos (óculos, halo, fones RGB). */
   items: ItemId[];
   /** Estilo do balão de fala. */
@@ -45,17 +45,18 @@ export interface NotchConfig {
   chamfer: boolean | null;
 }
 
-export type EarsId = "none" | "cat" | "bear" | "robot" | "demon";
+export type HatId = "none" | "witch" | "party" | "crown" | "beanie" | "top";
 export type ItemId = "sunglasses" | "halo" | "rgbHeadphones";
 export type BubbleStyle = "retro" | "soft";
 export type GameHudMode = "line" | "compact" | "off";
 
-export const EARS_OPTIONS: { id: EarsId; label: string }[] = [
-  { id: "none", label: "Sem orelhas" },
-  { id: "cat", label: "Gato" },
-  { id: "bear", label: "Urso" },
-  { id: "robot", label: "Robô" },
-  { id: "demon", label: "Demônio" },
+export const HAT_OPTIONS: { id: HatId; label: string }[] = [
+  { id: "none", label: "Sem chapéu" },
+  { id: "witch", label: "Bruxa" },
+  { id: "party", label: "Festa" },
+  { id: "crown", label: "Coroa" },
+  { id: "beanie", label: "Gorro" },
+  { id: "top", label: "Cartola" },
 ];
 
 export const ITEM_OPTIONS: { id: ItemId; label: string }[] = [
@@ -82,7 +83,7 @@ export const DEFAULT_NOTCH_CONFIG: NotchConfig = {
   followCursor: true,
   bodyColor: null,
   shape: DEFAULT_NOTCH_SHAPE,
-  ears: "none",
+  hat: "none",
   items: [],
   bubbleStyle: "soft",
   gameHud: "line",
@@ -125,7 +126,7 @@ const VALID_SHAPES = new Set<string>(SHAPES.map((s) => s.id));
 
 const bool = (value: unknown, fallback: boolean) => (typeof value === "boolean" ? value : fallback);
 
-const VALID_EARS = new Set<string>(EARS_OPTIONS.map((e) => e.id));
+const VALID_HATS = new Set<string>(HAT_OPTIONS.map((e) => e.id));
 const VALID_ITEMS = new Set<string>(ITEM_OPTIONS.map((i) => i.id));
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
@@ -167,7 +168,8 @@ export function sanitizeNotchConfig(raw: unknown, base: NotchConfig = DEFAULT_NO
     // null é um valor válido ("padrão"); só strings inválidas caem no fallback
     bodyColor: "bodyColor" in v ? normalizeHex(v.bodyColor, null) : base.bodyColor,
     shape,
-    ears: typeof v.ears === "string" && VALID_EARS.has(v.ears) ? (v.ears as EarsId) : base.ears,
+    // `ears` (orelhas) foi aposentado: quem tinha orelhas fica sem chapéu
+    hat: typeof v.hat === "string" && VALID_HATS.has(v.hat) ? (v.hat as HatId) : base.hat,
     items: sanitizeItems(v.items, base.items),
     bubbleStyle: v.bubbleStyle === "retro" || v.bubbleStyle === "soft" ? v.bubbleStyle : base.bubbleStyle,
     gameHud: v.gameHud === "line" || v.gameHud === "compact" || v.gameHud === "off" ? v.gameHud : base.gameHud,

@@ -112,7 +112,7 @@ describe("helpers de estilo", () => {
 describe("sanitizeNotchConfig — novos campos", () => {
   it("padrões novos não mudam o visual de quem já usava o notch", () => {
     const c = sanitizeNotchConfig({});
-    expect(c.ears).toBe("none");
+    expect(c.hat).toBe("none");
     expect(c.items).toEqual([]);
     expect(c.useThemeStyle).toBe(true);
     expect(c.cornerRadius).toBeNull();
@@ -120,13 +120,13 @@ describe("sanitizeNotchConfig — novos campos", () => {
   });
 
   it("valida ids e remove itens inválidos/duplicados", () => {
-    const c = sanitizeNotchConfig({ ears: "demon", items: ["halo", "halo", "capacete", "sunglasses", 7], gameHud: "compact", bubbleStyle: "retro" });
-    expect(c.ears).toBe("demon");
+    const c = sanitizeNotchConfig({ hat: "witch", items: ["halo", "halo", "capacete", "sunglasses", 7], gameHud: "compact", bubbleStyle: "retro" });
+    expect(c.hat).toBe("witch");
     expect(c.items).toEqual(["halo", "sunglasses"]);
     expect(c.gameHud).toBe("compact");
     expect(c.bubbleStyle).toBe("retro");
-    expect(sanitizeNotchConfig({ ears: "dragão", gameHud: "x", bubbleStyle: "y" })).toMatchObject({
-      ears: "none",
+    expect(sanitizeNotchConfig({ hat: "dragão", gameHud: "x", bubbleStyle: "y" })).toMatchObject({
+      hat: "none",
       gameHud: "line",
       bubbleStyle: "soft",
     });
