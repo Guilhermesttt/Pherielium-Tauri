@@ -3504,7 +3504,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
 
   // CREATE AND JOIN ROOM (Criação de Sala Persistente)
   const createAndJoinRoom = useCallback(
-    async (config: CallRoomConfig | { name?: string; roomName?: string; category?: RoomCategory; isPrivate?: boolean; password?: string; icon?: string; avatarUrl?: string; themeColor?: string }) => {
+    async (config: CallRoomConfig | { name?: string; roomName?: string; category?: RoomCategory; isPrivate?: boolean; password?: string; icon?: string; avatarUrl?: string; themeColor?: string; description?: string; bannerUrl?: string }) => {
       try {
         const newRoom = await createVoiceRoom(config);
         // Host já é isento da senha no servidor; não enviar flags de confiança do cliente.

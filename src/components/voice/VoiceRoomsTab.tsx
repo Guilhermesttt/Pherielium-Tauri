@@ -314,6 +314,9 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                       : "bg-[var(--surface-raised)] hover:bg-[var(--surface-overlay)] border-white/[0.07] hover:border-white/20"
                   }`}
                 >
+                  {room.bannerUrl ? (
+                    <img src={room.bannerUrl} alt="" loading="lazy" className="-mx-4.5 -mt-4.5 mb-3 aspect-[3/1] w-[calc(100%+2.25rem)] max-w-none rounded-t-[22px] object-cover" />
+                  ) : null}
                   <div className="space-y-2.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5 font-bold text-sm text-white truncate min-w-0">
@@ -358,6 +361,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                       </div>
                     </div>
 
+                    {room.description ? <p className="line-clamp-2 text-[12px] leading-snug text-white/50">{room.description}</p> : null}
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border border-white/10 bg-white/5 text-white/80">
                         {meta.icon}
@@ -448,6 +452,9 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                     : "bg-[var(--surface-raised)] hover:bg-[var(--surface-overlay)] border-white/[0.07] hover:border-white/20"
                 }`}
               >
+                {room.bannerUrl ? (
+                    <img src={room.bannerUrl} alt="" loading="lazy" className="-mx-4.5 -mt-4.5 mb-3 aspect-[3/1] w-[calc(100%+2.25rem)] max-w-none rounded-t-[22px] object-cover" />
+                  ) : null}
                 <div className="space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5 font-bold text-sm text-white truncate min-w-0">
@@ -471,6 +478,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                     )}
                   </div>
 
+                  {room.description ? <p className="line-clamp-2 text-[12px] leading-snug text-white/50">{room.description}</p> : null}
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border border-white/10 bg-white/5 text-white/80">
                       {meta.icon}
@@ -555,13 +563,15 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
             icon: editingRoom.icon,
             avatarUrl: editingRoom.avatarUrl,
             themeColor: editingRoom.themeColor,
+            description: editingRoom.description,
+            bannerUrl: editingRoom.bannerUrl,
             isPrivate: editingRoom.isPrivate,
             password: editingRoom.hasPassword ? "" : undefined,
           }}
           onCreateChannel={async (config) => {
             try {
               await updateVoiceRoom(editingRoom.id, config);
-              notify("Aparência e configurações da sala atualizadas!", "success");
+              notify("Sala atualizada.", "success");
               void fetchRooms();
             } catch (err: any) {
               notify(err?.message || "Erro ao atualizar sala.", "error");

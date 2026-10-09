@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useAuth } from "../../auth/AuthProvider";
+import { dataUrlToBlob, uploadRoomMedia, validateRoomMedia } from "../../services/voiceRoomMedia";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Radio,
@@ -150,6 +152,13 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
   const [isPrivate, setIsPrivate] = useState(false);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [description, setDescription] = useState("");
+  const [bannerUrl, setBannerUrl] = useState("");
+  const [bannerBlob, setBannerBlob] = useState<Blob | null>(null);
+  const [bannerPreview, setBannerPreview] = useState("");
+  const [clearBanner, setClearBanner] = useState(false);
+  const hadPassword = isEditing && initialConfig?.password !== undefined;
+  const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fallbackDefaultName = userProfile?.displayName
@@ -164,6 +173,23 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
     const b = Number.parseInt(hex.slice(4, 6), 16);
     return (r * 299 + g * 587 + b * 114) / 1000 > 160 ? "#0B0B0E" : "#FFFFFF";
   })();
+
+  const handleBannerPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const bad = validateRoomMedia(file);
+    if (bad) {
+      setError(bad);
+      return;
+    }
+    setError(null);
+    setBannerBlob(file);
+    setClearBanner(false);
+    setBannerPreview(URL.createObjectURL(file));
+  };
+
+  const shownBanner = clearBanner ? "" : bannerPreview || bannerUrl;
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -193,6 +219,8 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
         setThemeColor(initialConfig.themeColor || THEME_COLORS[0].value);
         setIsPrivate(Boolean(initialConfig.isPrivate));
         setPassword(initialConfig.password || "");
+        setDescription(initialConfig.description || "");
+        setBannerUrl(initialConfig.bannerUrl || "");
       } else {
         setRoomName("");
         setCategory("resenha_games");
@@ -201,7 +229,12 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
         setThemeColor(THEME_COLORS[0].value);
         setIsPrivate(false);
         setPassword("");
+        setDescription("");
+        setBannerUrl("");
       }
+      setBannerBlob(null);
+      setBannerPreview("");
+      setClearBanner(false);
       setError(null);
       setIsSubmitting(false);
     }
@@ -227,22 +260,39 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
 
   const handleCreate = async () => {
     const trimmedName = roomName.trim() || fallbackDefaultName;
-    if (isPrivate && password.trim().length < 3) {
+    const keepsPassword = hadPassword && password.trim().length === 0;
+    if (isPrivate && !keepsPassword && password.trim().length < 3) {
       setError("Uma sala privada precisa de senha (mínimo de 3 caracteres).");
+      return;
+    }
+    if (description.length > 200) {
+      setError("A descrição pode ter no máximo 200 caracteres.");
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
     try {
+      // imagens vão para o Storage (o ícone antigo era uma data URL gigante dentro da tabela)
+      let finalBanner = clearBanner ? undefined : bannerUrl || undefined;
+      let finalAvatar = customAvatarUrl.trim() || undefined;
+      if (user?.uid) {
+        if (bannerBlob) finalBanner = await uploadRoomMedia(user.uid, "banner", bannerBlob);
+        const inline = finalAvatar ? dataUrlToBlob(finalAvatar) : null;
+        if (inline) finalAvatar = await uploadRoomMedia(user.uid, "icon", inline);
+      }
       await onCreateChannel({
         roomName: trimmedName,
         category,
         isPrivate,
         password: isPrivate && password.trim() ? password.trim() : undefined,
+        clearPassword: isEditing && hadPassword && !isPrivate ? true : undefined,
         icon: selectedIcon,
-        avatarUrl: customAvatarUrl.trim() || undefined,
+        avatarUrl: finalAvatar,
         themeColor,
+        description: description.trim(),
+        bannerUrl: bannerBlob ? finalBanner : undefined,
+        clearBanner: clearBanner || undefined,
       });
       onClose();
     } catch (err) {
@@ -298,7 +348,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                 {isEditing ? "Editar canal de voz" : "Criar canal de voz"}
               </h3>
               <p className="mt-1 text-xs text-white/45">
-                Até 4 pessoas. Escolha identidade, categoria e quem pode entrar.
+                Até 10 pessoas. Escolha identidade, banner, categoria e quem pode entrar.
               </p>
             </div>
             <button
@@ -312,7 +362,11 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
 
           <div className="relative space-y-5 overflow-y-auto px-6 pb-5 scrollbar-thin scrollbar-thumb-white/10">
             <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
-              <div className="h-1.5 w-full" style={{ backgroundColor: themeColor }} />
+              {shownBanner ? (
+                <img src={shownBanner} alt="" className="aspect-[3/1] w-full object-cover" />
+              ) : (
+                <div className="h-1.5 w-full" style={{ backgroundColor: themeColor }} />
+              )}
               <div className="flex items-center gap-3.5 p-4">
                 <div
                   className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border"
@@ -536,6 +590,44 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
               </div>
             </div>
 
+            <div className="space-y-2.5 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-white/70">Banner</span>
+                <div className="flex items-center gap-2">
+                  {shownBanner && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setClearBanner(true);
+                        setBannerBlob(null);
+                        setBannerPreview("");
+                      }}
+                      className="cursor-pointer text-[11px] font-semibold text-white/50 transition hover:text-white"
+                    >
+                      Remover
+                    </button>
+                  )}
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-white/[0.08] px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-white/[0.14]">
+                    <Upload className="h-3.5 w-3.5" />
+                    {shownBanner ? "Trocar imagem" : "Escolher imagem"}
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={handleBannerPick} />
+                  </label>
+                </div>
+              </div>
+              <p className="text-[11px] text-white/40">Imagem larga (3:1) de até 10 MB. PNG, JPG, WebP ou GIF.</p>
+              <label className="mt-1 block text-[11px] font-bold text-white/70" htmlFor="room-description">Descrição</label>
+              <textarea
+                id="room-description"
+                value={description}
+                maxLength={200}
+                rows={2}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Sobre o que é essa sala?"
+                className="w-full resize-none rounded-xl border border-white/10 bg-black/35 px-3.5 py-2.5 text-xs font-medium text-white placeholder-white/30 outline-none transition focus:border-white/30"
+              />
+              <p className="text-right text-[10.5px] tabular-nums text-white/35">{description.length}/200</p>
+            </div>
+
             {isPrivate && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
@@ -551,7 +643,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                 <div className="relative flex items-center">
                   <input
                     type={showPassword ? "text" : "password"}
-                    placeholder="Deixe em branco para entrar só com convite"
+                    placeholder={hadPassword ? "Deixe em branco para manter a senha atual" : "Mínimo de 3 caracteres"}
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
