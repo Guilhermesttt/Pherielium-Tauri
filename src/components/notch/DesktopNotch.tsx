@@ -40,7 +40,6 @@ import { NOTCH_EVENT_MOOD, NOTCH_EVENT_WIDTH, notchEventWaves } from "./notchEve
 import { AchievementReveal } from "./AchievementReveal";
 import { achievementBoxShadow, tierStyle } from "./achievementTier";
 import { subscribeTicker } from "../../mascot/ticker";
-import { useAudioReactiveRef } from "../../mascot/useAudioReactive";
 import { MusicWaveform } from "./MusicWaveform";
 import {
   DIZZY_DURATION_MS,
@@ -812,8 +811,6 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   };
 
   const isPcMediaPlaying = mediaState.hasMedia && mediaState.isPlaying;
-  // Áudio do PC: só alimenta a forma de onda do cartão de música (o medidor liga só com música tocando).
-  const audioRef = useAudioReactiveRef(isPcMediaPlaying && config.showMedia && isExpanded);
 
   // Humor dinâmico do mascote Pherie quando aparece (Coucou-style)
   // Áudio do PC: headbang no ritmo e equalizador real (medidor só liga com música tocando).
@@ -1505,11 +1502,14 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                         >
                           <SkipForward size={18} className="fill-current" />
                         </button>
+                        <span className="ml-auto pr-1">
+                          <Equalizer playing={isPcMediaPlaying} height={18} />
+                        </span>
                       </div>
                         </div>
                       </div>
                       <div className="-mx-3 -mb-3 mt-2" style={{ maskImage: "linear-gradient(180deg, transparent 0%, #000 55%)", WebkitMaskImage: "linear-gradient(180deg, transparent 0%, #000 55%)" }}>
-                        <MusicWaveform playing={isPcMediaPlaying} audioRef={audioRef} />
+                        <MusicWaveform playing={isPcMediaPlaying} />
                       </div>
                     </NotchCard>
                   )}
