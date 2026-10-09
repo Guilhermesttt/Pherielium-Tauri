@@ -278,6 +278,22 @@ const createVoiceRoomCore = async (config: {
 /**
  * Atualiza configurações e aparência de uma sala existente
  */
+/** Dados atuais da sala direto do banco (para preencher o editor com o que está salvo de verdade). */
+export const getVoiceRoomDetails = async (roomId: string): Promise<VoiceRoom | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("voice_rooms")
+      .select("id, host_uid, room_name, category, is_private, has_password, max_participants, status, created_at, updated_at, icon, avatar_url, theme_color, description, banner_url")
+      .eq("id", roomId)
+      .maybeSingle();
+    if (error || !data) return null;
+    const session = await supabase.auth.getSession();
+    return mapVoiceRoomFromDb(data as VoiceRoomRow, { hostUid: session.data.session?.user.id });
+  } catch {
+    return null;
+  }
+};
+
 /** Cria a sala; descrição e banner (que a API não conhece) entram logo depois, pelo RPC do host. */
 export const createVoiceRoom = async (
   config: Parameters<typeof createVoiceRoomCore>[0] & { description?: string; bannerUrl?: string },

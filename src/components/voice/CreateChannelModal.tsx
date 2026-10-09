@@ -209,6 +209,10 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
     e.target.value = "";
   };
 
+  // O pai recria `initialConfig` a cada render (a chamada re-renderiza todo segundo): sem esta chave
+  // estável o formulário era zerado para os valores antigos enquanto o usuário digitava.
+  const initialKey = JSON.stringify(initialConfig ?? null);
+
   useEffect(() => {
     if (isOpen) {
       if (initialConfig) {
@@ -238,7 +242,8 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
       setError(null);
       setIsSubmitting(false);
     }
-  }, [isOpen, initialConfig]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialKey]);
 
   // Trava o scroll do body enquanto o modal está aberto e permite fechar com Esc.
   useEffect(() => {
