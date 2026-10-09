@@ -696,7 +696,8 @@ export function useGamePresence({
           steamId,
           runningGame.steamAppId,
           "pt-BR",
-          { bypassCache: false },
+          // o polling precisa ver o unlock novo: com o cache de 15 min a detecção levava ≥15 min
+          { bypassCache: true },
         );
 
         if (!state.firstLoadDone) {
