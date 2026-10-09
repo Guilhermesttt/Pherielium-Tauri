@@ -100,6 +100,7 @@ test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)"
       { name: "música calma", mood: "music", dancing: true, style: "calm", hp: true, t: 1.2 },
       { name: "música animada", mood: "music", dancing: true, style: "groove", hp: true, beat: 0.8, t: 1.0 },
       { name: "música pesada", mood: "music", dancing: true, style: "headbang", hp: true, beat: 1, t: 1.0 },
+      { name: "ligando", mood: "excited", ringing: true, t: 3.15 },
     ];
     for (const sc of scenes) {
       const cell = document.createElement("div");
@@ -113,7 +114,7 @@ test("pherie: cenas dos braços (olá, jogar, dançar, fones, mutado, irritada)"
       cell.appendChild(document.createTextNode(sc.name));
       grid.appendChild(cell);
       const e = new eng.PherieEngine(sc.mood as never, "squircle", () => 0.5);
-      e.setScene({ gaming: !!sc.gaming, dancing: !!sc.dancing, danceStyle: (sc as { style?: string }).style as never, muteX: !!sc.muteX, fume: !!sc.fume, beat: sc.beat ?? 0 });
+      e.setScene({ gaming: !!sc.gaming, dancing: !!sc.dancing, danceStyle: (sc as { style?: string }).style as never, muteX: !!sc.muteX, fume: !!sc.fume, ringing: !!(sc as { ringing?: boolean }).ringing, beat: sc.beat ?? 0 });
       if (sc.wave) e.wave(sc.wave);
       if (sc.putOn) e.setHeadphones(true, true);
       else if (sc.hp) {

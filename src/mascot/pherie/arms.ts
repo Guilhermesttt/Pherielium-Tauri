@@ -21,6 +21,8 @@ export interface ArmTargets {
 export interface ArmScene {
   gaming: boolean;
   dancing: boolean;
+  /** alguém está ligando: ela vibra como um celular tocando */
+  ringing?: boolean;
   /** jeito de dançar (calmo, balanço, bater cabeça); padrão: balanço */
   danceStyle?: DanceStyle;
   /** microfone mutado: X na boca */

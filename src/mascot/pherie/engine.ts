@@ -153,7 +153,7 @@ export class PherieEngine {
     this.lookY.target = k(this.face.gazeY + this.gazeFromPointerY);
   }
 
-  setScene(next: Partial<Pick<ArmScene, "gaming" | "dancing" | "danceStyle" | "muteX" | "fume" | "beat">>) {
+  setScene(next: Partial<Pick<ArmScene, "gaming" | "dancing" | "ringing" | "danceStyle" | "muteX" | "fume" | "beat">>) {
     Object.assign(this.scene, next);
   }
 

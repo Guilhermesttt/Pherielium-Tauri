@@ -37,6 +37,30 @@ const MARIA: ReadonlyArray<readonly [number, number, number]> = [[-40, -38, 40],
 /** Órbita do planetinha: centro, semi-eixos e inclinação. */
 const ORBIT = { cx: 0, cy: 34, rx: 1.34 * R, ry: 0.27 * R, tilt: (-17 * Math.PI) / 180 };
 
+/** Rajada de 0,7 s a cada 1,4 s (sobe e desce suave): 0 quando não está tocando ou na pausa. */
+function ringEnvelope(eng: PherieEngine): number {
+  if (!eng.scene.ringing) return 0;
+  const phase = eng.time % 1.4;
+  return phase < 0.7 ? Math.sin((phase / 0.7) * Math.PI) : 0;
+}
+
+/** Arcos de "tocando" dos dois lados da cabeça. */
+function drawRingMarks(ctx: CanvasRenderingContext2D, k: number) {
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.strokeStyle = `rgba(255,255,255,${(0.75 * k).toFixed(3)})`;
+  for (const side of [-1, 1] as const) {
+    for (const [r, w] of [[R * 1.28, 6], [R * 1.5, 5]] as const) {
+      ctx.lineWidth = w;
+      ctx.beginPath();
+      if (side === 1) ctx.arc(0, -10, r, -0.5, 0.5);
+      else ctx.arc(0, -10, r, Math.PI - 0.5, Math.PI + 0.5);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
 /** Posição do planetinha na órbita (e se está na frente ou atrás da lua). */
 function orbitPoint(eng: PherieEngine) {
   const speed = eng.scene.dancing ? 2.1 : 0.85;
@@ -477,6 +501,15 @@ export function drawPherie(ctx: CanvasRenderingContext2D, eng: PherieEngine, st:
   }
   ctx.scale(sx, sy);
   ctx.translate(0, -R * 0.9);
+
+  // chamada tocando: rajadas de vibração (como um celular) com pausas, e ondas dos dois lados
+  const ring = ringEnvelope(eng);
+  if (eng.scene.ringing && ring > 0) {
+    ctx.translate(0, R * 0.9);
+    ctx.rotate(Math.sin(eng.time * 42) * 0.1 * ring);
+    ctx.translate(Math.sin(eng.time * 53) * 3 * ring, -R * 0.9);
+    drawRingMarks(ctx, ring);
+  }
 
   drawOrbitPlanet(ctx, eng, false);
   drawBody(ctx, st, eng);

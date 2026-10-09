@@ -38,6 +38,8 @@ export interface MascotViewProps {
   /** Em chamada: fone com haste de microfone, independente do humor. */
   inCall?: boolean;
   isMusicPlaying?: boolean;
+  /** Alguém está ligando: ela vibra e mostra ondas de "tocando". */
+  ringing?: boolean;
   /** Microfone mutado: X na boca. */
   muted?: boolean;
   /** Muda a cada vez que ela deve fazer "tcharam!" (mãos para cima, revelando uma conquista). */
@@ -300,7 +302,8 @@ export const MascotView: React.FC<MascotViewProps> = (props) => {
         muteX,
         fume,
         gaming: cur.effectiveMood === "gaming",
-        dancing: Boolean(cur.isMusicPlaying) || cur.effectiveMood === "music",
+        dancing: !cur.ringing && (Boolean(cur.isMusicPlaying) || cur.effectiveMood === "music"),
+        ringing: Boolean(cur.ringing),
         danceStyle: "groove",
         beat: 0,
       });

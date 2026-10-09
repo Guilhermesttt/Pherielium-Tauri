@@ -1125,6 +1125,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         items={config.items}
         inCall={isCallActive}
         isMusicPlaying={isPcMediaPlaying}
+        ringing={Boolean(incomingInvite)}
         levelRef={voiceLevelRef}
         muted={isCallActive && isMuted}
         waveAt={notchEvent && notchEventWaves(notchEvent.kind) ? notchEvent.at : undefined}
@@ -1158,6 +1159,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         inCall={opts?.mood ? false : isCallActive}
         // com humor forçado (aba Controle) ela não dança com a música: só segura o controle
         isMusicPlaying={opts?.mood ? false : isPcMediaPlaying}
+        ringing={Boolean(incomingInvite)}
         levelRef={voiceLevelRef}
         muted={isCallActive && isMuted}
         waveAt={notchEvent && notchEventWaves(notchEvent.kind) ? notchEvent.at : undefined}
