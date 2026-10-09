@@ -244,9 +244,11 @@ pub fn list_games(uid: &str) -> Result<Vec<Game>> {
                     extra.insert("cardImage".to_string(), serde_json::json!(url));
                 }
             }
-            if !extra.contains_key("hoursPlayed") {
-                extra.insert("hoursPlayed".to_string(), serde_json::json!(total_playtime / 60));
-            }
+            // A coluna total_playtime_minutes é a fonte do tempo (as sessões somam nela). O metadata
+            // guarda uma cópia antiga de hoursPlayed que o front lê com prioridade: sem sobrescrever,
+            // os minutos de uma sessão nova não apareciam. Também não truncamos mais para horas inteiras.
+            let column_hours = ((total_playtime as f64 / 60.0) * 10.0).round() / 10.0;
+            extra.insert("hoursPlayed".to_string(), serde_json::json!(column_hours));
             if !extra.contains_key("steamPlaytimeMinutes") {
                 extra.insert("steamPlaytimeMinutes".to_string(), serde_json::json!(total_playtime));
             }
