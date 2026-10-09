@@ -9,7 +9,7 @@ import type { MascotMood } from "../moods";
 export const R = 100;
 
 export interface Particle {
-  kind: "z" | "heart" | "spark" | "note" | "flame";
+  kind: "z" | "heart" | "spark" | "note";
   /** nota musical: qual desenho (0 = colcheia, 1 = duas colcheias) e a cor (0 calma, 1 animada, 2 pesada) */
   variant?: number;
   tone?: number;
@@ -73,7 +73,6 @@ export class PherieEngine {
   private blinkIn = 2.2;
   private override: FaceSpec | null = null;
   private noteIn = 0;
-  private flameIn = 0;
   private prevBeat = 0;
   private blinkHold = 0;
   private spawnIn = 0;
@@ -152,7 +151,7 @@ export class PherieEngine {
     this.lookY.target = k(this.face.gazeY + this.gazeFromPointerY);
   }
 
-  setScene(next: Partial<Pick<ArmScene, "gaming" | "dancing" | "danceStyle" | "persona" | "muteX" | "fume" | "beat">>) {
+  setScene(next: Partial<Pick<ArmScene, "gaming" | "dancing" | "danceStyle" | "muteX" | "fume" | "beat">>) {
     Object.assign(this.scene, next);
   }
 
@@ -237,7 +236,6 @@ export class PherieEngine {
 
     this.emit(dt);
     this.emitNotes(dt);
-    this.emitPersona(dt);
     this.particles = this.particles.filter((p) => {
       p.age += dt;
       p.x += p.vx * dt + (p.kind === "note" ? Math.sin(p.age * 5 + (p.rot ?? 0) * 9) * 6 * dt : 0);
@@ -276,33 +274,6 @@ export class PherieEngine {
         age: 0,
         life: 1.9,
       });
-    }
-  }
-
-  /** Efeitos da persona: fogo ao redor (metal) e zzz tranquilos (chill). */
-  private emitPersona(dt: number) {
-    const persona = this.scene.persona;
-    if (persona === "metal") {
-      this.flameIn -= dt;
-      if (this.flameIn > 0) return;
-      this.flameIn = 0.05;
-      const a = this.rng() * Math.PI * 2;
-      const r = 104 + this.rng() * 10;
-      this.particles.push({
-        kind: "flame",
-        variant: this.rng() < 0.4 ? 1 : 0,
-        x: Math.cos(a) * r,
-        y: Math.sin(a) * r * 0.95,
-        vx: Math.cos(a) * 6,
-        vy: -26 - this.rng() * 26,
-        age: 0,
-        life: 0.85 + this.rng() * 0.3,
-      });
-    } else if (persona === "chill") {
-      this.flameIn -= dt;
-      if (this.flameIn > 0) return;
-      this.flameIn = 1.7;
-      this.particles.push({ kind: "z", x: 70, y: -70, vx: 8, vy: -20, age: 0, life: 2.4 });
     }
   }
 

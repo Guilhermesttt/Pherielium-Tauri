@@ -2117,3 +2117,18 @@ video {
     animation: none !important;
   }
 }
+/* Notch tonto: treme enquanto a Pherie se recupera de cliques demais. */
+@keyframes notch-shake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  15% { transform: translateX(-7px) rotate(-0.8deg); }
+  30% { transform: translateX(6px) rotate(0.7deg); }
+  45% { transform: translateX(-5px) rotate(-0.5deg); }
+  60% { transform: translateX(4px) rotate(0.4deg); }
+  75% { transform: translateX(-2px); }
+}
+.notch-shake {
+  animation: notch-shake 0.5s ease-in-out 5;
+}
+@media (prefers-reduced-motion: reduce) {
+  .notch-shake { animation: none; }
+}

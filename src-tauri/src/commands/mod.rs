@@ -7,7 +7,6 @@ pub mod emulator_detector;
 pub mod epic;
 pub mod game_watch;
 pub mod hardware;
-pub mod music_identify;
 pub mod launcher;
 pub mod library;
 pub mod nexus;

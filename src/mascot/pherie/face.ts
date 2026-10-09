@@ -1,7 +1,7 @@
 import type { MascotMood } from "../moods";
 
 /** Formas de olho da Pherie (vocabulário do Coucou: cada emoção tem a sua forma). */
-export type EyeShape = "pill" | "wide" | "dot" | "happy" | "closed" | "tired" | "spiral" | "star";
+export type EyeShape = "pill" | "wide" | "dot" | "happy" | "closed" | "tired" | "spiral";
 
 export interface EyeSpec {
   shape: EyeShape;
@@ -57,15 +57,6 @@ export const FACES: Record<MascotMood, FaceSpec> = {
   annoyed: both(e("tired", 30, 22, 14)),
   dizzy: both(e("spiral", 36, 36)),
 };
-
-/** Música animada (pop/dance/eletrônica): olhos de estrela. */
-export const STAR_FACE: FaceSpec = both(e("star", 40, 40), 0, -0.1);
-
-/** Música calma (lo-fi/jazz/clássica): serena, olhos fechados e tranquilos. */
-export const RELAXED_FACE: FaceSpec = both(e("closed", 30, 12), 0, 0.1);
-
-/** Cara de mau para música pesada (rock/metal): olhos estreitos com sobrancelha baixa. */
-export const HEADBANG_FACE: FaceSpec = both(e("pill", 27, 30, 26), 0, 0.2);
 
 export function faceFor(mood: MascotMood): FaceSpec {
   return FACES[mood] ?? FACES.idle;

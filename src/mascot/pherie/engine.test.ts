@@ -190,8 +190,6 @@ describe("cenas no engine", () => {
   });
 });
 
-import { HEADBANG_FACE } from "./face";
-
 describe("notas musicais e cara de música pesada", () => {
   const dance = (style: "calm" | "groove" | "headbang", seconds = 4) => {
     const e = new PherieEngine("music", undefined, seeded());
@@ -239,16 +237,5 @@ describe("notas musicais e cara de música pesada", () => {
     e.setScene({ dancing: false });
     for (let t = 0; t < 3; t += 1 / 60) e.update(1 / 60);
     expect(e.particles.some((p) => p.kind === "note")).toBe(false);
-  });
-
-  it("cara de mau: sobrancelha baixa nos dois olhos e volta ao humor depois", () => {
-    const e = new PherieEngine("music", undefined, seeded());
-    e.setFaceOverride(HEADBANG_FACE);
-    for (let t = 0; t < 2; t += 1 / 60) e.update(1 / 60);
-    expect(e.left.lid.value).toBeGreaterThan(15);
-    expect(e.right.lid.value).toBeLessThan(-15);
-    e.setFaceOverride(null);
-    for (let t = 0; t < 2; t += 1 / 60) e.update(1 / 60);
-    expect(Math.abs(e.left.lid.value)).toBeLessThan(2);
   });
 });

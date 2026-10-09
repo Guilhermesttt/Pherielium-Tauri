@@ -21,7 +21,6 @@ import {
 import { useVoiceCallContext } from "../../context/VoiceCallContext";
 import { PherieMascot, getMascotBaseMood, type MascotMood, type PherieMascotProps } from "./PherieMascot";
 import { hasTauriRuntime, useVoiceLevelRef } from "../../mascot/useVoiceLevel";
-import { useMusicPersona } from "../../mascot/useMusicPersona";
 import { useNotchConfig, useOverlayAppearance } from "../../mascot/useNotchConfig";
 import {
   EXPANDED_RADIUS_BONUS,
@@ -40,7 +39,6 @@ import { NotchEventBar, useNotchEvent } from "./NotchEventBar";
 import { NOTCH_EVENT_MOOD, NOTCH_EVENT_WIDTH, notchEventWaves } from "./notchEvent";
 import { AchievementReveal } from "./AchievementReveal";
 import { achievementBoxShadow, tierStyle } from "./achievementTier";
-import { useAudioReactiveRef } from "../../mascot/useAudioReactive";
 import { subscribeTicker } from "../../mascot/ticker";
 import {
   DIZZY_DURATION_MS,
@@ -116,6 +114,8 @@ const NOTCH_EXPANDED_WIDTH = 448;
 const NOTCH_BAR_HEIGHT = 52;
 /** Tamanho da Pherie na barra compacta (antes 26: pequena demais para ver o rosto). */
 const BAR_MASCOT = 38;
+/** Tempo de tontura depois de cliques demais na Pherie. */
+const OVERLOAD_MS = 3000;
 
 const EMPTY_MEDIA: DetectedMediaState = {
   hasMedia: false,
@@ -813,21 +813,11 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   // Humor dinâmico do mascote Pherie quando aparece (Coucou-style)
   // Áudio do PC: headbang no ritmo e equalizador real (medidor só liga com música tocando).
-  const audioRef = useAudioReactiveRef(isPcMediaPlaying && config.showMedia);
-
-  // Gênero da música (AudD, opt-in): define rosto/efeitos; durante a espera ela fica pensativa.
-  const { persona: musicPersona, identifying: musicIdentifying } = useMusicPersona({
-    enabled: config.musicIdentify,
-    apiKey: config.auddApiKey,
-    title: mediaState.title,
-    artist: mediaState.artist,
-    playing: isPcMediaPlaying,
-    blocked: isCallActive || Boolean(activeGameTitle),
-  });
 
   // Tontura: chacoalhar o mouse perto do notch (métricas calculadas no Rust).
   const [dizzy, setDizzy] = useState(false);
   const dizzyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [overloaded, setOverloaded] = useState(false);
   // Curiosidade: cursor chegou ao topo, na altura do notch.
   const [curious, setCurious] = useState(false);
   const curiousTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -980,17 +970,38 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   // Cutucar a Pherie: pop a cada clique, som próprio no 3º clique seguido (ela fica tonta).
   const pokeClicksRef = useRef<number[]>([]);
+  const overloadedRef = useRef(false);
+  const overloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (overloadTimer.current) clearTimeout(overloadTimer.current);
+    },
+    [],
+  );
   const handleMascotPoke = useCallback(() => {
+    if (overloadedRef.current) return; // ela está se recuperando
     const now = Date.now();
     const recent = [...pokeClicksRef.current.filter((t) => now - t < 800), now];
     pokeClicksRef.current = recent;
     if (recent.length >= 3) {
       pokeClicksRef.current = [];
       notchSound("mascotDizzy");
+      // cliques demais: o notch treme e ela fica tonta por 3 s, com um aviso
+      overloadedRef.current = true;
+      setOverloaded(true);
+      setDizzy(true);
+      revealNotch();
+      setIsExpanded(true);
+      if (overloadTimer.current) clearTimeout(overloadTimer.current);
+      overloadTimer.current = setTimeout(() => {
+        overloadedRef.current = false;
+        setOverloaded(false);
+        setDizzy(false);
+      }, OVERLOAD_MS);
     } else {
       notchSound("mascotPoke");
     }
-  }, [notchSound]);
+  }, [notchSound, revealNotch]);
 
   const openNotch = () => {
     revealNotch();
@@ -1067,10 +1078,6 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         waveAt={notchEvent && notchEventWaves(notchEvent.kind) ? notchEvent.at : undefined}
         celebrateAt={notchEvent?.kind === "achievement" ? notchEvent.at : undefined}
         mutedSpeechRef={mutedSpeechRef}
-        audioRef={audioRef}
-        persona={musicPersona}
-        identifying={musicIdentifying}
-        danceIntensity={config.danceIntensity}
         isSpeaking={mouthSpeaking}
         onClick={handleMascotPoke}
       />
@@ -1080,6 +1087,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   // Mascote dentro do painel: "pula" para o lugar (slot da capa / chamada / balão).
   const panelMascot = (size: number) => (
     <motion.div
+      data-notch-panel-mascot="true"
       className="shrink-0"
       initial={{ scale: 0.4, rotate: -14, opacity: 0 }}
       animate={{ scale: 1, rotate: 0, opacity: 1 }}
@@ -1102,10 +1110,6 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         waveAt={notchEvent && notchEventWaves(notchEvent.kind) ? notchEvent.at : undefined}
         celebrateAt={notchEvent?.kind === "achievement" ? notchEvent.at : undefined}
         mutedSpeechRef={mutedSpeechRef}
-        audioRef={audioRef}
-        persona={musicPersona}
-        identifying={musicIdentifying}
-        danceIntensity={config.danceIntensity}
         isSpeaking={mouthSpeaking}
         onClick={handleMascotPoke}
       />
@@ -1153,9 +1157,14 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
       // cabeçalho estilo Coucou: aba "Início" à esquerda, atalhos à direita
       return (
         <div className="flex w-full items-center justify-between">
-          <span className="flex h-8 items-center gap-1.5 rounded-full bg-white/[0.10] px-3 text-[12px] font-semibold text-white">
-            <Home size={14} />
-            Início
+          <span
+            role="tab"
+            aria-selected="true"
+            aria-label="Início"
+            title="Início"
+            className="flex h-9 w-11 items-center justify-center rounded-full bg-white/[0.10] text-white"
+          >
+            <Home size={17} />
           </span>
           <div className="flex items-center gap-1 text-white/60">
             {config.showClock && (
@@ -1255,7 +1264,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             backdropFilter: frosted ? "blur(18px)" : undefined,
             WebkitBackdropFilter: frosted ? "blur(18px)" : undefined,
           }}
-          className="relative text-white"
+          className={`relative text-white ${overloaded ? "notch-shake" : ""}`}
         >
           <div
             style={
@@ -1338,7 +1347,20 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                       )}
                     </section>
                   )}
-                  <div className={dropzone.active ? "hidden" : "contents"}>
+                  {overloaded && (
+                    <NotchCard>
+                      <div className="flex items-center gap-4">
+                        {config.showMascot && panelMascot(64)}
+                        <div className="min-w-0">
+                          <p className="text-[14px] font-semibold text-white">Muitos cliques de uma vez.</p>
+                          <p className="mt-0.5 text-[12px] leading-snug text-white/55">
+                            Me dá um segundo — volto ao trabalho em três segundos.
+                          </p>
+                        </div>
+                      </div>
+                    </NotchCard>
+                  )}
+                  <div className={dropzone.active || overloaded ? "hidden" : "contents"}>
                   {/* ── Chamada de voz ── */}
                   {isCallActive && (
                     <NotchCard tone="green">

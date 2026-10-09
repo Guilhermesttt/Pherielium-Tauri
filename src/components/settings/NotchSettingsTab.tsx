@@ -7,7 +7,6 @@ import { useSoundEffects } from "../../hooks/useSoundEffects";
 import { MASCOT_MOODS, PherieMascot, getMascotBaseMood, setMascotBaseMood, type MascotMood } from "../notch/PherieMascot";
 import { normalizeHex } from "../../mascot/mascotColor";
 import {
-  DANCE_INTENSITY_OPTIONS,
   DEFAULT_NOTCH_CONFIG,
   NOTCH_BODY_PRESETS,
   NOTCH_SHAPES,
@@ -220,76 +219,6 @@ export const NotchSettingsTab: React.FC = () => {
               />
             }
           />
-
-          <div className="mt-5 rounded-2xl bg-[var(--surface-base)] p-4">
-            <div className="text-[13px] font-medium text-white/90">Música</div>
-            <p className="mt-0.5 text-[11.5px] leading-relaxed text-white/45">
-              A Pherie dança no ritmo do que toca no PC. A intensidade controla o quanto ela se mexe.
-            </p>
-            <div role="radiogroup" aria-label="Intensidade da dança" className="mt-3 flex gap-2">
-              {DANCE_INTENSITY_OPTIONS.map((o) => (
-                <button
-                  key={o.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={draft.danceIntensity === o.id}
-                  disabled={off || !draft.showMascot}
-                  onClick={() => {
-                    update({ danceIntensity: o.id });
-                    playSound("select");
-                  }}
-                  className={cn(
-                    "h-9 rounded-full px-4 text-[12.5px] font-semibold transition-colors cursor-pointer disabled:opacity-45",
-                    draft.danceIntensity === o.id
-                      ? "bg-white text-black"
-                      : "bg-white/[0.08] text-white/70 hover:bg-white/[0.14] hover:text-white",
-                  )}
-                >
-                  {o.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-4 border-t border-[var(--border-subtle)] pt-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-[13px] font-medium text-white/90">Identificar músicas</div>
-                  <p className="mt-0.5 text-[11.5px] leading-relaxed text-white/45">
-                    Grava cerca de 5 segundos do áudio do PC (nunca o microfone) e envia à AudD uma vez por música
-                    para saber o gênero. Metal ganha cara de mau com fogo, pop fica animada, lo-fi e jazz ficam
-                    relaxadas.
-                  </p>
-                </div>
-                <Switch
-                  checked={draft.musicIdentify}
-                  onCheckedChange={toggle("musicIdentify")}
-                  disabled={off || !draft.showMascot}
-                />
-              </div>
-              {draft.musicIdentify && (
-                <div className="mt-3">
-                  <label className="text-[12px] text-white/60" htmlFor="audd-key">
-                    Chave da AudD (audd.io)
-                  </label>
-                  <input
-                    id="audd-key"
-                    type="password"
-                    autoComplete="off"
-                    spellCheck={false}
-                    value={draft.auddApiKey}
-                    onChange={(e) => update({ auddApiKey: e.target.value })}
-                    placeholder="Cole sua chave aqui"
-                    className="mt-1 h-10 w-full rounded-xl bg-[var(--surface-raised)] px-3 text-[13px] text-white outline-none ring-1 ring-[color:var(--border-subtle)] placeholder:text-white/30 focus:ring-2 focus:ring-white/30"
-                  />
-                  <p className="mt-1.5 text-[11.5px] text-white/40">
-                    {draft.auddApiKey
-                      ? "A chave fica só neste computador. Sem identificação, a Pherie usa o jeito padrão."
-                      : "Sem a chave, nada é enviado e a Pherie usa o jeito padrão."}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
 
           <div className="mt-5">
             <div className="text-[13px] font-medium text-white/90 mb-2.5">Cor do corpo</div>

@@ -208,3 +208,23 @@ test("notch mostra pedido de amizade, mensagens agrupadas e conquista", async ({
   }
   await context.close();
 });
+
+test("notch: cliques demais na Pherie deixam o notch tonto por 3 s", async ({ browser }) => {
+  mkdirSync(outDir, { recursive: true });
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  await installHarness(context, { tauri: false });
+  const page = await context.newPage();
+  await page.goto("/");
+  const notch = page.locator("[data-notch-root]");
+  await expect(notch).toBeVisible({ timeout: 45_000 });
+  await page.waitForTimeout(1500);
+  await notch.locator("div.cursor-pointer").first().click();
+  await page.waitForTimeout(1200);
+  const mascot = notch.locator("[data-notch-panel-mascot]").first();
+  await expect(mascot).toBeAttached();
+  const box = (await mascot.boundingBox())!;
+  for (let i = 0; i < 3; i++) await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(notch.getByText("Muitos cliques de uma vez.")).toBeVisible();
+  await page.screenshot({ path: path.join(outDir, "notch-overloaded.png"), clip: { x: 660, y: 0, width: 600, height: 300 } });
+  await expect(notch.getByText("Muitos cliques de uma vez.")).toBeHidden({ timeout: 5000 });
+});
