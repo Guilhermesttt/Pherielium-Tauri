@@ -85,9 +85,36 @@ pub async fn library_clear_steam_id(uid: String) -> Result<(), String> {
     game_library::clear_steam_id(&uid).map_err(|e| e.to_string())
 }
 
+/// Chave da Steam Web API: lida do ambiente em tempo de execução (nunca embutida no binário).
+/// Em builds de desenvolvimento também aceita `STEAM_API_KEY` do arquivo `.env` na raiz do projeto.
+fn steam_api_key() -> Result<String, String> {
+    if let Ok(v) = std::env::var("STEAM_API_KEY") {
+        let v = v.trim().to_string();
+        if !v.is_empty() {
+            return Ok(v);
+        }
+    }
+    #[cfg(debug_assertions)]
+    {
+        for path in [".env", "../.env"] {
+            if let Ok(text) = std::fs::read_to_string(path) {
+                for line in text.lines() {
+                    if let Some(v) = line.trim().strip_prefix("STEAM_API_KEY=") {
+                        let v = v.trim().trim_matches('"').to_string();
+                        if !v.is_empty() {
+                            return Ok(v);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Err("STEAM_API_KEY nao configurada.".into())
+}
+
 #[command]
 pub async fn steam_fetch_public_library(steam_id: String) -> Result<Value, String> {
-    let api_key = "72378BD4970B2C903ABFD0C0292A38BF";
+    let api_key = steam_api_key()?;
     let url = format!(
         "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={}&steamid={}&include_appinfo=1&include_played_free_games=1&format=json",
         api_key,
@@ -205,7 +232,7 @@ pub async fn steam_fetch_player_achievements_batch(
     steam_id: String,
     app_ids: Vec<String>,
 ) -> Result<Value, String> {
-    let api_key = "72378BD4970B2C903ABFD0C0292A38BF";
+    let api_key = steam_api_key()?;
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
         .build()
@@ -220,6 +247,7 @@ pub async fn steam_fetch_player_achievements_batch(
         let s_id = clean_steam_id.clone();
         let app = app_id.trim().to_string();
         let sem = semaphore.clone();
+        let api_key = api_key.clone();
 
         tasks.push(tokio::spawn(async move {
             let _permit = sem.acquire().await.ok()?;
