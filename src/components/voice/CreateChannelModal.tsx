@@ -227,8 +227,8 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
 
   const handleCreate = async () => {
     const trimmedName = roomName.trim() || fallbackDefaultName;
-    if (isPrivate && password.trim().length > 0 && password.trim().length < 3) {
-      setError("A senha da sala deve ter pelo menos 3 caracteres.");
+    if (isPrivate && password.trim().length < 3) {
+      setError("Uma sala privada precisa de senha (mínimo de 3 caracteres).");
       return;
     }
 
@@ -545,7 +545,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                 <label className="flex items-center justify-between text-[11px] font-bold text-white/70">
                   <span className="flex items-center gap-1.5">
                     <KeyRound className="h-3.5 w-3.5 text-amber-400" />
-                    Senha opcional
+                    Senha da sala
                   </span>
                 </label>
                 <div className="relative flex items-center">
