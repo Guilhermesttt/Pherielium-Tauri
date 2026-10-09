@@ -1,7 +1,7 @@
 {
   "name": "pherielium-tauri",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Pherielium Game Hub — Tauri edition with Rust backend",
   "author": "Guilherme Sant'Ana",
   "type": "module",
