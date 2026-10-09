@@ -18,7 +18,8 @@ type VoiceRoomRow = {
   room_name: string;
   category: RoomCategory;
   is_private: boolean;
-  password_hash?: string | null;
+  /** coluna gerada (migration 20261009100500): evita trafegar o hash da senha */
+  has_password?: boolean | null;
   max_participants: number;
   status: "active" | "ended";
   created_at: string;
@@ -54,7 +55,7 @@ const mapVoiceRoomFromDb = (
     name: row.room_name,
     category: row.category,
     isPrivate: row.is_private,
-    hasPassword: Boolean(row.password_hash),
+    hasPassword: Boolean(row.has_password),
     maxParticipants: row.max_participants,
     status: row.status,
     createdAt: row.created_at,
@@ -150,7 +151,7 @@ const listPublicVoiceRoomsViaSupabase = async (filters?: {
   let query = supabase
     .from("voice_rooms")
     .select(`
-      id, host_uid, room_name, category, is_private, password_hash,
+      id, host_uid, room_name, category, is_private, has_password,
       max_participants, status, created_at, updated_at, icon, avatar_url, theme_color,
       voice_room_members ( user_id, display_name, avatar_url, joined_at, removed_at )
     `)
@@ -181,7 +182,7 @@ const getMyVoiceRoomsViaSupabase = async (): Promise<VoiceRoom[]> => {
   const { data, error } = await supabase
     .from("voice_rooms")
     .select(`
-      id, host_uid, room_name, category, is_private, password_hash,
+      id, host_uid, room_name, category, is_private, has_password,
       max_participants, status, created_at, updated_at, icon, avatar_url, theme_color,
       voice_room_members ( user_id, display_name, avatar_url, joined_at, removed_at )
     `)

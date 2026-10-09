@@ -416,14 +416,24 @@ export const toggleChatReaction = async (message: ChatMessage, emoji: string, us
   if (!message.id || message.id.startsWith("local-") || message.id.startsWith("fast_")) {
     throw new Error("Mensagem ainda não confirmada.");
   }
-  const reactions = { ...(message.reactions || {}) };
-  const current = new Set(reactions[emoji] || []);
-  if (current.has(userId)) current.delete(userId);
-  else current.add(userId);
-  reactions[emoji] = Array.from(current);
-  if (reactions[emoji].length === 0) delete reactions[emoji];
-  const { error } = await supabase.from("chat_messages").update({ reactions }).eq("id", message.id);
-  if (error) throw new Error(error.message);
+  // RPC atômica (migration 20261009100600): duas reações simultâneas não se sobrescrevem mais.
+  // Se o RPC ainda não existir no banco, cai no caminho antigo (ler, mexer e gravar).
+  let reactions: Record<string, string[]>;
+  const rpc = await supabase.rpc("toggle_chat_reaction", { p_message_id: message.id, p_emoji: emoji });
+  if (!rpc.error) {
+    reactions = (rpc.data as Record<string, string[]> | null) ?? {};
+  } else if (rpc.error.code === "PGRST202" || /does not exist|Could not find the function/i.test(rpc.error.message)) {
+    reactions = { ...(message.reactions || {}) };
+    const current = new Set(reactions[emoji] || []);
+    if (current.has(userId)) current.delete(userId);
+    else current.add(userId);
+    reactions[emoji] = Array.from(current);
+    if (reactions[emoji].length === 0) delete reactions[emoji];
+    const { error } = await supabase.from("chat_messages").update({ reactions }).eq("id", message.id);
+    if (error) throw new Error(error.message);
+  } else {
+    throw new Error(rpc.error.message);
+  }
   const next = { ...message, reactions };
   await broadcastMessageUpdate(next);
   return next;
