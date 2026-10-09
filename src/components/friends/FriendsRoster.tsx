@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faDiscord } from "@fortawesome/free-brands-svg-icons";
 import { Gamepad2, Loader2, MessageSquare, Phone, Search, User, UserMinus, Video } from "lucide-react";
 import type { Game, SocialFriend } from "../../types/domain";
 import type { SoundEffectType } from "../../hooks/useSoundEffects";
@@ -308,7 +310,10 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
 
         {discord && (
           <div className="mt-8 flex items-center justify-between gap-3 rounded-[20px] bg-[var(--surface-raised)] px-5 py-3.5 text-[14px] border border-white/[0.10]">
-            <span className="text-white/60">{discord.connected ? "Discord conectado" : "Veja seus amigos do Discord aqui"}</span>
+            <span className="flex items-center gap-2.5 text-white/60">
+              <FontAwesomeIcon icon={faDiscord} className="h-[18px] w-[18px] shrink-0 text-[#8c9eff]" aria-hidden />
+              {discord.connected ? "Discord conectado" : "Veja seus amigos do Discord aqui"}
+            </span>
             {!discord.connected && (
               <button
                 type="button"

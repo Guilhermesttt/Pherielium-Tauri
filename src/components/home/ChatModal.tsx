@@ -35,6 +35,7 @@ import type { SoundEffectType } from "../../hooks/useSoundEffects";
 import { CONTROLLER_KEYBOARD_VISIBILITY_EVENT } from "../../utils/controllerTextInput";
 import { CallInviteCard, parseCallInviteText } from "../voice/CallInviteCard";
 import type { CallInviteMeta } from "../../types/voice-governance";
+import { SPRINGS } from "../../design-system/motion";
 import { bubbleOrigin, groupInfo, messageSignature } from "./chat/bubbles";
 import { useBubbleSpring } from "./chat/useBubbleSpring";
 
@@ -382,7 +383,7 @@ const TypingDots: React.FC = () => {
       from: { y: 0 },
       to: [{ y: -4 }, { y: 0 }],
       delay: i * 130,
-      config: { tension: 320, friction: 11 },
+      config: { ...SPRINGS.bouncy, friction: 11 },
     }),
     [],
   );
@@ -736,7 +737,7 @@ const SendButton: React.FC<{ disabled: boolean }> = ({ disabled }) => {
   const style = useSpring({
     scale: disabled ? 0.86 : 1,
     opacity: disabled ? 0.38 : 1,
-    config: { tension: 420, friction: 16 },
+    config: SPRINGS.snappy,
   });
   return (
     <animated.button

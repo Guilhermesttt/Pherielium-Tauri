@@ -1,3 +1,5 @@
+import { SPRINGS } from "../../../design-system/motion";
+
 /**
  * Lógica pura do chat: agrupamento de mensagens consecutivas e a física dos balões (react-spring).
  * Sem React aqui, para testar.
@@ -52,9 +54,9 @@ export function bubbleFrom(isMe: boolean) {
 
 export const BUBBLE_REST = { opacity: 1, x: 0, y: 0, scale: 1 } as const;
 
-/** Enviada: mola mais solta (passa um pouco do ponto e assenta). Recebida: mais contida. */
-export const SEND_SPRING = { tension: 330, friction: 17, mass: 0.9 } as const;
-export const RECEIVE_SPRING = { tension: 380, friction: 24, mass: 0.9 } as const;
+/** Enviada: mola solta (passa um pouco do ponto e assenta). Recebida: contida. */
+export const SEND_SPRING = SPRINGS.bouncy;
+export const RECEIVE_SPRING = SPRINGS.soft;
 
 /** Origem da escala: o balão cresce a partir do canto de onde "saiu". */
 export const bubbleOrigin = (isMe: boolean) => (isMe ? "bottom right" : "bottom left");
