@@ -26,7 +26,8 @@
       }
     ],
     "security": {
-      "csp": null,
+      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https: cp-media: asset: http://asset.localhost; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' http://ipc.localhost ipc: tauri: asset: http://asset.localhost https://checkpoint-launcher.onrender.com https://api.github.com https://*.supabase.co wss://*.supabase.co https://*.livekit.cloud wss://*.livekit.cloud https://*.metered.ca wss://*.metered.ca http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:*; media-src 'self' data: blob: https: cp-media: asset: http://asset.localhost; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
+      "devCsp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https: cp-media: asset: http://asset.localhost; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' http://ipc.localhost ipc: tauri: asset: http://asset.localhost https://checkpoint-launcher.onrender.com https://api.github.com https://*.supabase.co wss://*.supabase.co https://*.livekit.cloud wss://*.livekit.cloud https://*.metered.ca wss://*.metered.ca http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:* wss://localhost:* wss://127.0.0.1:*; media-src 'self' data: blob: https: cp-media: asset: http://asset.localhost; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'",
       "capabilities": ["default", "overlay"]
     }
   },

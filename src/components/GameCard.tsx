@@ -55,7 +55,7 @@ const GameCard: React.FC<GameCardProps> = ({
   playSound,
 }) => {
   const [imageFailed, setImageFailed] = useState(false);
-  const [useFallbackSteamUrl, setUseFallbackSteamUrl] = useState(false);
+  const [chainIndex, setChainIndex] = useState(0);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -77,28 +77,34 @@ const GameCard: React.FC<GameCardProps> = ({
   // Reseta erros de imagem quando a prop `image` muda (ex: após edição do card)
   useEffect(() => {
     setImageFailed(false);
-    setUseFallbackSteamUrl(false);
+    setChainIndex(0);
   }, [image]);
 
+  // Cadeia de capas da Steam: nem todo jogo tem o pôster vertical (jogos antigos/removidos),
+  // então tenta as variantes em ordem e, no fim, o banner de loja (que quase todo jogo tem).
+  const steamChain = useMemo(() => {
+    if (!steamAppId) return [] as string[];
+    const base = `steam/apps/${steamAppId}`;
+    return [
+      ...(image ? [image] : []),
+      `https://shared.akamai.steamstatic.com/store_item_assets/${base}/library_600x900_2x.jpg`,
+      `https://cdn.cloudflare.steamstatic.com/${base}/library_600x900.jpg`,
+      `https://cdn.cloudflare.steamstatic.com/${base}/header.jpg`,
+      `https://cdn.cloudflare.steamstatic.com/${base}/capsule_616x353.jpg`,
+    ].filter((u, i, all) => all.indexOf(u) === i);
+  }, [steamAppId, image]);
+
   const currentImageSrc = useMemo(() => {
-    if (steamAppId && !imageFailed) {
-      if (useFallbackSteamUrl) {
-        return `https://cdn.cloudflare.steamstatic.com/steam/apps/${steamAppId}/library_600x900.jpg`;
-      }
-      return image || `https://cdn.cloudflare.steamstatic.com/steam/apps/${steamAppId}/library_600x900.jpg`;
-    }
+    if (steamAppId) return imageFailed ? "" : steamChain[chainIndex] ?? "";
     return image || "";
-  }, [steamAppId, imageFailed, useFallbackSteamUrl, image]);
+  }, [steamAppId, imageFailed, steamChain, chainIndex, image]);
 
   const hasAllFailed = imageFailed || !currentImageSrc;
 
   const handleImageError = useCallback(() => {
-    if (steamAppId && !useFallbackSteamUrl) {
-      setUseFallbackSteamUrl(true);
-    } else {
-      setImageFailed(true);
-    }
-  }, [steamAppId, useFallbackSteamUrl]);
+    if (steamAppId && chainIndex < steamChain.length - 1) setChainIndex((i) => i + 1);
+    else setImageFailed(true);
+  }, [steamAppId, chainIndex, steamChain.length]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
