@@ -173,7 +173,7 @@ export const ConsoleLibraryTabs: React.FC<ConsoleLibraryTabsProps> = ({
                     }
                   }}
                   title={tab.label}
-                  className={`relative flex h-[calc(var(--control-h)-10px)] items-center gap-1.5 px-[var(--space-4)] rounded-full text-[length:var(--fs-label)] font-bold tracking-wider uppercase whitespace-nowrap transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] cursor-pointer select-none ${
+                  className={`relative flex h-[calc(var(--control-h)-10px)] items-center gap-1.5 px-[var(--space-4)] rounded-full text-[length:var(--fs-label)] font-semibold whitespace-nowrap transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] cursor-pointer select-none ${
                     isActive
                       ? "text-white"
                       : "text-[#8E8E93] hover:text-white/90 hover:bg-white/[0.04]"

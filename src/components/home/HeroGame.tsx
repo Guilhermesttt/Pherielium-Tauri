@@ -124,7 +124,7 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
               whileTap={{ scale: 0.96 }}
               transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
               onClick={handleLaunchClick}
-              className={`flex items-center gap-3 px-8 sm:px-10 py-3.5 rounded-2xl font-display font-extrabold text-sm sm:text-base tracking-wider uppercase cursor-pointer ${
+              className={`flex items-center gap-3 px-8 sm:px-10 py-3.5 rounded-full font-display font-semibold text-base sm:text-[17px] cursor-pointer ${
                 isRunning
                   ? "bg-emerald-600/80 text-emerald-100 border border-emerald-400/50 shadow-[0_0_28px_rgba(16,185,129,0.4)] transition-all"
                   : "btn-play"
@@ -152,7 +152,7 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
             <button
               type="button"
               onClick={handleDetailsClick}
-              className="flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 text-white/80 hover:text-white text-xs font-bold uppercase tracking-wider backdrop-blur-xl transition-all cursor-pointer"
+              className="flex items-center gap-2 px-6 py-3.5 rounded-full bg-white/[0.07] hover:bg-white/[0.13] border border-white/10 hover:border-white/25 text-white/85 hover:text-white text-[15px] font-semibold backdrop-blur-xl transition-all cursor-pointer"
             >
               <span>Detalhes</span>
             </button>

@@ -311,7 +311,7 @@ export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> =
   return (
     <section aria-label="Continuar jogando" className="px-[var(--safe-x)] pt-[var(--gap-section)] relative group/section">
       <div className="mb-3 flex flex-col">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/34">
+        <p className="text-[12px] font-medium text-white/45">
           Retomar
         </p>
         <div className="mt-1 flex items-baseline gap-3">

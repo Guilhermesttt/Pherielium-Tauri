@@ -2777,7 +2777,7 @@ const Home: React.FC = () => {
         onWheel={handleGameRailWheel}
       >
         <div className="px-[var(--safe-x)] flex items-center justify-between">
-          <h2 className="text-[length:var(--fs-label)] font-bold tracking-[var(--tracking-label)] uppercase text-white/60 font-display">
+          <h2 className="text-[15px] font-semibold text-white/75 font-display">
             {activeCategory === "ALL" ? "Biblioteca" : activePlatformConfig.label}
           </h2>
           <div className="flex items-center gap-[var(--gap-section)]">
