@@ -302,12 +302,22 @@ try {
             $status = $info.PlaybackStatus.ToString()
             $playbackType = $props.PlaybackType.ToString()
             $isPlay = ($status -eq "Playing")
+            $posSec = 0.0; $durSec = 0.0; $updMs = 0
+            try {
+                $tl = $session.GetTimelineProperties()
+                $durSec = [math]::Max(0.0, $tl.EndTime.TotalSeconds - $tl.StartTime.TotalSeconds)
+                $posSec = [math]::Max(0.0, $tl.Position.TotalSeconds - $tl.StartTime.TotalSeconds)
+                $updMs = $tl.LastUpdatedTime.ToUnixTimeMilliseconds()
+            } catch {}
             $item = [PSCustomObject]@{
                 hasMedia = $true
                 title = $title
                 artist = $props.Artist
                 isPlaying = $isPlay
                 playbackType = if ($playbackType -eq "Video") { "video" } else { "music" }
+                positionSeconds = $posSec
+                durationSeconds = $durSec
+                updatedAtMs = $updMs
             }
             if ($isPlay) { $found = $item; break }
             elseif ($null -eq $found) { $found = $item }

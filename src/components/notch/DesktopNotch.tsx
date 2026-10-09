@@ -42,6 +42,8 @@ import { achievementBoxShadow, tierStyle } from "./achievementTier";
 import { subscribeTicker } from "../../mascot/ticker";
 import { useSituationMood } from "../../mascot/useSituationMood";
 import { MusicWaveform } from "./MusicWaveform";
+import { MediaProgress } from "./live/MediaProgress";
+import { parseTimeline, type MediaTimeline } from "./live/progressMath";
 import {
   DIZZY_DURATION_MS,
   distanceToRect,
@@ -541,6 +543,8 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   // Multimídia EXCLUSIVA do PC (Windows GSMTC: Spotify, YouTube, Chrome, etc.)
   // NUNCA identifica a música ou temas internos do Hub!
   const [mediaState, setMediaState] = useState<DetectedMediaState>(EMPTY_MEDIA);
+  // linha do tempo da faixa (posição/duração): em ref, a barra de progresso anda sem re-render do notch
+  const timelineRef = useRef<MediaTimeline | null>(null);
   // Só troca o estado quando algo mudou de fato (o poll roda a cada 1,5s).
   const applyMedia = useCallback((next: DetectedMediaState) => {
     setMediaState((prev) => (sameMedia(prev, next) ? prev : next));
@@ -581,7 +585,10 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     const MISSES_TO_CLEAR = 3;
     const clearIfStillEmpty = () => {
       misses += 1;
-      if (active && misses >= MISSES_TO_CLEAR) applyMedia(EMPTY_MEDIA);
+      if (active && misses >= MISSES_TO_CLEAR) {
+        timelineRef.current = null;
+        applyMedia(EMPTY_MEDIA);
+      }
     };
 
     const pollPcMedia = async () => {
@@ -596,6 +603,9 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             playbackType?: string;
             sourceApp?: string;
             thumbnail?: string;
+            positionSeconds?: number;
+            durationSeconds?: number;
+            updatedAtMs?: number;
           }>("system_get_media_info");
 
           if (!active) return;
@@ -608,6 +618,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             }
 
             misses = 0;
+            timelineRef.current = parseTimeline(info, Boolean(info.isPlaying), Date.now());
             applyMedia({
               hasMedia: true,
               type: info.playbackType === "video" ? "video" : "music",
@@ -1485,8 +1496,13 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                         <div className="min-w-0 flex-1">
                           <p className="text-[14px] font-semibold text-white truncate leading-tight">{mediaState.title}</p>
                           <p className="text-[11px] text-white/55 truncate leading-snug">{mediaState.artist}</p>
-                        
-                      <div className="mt-2 flex items-center gap-4">
+                        </div>
+                        <Equalizer playing={isPcMediaPlaying} height={18} />
+                      </div>
+                      <div className="mt-3">
+                        <MediaProgress timelineRef={timelineRef} />
+                      </div>
+                      <div className="mt-3 flex items-center justify-center gap-7">
                         <button
                           type="button"
                           onClick={handleSkipPrev}
@@ -1499,7 +1515,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                         <button
                           type="button"
                           onClick={handleTogglePlayPause}
-                          className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-all active:scale-90"
+                          className="w-11 h-11 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-all active:scale-90"
                           title={mediaState.isPlaying ? "Pausar" : "Reproduzir"}
                           aria-label={mediaState.isPlaying ? "Pausar" : "Reproduzir"}
                         >
@@ -1518,11 +1534,6 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                         >
                           <SkipForward size={18} className="fill-current" />
                         </button>
-                        <span className="ml-auto pr-1">
-                          <Equalizer playing={isPcMediaPlaying} height={18} />
-                        </span>
-                      </div>
-                        </div>
                       </div>
                       <div className="-mx-3 -mb-3 mt-2" style={{ maskImage: "linear-gradient(180deg, transparent 0%, #000 55%)", WebkitMaskImage: "linear-gradient(180deg, transparent 0%, #000 55%)" }}>
                         <MusicWaveform playing={isPcMediaPlaying} />
