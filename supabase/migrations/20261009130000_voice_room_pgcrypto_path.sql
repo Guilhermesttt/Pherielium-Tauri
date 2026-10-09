@@ -57,7 +57,7 @@ begin
     coalesce(nullif(trim(p_icon), ''), '🎮'),
     p_avatar_url,
     coalesce(nullif(trim(p_theme_color), ''), '#8B5CF6'),
-    greatest(2, least(coalesce(p_max_participants, 10), 50)),
+    greatest(2, least(coalesce(p_max_participants, 10), 10)),
     'active'
   )
   returning * into v_room;
