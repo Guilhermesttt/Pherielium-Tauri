@@ -1,3 +1,4 @@
+pub mod achievement_util;
 pub mod achievement_watcher;
 pub mod achievements;
 pub mod audio_analysis;

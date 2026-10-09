@@ -26,31 +26,19 @@ struct SimpleDefinition {
     pub name: String,
     pub description: String,
     pub icon: String,
+    /// raridade global (% de jogadores com a conquista), quando a definição trouxer
+    pub percent: Option<f64>,
 }
 
-fn achievement_dir() -> PathBuf {
-    dirs::data_local_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("Pherielium")
-        .join("achievements")
+/// Raridade da definição (`percent` ou `rarity.percent`); `None` quando não informada.
+fn definition_percent(item: &serde_json::Value) -> Option<f64> {
+    item.get("percent")
+        .or_else(|| item.get("rarity").and_then(|r| r.get("percent")))
+        .and_then(|v| v.as_f64())
+        .filter(|p| p.is_finite() && *p > 0.0 && *p <= 100.0)
 }
 
-fn progress_path(game_id: &str) -> PathBuf {
-    achievement_dir().join(format!("{game_id}_progress.json"))
-}
-
-fn definitions_path(game_id: &str) -> PathBuf {
-    achievement_dir().join(format!("{game_id}_definitions.json"))
-}
-
-fn now_iso() -> String {
-    use std::time::UNIX_EPOCH;
-    let secs = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    format!("{secs}Z")
-}
+use super::achievement_util::{atomic_write, achievement_dir, definitions_path, now_iso, progress_path};
 
 fn load_definitions_for_game(
     game_id: &str,
@@ -72,7 +60,7 @@ fn load_definitions_for_game(
                         let name = item.get("name").and_then(|v| v.as_str()).unwrap_or(id).to_string();
                         let description = item.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string();
                         let icon = item.get("icon").and_then(|v| v.as_str()).unwrap_or("").to_string();
-                        map.insert(id.to_string(), SimpleDefinition { name, description, icon });
+                        map.insert(id.to_string(), SimpleDefinition { name, description, icon, percent: definition_percent(item) });
                     }
                 }
             }
@@ -90,6 +78,7 @@ fn load_definitions_for_game(
                             name: gd.name,
                             description: gd.description,
                             icon: gd.icon,
+                            percent: None,
                         },
                     );
                 }
@@ -141,9 +130,8 @@ fn record_local_achievement_unlock(
         obj.insert("updatedAt".to_string(), json!(unlocked_at));
     }
 
-    if let Ok(serialized) = serde_json::to_string_pretty(&data) {
-        let _ = std::fs::write(&p_path, serialized);
-    }
+    let serialized = serde_json::to_string_pretty(&data).map_err(|e| e.to_string())?;
+    atomic_write(&p_path, serialized.as_bytes()).map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -276,10 +264,10 @@ pub fn start_achievement_watcher(
                 for (ach_id, _earned_time) in newly_unlocked {
                     let unlock_time_str = now_iso();
 
-                    let (name, description, icon) = if let Some(def) = definitions.get(&ach_id) {
-                        (def.name.clone(), def.description.clone(), def.icon.clone())
+                    let (name, description, icon, percent) = if let Some(def) = definitions.get(&ach_id) {
+                        (def.name.clone(), def.description.clone(), def.icon.clone(), def.percent)
                     } else {
-                        (ach_id.clone(), "Conquista desbloqueada!".to_string(), String::new())
+                        (ach_id.clone(), "Conquista desbloqueada!".to_string(), String::new(), None)
                     };
 
                     let _ = record_local_achievement_unlock(
@@ -291,7 +279,9 @@ pub fn start_achievement_watcher(
                         &unlock_time_str,
                     );
 
-                    let unlock_payload = json!({
+                    // Sem `tier` fixo: o overlay deriva o tier da raridade (`percent`). Sem raridade, ele
+                    // usa o padrão neutro dele em vez de fingir que toda conquista é ouro.
+                    let mut unlock_payload = json!({
                         "gameId": game_id_clone,
                         "achievementId": ach_id,
                         "name": name,
@@ -300,8 +290,10 @@ pub fn start_achievement_watcher(
                         "icon": icon,
                         "iconPath": icon,
                         "unlockedAt": unlock_time_str,
-                        "tier": "gold"
                     });
+                    if let (Some(p), Some(obj)) = (percent, unlock_payload.as_object_mut()) {
+                        obj.insert("percent".to_string(), json!(p));
+                    }
 
                     // Emit to main renderer window
                     let _ = app_clone.emit("achievement:realtime-unlock", unlock_payload.clone());
@@ -344,5 +336,19 @@ pub fn get_active_watcher_keys(app: &AppHandle) -> Vec<String> {
         state.active_watchers.lock().keys().cloned().collect()
     } else {
         Vec::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn definition_percent_reads_both_shapes_and_rejects_garbage() {
+        assert_eq!(definition_percent(&json!({ "percent": 3.5 })), Some(3.5));
+        assert_eq!(definition_percent(&json!({ "rarity": { "percent": 12.0 } })), Some(12.0));
+        assert_eq!(definition_percent(&json!({ "percent": 0 })), None);
+        assert_eq!(definition_percent(&json!({ "percent": 250 })), None);
+        assert_eq!(definition_percent(&json!({})), None);
     }
 }

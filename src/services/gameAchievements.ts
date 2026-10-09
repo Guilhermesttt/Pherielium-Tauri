@@ -1,3 +1,4 @@
+import { parseUnlockedAtSeconds } from "../utils/unlockTime";
 import type { Game } from "../types/domain";
 import type { LauncherLanguage } from "../context/PreferencesContext";
 import { resolveEpicAchievementAppName } from "./launcher";
@@ -136,7 +137,7 @@ function mergeDefsWithLocalProgress(
     const emuState = retroactiveState[def.id] || retroactiveState[def.id.toLowerCase()];
     const achieved = Boolean(unlocked || emuState?.earned);
     const unlockTime = unlocked?.unlockedAt
-      ? Math.floor(new Date(unlocked.unlockedAt).getTime() / 1000)
+      ? parseUnlockedAtSeconds(unlocked.unlockedAt)
       : emuState?.earnedTime || 0;
     return {
       apiName: def.id,
@@ -345,7 +346,7 @@ async function loadSteamAchievements(
           def.id.toLowerCase() === achievement.apiName.toLowerCase());
         const achieved = Boolean(saved || emu?.earned || (prevLocal as any)?.achieved);
         const unlockTime = saved?.unlockedAt
-          ? Math.floor(Date.parse(saved.unlockedAt) / 1000)
+          ? parseUnlockedAtSeconds(saved.unlockedAt)
           : emu?.earnedTime || (prevLocal as any)?.unlockTime || 0;
         return {
           ...achievement,
@@ -359,7 +360,7 @@ async function loadSteamAchievements(
         const emu = retroactiveState[def.id] || retroactiveState[def.id.toLowerCase()];
         const achieved = Boolean(saved || emu?.earned);
         const unlockTime = saved?.unlockedAt
-          ? Math.floor(Date.parse(saved.unlockedAt) / 1000)
+          ? parseUnlockedAtSeconds(saved.unlockedAt)
           : emu?.earnedTime || 0;
         return {
           apiName: def.id,
@@ -515,7 +516,7 @@ export function patchGameAchievementUnlock(
     const unlockTime = payload.earnedTime && payload.earnedTime > 0
       ? payload.earnedTime
       : payload.unlockedAt
-        ? Math.floor(Date.parse(payload.unlockedAt) / 1000)
+        ? parseUnlockedAtSeconds(payload.unlockedAt) || Math.floor(Date.now() / 1000)
         : Math.floor(Date.now() / 1000);
     return { ...achievement, achieved: true, unlockTime };
   });

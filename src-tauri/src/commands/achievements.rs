@@ -58,20 +58,7 @@ pub struct AchievementState {
 
 // ── Local save-file paths ────────────────────────────────────────────────────
 
-fn achievement_dir() -> PathBuf {
-    dirs::data_local_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("Pherielium")
-        .join("achievements")
-}
-
-fn definitions_path(game_id: &str) -> PathBuf {
-    achievement_dir().join(format!("{game_id}_definitions.json"))
-}
-
-fn progress_path(game_id: &str) -> PathBuf {
-    achievement_dir().join(format!("{game_id}_progress.json"))
-}
+use super::achievement_util::{achievement_dir, atomic_write, definitions_path, now_iso, progress_path};
 
 // ── Commands ─────────────────────────────────────────────────────────────────
 
@@ -111,8 +98,8 @@ pub async fn achievement_save_definitions(
         "achievements": definitions,
         "steamAppId": steam_app_id
     });
-    std::fs::write(definitions_path(&game_id), serde_json::to_string_pretty(&val).unwrap())
-        .map_err(|e| e.to_string())?;
+    let body = serde_json::to_string_pretty(&val).map_err(|e| e.to_string())?;
+    atomic_write(&definitions_path(&game_id), body.as_bytes()).map_err(|e| e.to_string())?;
     Ok(true)
 }
 
@@ -177,8 +164,8 @@ pub async fn achievement_unlock(
         );
         progress.updated_at = now_str.clone();
         std::fs::create_dir_all(achievement_dir()).map_err(|e| e.to_string())?;
-        std::fs::write(&path, serde_json::to_string_pretty(&progress).unwrap())
-            .map_err(|e| e.to_string())?;
+        let body = serde_json::to_string_pretty(&progress).map_err(|e| e.to_string())?;
+        atomic_write(&path, body.as_bytes()).map_err(|e| e.to_string())?;
 
         let unlock_payload = serde_json::json!({
             "gameId": game_id,
@@ -281,12 +268,3 @@ pub async fn achievement_get_diagnostics(app: tauri::AppHandle) -> Result<serde_
 
 
 // ── Helper ────────────────────────────────────────────────────────────────────
-
-fn now_iso() -> String {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let secs = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-    format!("{}Z", secs) // simplified
-}
