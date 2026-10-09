@@ -1,4 +1,5 @@
 
+import { PUBLIC_PROFILE_COLUMNS } from "./profileColumns";
 import { supabase } from "./supabase";
 import type { Game, UserProfile } from "../types/domain";
 import { apiFetch, apiUrl, getUsableSession } from "./api";
@@ -431,9 +432,9 @@ export const getCheckpointFriendProfile = async (
   if (!profile) {
     const { data: profileRow } = await supabase
       .from("profiles")
-      .select("*")
+      .select(PUBLIC_PROFILE_COLUMNS)
       .eq("uid", uid)
-      .maybeSingle();
+      .maybeSingle<Record<string, any>>();
 
     if (profileRow) {
       profile = {

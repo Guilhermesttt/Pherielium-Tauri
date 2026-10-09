@@ -346,22 +346,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     try {
-      let { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("uid", uid)
-        .maybeSingle();
+      const readOwnProfile = async () => {
+        const res = await supabase.rpc("get_my_profile");
+        const rows = (res.data as Record<string, any>[] | null) ?? [];
+        return { data: rows[0] ?? null, error: res.error };
+      };
+      let { data, error } = await readOwnProfile();
 
       // Se o PostgREST indicar JWT expirado/invalido, tenta UM refresh compartilhado
       // e repete a leitura uma unica vez.
       if (error && isJwtAuthError(error)) {
         const refreshedSession = await refreshSupabaseSessionOnce();
         if (refreshedSession) {
-          const retryRes = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("uid", uid)
-            .maybeSingle();
+          const retryRes = await readOwnProfile();
           data = retryRes.data;
           error = retryRes.error;
         } else {
