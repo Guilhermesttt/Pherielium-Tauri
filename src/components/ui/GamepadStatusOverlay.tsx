@@ -34,13 +34,11 @@ export const GamepadStatusOverlay: React.FC = () => {
 
   const showOverlay = (state: OverlayState, ms = 3000) => {
     if (notchEnabled && state.kind !== "batteryStatus") {
-      // conectar/desconectar não vira barra: o controle fica na aba "Controle" do notch expandido
-      if (state.kind === "connected" || state.kind === "disconnected") return;
       announceControllerFlash({
         kind: state.kind,
-        battery: state.kind === "batteryLow" ? (state.batteryLevel ?? null) : null,
+        battery: state.kind === "connected" || state.kind === "batteryLow" ? (state.batteryLevel ?? null) : null,
         approximate: state.batteryApproximate ?? batteryApproximate,
-        charging: false,
+        charging: state.kind === "connected" ? Boolean(state.batteryCharging) : false,
       });
       return;
     }

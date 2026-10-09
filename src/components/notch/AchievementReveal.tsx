@@ -126,6 +126,15 @@ export const AchievementReveal: React.FC<{ event: NotchEvent; mascot?: React.Rea
 
         {mascot && <div className="shrink-0 self-end">{mascot}</div>}
       </div>
+      {(event.queued ?? 0) > 0 && (
+        <span
+          className="absolute right-2.5 top-2 rounded-full px-2 py-0.5 text-[10.5px] font-bold tabular-nums text-black"
+          style={{ backgroundColor: `rgb(${rgb})` }}
+          title={`${event.queued} ${event.queued === 1 ? "conquista" : "conquistas"} na fila`}
+        >
+          +{event.queued} na fila
+        </span>
+      )}
     </div>
   );
 };

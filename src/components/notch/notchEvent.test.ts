@@ -75,6 +75,25 @@ describe("enqueueNotchEvent", () => {
   });
 });
 
+describe("fila FIFO de conquistas", () => {
+  it("não descarta conquistas e mantém a ordem de chegada", () => {
+    let q: NotchEvent[] = [];
+    for (let i = 0; i < 9; i++) q = enqueueNotchEvent(q, ev({ id: `a${i}`, kind: "achievement" }));
+    expect(q.map((e) => e.id)).toEqual(Array.from({ length: 9 }, (_, i) => `a${i}`));
+  });
+
+  it("avisos comuns são descartados antes das conquistas", () => {
+    let q: NotchEvent[] = [ev({ id: "atual", kind: "friend-request" })];
+    q = enqueueNotchEvent(q, ev({ id: "c1", kind: "achievement" }));
+    q = enqueueNotchEvent(q, ev({ id: "m1", kind: "friend-request" }));
+    q = enqueueNotchEvent(q, ev({ id: "m2", kind: "friend-request" }));
+    q = enqueueNotchEvent(q, ev({ id: "m3", kind: "friend-request" }));
+    expect(q).toHaveLength(NOTCH_EVENT_QUEUE_MAX);
+    expect(q.some((e) => e.id === "c1")).toBe(true);
+    expect(q[0].id).toBe("atual");
+  });
+});
+
 describe("duração", () => {
   it("pedido de amizade fica mais tempo (dá para ler e agir)", () => {
     expect(notchEventDuration("friend-request")).toBeGreaterThan(notchEventDuration("message"));

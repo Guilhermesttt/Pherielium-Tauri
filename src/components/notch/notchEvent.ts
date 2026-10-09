@@ -11,6 +11,7 @@ export type NotchEventKind =
   | "friend-request"
   | "friend-accepted"
   | "friend-online"
+  | "friend-playing"
   | "message"
   | "achievement"
   | "level-up"
@@ -21,6 +22,7 @@ const KINDS: readonly NotchEventKind[] = [
   "friend-request",
   "friend-accepted",
   "friend-online",
+  "friend-playing",
   "message",
   "achievement",
   "level-up",
@@ -47,6 +49,8 @@ export interface NotchEvent {
   friendId?: string;
   /** quantas mensagens foram agrupadas */
   count?: number;
+  /** quantos eventos esperam na fila atrás deste (preenchido ao exibir; vira o "+N") */
+  queued?: number;
   at: number;
 }
 
@@ -54,11 +58,14 @@ export const NOTCH_EVENT_WINDOW_EVENT = "pherielium:notch-event";
 export const NOTCH_EVENT_TAURI_EVENT = "overlay:notch-event";
 export const NOTCH_EVENT_WIDTH = 344;
 export const NOTCH_EVENT_QUEUE_MAX = 4;
+/** Conquistas nunca são descartadas (fila FIFO), mas há um teto para não crescer sem fim. */
+export const NOTCH_EVENT_QUEUE_HARD_MAX = 40;
 
 const DURATION_MS: Record<NotchEventKind, number> = {
   "friend-request": 4800,
   "friend-accepted": 3800,
   "friend-online": 3200,
+  "friend-playing": 4200,
   "capture-saved": 3600,
   message: 3800,
   achievement: 4600,
@@ -77,6 +84,7 @@ export const NOTCH_EVENT_MOOD: Record<NotchEventKind, MascotMood> = {
   "friend-request": "excited",
   "friend-accepted": "happy",
   "friend-online": "happy",
+  "friend-playing": "excited",
   "capture-saved": "wink",
   message: "curious",
   achievement: "excited",
@@ -133,8 +141,14 @@ export function enqueueNotchEvent(queue: readonly NotchEvent[], event: NotchEven
     }
   }
   const next = [...queue, event];
-  // mantém a barra atual (índice 0) e corta os mais antigos da espera
-  while (next.length > max) next.splice(1, 1);
+  // fila FIFO: a barra atual (índice 0) fica; passando do limite, descarta os avisos mais antigos da
+  // espera. Conquistas nunca são descartadas (só o teto absoluto as corta, da mais nova).
+  while (next.length > max) {
+    const drop = next.findIndex((q, i) => i >= 1 && q.kind !== "achievement");
+    if (drop < 0) break;
+    next.splice(drop, 1);
+  }
+  if (next.length > NOTCH_EVENT_QUEUE_HARD_MAX) next.length = NOTCH_EVENT_QUEUE_HARD_MAX;
   return next;
 }
 

@@ -242,7 +242,7 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({
           imageUrl: voiceCall.incomingInvite.callerAvatar || undefined,
           friendId: voiceCall.incomingInvite.callerId,
           duration: 5000,
-          metadata: { notificationId },
+          metadata: { notificationId, callerName: voiceCall.incomingInvite.callerName },
         });
       }
       return;

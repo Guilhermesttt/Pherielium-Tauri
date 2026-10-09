@@ -634,6 +634,10 @@ const OverlayApp: React.FC = () => {
   // Com o notch desativado e sem toast interativo/pílula de chamada não há alvo de
   // clique: o hit-test (e o polling de cursor de 12ms no Rust) fica desligado.
   const showCallPill = !notchConfig.enabled && Boolean(activeCall?.active);
+  // Notch ligado: a chamada recebida aparece nele (atender/recusar), não como cartão
+  const incomingCallToast = notchConfig.enabled
+    ? (toasts.find((t): t is SocialToast => t.kind === "incoming-call") ?? null)
+    : null;
   const hasHitTestTargets = notchConfig.enabled || hasInteractiveToasts || showCallPill;
 
   useEffect(() => {
@@ -923,6 +927,40 @@ const OverlayApp: React.FC = () => {
           },
         }));
       }
+      // Notch ligado: ele avisa no lugar do cartão (a chamada recebida vira a barra de atender/recusar)
+      if (notchEnabledRef.current && kind !== "incoming-call" && kind !== "call") {
+        const who = normalized.senderName || normalized.title;
+        if (kind === "friend-playing") {
+          announceNotchEvent({
+            kind: "friend-playing",
+            title: `${who} está jogando`,
+            subtitle: normalized.gameTitle || normalized.description || undefined,
+            avatar: normalized.avatar || null,
+            friendId: normalized.friendId || undefined,
+          });
+          return;
+        }
+        if (kind === "capture" || kind === "capture-saved") {
+          announceNotchEvent({
+            kind: "capture-saved",
+            title: normalized.title || "Captura salva",
+            subtitle: normalized.description || undefined,
+            avatar: normalized.screenshotUrl || null,
+          });
+          return;
+        }
+        if (isGameStart) {
+          announceNotchEvent({
+            kind: "welcome",
+            title: payload.title || "Divirta-se",
+            subtitle: payload.description || (startTitle ? `Jogando ${startTitle}` : undefined),
+            avatar: normalized.avatar || null,
+          });
+          return;
+        }
+        // pedido/aceite de amizade e mensagem já chegam ao notch pelo hub (não duplica)
+        if (kind === "friend-request" || kind === "friend-accepted" || kind === "message" || kind === "friend-message") return;
+      }
       const toast: SocialToast = {
         id: String(payload?.notificationId || payload?.id || Date.now() + Math.random()),
         ...normalized,
@@ -1110,12 +1148,16 @@ const OverlayApp: React.FC = () => {
       const item = await invoke<{ id: string; url: string; name?: string; gameTitle?: string }>("capture_screen", {
         gameTitle: panelDataRef.current.gameTitle || panelDataRef.current.playingGame?.title || null,
       });
-      announceNotchEvent({
-        kind: "capture-saved",
-        title: "Captura salva",
-        subtitle: item?.gameTitle || item?.name || "Pictures/Phelierium Captures",
-        avatar: item?.url ?? null,
-      });
+      if (notchEnabledRef.current) {
+        announceNotchEvent({
+          kind: "capture-saved",
+          title: "Captura salva",
+          subtitle: item?.gameTitle || item?.name || "Pictures/Phelierium Captures",
+          avatar: item?.url ?? null,
+        });
+        void loadCaptures();
+        return;
+      }
       addToast(
         {
           id: String(Date.now() + Math.random()),
@@ -1492,7 +1534,7 @@ const OverlayApp: React.FC = () => {
       <div className="overlay-toast-stack" data-position="bottom-left">
         <AnimatePresence mode="popLayout">
           {toasts
-            .filter((t): t is SocialToast => t.kind !== "achievement")
+            .filter((t): t is SocialToast => t.kind !== "achievement" && !(notchConfig.enabled && t.kind === "incoming-call"))
             .map((toast) => {
               const isCall = toast.kind === "incoming-call" || toast.kind === "call";
               const isMessage = toast.kind === "message" || toast.kind === "friend-message";
@@ -1622,6 +1664,22 @@ const OverlayApp: React.FC = () => {
                 deafened: activeCall.deafened,
                 speaking: activeCall.speaking,
                 durationSeconds: callDurationSeconds,
+              }
+            : null
+        }
+        overlayIncomingCall={
+          incomingCallToast
+            ? {
+                name: incomingCallToast.senderName || incomingCallToast.description?.replace(/ está te ligando.*$/, "") || "Alguém",
+                avatar: incomingCallToast.avatar,
+                onAccept: () => {
+                  (window as any).achievementOverlay?.panelAction?.({ kind: "voice-accept" });
+                  removeToast(incomingCallToast.id);
+                },
+                onReject: () => {
+                  (window as any).achievementOverlay?.panelAction?.({ kind: "voice-reject" });
+                  removeToast(incomingCallToast.id);
+                },
               }
             : null
         }

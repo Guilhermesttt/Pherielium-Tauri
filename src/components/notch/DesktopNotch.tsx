@@ -78,6 +78,8 @@ export interface DesktopNotchProps {
   onOverlayHangUp?: () => void;
   /** Overlay: pede ao hub para abrir a janela da chamada. */
   onOverlayOpenCall?: () => void;
+  /** Overlay: chamada recebida (vinda do hub) com as ações de atender/recusar. */
+  overlayIncomingCall?: { name: string; avatar?: string | null; onAccept: () => void; onReject: () => void } | null;
   /** Configuração do notch (o overlay passa a sua; sem ela o notch lê a gravada). */
   config?: NotchConfig;
   /** Volume dos efeitos do launcher (0..1) para os sons do notch. */
@@ -411,6 +413,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   activeGameElapsedSeconds = 0,
   isOverlay = false,
   overlayCall = null,
+  overlayIncomingCall = null,
   onOverlayMute,
   onOverlayDeafen,
   onOverlayHangUp,
@@ -905,7 +908,10 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   const isAchievement = notchEvent?.kind === "achievement";
 
   // Chamada recebendo (janela principal): o notch mostra quem liga com atender/recusar
-  const incomingInvite = !overlayCall && voiceCall.callState === "ringing-in" ? voiceCall.incomingInvite : null;
+  const hubInvite = !overlayCall && voiceCall.callState === "ringing-in" ? voiceCall.incomingInvite : null;
+  const incomingInvite = overlayIncomingCall
+    ? { callerName: overlayIncomingCall.name, callerAvatar: overlayIncomingCall.avatar ?? null }
+    : hubInvite;
 
   const situation = useSituationMood({
     isCallActive,
@@ -1167,8 +1173,8 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         <CallIncomingBar
           name={incomingInvite.callerName || "Alguém"}
           avatar={<CallAvatar src={incomingInvite.callerAvatar || undefined} name={incomingInvite.callerName} size={34} />}
-          onAccept={() => void voiceCall.answerCall()}
-          onReject={() => void voiceCall.rejectCall()}
+          onAccept={() => (overlayIncomingCall ? overlayIncomingCall.onAccept() : void voiceCall.answerCall())}
+          onReject={() => (overlayIncomingCall ? overlayIncomingCall.onReject() : void voiceCall.rejectCall())}
         />
       );
     }
@@ -1290,7 +1296,19 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
       <>
         <div className="flex-1 flex items-center">{barMascot(BAR_MASCOT)}</div>
         <span className="text-[13px] font-semibold tracking-tight text-white tabular-nums">{config.showClock ? currentTime : ""}</span>
-        <div className="flex-1 flex items-center justify-end">
+        <div className="flex-1 flex items-center justify-end gap-2">
+          {controller.connected && !isExpanded && (
+            <span
+              className="flex shrink-0 items-center gap-1 text-white/80"
+              title={controller.battery != null ? `Controle conectado · ${controller.battery}%` : "Controle conectado"}
+              aria-label="Controle conectado"
+            >
+              <Gamepad2 size={15} />
+              {controller.battery != null && (
+                <span className="text-[10px] font-semibold tabular-nums text-white/55">{controller.battery}</span>
+              )}
+            </span>
+          )}
           {isPcMediaPlaying && !isExpanded && <Equalizer playing height={14} />}
         </div>
       </>

@@ -262,11 +262,21 @@ export function useFriendsSystem({
                 previousFingerprint !== nextFingerprint
               ) {
                 notify(`${newFriend.name} começou a jogar ${newFriend.playing}`, "success");
-                void window.electronAPI?.showFriendPlayingOverlay({
+                if (notchEnabledRef.current) {
+                  announceNotchEvent({
+                    kind: "friend-playing",
+                    title: `${newFriend.name} está jogando`,
+                    subtitle: newFriend.playing || undefined,
+                    avatar: newFriend.avatar || null,
+                    friendId: friend.id,
+                  });
+                } else {
+                  void window.electronAPI?.showFriendPlayingOverlay({
                   playerName: newFriend.name,
                   gameTitle: newFriend.playing,
                   avatarUrl: newFriend.avatar || null,
                 });
+                }
               }
             }
 
@@ -416,11 +426,21 @@ export function useFriendsSystem({
               }
 
               if (friend.status !== "playing" && newFriend.status === "playing" && newFriend.playing && previousFingerprint !== nextFingerprint) {
-                void window.electronAPI?.showFriendPlayingOverlay({
+                if (notchEnabledRef.current) {
+                  announceNotchEvent({
+                    kind: "friend-playing",
+                    title: `${newFriend.name} está jogando`,
+                    subtitle: newFriend.playing || undefined,
+                    avatar: newFriend.avatar || null,
+                    friendId: friend.id,
+                  });
+                } else {
+                  void window.electronAPI?.showFriendPlayingOverlay({
                   playerName: newFriend.name,
                   gameTitle: newFriend.playing,
                   avatarUrl: newFriend.avatar || null,
                 });
+                }
               }
             }
 

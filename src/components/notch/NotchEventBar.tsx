@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Camera, Check, Gamepad2, MessageSquare, Trophy, UserPlus, Sparkles } from "lucide-react";
 import {
@@ -63,7 +63,8 @@ export function useNotchEvent(enabled: boolean, hold = false): NotchEvent | null
     return () => window.clearTimeout(id);
   }, [activeAt, activeKind, hold]);
 
-  return hold ? null : active;
+  const queued = Math.max(0, queue.length - 1);
+  return useMemo(() => (hold || !active ? null : queued > 0 ? { ...active, queued } : active), [hold, active, queued]);
 }
 
 const TIER_COLOR: Record<AchievementTier, string> = {
@@ -78,6 +79,7 @@ const WASH: Record<Exclude<NotchEventKind, "achievement">, string> = {
   "friend-request": "99,102,241",
   "friend-accepted": "34,197,94",
   "friend-online": "48,209,88",
+  "friend-playing": "139,92,246",
   "capture-saved": "125,249,255",
   message: "244,114,182",
   "level-up": "245,165,36",
@@ -101,6 +103,7 @@ const KindIcon: React.FC<{ kind: NotchEventKind; size: number }> = ({ kind, size
     case "achievement":
       return <Trophy size={size} />;
     case "welcome":
+    case "friend-playing":
       return <Gamepad2 size={size} />;
     default:
       return <Sparkles size={size} />;
@@ -126,6 +129,14 @@ export const NotchEventBar: React.FC<{ event: NotchEvent; mascot: React.ReactNod
         <p className="truncate text-[11.5px] font-semibold text-white">{event.title}</p>
         {subtitle && <p className="truncate text-[10.5px] font-medium text-white/55">{subtitle}</p>}
       </div>
+      {(event.queued ?? 0) > 0 && (
+        <span
+          className="shrink-0 rounded-full bg-white/[0.14] px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white/80"
+          title={`${event.queued} na fila`}
+        >
+          +{event.queued}
+        </span>
+      )}
       <motion.div
         className="relative flex h-[26px] w-[26px] shrink-0 items-center justify-center overflow-hidden rounded-full"
         style={{ background: `rgba(${wash},0.22)`, color: `rgb(${wash})` }}

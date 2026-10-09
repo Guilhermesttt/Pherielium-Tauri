@@ -56,3 +56,27 @@ test("notch: aba Controle (Xbox, PlayStation, desconectado)", async ({ browser }
   await page.screenshot({ path: path.join(outDir, "notch-controller-none.png"), clip });
   await context.close();
 });
+
+test("notch: várias conquistas entram em fila com contador", async ({ browser }) => {
+  mkdirSync(outDir, { recursive: true });
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  await installHarness(context, { tauri: false });
+  const page = await context.newPage();
+  await page.goto("/");
+  const notch = page.locator("[data-notch-root]");
+  await expect(notch).toBeVisible({ timeout: 45_000 });
+  await page.waitForTimeout(1500);
+  await page.evaluate(() => {
+    ["Primeira vitória", "Explorador", "Colecionador"].forEach((title, i) =>
+      window.dispatchEvent(
+        new CustomEvent("pherielium:notch-event", {
+          detail: { id: `ach-${i}`, kind: "achievement", title, tier: "bronze", description: "Teste", at: Date.now() },
+        }),
+      ),
+    );
+  });
+  await expect(notch.getByText("Primeira vitória")).toBeVisible();
+  await expect(notch.getByText("+2 na fila")).toBeVisible();
+  await page.screenshot({ path: path.join(outDir, "notch-achievement-queue.png"), clip: { x: 660, y: 0, width: 600, height: 220 } });
+  await context.close();
+});

@@ -1,4 +1,3 @@
-import { BatteryMeter } from "./live/BatteryMeter";
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -184,11 +183,7 @@ export const ControllerFlashBar: React.FC<{
         <p className="truncate text-[9.5px] font-medium uppercase tracking-[0.14em] text-white/50">{subtitle}</p>
       </div>
 
-      {flash.battery != null && (flash.kind === "connected" || flash.kind === "batteryLow") ? (
-        <BatteryMeter level={flash.battery} charging={flash.charging} approximate={flash.approximate} />
-      ) : (
-        <FlashIcon flash={flash} />
-      )}
+      <FlashIcon flash={flash} />
     </motion.div>
   );
 };
