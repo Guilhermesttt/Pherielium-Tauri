@@ -129,6 +129,8 @@ export async function installHarness(context: BrowserContext, opts: HarnessOptio
     [`checkpoint_game_boot_intro_${USER_ID}`]: "false",
     "checkpoint:last-seen-release": "1.0.0",
     [`phelierium_welcome_modal_seen_${USER_ID}`]: "1",
+    // tutorial de boas-vindas já concluído (senão ele cobre a tela nos testes de usuário "novo")
+    [`pherielium_onboarding_tour_v1:${USER_ID}`]: JSON.stringify({ step: 7, done: true }),
     ...(opts.localStorage ?? {}),
   };
   await context.addInitScript((list) => {

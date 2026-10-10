@@ -3780,7 +3780,8 @@ const Home: React.FC = () => {
       {/* Tutorial de boas-vindas (novos usuários; "Rever tutorial" nas configurações) */}
       <OnboardingTour
         uid={user?.uid}
-        eligible={isQuestsEligible}
+        // só depois de a biblioteca carregar (antes ela vem vazia e todo mundo parecia novo) e com poucos jogos
+        eligible={isQuestsEligible && !isLoading && games.length <= 2 && playerLevel.level < 2}
         blocked={isWelcomeModalOpen}
         playSound={(name) => playSound(name)}
       />

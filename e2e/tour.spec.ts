@@ -10,7 +10,7 @@ test("tutorial de boas-vindas: 8 passos com foco no botão da vez", async ({ bro
   const context = await browser.newContext({ viewport: { width: 1600, height: 900 } });
   await installHarness(context, {
     tauri: false,
-    localStorage: { [`pherielium_tour_force:${USER_ID}`]: "1" },
+    localStorage: { [`pherielium_tour_force:${USER_ID}`]: "1", [`pherielium_onboarding_tour_v1:${USER_ID}`]: "" },
   });
   const page = await context.newPage();
   await page.goto("/");
