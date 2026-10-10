@@ -14,6 +14,16 @@ import type { SoundEffectType } from "../../hooks/useSoundEffects";
 import type { LauncherLanguage } from "../../context/PreferencesContext";
 import type { PlayerLevelInfo } from "../../utils/trophyTiers";
 
+/** "Última vez há 12 min" para o menu de sincronização. */
+function syncAgo(at: number): string {
+  if (!at) return "Ainda não sincronizada";
+  const min = Math.max(0, Math.round((Date.now() - at) / 60_000));
+  if (min < 1) return "Sincronizada agora";
+  if (min < 60) return `Sincronizada há ${min} min`;
+  const h = Math.round(min / 60);
+  return h < 24 ? `Sincronizada há ${h} h` : `Sincronizada há ${Math.round(h / 24)} d`;
+}
+
 export interface HomeTopNavProps {
   activeCategory: string;
   onSelectCategory: (category: string) => void;
@@ -31,6 +41,9 @@ export interface HomeTopNavProps {
   onSyncEpic?: () => void;
   isSyncingSteam?: boolean;
   isSyncingEpic?: boolean;
+  /** quando cada plataforma foi sincronizada pela última vez (ms; 0 = nunca) */
+  lastSteamSyncAt?: number;
+  lastEpicSyncAt?: number;
   onToggleSidebar?: () => void;
   hasActiveFilters?: boolean;
   showTabsAndSearch?: boolean;
@@ -63,6 +76,8 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
   onSyncEpic,
   isSyncingSteam = false,
   isSyncingEpic = false,
+  lastSteamSyncAt = 0,
+  lastEpicSyncAt = 0,
   onToggleSidebar,
   hasActiveFilters = false,
   showTabsAndSearch = true,
@@ -266,7 +281,10 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                       className="cursor-pointer gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/90 focus:bg-white/10"
                     >
                       <SteamBrandIcon className="h-4 w-4 text-white/60" />
-                      {isSyncingSteam ? "Sincronizando Steam…" : "Só a Steam"}
+                      <span className="flex min-w-0 flex-col leading-tight">
+                        <span>{isSyncingSteam ? "Sincronizando Steam…" : "Só a Steam"}</span>
+                        <span className="text-[11px] font-normal text-white/40">{syncAgo(lastSteamSyncAt)}</span>
+                      </span>
                     </DropdownMenuItem>
                   )}
                   {onSyncEpic && (
@@ -279,7 +297,10 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                       className="cursor-pointer gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/90 focus:bg-white/10"
                     >
                       <EpicBrandIcon className="h-4 w-4 text-white/60" />
-                      {isSyncingEpic ? "Sincronizando Epic…" : "Só a Epic Games"}
+                      <span className="flex min-w-0 flex-col leading-tight">
+                        <span>{isSyncingEpic ? "Sincronizando Epic…" : "Só a Epic Games"}</span>
+                        <span className="text-[11px] font-normal text-white/40">{syncAgo(lastEpicSyncAt)}</span>
+                      </span>
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>

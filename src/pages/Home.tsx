@@ -60,6 +60,7 @@ import type { LibraryFilters } from "../components/LibraryFilterModal";
 import { HomeOnboardingQuests } from "../components/home/HomeOnboardingQuests";
 import { OnboardingTour } from "../tour/OnboardingTour";
 import { useAutoLibrarySync } from "../hooks/useAutoLibrarySync";
+import { readLastSync, writeLastSync } from "../hooks/autoLibrarySync";
 import { getAllQuestsWithStatus, shouldShowOnboardingQuests, areAllQuestsCompleted } from "../services/userQuests";
 
 import { PHERIELIUM_LOGO_PATH } from "../constants/assets";
@@ -2918,8 +2919,10 @@ const Home: React.FC = () => {
           onOpenFilterModal={() => setFilterModalOpen(true)}
           onSyncLibraries={handleSyncLibraries}
           isSyncingLibraries={isAnySyncing}
-          onSyncSteam={resolvedSteamId ? () => void handleSyncSteam() : undefined}
-          onSyncEpic={epicAuthConnected ? () => void handleSyncEpic() : undefined}
+          onSyncSteam={resolvedSteamId ? () => { if (user?.uid) writeLastSync(user.uid, "steam", Date.now(), localStorage); void handleSyncSteam(); } : undefined}
+          onSyncEpic={epicAuthConnected ? () => { if (user?.uid) writeLastSync(user.uid, "epic", Date.now(), localStorage); void handleSyncEpic(); } : undefined}
+          lastSteamSyncAt={user?.uid ? readLastSync(user.uid, "steam", localStorage) : 0}
+          lastEpicSyncAt={user?.uid ? readLastSync(user.uid, "epic", localStorage) : 0}
           isSyncingSteam={steamSyncing}
           isSyncingEpic={epicSyncing}
           onToggleSidebar={() => {
