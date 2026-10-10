@@ -981,7 +981,11 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     gameActive: Boolean(activeGameTitle),
     musicPlaying: isPcMediaPlaying,
   });
-  const compactWidth = LIVE_WIDTH[liveKind];
+  // No hub o notch fica sempre à vista: ocioso, vira uma pílula pequena (só a Pherie) encaixada na
+  // barra de título, sem relógio (o hub já tem um) — e cresce quando há música, aviso, chamada...
+  const hubIdle = !isOverlay && liveKind === "idle" && !isExpanded;
+  const compactWidth = hubIdle ? (controller.connected ? 112 : 84) : LIVE_WIDTH[liveKind];
+  const barHeight = hubIdle ? 34 : NOTCH_BAR_HEIGHT;
   // chamada tocando: o notch aparece sozinho (mesmo escondido por outra janela)
   useEffect(() => {
     if (incomingInvite) revealNotch();
@@ -1322,6 +1326,19 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         </>
       );
     }
+    if (hubIdle) {
+      return (
+        <div className="flex w-full items-center justify-center gap-2">
+          {barMascot(26)}
+          {controller.connected && (
+            <span className="flex items-center gap-1 text-white/70" title="Controle conectado" aria-label="Controle conectado">
+              <Gamepad2 size={14} />
+              {controller.battery != null && <span className="text-[10px] font-semibold tabular-nums text-white/50">{controller.battery}</span>}
+            </span>
+          )}
+        </div>
+      );
+    }
     return (
       <>
         <div className="flex-1 flex items-center">{barMascot(BAR_MASCOT)}</div>
@@ -1432,7 +1449,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
           {/* Barra */}
           <div
             className="flex items-center px-3 cursor-pointer"
-            style={{ height: NOTCH_BAR_HEIGHT }}
+            style={{ height: barHeight }}
             onClick={isCallActive ? handleOpenCall : openNotch}
           >
             {renderBar()}

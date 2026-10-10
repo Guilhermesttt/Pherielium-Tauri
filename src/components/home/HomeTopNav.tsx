@@ -6,6 +6,7 @@ import { FOCUS_TRANSITION } from "../../styles/motion";
 import { ConsoleLibraryTabs } from "./ConsoleLibraryTabs";
 import { TopBarClock } from "./TopBarClock";
 import { ProfileDropdown } from "../ui/ProfileDropdown";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import { EpicBrandIcon, SteamBrandIcon } from "../Sidebar";
 import type { Game } from "../../types/domain";
 import type { GamepadFamily } from "../../context/GamepadContext";
@@ -229,53 +230,76 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
               <Plus className="ctl-icon" />
             </button>
 
-            {/* Sincronizar Steam / Epic (ou conectar, se ainda nao ha conta) */}
-            {onSyncLibraries && (
-              <button
-                type="button"
-                onClick={() => {
-                  onSyncLibraries();
-                  playSound("select");
-                }}
-                disabled={isSyncingLibraries}
-                title="Sincronizar jogos da Steam e Epic"
-                aria-label="Sincronizar jogos Steam e Epic"
-                className="ctl-circle"
-              >
-                <RefreshCw className={`ctl-icon ${isSyncingLibraries ? "animate-spin" : ""}`} />
-              </button>
-            )}
-
-            {/* Sincronizar só uma plataforma */}
-            {onSyncSteam && (
-              <button
-                type="button"
-                onClick={() => {
-                  onSyncSteam();
-                  playSound("select");
-                }}
-                disabled={isSyncingSteam}
-                title="Sincronizar só a Steam"
-                aria-label="Sincronizar só a Steam"
-                className="ctl-circle"
-              >
-                <SteamBrandIcon className={`ctl-icon ${isSyncingSteam ? "animate-pulse" : ""}`} />
-              </button>
-            )}
-            {onSyncEpic && (
-              <button
-                type="button"
-                onClick={() => {
-                  onSyncEpic();
-                  playSound("select");
-                }}
-                disabled={isSyncingEpic}
-                title="Sincronizar só a Epic Games"
-                aria-label="Sincronizar só a Epic Games"
-                className="ctl-circle"
-              >
-                <EpicBrandIcon className={`ctl-icon ${isSyncingEpic ? "animate-pulse" : ""}`} />
-              </button>
+            {/* Sincronizar: um botão só; com contas conectadas abre um menu (tudo / só Steam / só Epic) */}
+            {onSyncLibraries && (onSyncSteam || onSyncEpic) ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={isSyncingLibraries}
+                    title="Sincronizar jogos"
+                    aria-label="Sincronizar jogos Steam e Epic"
+                    className="ctl-circle"
+                    onPointerEnter={() => playSound("hover")}
+                  >
+                    <RefreshCw className={`ctl-icon ${isSyncingLibraries ? "animate-spin" : ""}`} />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" sideOffset={10} className="min-w-[220px] rounded-2xl border border-white/10 bg-[#141416]/95 p-1.5 backdrop-blur-xl">
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      onSyncLibraries();
+                      playSound("select");
+                    }}
+                    className="cursor-pointer gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/90 focus:bg-white/10"
+                  >
+                    <RefreshCw className="h-4 w-4 text-white/60" />
+                    Sincronizar tudo
+                  </DropdownMenuItem>
+                  {onSyncSteam && (
+                    <DropdownMenuItem
+                      disabled={isSyncingSteam}
+                      onSelect={() => {
+                        onSyncSteam();
+                        playSound("select");
+                      }}
+                      className="cursor-pointer gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/90 focus:bg-white/10"
+                    >
+                      <SteamBrandIcon className="h-4 w-4 text-white/60" />
+                      {isSyncingSteam ? "Sincronizando Steam…" : "Só a Steam"}
+                    </DropdownMenuItem>
+                  )}
+                  {onSyncEpic && (
+                    <DropdownMenuItem
+                      disabled={isSyncingEpic}
+                      onSelect={() => {
+                        onSyncEpic();
+                        playSound("select");
+                      }}
+                      className="cursor-pointer gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/90 focus:bg-white/10"
+                    >
+                      <EpicBrandIcon className="h-4 w-4 text-white/60" />
+                      {isSyncingEpic ? "Sincronizando Epic…" : "Só a Epic Games"}
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              onSyncLibraries && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSyncLibraries();
+                    playSound("select");
+                  }}
+                  disabled={isSyncingLibraries}
+                  title="Sincronizar jogos da Steam e Epic"
+                  aria-label="Sincronizar jogos Steam e Epic"
+                  className="ctl-circle"
+                >
+                  <RefreshCw className={`ctl-icon ${isSyncingLibraries ? "animate-spin" : ""}`} />
+                </button>
+              )
             )}
 
             {/* Filter / Context Menu Button */}
