@@ -699,6 +699,9 @@ export function useGamePresence({
     }
 
     // ── 2. Steam Achievements Polling ──────────────────────────────────────────
+    if (runningGame.steamAppId && !steamId) {
+      console.warn("[achievements] jogo Steam em andamento, mas a conta Steam não está conectada no perfil: sem detecção de conquistas.", runningGame.title);
+    }
     if (runningGame.steamAppId && steamId) {
       try {
         const details = await fetchSteamAchievementDetails(
@@ -715,12 +718,15 @@ export function useGamePresence({
               unlockedSet.add(ach.apiName);
             }
           });
-          state.firstLoadDone = true;
+          // lista vazia = a Steam não devolveu nada (perfil privado/erro): tenta de novo, sem "baseline"
+          state.firstLoadDone = details.achievements.length > 0;
+          console.info(`[achievements] Steam baseline: ${runningGame.title} (${runningGame.steamAppId}) — ${unlockedSet.size}/${details.achievements.length} já desbloqueadas`);
           return;
         }
 
         for (const ach of details.achievements) {
           if (ach.achieved && !unlockedSet.has(ach.apiName)) {
+            console.info(`[achievements] Steam: nova conquista detectada em ${runningGame.title}: ${ach.name || ach.apiName}`);
             unlockedSet.add(ach.apiName);
 
             const percent = typeof ach.percent === "number" ? ach.percent : 15;
@@ -758,16 +764,24 @@ export function useGamePresence({
     achievementsState.current.state.firstLoadDone = false;
   }, [currentPresenceGame]);
 
-  useInterval(
-    () => {
-      void pollAchievements(
-        achievementsState.current.unlockedSet,
-        achievementsState.current.state,
-      );
-    },
-    currentPresenceGame ? 30_000 : null,
-    { pauseWhenHidden: false },
-  );
+  const pollAchievementsRef = useRef(pollAchievements);
+  pollAchievementsRef.current = pollAchievements;
+  const runAchievementPoll = useCallback(() => {
+    void pollAchievementsRef.current(
+      achievementsState.current.unlockedSet,
+      achievementsState.current.state,
+    );
+  }, []);
+
+  // Baseline logo que o jogo abre (antes do primeiro unlock), e depois a cada 15 s. Antes o primeiro
+  // poll só vinha aos 30 s, e conquistas feitas no início nunca eram vistas como "novas".
+  useEffect(() => {
+    if (!currentPresenceGame) return;
+    const id = window.setTimeout(runAchievementPoll, 2500);
+    return () => window.clearTimeout(id);
+  }, [currentPresenceGame, runAchievementPoll]);
+
+  useInterval(runAchievementPoll, currentPresenceGame ? 15_000 : null, { pauseWhenHidden: false });
 
   useEffect(() => {
     const api = window.electronAPI;
