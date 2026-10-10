@@ -6,6 +6,7 @@ import { FOCUS_TRANSITION } from "../../styles/motion";
 import { ConsoleLibraryTabs } from "./ConsoleLibraryTabs";
 import { TopBarClock } from "./TopBarClock";
 import { ProfileDropdown } from "../ui/ProfileDropdown";
+import { EpicBrandIcon, SteamBrandIcon } from "../Sidebar";
 import type { Game } from "../../types/domain";
 import type { GamepadFamily } from "../../context/GamepadContext";
 import type { SoundEffectType } from "../../hooks/useSoundEffects";
@@ -24,6 +25,11 @@ export interface HomeTopNavProps {
   onOpenFilterModal: () => void;
   onSyncLibraries?: () => void;
   isSyncingLibraries?: boolean;
+  /** sincronizar só a Steam / só a Epic (só aparecem com a conta conectada) */
+  onSyncSteam?: () => void;
+  onSyncEpic?: () => void;
+  isSyncingSteam?: boolean;
+  isSyncingEpic?: boolean;
   onToggleSidebar?: () => void;
   hasActiveFilters?: boolean;
   showTabsAndSearch?: boolean;
@@ -52,6 +58,10 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
   onOpenFilterModal,
   onSyncLibraries,
   isSyncingLibraries = false,
+  onSyncSteam,
+  onSyncEpic,
+  isSyncingSteam = false,
+  isSyncingEpic = false,
   onToggleSidebar,
   hasActiveFilters = false,
   showTabsAndSearch = true,
@@ -233,6 +243,38 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                 className="ctl-circle"
               >
                 <RefreshCw className={`ctl-icon ${isSyncingLibraries ? "animate-spin" : ""}`} />
+              </button>
+            )}
+
+            {/* Sincronizar só uma plataforma */}
+            {onSyncSteam && (
+              <button
+                type="button"
+                onClick={() => {
+                  onSyncSteam();
+                  playSound("select");
+                }}
+                disabled={isSyncingSteam}
+                title="Sincronizar só a Steam"
+                aria-label="Sincronizar só a Steam"
+                className="ctl-circle"
+              >
+                <SteamBrandIcon className={`ctl-icon ${isSyncingSteam ? "animate-pulse" : ""}`} />
+              </button>
+            )}
+            {onSyncEpic && (
+              <button
+                type="button"
+                onClick={() => {
+                  onSyncEpic();
+                  playSound("select");
+                }}
+                disabled={isSyncingEpic}
+                title="Sincronizar só a Epic Games"
+                aria-label="Sincronizar só a Epic Games"
+                className="ctl-circle"
+              >
+                <EpicBrandIcon className={`ctl-icon ${isSyncingEpic ? "animate-pulse" : ""}`} />
               </button>
             )}
 

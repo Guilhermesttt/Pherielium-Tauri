@@ -254,6 +254,7 @@ export function useAccountConnections({
       setSelectedIndex(0);
       await onLibraryChanged?.();
     },
+    onRefreshLibrarySilent: onLibraryChanged,
     notify,
   });
 

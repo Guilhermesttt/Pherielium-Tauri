@@ -23,6 +23,8 @@ interface UsePlatformOperationsProps {
   profile?: UserProfile | null;
   language?: LauncherLanguage;
   onRefreshLibrary?: () => void | Promise<void>;
+  /** atualiza a biblioteca sem efeitos de tela (seleção, avisos): usado na sincronização automática */
+  onRefreshLibrarySilent?: () => void | Promise<void>;
   notify?: (message: string, type: "success" | "error" | "info") => void;
 }
 
@@ -31,6 +33,7 @@ export const usePlatformOperations = ({
   profile,
   language = "pt-BR",
   onRefreshLibrary,
+  onRefreshLibrarySilent,
   notify,
 }: UsePlatformOperationsProps = {}) => {
   const [operations, dispatch] = useReducer(
@@ -106,7 +109,7 @@ export const usePlatformOperations = ({
 
   // Sync Platform (Steam or Epic)
   const runSync = useCallback(
-    async (platform: Platform, args?: any) => {
+    async (platform: Platform, args?: any, silent = false) => {
       if (!userUid) throw new Error("Usuário não autenticado.");
       const operationId = crypto.randomUUID();
       const effectiveLang = (typeof args === "string" ? args : args?.language) || language;
@@ -161,6 +164,10 @@ export const usePlatformOperations = ({
         }
 
         dispatch({ type: "FINISH_SUCCESS", platform, operationId });
+        if (silent) {
+          await (onRefreshLibrarySilent ?? onRefreshLibrary)?.();
+          return count;
+        }
         await onRefreshLibrary?.();
 
         const platformTitle = platform === "steam" ? "Steam" : "Epic Games";
@@ -182,21 +189,21 @@ export const usePlatformOperations = ({
           operation: "sync",
           message,
         });
-        notify?.(message, "error");
+        if (!silent) notify?.(message, "error");
         throw err;
       }
     },
-    [userUid, language, onRefreshLibrary, notify],
+    [userUid, language, onRefreshLibrary, onRefreshLibrarySilent, notify],
   );
 
   // Conectar dispara a sincronização por mais de um caminho (callback de login + efeito da Home):
   // uma sincronização por plataforma por vez, as demais chamadas aguardam a mesma.
   const inflightSyncRef = useRef<Record<Platform, Promise<number> | null>>({ steam: null, epic: null });
   const syncPlatform = useCallback(
-    (platform: Platform, args?: any): Promise<number> => {
+    (platform: Platform, args?: any, silent = false): Promise<number> => {
       const running = inflightSyncRef.current[platform];
       if (running) return running;
-      const promise = runSync(platform, args).finally(() => {
+      const promise = runSync(platform, args, silent).finally(() => {
         inflightSyncRef.current[platform] = null;
       });
       inflightSyncRef.current[platform] = promise;

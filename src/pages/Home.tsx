@@ -59,6 +59,7 @@ import DashboardContinuePlaying from "../components/DashboardContinuePlaying";
 import type { LibraryFilters } from "../components/LibraryFilterModal";
 import { HomeOnboardingQuests } from "../components/home/HomeOnboardingQuests";
 import { OnboardingTour } from "../tour/OnboardingTour";
+import { useAutoLibrarySync } from "../hooks/useAutoLibrarySync";
 import { getAllQuestsWithStatus, shouldShowOnboardingQuests, areAllQuestsCompleted } from "../services/userQuests";
 
 import { PHERIELIUM_LOGO_PATH } from "../constants/assets";
@@ -813,6 +814,20 @@ const Home: React.FC = () => {
   }, [checkEpicStatus, user?.uid]);
 
   const isAnySyncing = steamSyncing || epicSyncing;
+
+  // Biblioteca sempre em dia: sincroniza sozinha ao abrir, ao voltar ao app, a cada 30 min e
+  // logo depois de fechar um jogo (sem avisos e sem mexer na seleção).
+  useAutoLibrarySync({
+    uid: user?.uid,
+    steamConnected: Boolean(resolvedSteamId),
+    epicConnected: epicAuthConnected,
+    syncSilently: (platform) =>
+      platform === "steam"
+        ? platformOps.syncPlatform("steam", { steamId: resolvedSteamId, language: launcherLanguage }, true)
+        : platformOps.syncPlatform("epic", launcherLanguage, true),
+    currentGameTitle: currentPresenceGame,
+    games,
+  });
 
   // Sincroniza as contas ja conectadas; sem nenhuma conectada, leva a Configuracoes > Conexoes.
   const handleSyncLibraries = useCallback(() => {
@@ -2903,6 +2918,10 @@ const Home: React.FC = () => {
           onOpenFilterModal={() => setFilterModalOpen(true)}
           onSyncLibraries={handleSyncLibraries}
           isSyncingLibraries={isAnySyncing}
+          onSyncSteam={resolvedSteamId ? () => void handleSyncSteam() : undefined}
+          onSyncEpic={epicAuthConnected ? () => void handleSyncEpic() : undefined}
+          isSyncingSteam={steamSyncing}
+          isSyncingEpic={epicSyncing}
           onToggleSidebar={() => {
             window.dispatchEvent(
               new CustomEvent("checkpoint:sidebar-toggle", {
