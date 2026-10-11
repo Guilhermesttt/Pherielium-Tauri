@@ -1,5 +1,12 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import { peerKeyForFeed, sliderEffects } from "@/services/voiceCall/volumeKeys";
+import {
+  DEFAULT_SCREEN_VOLUME_PERCENT,
+  isTargetMuted,
+  MAX_VOLUME_PERCENT,
+  sliderEffects,
+  storedPercent,
+  targetForFeed,
+} from "@/services/voiceCall/volumeKeys";
 import { streamDebugLog } from "@/services/voiceCall/streamDebug";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -104,7 +111,9 @@ interface VoiceCallWindowProps {
   remoteVolume?: number;
   onChangeRemoteVolume?: (val: number) => void;
   peerVolumes?: Record<string, number>;
-  onSetPeerVolume?: (peerId: string, val: number) => void;
+  onSetPeerVolume?: (key: string, val: number) => void;
+  peerMuted?: Record<string, boolean>;
+  onSetPeerMuted?: (key: string, muted: boolean) => void;
   isReconnecting?: boolean;
   inputMode?: "voice-activity" | "push-to-talk";
   setInputMode?: (mode: "voice-activity" | "push-to-talk") => void;
@@ -185,6 +194,8 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
   onChangeRemoteVolume,
   peerVolumes = {},
   onSetPeerVolume,
+  peerMuted = {},
+  onSetPeerMuted,
   isReconnecting = false,
   inputMode = "voice-activity",
   setInputMode,
@@ -297,8 +308,21 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
     y: number;
     feed: CallFeed;
   } | null>(null);
-  const [userVolumes, setUserVolumes] = useState<Record<string, number>>({});
-  const [locallyMutedFeeds, setLocallyMutedFeeds] = useState<Record<string, boolean>>({});
+  // Volume and mute are per audio track (voice vs screen), owned by useVoiceCall.
+  const storedVolumeForFeed = (feedId: string): number => {
+    const target = targetForFeed(feedId, session?.friendUid);
+    const fallback = target.kind === "voice" ? remoteVolume ?? 100 : DEFAULT_SCREEN_VOLUME_PERCENT;
+    return Math.min(MAX_VOLUME_PERCENT[target.kind], storedPercent(peerVolumes, target, fallback));
+  };
+  const isFeedMuted = (feedId: string): boolean =>
+    isTargetMuted(peerMuted, targetForFeed(feedId, session?.friendUid));
+  const changeFeedVolume = (feedId: string, rawVolume: number, isLocal = false) => {
+    const effects = sliderEffects(feedId, session?.friendUid);
+    const volume = Math.min(MAX_VOLUME_PERCENT[effects.target.kind], rawVolume);
+    streamDebugLog("volume-slider", { feedId, volume, key: effects.key, global: effects.changesGlobalRemoteVolume });
+    onSetPeerVolume?.(effects.key, volume);
+    if (!isLocal && effects.changesGlobalRemoteVolume) onChangeRemoteVolume?.(volume);
+  };
   const [watchedStreams, setWatchedStreams] = useState<Record<string, boolean>>({
     "local-screen": true,
     "local-camera": true,
@@ -961,8 +985,8 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                 isStreamFocused={isStreamFocused}
                 onToggleStreamFocus={() => setIsStreamFocused((prev) => !prev)}
                 onOpenInvite={() => setIsInviteModalOpen(true)}
-                streamerVolume={remoteVolume}
-                onChangeStreamerVolume={onChangeRemoteVolume}
+                getStreamerVolume={storedVolumeForFeed}
+                onChangeStreamerVolume={(feedId, vol) => changeFeedVolume(feedId, vol)}
                 localScreenStream={localScreenStream}
                 notify={notify}
                 localStream={localStream}
@@ -1032,57 +1056,21 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                 }}
                 x={contextMenu.x}
                 y={contextMenu.y}
-                volume={(() => {
-                  if (contextMenu.feed.isLocal) return 100;
-                  const feedId = contextMenu.feed.id;
-                  if (userVolumes[feedId] !== undefined) return userVolumes[feedId];
-                  if (peerVolumes[feedId] !== undefined) return peerVolumes[feedId];
-                  const rawId = feedId
-                    .replace(/^remote-user:/, "")
-                    .replace(/^remote-screen:/, "");
-                  if (peerVolumes[rawId] !== undefined) return peerVolumes[rawId];
-                  return remoteVolume ?? 100;
-                })()}
-                isLocallyMuted={locallyMutedFeeds[contextMenu.feed.id]}
+                volume={contextMenu.feed.isLocal ? 100 : storedVolumeForFeed(contextMenu.feed.id)}
+                maxVolume={MAX_VOLUME_PERCENT[targetForFeed(contextMenu.feed.id, session?.friendUid).kind]}
+                isLocallyMuted={isFeedMuted(contextMenu.feed.id)}
                 isLocalAdmin={Boolean(
                   isRoomSession &&
                   (session?.adminId === userProfile?.uid ||
                     roomConfig?.adminId === userProfile?.uid ||
                     (!session?.adminId && !session?.friendUid))
                 )}
-                onVolumeChange={(newVol) => {
-                  setUserVolumes((prev) => ({
-                    ...prev,
-                    [contextMenu.feed.id]: newVol,
-                  }));
-                  const effects = sliderEffects(contextMenu.feed.id, session?.friendUid);
-                  streamDebugLog("volume-slider", { feedId: contextMenu.feed.id, newVol, ...effects, isLocal: contextMenu.feed.isLocal });
-
-                  if (onSetPeerVolume) {
-                    effects.peerKeys.forEach((key) => onSetPeerVolume(key, newVol));
-                  }
-                  if (
-                    !contextMenu.feed.isLocal &&
-                    onChangeRemoteVolume &&
-                    effects.changesGlobalRemoteVolume
-                  ) {
-                    onChangeRemoteVolume(newVol);
-                  }
-                }}
+                onVolumeChange={(newVol) =>
+                  changeFeedVolume(contextMenu.feed.id, newVol, contextMenu.feed.isLocal)
+                }
                 onToggleLocalMute={() => {
-                  const nextMuted = !locallyMutedFeeds[contextMenu.feed.id];
-                  setLocallyMutedFeeds((prev) => ({
-                    ...prev,
-                    [contextMenu.feed.id]: nextMuted,
-                  }));
-                  const mutePeerKey = peerKeyForFeed(contextMenu.feed.id);
-                  const currVol =
-                    userVolumes[contextMenu.feed.id] ??
-                    (contextMenu.feed.isLocal ? 100 : remoteVolume ?? 100);
-                  if (onSetPeerVolume) {
-                    onSetPeerVolume(mutePeerKey, nextMuted ? 0 : currVol);
-                    onSetPeerVolume(contextMenu.feed.id, nextMuted ? 0 : currVol);
-                  }
+                  const { key } = sliderEffects(contextMenu.feed.id, session?.friendUid);
+                  onSetPeerMuted?.(key, !isFeedMuted(contextMenu.feed.id));
                 }}
                 onToggleWatchStream={() => {
                   const nextState = !watchedStreams[contextMenu.feed.id];

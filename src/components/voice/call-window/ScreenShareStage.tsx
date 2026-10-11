@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import type { CallFeed } from "../VoiceCallWindow";
 import { VideoRenderer } from "./VideoRenderer";
+import { MAX_VOLUME_PERCENT } from "@/services/voiceCall/volumeKeys";
 
 interface ScreenShareStageProps {
   feed: CallFeed;
@@ -118,7 +119,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
                   <input
                     type="range"
                     min={0}
-                    max={200}
+                    max={MAX_VOLUME_PERCENT.screen}
                     aria-label="Volume da transmissão de tela"
                     value={streamerVolume}
                     onChange={(e) => onChangeStreamerVolume(Number(e.target.value))}

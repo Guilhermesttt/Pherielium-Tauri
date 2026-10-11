@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { streamDebugLog } from "@/services/voiceCall/streamDebug";
+import {
+  effectivePercent,
+  toElementVolume,
+  volumeKey,
+  type MutedMap,
+  type VolumeMap,
+  type VolumeTarget,
+} from "@/services/voiceCall/volumeKeys";
+import { loadVolumes, saveVolumes } from "@/services/voiceCall/volumeStore";
 import type { AuthUser } from "../auth/AuthProvider";
 import {
   type CallState,
@@ -235,15 +244,23 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     }
   });
 
-  const [peerVolumes, setPeerVolumes] = useState<Record<string, number>>({});
+  // Per-viewer volumes keyed by volumeKey() ("voice:<uid>" / "screen:<uid>"); persisted.
+  const [peerVolumes, setPeerVolumes] = useState<VolumeMap>(() => loadVolumes());
+  // Mute is independent per key and lives for the session only (not persisted).
+  const [peerMuted, setPeerMutedState] = useState<MutedMap>({});
 
-  const setPeerVolume = useCallback((peerOrFeedId: string, val: number) => {
+  const setPeerVolume = useCallback((key: string, val: number) => {
     const clamped = Math.max(0, Math.min(200, Math.round(val)));
-    setPeerVolumes((prev) => ({
-      ...prev,
-      [peerOrFeedId]: clamped,
-    }));
+    setPeerVolumes((prev) => ({ ...prev, [key]: clamped }));
   }, []);
+
+  const setPeerMuted = useCallback((key: string, muted: boolean) => {
+    setPeerMutedState((prev) => ({ ...prev, [key]: muted }));
+  }, []);
+
+  useEffect(() => {
+    saveVolumes(peerVolumes);
+  }, [peerVolumes]);
 
   const setRemoteVolume = useCallback((val: number) => {
     const clamped = Math.max(0, Math.min(200, Math.round(val)));
@@ -632,6 +649,8 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
 
   const peerVolumesRef = useRef(peerVolumes);
   peerVolumesRef.current = peerVolumes;
+  const peerMutedRef = useRef(peerMuted);
+  peerMutedRef.current = peerMuted;
   const remoteVolumeRef = useRef(remoteVolume);
   remoteVolumeRef.current = remoteVolume;
   const selectedAudioOutputRef = useRef(selectedAudioOutput);
@@ -698,19 +717,22 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           participant.trackPublications.forEach((pub) => {
             if (pub.track && pub.track.kind === LiveKitTrack.Kind.Audio) {
               const isScreenAudio = pub.source === LiveKitTrack.Source.ScreenShareAudio;
-              const peerVol = isDeafened
-                ? 0
-                : isScreenAudio
-                  ? (peerVolumes[`screen:${peerId}`] ?? peerVolumes["remote-screen"] ?? peerVolumes[peerId] ?? remoteVolume)
-                  : (peerVolumes[peerId] ?? peerVolumes["remote-user"] ?? remoteVolume);
-              const normVol = Math.max(0, Math.min(1.0, (peerVol ?? 100) / 100));
+              const target: VolumeTarget = { kind: isScreenAudio ? "screen" : "voice", id: peerId };
+              const normVol = toElementVolume(
+                effectivePercent(target, {
+                  volumes: peerVolumes,
+                  muted: peerMuted,
+                  voiceFallbackPercent: remoteVolume,
+                  deafened: isDeafened,
+                }),
+              );
 
               // TEMPORARY (volume-bug diagnosis): remove once the fix is validated.
               streamDebugLog("volume-sync", {
                 peerId,
                 source: pub.source,
                 trackSid: pub.track.sid,
-                resolvedKey: isScreenAudio ? `screen:${peerId}` : peerId,
+                resolvedKey: volumeKey(target),
                 normVol,
                 globalRemoteVolume: remoteVolume,
                 peerVolumeKeys: peerVolumes,
@@ -731,13 +753,17 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     }
 
     if (echoAudioRef.current) {
-      const vol = isDeafened ? 0 : (peerVolumes["echo-bot"] ?? peerVolumes["remote-user"] ?? remoteVolume ?? 100) / 100;
-      echoAudioRef.current.volume = Math.max(0, Math.min(1, vol));
+      echoAudioRef.current.volume = toElementVolume(
+        effectivePercent(
+          { kind: "voice", id: "echo-bot" },
+          { volumes: peerVolumes, muted: peerMuted, voiceFallbackPercent: remoteVolume, deafened: isDeafened },
+        ),
+      );
       if (selectedAudioOutput && selectedAudioOutput !== "default" && typeof (echoAudioRef.current as any).setSinkId === "function") {
         void (echoAudioRef.current as any).setSinkId(selectedAudioOutput).catch(() => { });
       }
     }
-  }, [peerVolumes, remoteVolume, isDeafened, selectedAudioOutput]);
+  }, [peerVolumes, peerMuted, remoteVolume, isDeafened, selectedAudioOutput]);
 
   /**
    * Wraps a raw getUserMedia stream in the real audio processing chain.
@@ -2053,13 +2079,20 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
             (el as HTMLAudioElement).preload = "auto";
           } catch { }
 
+          // Reads the latest persisted/muted state through refs, so a track attached after a
+          // reconnect or late subscribe starts at the viewer's saved volume.
           const isScreenAudio = publication?.source === LiveKitTrack.Source.ScreenShareAudio;
-          const peerVol = isDeafenedRef.current
-            ? 0
-            : isScreenAudio
-              ? (peerVolumesRef.current[`screen:${peerId}`] ?? peerVolumesRef.current["remote-screen"] ?? peerVolumesRef.current[peerId] ?? remoteVolumeRef.current)
-              : (peerVolumesRef.current[peerId] ?? peerVolumesRef.current["remote-user"] ?? remoteVolumeRef.current);
-          el.volume = Math.max(0, Math.min(1.0, (peerVol ?? 100) / 100));
+          el.volume = toElementVolume(
+            effectivePercent(
+              { kind: isScreenAudio ? "screen" : "voice", id: peerId },
+              {
+                volumes: peerVolumesRef.current,
+                muted: peerMutedRef.current,
+                voiceFallbackPercent: remoteVolumeRef.current,
+                deafened: isDeafenedRef.current,
+              },
+            ),
+          );
           if (selectedAudioOutputRef.current && selectedAudioOutputRef.current !== "default" && typeof (el as any).setSinkId === "function") {
             void (el as any).setSinkId(selectedAudioOutputRef.current).catch(() => { });
           }
@@ -4288,8 +4321,12 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           }
           const echoAudio = new Audio();
           echoAudio.srcObject = processedStream;
-          const vol = isDeafened ? 0 : (peerVolumes["echo-bot"] ?? peerVolumes["remote-user"] ?? remoteVolume ?? 100) / 100;
-          echoAudio.volume = Math.max(0, Math.min(1, vol));
+          echoAudio.volume = toElementVolume(
+            effectivePercent(
+              { kind: "voice", id: "echo-bot" },
+              { volumes: peerVolumes, muted: peerMuted, voiceFallbackPercent: remoteVolume, deafened: isDeafened },
+            ),
+          );
           if (selectedAudioOutput && selectedAudioOutput !== "default" && typeof (echoAudio as any).setSinkId === "function") {
             void (echoAudio as any).setSinkId(selectedAudioOutput).catch(() => { });
           }
@@ -4322,6 +4359,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     inputMode,
     isDeafened,
     notify,
+    peerMuted,
     peerVolumes,
     playRingtone,
     remoteVolume,
@@ -4682,6 +4720,8 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     setRemoteVolume,
     peerVolumes,
     setPeerVolume,
+    peerMuted,
+    setPeerMuted,
     isMuted,
     isDeafened,
     isSpeakingLocal,

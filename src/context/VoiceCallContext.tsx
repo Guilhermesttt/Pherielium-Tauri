@@ -11,6 +11,7 @@ import { ScreenPickerModal } from "../components/voice/ScreenPickerModal";
 import { getCheckpointFriendStatuses } from "../services/checkpointFriends";
 import { audioContextManager } from "../services/audio/AudioContextManager";
 import { PeerAudioNode } from "../services/audio/PeerAudioNode";
+import { effectivePercent } from "../services/voiceCall/volumeKeys";
 import { CallConnectionBanner } from "../components/CallConnectionBanner";
 import type { SocialFriend } from "../types/domain";
 
@@ -106,6 +107,18 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({
     peerAudioNodesMapRef.current.clear();
   }, []);
 
+  // Voice percent for a P2P peer (0-200: PeerAudioNode applies gain, unlike <audio>.volume).
+  const p2pVoicePercent = (peerId: string): number =>
+    effectivePercent(
+      { kind: "voice", id: peerId },
+      {
+        volumes: voiceCall.peerVolumes ?? {},
+        muted: voiceCall.peerMuted ?? {},
+        voiceFallbackPercent: voiceCall.remoteVolume ?? 100,
+        deafened: voiceCall.isDeafened,
+      },
+    );
+
   // Reconcile P2P playback topology only when streams/transport change. Volume and
   // sink changes are handled by separate effects so they do not recreate audio nodes.
   React.useEffect(() => {
@@ -171,10 +184,7 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({
         if (existing?.stream === stream) return;
 
         existing?.node.destroy();
-        const peerVolume = voiceCall.isDeafened
-          ? 0
-          : (voiceCall.peerVolumes?.[peerId] ?? voiceCall.remoteVolume ?? 100);
-        const node = new PeerAudioNode(stream, peerVolume);
+        const node = new PeerAudioNode(stream, p2pVoicePercent(peerId));
         peerAudioNodesMapRef.current.set(peerId, { node, stream });
       });
     };
@@ -199,12 +209,9 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({
   // Volume/deafen updates are cheap and do not rebuild the Web Audio graph.
   React.useEffect(() => {
     peerAudioNodesMapRef.current.forEach(({ node }, peerId) => {
-      const peerVolume = voiceCall.isDeafened
-        ? 0
-        : (voiceCall.peerVolumes?.[peerId] ?? voiceCall.remoteVolume ?? 100);
-      node.setVolume(peerVolume);
+      node.setVolume(p2pVoicePercent(peerId));
     });
-  }, [voiceCall.isDeafened, voiceCall.peerVolumes, voiceCall.remoteVolume]);
+  }, [voiceCall.isDeafened, voiceCall.peerMuted, voiceCall.peerVolumes, voiceCall.remoteVolume]);
 
   // Output-device changes are applied once at the shared AudioContext level.
   React.useEffect(() => {
@@ -331,6 +338,8 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({
         onChangeRemoteVolume={voiceCall.setRemoteVolume}
         peerVolumes={voiceCall.peerVolumes}
         onSetPeerVolume={voiceCall.setPeerVolume}
+        peerMuted={voiceCall.peerMuted}
+        onSetPeerMuted={voiceCall.setPeerMuted}
         isReconnecting={voiceCall.isReconnecting}
         inputMode={voiceCall.inputMode}
         setInputMode={voiceCall.setInputMode}
@@ -485,6 +494,7 @@ const safeFallbackVoiceCallContext: Partial<VoiceCallContextType> = {
   isReconnecting: false,
   remoteVolume: 100,
   peerVolumes: {},
+  peerMuted: {},
   inputMode: "voice-activity",
   pushToTalkKey: "F8",
   isPttPressed: false,
@@ -557,6 +567,7 @@ const safeFallbackVoiceCallContext: Partial<VoiceCallContextType> = {
   stopScreenShare: async () => {},
   setRemoteVolume: () => {},
   setPeerVolume: () => {},
+  setPeerMuted: () => {},
   setInputMode: () => {},
   setPushToTalkKey: () => {},
   setVoiceSensitivity: () => {},

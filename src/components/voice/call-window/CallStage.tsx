@@ -18,8 +18,9 @@ interface CallStageProps {
   isStreamFocused?: boolean;
   onToggleStreamFocus?: () => void;
   onOpenInvite?: () => void;
-  streamerVolume?: number;
-  onChangeStreamerVolume?: (vol: number) => void;
+  /** Stored screen-share volume for a screen feed id. */
+  getStreamerVolume?: (feedId: string) => number;
+  onChangeStreamerVolume?: (feedId: string, vol: number) => void;
   localScreenStream?: MediaStream | null;
   notify?: (msg: string, type: "success" | "error" | "info") => void;
   localStream?: MediaStream | null;
@@ -40,7 +41,7 @@ export const CallStage: React.FC<CallStageProps> = ({
   onSelectFeed,
   isStreamFocused = true,
   onOpenInvite,
-  streamerVolume,
+  getStreamerVolume,
   onChangeStreamerVolume,
   localScreenStream,
   notify,
@@ -89,8 +90,12 @@ export const CallStage: React.FC<CallStageProps> = ({
             onRequestFullscreen={onRequestFullscreen}
             isFocused={true}
             onToggleFocus={() => onSelectFeed(activeScreenFeed.id)}
-            streamerVolume={streamerVolume}
-            onChangeStreamerVolume={onChangeStreamerVolume}
+            streamerVolume={getStreamerVolume?.(activeScreenFeed.id)}
+            onChangeStreamerVolume={
+              onChangeStreamerVolume
+                ? (vol) => onChangeStreamerVolume(activeScreenFeed.id, vol)
+                : undefined
+            }
             localScreenStream={localScreenStream}
             notify={notify}
             onVideoElement={onVideoElement}

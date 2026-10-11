@@ -1,52 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { peerKeyForFeed, sliderEffects } from "./volumeKeys";
+import { sliderEffects } from "./volumeKeys";
 
 /**
- * Characterization tests: they pin the behavior that the inline logic in
- * VoiceCallWindow had BEFORE it was extracted into volumeKeys.ts (commit 3d15192),
- * including the known coupling bug on "remote-screen". They prove the extraction
- * was behavior-preserving; the fix commit updates the affected rows deliberately.
+ * Feed id -> key written -> moves the global (voice) volume?
+ *
+ * Before the fix (commit 3d15192 / a67b139) the rows were:
+ *   remote-user        -> remote-user, <friendUid>        -> yes
+ *   remote-user:abc    -> abc, remote-user:abc            -> no
+ *   remote-screen      -> remote-screen                   -> yes   BUG(known)
+ *   remote-screen:abc  -> screen:abc, remote-screen:abc   -> no
+ *   echo-bot           -> echo-bot                        -> yes
+ * After the fix every feed writes exactly one namespaced key; only the voice
+ * feeds that had no ":" keep moving the global voice volume.
  */
-describe("peerKeyForFeed (current behavior)", () => {
+describe("sliderEffects (after fix)", () => {
   it.each([
-    ["remote-user", "remote-user"],
-    ["remote-user:abc", "abc"],
-    ["remote-screen", "remote-screen"],
-    ["remote-screen:abc", "screen:abc"],
-    ["echo-bot", "echo-bot"],
-  ])("%s -> %s", (feedId, expected) => {
-    expect(peerKeyForFeed(feedId)).toBe(expected);
-  });
-});
-
-describe("sliderEffects (current behavior)", () => {
-  it.each([
-    ["remote-user", ["remote-user", "friend-uid"], true],
-    ["remote-user:abc", ["abc", "remote-user:abc"], false],
-    ["remote-screen", ["remote-screen"], true], // BUG(known): screen slider also moves the global (voice) volume
-    ["remote-screen:abc", ["screen:abc", "remote-screen:abc"], false],
-    ["echo-bot", ["echo-bot"], true],
-  ])("%s", (feedId, peerKeys, global) => {
-    expect(sliderEffects(feedId, "friend-uid")).toEqual({
-      peerKeys,
-      changesGlobalRemoteVolume: global,
-    });
+    ["remote-user", "voice:friend-uid", true],
+    ["remote-user:abc", "voice:abc", false],
+    ["remote-screen", "screen:friend-uid", false],
+    ["remote-screen:abc", "screen:abc", false],
+    ["echo-bot", "voice:echo-bot", true],
+  ])("%s -> %s (global: %s)", (feedId, key, global) => {
+    const effects = sliderEffects(feedId, "friend-uid");
+    expect(effects.key).toBe(key);
+    expect(effects.changesGlobalRemoteVolume).toBe(global);
   });
 
-  it("does not add the friend key without a friendUid", () => {
-    expect(sliderEffects("remote-user", null).peerKeys).toEqual(["remote-user"]);
-  });
-});
-
-describe("mute keys (current behavior)", () => {
-  // The mute handler writes peerKeyForFeed(feedId) and feedId, never the friend key
-  // and never the global volume.
-  it.each([
-    ["remote-user:abc", ["abc", "remote-user:abc"]],
-    ["remote-screen:abc", ["screen:abc", "remote-screen:abc"]],
-    ["remote-screen", ["remote-screen"]],
-  ])("%s", (feedId, expected) => {
-    const written = Array.from(new Set([peerKeyForFeed(feedId), feedId]));
-    expect(written).toEqual(expected);
+  it("legacy single-peer feeds use the kind default when the friend is unknown", () => {
+    expect(sliderEffects("remote-user", null).key).toBe("voice:");
+    expect(sliderEffects("remote-screen", null).key).toBe("screen:");
   });
 });

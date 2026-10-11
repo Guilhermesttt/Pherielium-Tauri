@@ -9,6 +9,8 @@ interface ParticipantContextMenuProps {
   x: number;
   y: number;
   volume: number;
+  /** Slider ceiling in percent (screen audio is capped at 100). */
+  maxVolume?: number;
   isLocallyMuted?: boolean;
   isLocalAdmin?: boolean;
   onVolumeChange: (newVol: number) => void;
@@ -37,6 +39,7 @@ export const ParticipantContextMenu: React.FC<ParticipantContextMenuProps> = ({
   x,
   y,
   volume,
+  maxVolume = 200,
   isLocallyMuted = false,
   isLocalAdmin = false,
   onVolumeChange,
@@ -125,7 +128,7 @@ export const ParticipantContextMenu: React.FC<ParticipantContextMenuProps> = ({
           <input
             type="range"
             min={0}
-            max={200}
+            max={maxVolume}
             value={isLocallyMuted ? 0 : volume}
             aria-label={`Volume de ${feed.title}`}
             onChange={(e) => {
@@ -144,9 +147,13 @@ export const ParticipantContextMenu: React.FC<ParticipantContextMenuProps> = ({
             <span onClick={() => onVolumeChange(100)} className="cursor-pointer hover:text-white">
               100%
             </span>
-            <span onClick={() => onVolumeChange(200)} className="cursor-pointer hover:text-white">
-              200%
-            </span>
+            {maxVolume >= 200 ? (
+              <span onClick={() => onVolumeChange(200)} className="cursor-pointer hover:text-white">
+                200%
+              </span>
+            ) : (
+              <span aria-hidden="true" />
+            )}
           </div>
         </div>
       )}
