@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
+import { peerKeyForFeed, sliderEffects } from "@/services/voiceCall/volumeKeys";
+import { streamDebugLog } from "@/services/voiceCall/streamDebug";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Maximize2,
@@ -1053,25 +1055,16 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                     ...prev,
                     [contextMenu.feed.id]: newVol,
                   }));
-                  const rawPeerId = contextMenu.feed.id.startsWith("remote-screen:")
-                    ? `screen:${contextMenu.feed.id.replace("remote-screen:", "")}`
-                    : contextMenu.feed.id === "remote-screen"
-                      ? "remote-screen"
-                      : contextMenu.feed.id.startsWith("remote-user:")
-                        ? contextMenu.feed.id.replace("remote-user:", "")
-                        : contextMenu.feed.id;
+                  const effects = sliderEffects(contextMenu.feed.id, session?.friendUid);
+                  streamDebugLog("volume-slider", { feedId: contextMenu.feed.id, newVol, ...effects, isLocal: contextMenu.feed.isLocal });
 
                   if (onSetPeerVolume) {
-                    onSetPeerVolume(rawPeerId, newVol);
-                    onSetPeerVolume(contextMenu.feed.id, newVol);
-                    if (contextMenu.feed.id === "remote-user" && session?.friendUid) {
-                      onSetPeerVolume(session.friendUid, newVol);
-                    }
+                    effects.peerKeys.forEach((key) => onSetPeerVolume(key, newVol));
                   }
                   if (
                     !contextMenu.feed.isLocal &&
                     onChangeRemoteVolume &&
-                    (contextMenu.feed.id === "remote-user" || !contextMenu.feed.id.includes(":"))
+                    effects.changesGlobalRemoteVolume
                   ) {
                     onChangeRemoteVolume(newVol);
                   }
@@ -1082,18 +1075,12 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                     ...prev,
                     [contextMenu.feed.id]: nextMuted,
                   }));
-                  const rawPeerId = contextMenu.feed.id.startsWith("remote-screen:")
-                    ? `screen:${contextMenu.feed.id.replace("remote-screen:", "")}`
-                    : contextMenu.feed.id === "remote-screen"
-                      ? "remote-screen"
-                      : contextMenu.feed.id.startsWith("remote-user:")
-                        ? contextMenu.feed.id.replace("remote-user:", "")
-                        : contextMenu.feed.id;
+                  const mutePeerKey = peerKeyForFeed(contextMenu.feed.id);
                   const currVol =
                     userVolumes[contextMenu.feed.id] ??
                     (contextMenu.feed.isLocal ? 100 : remoteVolume ?? 100);
                   if (onSetPeerVolume) {
-                    onSetPeerVolume(rawPeerId, nextMuted ? 0 : currVol);
+                    onSetPeerVolume(mutePeerKey, nextMuted ? 0 : currVol);
                     onSetPeerVolume(contextMenu.feed.id, nextMuted ? 0 : currVol);
                   }
                 }}

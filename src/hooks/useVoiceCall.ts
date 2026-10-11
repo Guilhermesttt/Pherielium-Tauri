@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
+import { streamDebugLog } from "@/services/voiceCall/streamDebug";
 import type { AuthUser } from "../auth/AuthProvider";
 import {
   type CallState,
@@ -704,6 +705,17 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
                   : (peerVolumes[peerId] ?? peerVolumes["remote-user"] ?? remoteVolume);
               const normVol = Math.max(0, Math.min(1.0, (peerVol ?? 100) / 100));
 
+              // TEMPORARY (volume-bug diagnosis): remove once the fix is validated.
+              streamDebugLog("volume-sync", {
+                peerId,
+                source: pub.source,
+                trackSid: pub.track.sid,
+                resolvedKey: isScreenAudio ? `screen:${peerId}` : peerId,
+                normVol,
+                globalRemoteVolume: remoteVolume,
+                peerVolumeKeys: peerVolumes,
+                elementVolumesBefore: (pub.track.attachedElements ?? []).map((el) => el.volume),
+              });
               pub.track.attachedElements?.forEach((el) => {
                 el.volume = normVol;
                 if (selectedAudioOutput && selectedAudioOutput !== "default" && typeof (el as any).setSinkId === "function") {
