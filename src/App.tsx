@@ -26,7 +26,8 @@ import { setLauncherInputLocked } from "./utils/launcherInputLock";
 // import TrophyUnlockToast from "./components/TrophyUnlockToast";
 const TrophyUnlockToast = React.lazy(() => import("./components/TrophyUnlockToast"));
 import { LevelUpModal } from "./components/LevelUpModal";
-import { ConfiguredDesktopNotch } from "./components/notch/DesktopNotch";
+import { ConfiguredDesktopNotch, NOTCH_BAR_HEIGHT } from "./components/notch/DesktopNotch";
+import { useNotchConfig } from "./mascot/useNotchConfig";
 import type { SoundTheme } from "./context/PreferencesContext";
 
 const menuMusicLoaders: Record<SoundTheme, () => Promise<string | null>> = {
@@ -72,6 +73,20 @@ const AppContent: React.FC = () => {
     gameBootIntroSoundEnabled,
   } = usePreferences();
   const prefersReduced = usePrefersReducedMotion();
+  const notchConfig = useNotchConfig();
+
+  // O notch é `position: fixed` no topo central da tela e cobria a pill de abas
+  // do header. Em Tauri ele vive na janela de overlay — outro documento —, então
+  // não tem como ele próprio publicar a altura aqui: o hub reserva o espaço pela
+  // altura máxima da barra sempre que o notch estiver ligado. O desconto da
+  // title bar e o cálculo final ficam em --notch-clearance (src/index.css).
+  React.useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--notch-h", notchConfig.enabled ? `${NOTCH_BAR_HEIGHT}px` : "0px");
+    return () => {
+      root.style.removeProperty("--notch-h");
+    };
+  }, [notchConfig.enabled]);
   const reducedMotionProp = performanceTier === "performance" || lowPerformanceMode || prefersReduced
     ? "always"
     : performanceTier === "balanced"

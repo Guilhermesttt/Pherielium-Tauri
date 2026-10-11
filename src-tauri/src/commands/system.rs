@@ -351,6 +351,86 @@ try {
     Ok(serde_json::json!({ "hasMedia": false, "isPlaying": false }))
 }
 
+/// Liga ou desliga a reprodução na MESMA sessão de mídia que `system_get_media_info`
+/// reporta, pelo controle de transporte do Windows.
+///
+/// A tecla global `VK_MEDIA_PLAY_PAUSE` (`system_media_play_pause`) é um toggle
+/// cego: vai para quem tiver o foco de mídia no momento e não diz se funcionou.
+/// Quando não chegava ao app certo, o notch invertia o próprio estado e passava a
+/// mandar o comando contrário no clique seguinte — daí o "não despausa".
+///
+/// Aqui o alvo é explícito (`TryPlayAsync` / `TryPauseAsync`, nunca toggle), então
+/// repetir o comando é idempotente, e o retorno diz se a sessão aceitou.
+#[command]
+pub async fn system_media_set_playing(playing: bool) -> Result<bool, String> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        use std::process::Command;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+        // Injetado como literal booleano: o parâmetro é um `bool` do Rust, nunca
+        // texto vindo de fora.
+        let desired = if playing { "$true" } else { "$false" };
+        let script = format!(
+            r#"
+Add-Type -AssemblyName System.Runtime.WindowsRuntime
+$asTaskGeneric = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object {{ $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1' }})[0]
+Function Await-WinRt($WinRtTask, $ResultType) {{
+    $asTask = $asTaskGeneric.MakeGenericMethod($ResultType)
+    $netTask = $asTask.Invoke($null, @($WinRtTask))
+    $netTask.Wait(-1) | Out-Null
+    $netTask.Result
+}}
+$Desired = {desired}
+try {{
+    [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media, ContentType=WindowsRuntime] | Out-Null
+    $asyncOp = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()
+    $mgr = Await-WinRt $asyncOp ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])
+    $target = $null
+    foreach ($session in $mgr.GetSessions()) {{
+        $propsAsync = $session.TryGetMediaPropertiesAsync()
+        $props = Await-WinRt $propsAsync ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
+        $title = $props.Title
+        if ($title -like "*PHERIELIUM*" -or $title -like "*PHELIERIUM*" -or $session.SourceAppId -like "*pherielium*") {{
+            continue
+        }}
+        if (-not $title) {{ continue }}
+        $status = $session.GetPlaybackInfo().PlaybackStatus.ToString()
+        if ($Desired -and $status -ne "Playing") {{ $target = $session; break }}
+        if ((-not $Desired) -and $status -eq "Playing") {{ $target = $session; break }}
+        if ($null -eq $target) {{ $target = $session }}
+    }}
+    if ($null -eq $target) {{ "false"; exit }}
+    $op = if ($Desired) {{ $target.TryPlayAsync() }} else {{ $target.TryPauseAsync() }}
+    $ok = Await-WinRt $op ([bool])
+    if ($ok) {{ "true" }} else {{ "false" }}
+}} catch {{
+    "false"
+}}
+"#
+        );
+
+        let output = tokio::task::spawn_blocking(move || {
+            Command::new("powershell")
+                .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &script])
+                .creation_flags(CREATE_NO_WINDOW)
+                .output()
+        })
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())?;
+
+        let text = String::from_utf8_lossy(&output.stdout);
+        return Ok(text.trim().eq_ignore_ascii_case("true"));
+    }
+    #[allow(unreachable_code)]
+    {
+        let _ = playing;
+        Ok(false)
+    }
+}
+
 #[command]
 pub async fn system_media_play_pause() -> Result<(), String> {
     #[cfg(target_os = "windows")]

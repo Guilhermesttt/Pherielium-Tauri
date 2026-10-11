@@ -102,6 +102,7 @@ export const normalizeMessage = (
     editedAt: typeof value.editedAt === "string" ? value.editedAt : typeof value.edited_at === "string" ? value.edited_at : undefined,
     deletedAt: typeof value.deletedAt === "string" ? value.deletedAt : typeof value.deleted_at === "string" ? value.deleted_at : undefined,
     mentions: Array.isArray(value.mentions) ? value.mentions.map(String) : undefined,
+    clientId: typeof value.clientId === "string" ? value.clientId : typeof value.client_id === "string" ? value.client_id : undefined,
     reactions: value.reactions && typeof value.reactions === "object" && !Array.isArray(value.reactions)
       ? value.reactions as Record<string, string[]>
       : undefined,
@@ -117,6 +118,20 @@ const hydrateAttachmentUrl = async (message: ChatMessage): Promise<ChatMessage> 
     ...message,
     attachmentUrl: error ? undefined : data.signedUrl,
   };
+};
+
+/**
+ * Fica true se o banco ainda não tem a coluna `client_id` (migration
+ * 20261010120000 não aplicada). A partir daí os inserts já saem sem ela, em vez
+ * de falhar uma vez por mensagem.
+ */
+let clientIdColumnMissing = false;
+
+/** Id de cliente para uma mensagem nova. crypto.randomUUID quando existir. */
+const newClientId = (): string => {
+  const c = globalThis.crypto;
+  if (c && typeof c.randomUUID === "function") return c.randomUUID();
+  return `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 };
 
 export const ensureChatSession = async (
@@ -327,10 +342,14 @@ export const sendChatMessage = async (
 
   const chatId = await ensureChatSession(senderId, receiverId);
 
+  // Id do remetente, gerado antes de qualquer ida à rede. Vai no broadcast e na
+  // linha do banco, então o destinatário parea as duas entregas com exatidão.
+  const clientId = newClientId();
   // Fast-Path via WebSocket (Instantâneo / Sub-50ms para o destinatário)
   const tempMsgId = `fast_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const fastMsg: ChatMessage = {
     id: tempMsgId,
+    clientId,
     chatId,
     senderId,
     receiverId,
@@ -363,9 +382,37 @@ export const sendChatMessage = async (
     ...(options?.mentions?.length ? { mentions: options.mentions } : {}),
   };
 
-  // Persistência em segundo plano / DB
-  const { data, error } = await supabase.from("chat_messages").insert(newMsg).select().single();
+  // Persistência em segundo plano / DB.
+  // O insert leva `client_id`, mas o app não pode quebrar se rodar contra um
+  // banco sem a migration: nesse caso o PostgREST responde PGRST204 e a
+  // mensagem é regravada sem a coluna (volta ao pareamento por fila).
+  const insertRow = clientIdColumnMissing ? newMsg : { ...newMsg, client_id: clientId };
+  let { data, error } = await supabase.from("chat_messages").insert(insertRow).select().single();
+
+  if (error?.code === "PGRST204" && !clientIdColumnMissing) {
+    clientIdColumnMissing = true;
+    console.warn(
+      "[chat] coluna client_id ausente; aplique supabase/migrations/20261010120000_chat_messages_client_id.sql",
+    );
+    ({ data, error } = await supabase.from("chat_messages").insert(newMsg).select().single());
+  }
+
   if (error || !data) {
+    // Reenvio da mesma mensagem (retry de rede, clique duplo): o índice único
+    // (chat_id, client_id) barra a segunda linha. Devolve a que já existe.
+    if (error?.code === "23505") {
+      const { data: existing } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("chat_id", chatId)
+        .eq("client_id", clientId)
+        .maybeSingle();
+      if (existing) {
+        return hydrateAttachmentUrl(
+          normalizeMessage(String(existing.id), existing as Record<string, unknown>),
+        );
+      }
+    }
     // Retorna mensagem temporária otimista mesmo se houver delay no banco
     return fastMsg;
   }
@@ -375,7 +422,9 @@ export const sendChatMessage = async (
 
 const broadcastMessageUpdate = async (message: ChatMessage) => {
   if (message.receiverId) {
-    void sendFastU2UMessage(message.receiverId, message);
+    // `isUpdate` impede que o destinatario trate o patch como mensagem nova
+    // quando ele nao tem a original carregada (fora do HISTORY_LIMIT).
+    void sendFastU2UMessage(message.receiverId, { ...message, isUpdate: true });
   }
 };
 
@@ -568,6 +617,59 @@ export const subscribeToChatMessages = (
   let unsubFast: (() => void) | null = null;
   let realtimeChannel: ReturnType<typeof supabase.channel> | null = null;
 
+  /**
+   * Toda mensagem chega duas vezes: primeiro pelo barramento rapido (id
+   * `fast_...`) e depois pelo INSERT do Postgres (id definitivo). O pareamento
+   * era por "mesmo autor + mesmo texto dentro de 15s", o que errava dos dois
+   * lados: com o banco lento a janela estourava e a mensagem duplicava, e duas
+   * mensagens identicas em menos de 15s eram fundidas numa so.
+   *
+   * Agora cada mensagem rapida entra numa fila pela sua chave e o primeiro
+   * INSERT com a mesma chave consome a primeira da fila. Sem janela de tempo:
+   * duplicata nao passa, e mensagem repetida de proposito nao se perde.
+   */
+  const pendingFastIds = new Map<string, string[]>();
+  /** fast_id por client_id: pareamento exato quando o remetente envia um. */
+  const fastIdByClientId = new Map<string, string>();
+  const pairingKey = (message: ChatMessage) =>
+    [
+      message.senderId,
+      message.chatId ?? "",
+      message.attachmentPath ?? "",
+      message.text.trim(),
+    ].join(" ");
+
+  const enqueueFast = (message: ChatMessage) => {
+    if (message.clientId) {
+      fastIdByClientId.set(message.clientId, message.id!);
+      return;
+    }
+    const key = pairingKey(message);
+    const queue = pendingFastIds.get(key);
+    if (queue) queue.push(message.id!);
+    else pendingFastIds.set(key, [message.id!]);
+  };
+
+  /** Tira da fila o id rapido que corresponde a esta linha do banco. */
+  const dequeueFastIdFor = (message: ChatMessage): string | null => {
+    if (message.clientId) {
+      const exact = fastIdByClientId.get(message.clientId);
+      if (exact) {
+        fastIdByClientId.delete(message.clientId);
+        return exact;
+      }
+      // Remetente com client_id mas sem entrega rápida registrada aqui:
+      // nao ha o que parear, e o id definitivo ja barra duplicata.
+      return null;
+    }
+    const key = pairingKey(message);
+    const queue = pendingFastIds.get(key);
+    if (!queue || queue.length === 0) return null;
+    const fastId = queue.shift()!;
+    if (queue.length === 0) pendingFastIds.delete(key);
+    return fastId;
+  };
+
   const reportError = (message: string, cause?: unknown) => {
     if (cancelled) return;
     const error = cause instanceof Error ? cause : new Error(message);
@@ -637,21 +739,20 @@ export const subscribeToChatMessages = (
           ) {
             const existingIndex = latestMessages.findIndex((current) => current.id === fastMsg.id);
             if (existingIndex !== -1) {
-              latestMessages = latestMessages.map((item, index) => (index === existingIndex ? { ...item, ...fastMsg } : item));
+              latestMessages = latestMessages.map((item, index) =>
+                index === existingIndex ? { ...item, ...fastMsg, isUpdate: undefined } : item,
+              );
               deliverMessages(latestMessages);
               return;
             }
-            const isAlreadyPresent = latestMessages.some(
-              (current) =>
-                !current.id?.startsWith("fast_") &&
-                current.senderId === fastMsg.senderId &&
-                current.text.trim() === fastMsg.text.trim() &&
-                Math.abs(messageTimestamp(current) - messageTimestamp(fastMsg)) < 15000,
-            );
-            if (!isAlreadyPresent) {
-              latestMessages = [...latestMessages, fastMsg].sort(compareChatMessages);
-              deliverMessages(latestMessages);
-            }
+            // Patch de uma mensagem que nao esta carregada aqui: ignora em vez
+            // de inserir uma copia.
+            if (fastMsg.isUpdate) return;
+            // O INSERT do Postgres desta mesma mensagem ainda vai chegar; deixa
+            // a chave na fila para ele substituir esta versao otimista.
+            enqueueFast(fastMsg);
+            latestMessages = [...latestMessages, fastMsg].sort(compareChatMessages);
+            deliverMessages(latestMessages);
           }
         },
         onReadReceipt: (data) => {
@@ -689,13 +790,12 @@ export const subscribeToChatMessages = (
             );
             if (cancelled) return;
 
-            const existingFastIndex = latestMessages.findIndex(
-              (current) =>
-                current.id?.startsWith("fast_") &&
-                current.senderId === msg.senderId &&
-                current.text.trim() === msg.text.trim() &&
-                Math.abs(messageTimestamp(current) - messageTimestamp(msg)) < 15000,
-            );
+            if (latestMessages.some((current) => current.id === msg.id)) return;
+
+            const fastId = dequeueFastIdFor(msg);
+            const existingFastIndex = fastId
+              ? latestMessages.findIndex((current) => current.id === fastId)
+              : -1;
 
             if (existingFastIndex !== -1) {
               latestMessages = latestMessages.map((item, idx) => (idx === existingFastIndex ? msg : item));
@@ -703,7 +803,7 @@ export const subscribeToChatMessages = (
               return;
             }
 
-            if (!latestMessages.some((current) => current.id === msg.id)) {
+            {
               latestMessages = [...latestMessages, msg].sort(compareChatMessages);
               deliverMessages(latestMessages);
             }

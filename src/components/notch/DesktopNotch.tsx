@@ -48,6 +48,8 @@ import { CallIncomingBar } from "./live/CallIncomingBar";
 import { VoiceBars } from "./live/VoiceBars";
 import { LIVE_WIDTH, resolveLiveActivity } from "./live/liveActivity";
 import { ControllerTab } from "./live/ControllerTab";
+import { playPherieVoice, voiceForMoodChange } from "./pherieVoice";
+import { useNotchPeek } from "./useNotchPeek";
 import { useControllerState } from "./controllerState";
 import { parseTimeline, type MediaTimeline } from "./live/progressMath";
 import {
@@ -125,7 +127,12 @@ export function resolveMascotMood(params: {
 /** Preto "de notch": levemente quente para não parecer um buraco no wallpaper. */
 export const NOTCH_SPRING = OPEN_SPRING;
 const NOTCH_EXPANDED_WIDTH = 448;
-const NOTCH_BAR_HEIGHT = 52;
+/**
+ * Altura da barra do notch. Exportada porque o hub precisa reservar esse espaço
+ * no topo mesmo quando não é ele quem desenha o notch (em Tauri quem desenha é
+ * a janela de overlay, que é outro documento).
+ */
+export const NOTCH_BAR_HEIGHT = 52;
 /** Tamanho da Pherie na barra compacta (antes 26: pequena demais para ver o rosto). */
 const BAR_MASCOT = 38;
 /** Tempo de tontura depois de cliques demais na Pherie. */
@@ -162,8 +169,8 @@ export function prettySourceApp(raw?: string | null): string {
 
 /**
  * Política de auto-hide (Bloom): o notch só se esconde quando outro app está em
- * primeiro plano. Com chamada ativa ou jogo em andamento ele fica SEMPRE
- * visível — é o único ponto de controle do overlay em jogo.
+ * primeiro plano. Chamada ou jogo em andamento NÃO fixam o notch: o cursor no
+ * topo da tela sempre o revela, e o mute/desligar seguem no painel.
  */
 export function shouldAutoHide(params: {
   isWindowOverlapping: boolean;
@@ -172,10 +179,6 @@ export function shouldAutoHide(params: {
   disabled: boolean;
 }): boolean {
   if (params.disabled) return false;
-  // Chamada de voz ativa: mantém sempre visível (único controle de mute/hang-up).
-  // Jogo em andamento não é mais exceção — o notch segue o auto-hide normal;
-  // o cursor no topo da tela sempre o revela.
-  if (params.isCallActive) return false;
   return params.isWindowOverlapping;
 }
 
@@ -752,13 +755,24 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   const handleTogglePlayPause = useCallback(async (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    notchSoundRef.current(mediaPlayingRef.current ? "mediaPause" : "mediaPlay");
-    if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-      try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        await invoke("system_media_play_pause");
-        setMediaState((prev) => ({ ...prev, isPlaying: !prev.isPlaying }));
-      } catch {}
+    const desired = !mediaPlayingRef.current;
+    notchSoundRef.current(desired ? "mediaPlay" : "mediaPause");
+    if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      // Comando explícito e idempotente na sessão certa. Antes era a tecla
+      // global de toggle + inversão otimista do estado aqui: quando a tecla não
+      // chegava ao app dono da mídia, a UI invertia sozinha e o clique seguinte
+      // mandava o comando contrário — era por isso que não despausava.
+      const accepted = await invoke<boolean>("system_media_set_playing", { playing: desired });
+      if (accepted) {
+        setMediaState((prev) => (prev.isPlaying === desired ? prev : { ...prev, isPlaying: desired }));
+      } else {
+        // Sessão recusou: não mexe no estado, o poll (1,5s) mostra a verdade.
+        console.warn("[notch] sessão de mídia recusou play/pause");
+      }
+    } catch (err) {
+      console.warn("[notch] falha ao controlar a mídia do sistema:", err);
     }
   }, []);
 
@@ -956,6 +970,22 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     return situation.ambient ?? "idle"; // parada: entedia, dá sono, dorme
   }, [incomingInvite, situation.transient, situation.ambient, isHovered, dizzy, controllerFlash, notchEvent, dropzone.armed, dropzone.over, dropzone.importing, digested, isCallActive, isMuted, activeGameTitle, isPcMediaPlaying, curious, baseMood]);
 
+  // A "voz" da Pherie: um gorjeio por reação (susto, confusão, sono, alegria...). Humores
+  // que vêm de chamada, aviso ou controle já têm som próprio, então ficam de fora; e a
+  // cutucada (abaixo) toca o seu pip, sem dobrar com o "ah!" do susto.
+  const moodHasOwnSound = Boolean(incomingInvite || notchEvent || controllerFlash);
+  const prevVoiceMoodRef = useRef<MascotMood | null>(null);
+  const voiceMuteUntilRef = useRef(0);
+  useEffect(() => {
+    const prev = prevVoiceMoodRef.current;
+    prevVoiceMoodRef.current = mascotMood;
+    if (!config.sounds || !config.showMascot) return;
+    if (moodHasOwnSound) return;
+    if (performance.now() < voiceMuteUntilRef.current) return;
+    const voice = voiceForMoodChange(prev, mascotMood);
+    if (voice) playPherieVoice(voice, soundVolume);
+  }, [mascotMood, config.sounds, config.showMascot, moodHasOwnSound, soundVolume]);
+
   // Boca do mascote: no Tauri o volume do microfone chega por evento dedicado
   // (overlay:voice-level, ref sem re-render). Fora do Tauri (dev no navegador) cai
   // no flag booleano de "falando".
@@ -992,8 +1022,17 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   }, [incomingInvite, revealNotch]);
 
   // Oculta o Notch no topo se houver janela sobreposta e o cursor não estiver na área
-  // (nunca durante chamada ou jogo — ver shouldAutoHide).
+  // (inclusive em chamada — ver shouldAutoHide).
   const isHiddenByWindow = autoHideActive && !isRevealed && !isHovered;
+
+  // Notch escondido (outro app em foco): a Pherie espia de vez em quando na borda de cima,
+  // como quem diz "olha eu aqui!". Não em chamada, nem em jogo (aí ela não atrapalha).
+  const peeking = useNotchPeek(
+    isHiddenByWindow && config.showMascot && !isCallActive && !activeGameTitle && !incomingInvite,
+  );
+  useEffect(() => {
+    if (peeking && config.sounds) playPherieVoice("peek", soundVolume);
+  }, [peeking, config.sounds, soundVolume]);
 
   // Sons: abrir/fechar o painel e o notch "descendo" do auto-hide.
   const prevExpandedRef = useRef(false);
@@ -1012,9 +1051,9 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   // Outra janela ganhou o foco: o notch recolhe. `isRevealed` só voltava a falso no mouseleave, e
   // como o overlay é click-through esse evento quase nunca vinha (o notch ficava aberto para sempre).
-  // Quando nada o segura (mouse, painel, aviso, chamada), ele sobe sozinho depois de um instante.
+  // Quando nada o segura (mouse, painel, aviso, convite), ele sobe sozinho depois de um instante.
   const holdsNotchOpen =
-    isHovered || isExpanded || Boolean(notchEvent) || Boolean(controllerFlash) || Boolean(incomingInvite) || isCallActive || overlayActive;
+    isHovered || isExpanded || Boolean(notchEvent) || Boolean(controllerFlash) || Boolean(incomingInvite) || overlayActive;
   useEffect(() => {
     if (!autoHideActive || !isRevealed || holdsNotchOpen) return;
     const id = window.setTimeout(() => setIsRevealed(false), 900);
@@ -1078,10 +1117,12 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         reactMood("confused");
       }, OVERLOAD_MS);
     } else {
-      notchSound("mascotPoke");
+      // pip que fica mais agudo a cada clique; o humor que ela reage não fala por cima
+      voiceMuteUntilRef.current = performance.now() + 700;
+      if (config.sounds && config.showMascot) playPherieVoice("poke", soundVolume, 1 + 0.14 * (recent.length - 1));
       reactMood(recent.length === 1 ? "surprised" : "annoyed");
     }
-  }, [notchSound, revealNotch, reactMood]);
+  }, [notchSound, revealNotch, reactMood, config.sounds, config.showMascot, soundVolume]);
 
   const openNotch = () => {
     if (!pointerRevealRef.current) return;
@@ -1228,28 +1269,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     if (notchEvent) {
       return <NotchEventBar event={notchEvent} mascot={barMascot(BAR_MASCOT)} />;
     }
-    if (isCallActive) {
-      return (
-        <>
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            {barMascot(BAR_MASCOT)}
-            <CallAvatar src={callFriendAvatar} name={callFriendName} size={22} speaking={isSpeaking && !isMuted} />
-            <span className="text-[12px] font-semibold text-white/90 truncate">{callFriendName || "Voz"}</span>
-          </div>
-          {isMuted ? (
-            <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#f4505e]/20 px-2 py-1 text-[10.5px] font-semibold text-[#ff7a85]">
-              <MicOff size={12} />
-              Silencioso
-            </span>
-          ) : (
-            <VoiceBars levelRef={voiceLevelRef} speaking={isSpeaking} />
-          )}
-          <span className="shrink-0 pl-2.5 text-[12px] font-semibold font-mono tabular-nums text-white">
-            {formatSeconds(callDuration)}
-          </span>
-        </>
-      );
-    }
+    // Expandido (inclusive em chamada): sempre as abas, senão a página do controle fica inacessível.
     if (isExpanded) {
       // cabeçalho estilo Coucou: abas só com ícone à esquerda, atalhos à direita
       const tabBtn = (id: "home" | "controller", label: string, icon: React.ReactNode) => (
@@ -1312,6 +1332,28 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             )}
           </div>
         </div>
+      );
+    }
+    if (isCallActive) {
+      return (
+        <>
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            {barMascot(BAR_MASCOT)}
+            <CallAvatar src={callFriendAvatar} name={callFriendName} size={22} speaking={isSpeaking && !isMuted} />
+            <span className="text-[12px] font-semibold text-white/90 truncate">{callFriendName || "Voz"}</span>
+          </div>
+          {isMuted ? (
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#f4505e]/20 px-2 py-1 text-[10.5px] font-semibold text-[#ff7a85]">
+              <MicOff size={12} />
+              Silencioso
+            </span>
+          ) : (
+            <VoiceBars levelRef={voiceLevelRef} speaking={isSpeaking} />
+          )}
+          <span className="shrink-0 pl-2.5 text-[12px] font-semibold font-mono tabular-nums text-white">
+            {formatSeconds(callDuration)}
+          </span>
+        </>
       );
     }
     if (activeGameTitle) {
@@ -1378,6 +1420,48 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         onMouseEnter={handleMouseEnter}
         onClick={openNotch}
       />
+
+      {/* Pherie espiando pela borda de cima enquanto o notch está escondido */}
+      <div className="pointer-events-none fixed left-1/2 top-0 z-[10029] -translate-x-1/2">
+        <AnimatePresence>
+          {peeking && (
+            <motion.button
+              key="pherie-peek"
+              type="button"
+              data-overlay-interactive="true"
+              data-notch-peek="true"
+              aria-label="A Pherie está espiando. Clique para mostrar o notch"
+              onClick={revealNotch}
+              initial={{ y: -64 }}
+              animate={{ y: [-64, -14, -22, -14, -22, -14] }}
+              exit={{ y: -64, transition: { duration: 0.28, ease: "easeIn" } }}
+              transition={{ duration: 3.2, times: [0, 0.12, 0.35, 0.58, 0.8, 1], ease: "easeInOut" }}
+              className="pointer-events-auto relative flex cursor-pointer items-center"
+            >
+              <GazingMascot
+                cursor={gazeCursor}
+                size={46}
+                mood="happy"
+                isHovered={false}
+                bodyColor={mascotBodyColor}
+                shape={mascotShape}
+                hat={config.hat}
+                items={config.items}
+                inCall={false}
+                isMusicPlaying={false}
+                ringing={false}
+                levelRef={voiceLevelRef}
+                muted={false}
+                mutedSpeechRef={mutedSpeechRef}
+                isSpeaking={false}
+              />
+              <span className="absolute left-full top-5 ml-1.5 whitespace-nowrap rounded-full bg-black/85 px-2.5 py-1 text-[11px] font-semibold text-white shadow-[0_6px_18px_rgba(0,0,0,0.5)]">
+                Olha eu aqui!
+              </span>
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
 
       <aside
         aria-label="Desktop Notch"
@@ -1450,7 +1534,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
           <div
             className="flex items-center px-3 cursor-pointer"
             style={{ height: barHeight }}
-            onClick={isCallActive ? handleOpenCall : openNotch}
+            onClick={isCallActive && !isExpanded ? handleOpenCall : openNotch}
           >
             {renderBar()}
           </div>

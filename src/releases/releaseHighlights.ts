@@ -13,29 +13,35 @@ export interface ReleaseHighlights {
 }
 
 export const LATEST_RELEASE: ReleaseHighlights = {
-  version: "1.0.0",
-  title: "Pherielium 1.0",
+  version: "1.0.2",
+  title: "Pherielium 1.0.2",
   description:
-    "Primeira versão estável no GitHub: setup com ícone novo, tela de configuração inicial e atualizações pelo repositório.",
-  releaseUrl: "https://github.com/Guilhermesttt/Pherielium-Tauri/releases/tag/v1.0.0",
+    "Controle completo nas Ajustes, legendas de gamepad em todas as páginas, Home mais fluida e uma Pherie com voz.",
+  releaseUrl: "https://github.com/Guilhermesttt/Pherielium-Tauri/releases/tag/v1.0.2",
   highlights: [
     {
-      id: "ui",
-      title: "Configuração inicial",
+      id: "controller",
+      title: "Controle completo nas Ajustes",
       description:
-        "Wizard de first-run com o ícone do hub e preferências de janela (bandeja, confirmar saída, iniciar com o Windows).",
+        "Nova aba Controles com visualizador ao vivo, bateria, teste de vibração, drift e circularidade dos sticks, e perfis com zona morta e curvas de resposta (global ou por jogo).",
+    },
+    {
+      id: "ui",
+      title: "Legendas do controle em todo lugar",
+      description:
+        "Home, Amigos, Ajustes e as demais páginas mostram os comandos do gamepad no rodapé. O hero da Home ficou mais limpo, sem os botões Jogar Agora e Detalhes.",
     },
     {
       id: "stability",
-      title: "Atualizações pelo GitHub",
+      title: "Mais fluido, sem engasgos",
       description:
-        "O launcher verifica releases novas e mostra uma notificação fixa para você atualizar.",
+        "O vídeo de fundo congela enquanto você navega e sai de cena sozinho em PCs mais fracos. O analógico direito rola Mods e Troféus direito, e o controle fica travado durante a animação de lançamento.",
     },
     {
-      id: "security",
-      title: "Identidade 1.0",
+      id: "voice",
+      title: "Pherie com voz e notch em chamada",
       description:
-        "Ícone e instalador alinhados à marca Pherielium neste repositório.",
+        "A Pherie ganhou gorjeios fofos para susto, sono, alegria e cutucadas. Em chamada, o notch expandido mostra as abas (inclusive Controle) e some quando outra janela está em foco.",
     },
   ],
 };

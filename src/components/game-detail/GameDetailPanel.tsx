@@ -24,8 +24,11 @@ import { GameDetailStats } from "./GameDetailStats";
 import { GameLaunchIntro } from "./GameLaunchIntro";
 import { GameDetailAchievements } from "./GameDetailAchievements";
 import { GameDetailSocialMods } from "./GameDetailSocialMods";
+import GameControllerPanel from "./GameControllerPanel";
 import { FramerCarouselThumbnails } from "../ui/framer-thumbnails";
 import { ControllerButtonGlyph } from "../ui/ControllerButtonGlyph";
+import { acquireLauncherInputLock } from "../../utils/launcherInputLock";
+import { holdBackgroundVideo } from "../../utils/videoHold";
 
 export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
   game,
@@ -35,6 +38,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
   onLibraryChanged,
   onGameHydrated,
   onOpenMods,
+  onOpenControllerSettings,
   currentPresenceGame,
   friends = [],
   onToggleFavorite,
@@ -44,6 +48,11 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
   const { language, closeOnLaunch, gameBootIntroEnabled, gameBootIntroSoundEnabled, effectsVolume } = usePreferences();
   const { notify } = useNotification();
   const { isGamepadConnected, gamepadFamily, activeInputType } = useGamepad();
+  // Guarda DE QUAL JOGO o painel de controle está aberto, em vez de um booleano:
+  // ao trocar de jogo o painel fecha sozinho (o id deixa de bater), sem efeito
+  // nem setState em cascata, e nunca edita o perfil do jogo errado.
+  const [controllerPanelGameId, setControllerPanelGameId] = React.useState<string | null>(null);
+  const controllerPanelOpen = Boolean(game) && controllerPanelGameId === game?.id;
 
   const detailLanguage =
     language === "pt-BR" || language === "en-US" || language === "es-ES"
@@ -143,6 +152,20 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
       if (mouseTimerRef.current) window.clearTimeout(mouseTimerRef.current);
     };
   }, [isOpen]);
+
+  // Durante a animação de lançamento o controle não mexe em nada do launcher: antes
+  // o analógico direito ainda rolava o painel por trás da intro do mascote.
+  const isLaunchingNow = state.isLaunching;
+  React.useEffect(() => {
+    if (!isLaunchingNow) return;
+    const releaseInput = acquireLauncherInputLock();
+    // e o vídeo de fundo congela: a intro é o momento de maior custo de render
+    const releaseVideo = holdBackgroundVideo();
+    return () => {
+      releaseInput();
+      releaseVideo();
+    };
+  }, [isLaunchingNow]);
 
   const tabs = React.useMemo(
     () => [copy.tabPlay, copy.tabAbout, copy.tabAchievements, copy.tabCaptures, copy.tabMods, copy.tabManage],
@@ -397,6 +420,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
             onLaunch={actions.handleLaunch}
             onToggleFavorite={() => onToggleFavorite?.(game)}
             onEditGame={() => onEditGame?.(game)}
+            onOpenControllerPanel={() => setControllerPanelGameId(game.id)}
             playSound={playSound}
           />
           </div>
@@ -718,6 +742,26 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
               </div>
             </div>
           </ModalShell>
+
+          {/* Painel rápido de controle deste jogo */}
+          {game && (
+            <GameControllerPanel
+              isOpen={controllerPanelOpen}
+              onClose={() => setControllerPanelGameId(null)}
+              uid={user?.uid}
+              gameId={game.id}
+              gameTitle={game.title}
+              onOpenAdvanced={
+                onOpenControllerSettings
+                  ? () => {
+                      setControllerPanelGameId(null);
+                      onOpenControllerSettings(game);
+                    }
+                  : undefined
+              }
+              playSound={playSound}
+            />
+          )}
 
           {/* ============================================================
               TELA CINEMATOGRÁFICA DE LAUNCH

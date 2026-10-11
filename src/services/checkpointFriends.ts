@@ -404,6 +404,36 @@ export const fetchUserGamesForProfile = async (
   return [];
 };
 
+/**
+ * O backend do Render e o Supabase não concordam no formato dos campos: um
+ * devolve `banner_url`, o outro `bannerURL`. Só o caminho do Supabase mapeava,
+ * então o banner (e qualquer campo só-snake) sumia no perfil de outra pessoa.
+ */
+const normalizeProfileCasing = (input: UserProfile): UserProfile => {
+  const row = input as unknown as Record<string, unknown>;
+  const pick = (...keys: string[]) => {
+    for (const key of keys) {
+      const value = row[key];
+      if (value !== undefined && value !== null && value !== "") return value;
+    }
+    return undefined;
+  };
+  return {
+    ...input,
+    displayName: (pick("displayName", "display_name") as string) ?? null,
+    photoURL: (pick("photoURL", "photo_url") as string) ?? null,
+    bannerURL: (pick("bannerURL", "banner_url") as string) ?? null,
+    profileVisibility: (pick("profileVisibility", "profile_visibility") as UserProfile["profileVisibility"]) ?? "public",
+    favoriteGenres: pick("favoriteGenres", "favorite_genres") as UserProfile["favoriteGenres"],
+    steamUsername: pick("steamUsername", "steam_username") as string | undefined,
+    steamAvatar: pick("steamAvatar", "steam_avatar") as string | undefined,
+    discordUsername: pick("discordUsername", "discord_username") as string | undefined,
+    discordAvatar: pick("discordAvatar", "discord_avatar") as string | undefined,
+    achievementSummary: pick("achievementSummary", "achievement_summary") as UserProfile["achievementSummary"],
+    librarySummary: pick("librarySummary", "library_summary") as UserProfile["librarySummary"],
+  };
+};
+
 export const getCheckpointFriendProfile = async (
   uid: string,
 ): Promise<{ profile: UserProfile; games: Game[] }> => {
@@ -420,7 +450,7 @@ export const getCheckpointFriendProfile = async (
         games?: Game[];
       };
       if (payload.profile) {
-        profile = payload.profile;
+        profile = normalizeProfileCasing(payload.profile);
         if (Array.isArray(payload.games) && payload.games.length > 0) {
           games = payload.games;
         }
@@ -490,6 +520,16 @@ export const getCheckpointFriendProfile = async (
           ...profile.librarySummary,
           ...publicProfileRow.stats,
         };
+      }
+      // A API do Render é um serviço à parte e não conhece as colunas de mídia
+      // (banner_url entrou na migration 20261008000000_profile_media). Como
+      // profile.ts grava o banner nas duas tabelas, public_profiles fecha a
+      // lacuna sem mais nenhuma consulta.
+      if (!profile.bannerURL && publicProfileRow.banner_url) {
+        profile.bannerURL = String(publicProfileRow.banner_url);
+      }
+      if (!profile.photoURL && publicProfileRow.photo_url) {
+        profile.photoURL = String(publicProfileRow.photo_url);
       }
     }
   } catch (e) {

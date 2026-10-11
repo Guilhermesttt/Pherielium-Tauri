@@ -1,0 +1,22 @@
+{
+  "_comment": "Versao e SHA-256 fixados: o build falha se o arquivo baixado nao bater. Para atualizar, troque url+sha256 juntos e confira a assinatura Authenticode (Nefarius Software Solutions e.U.).",
+  "drivers": [
+    {
+      "name": "ViGEmBus",
+      "version": "1.22.0",
+      "license": "BSD-3-Clause",
+      "note": "Repositorio arquivado pelo autor: 1.22.0 e a ultima versao.",
+      "file": "ViGEmBusSetup.exe",
+      "url": "https://github.com/nefarius/ViGEmBus/releases/download/v1.22.0/ViGEmBus_1.22.0_x64_x86_arm64.exe",
+      "sha256": "89220a7865076b342892f98865f3499fb7c4cfd673159e89d352c360fd014c6a"
+    },
+    {
+      "name": "HidHide",
+      "version": "1.5.230.0",
+      "license": "MIT",
+      "file": "HidHideSetup.exe",
+      "url": "https://github.com/nefarius/HidHide/releases/download/v1.5.230.0/HidHide_1.5.230_x64.exe",
+      "sha256": "f4bbbcb82e6258641b887c74bc81c4c5f66e4aa811808dfc304347687b7605f6"
+    }
+  ]
+}

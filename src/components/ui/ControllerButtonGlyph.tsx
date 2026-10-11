@@ -14,6 +14,7 @@ import xboxRT from "../../assets/Xbox Series/Vector/xbox_rt.svg?raw";
 import xboxMenu from "../../assets/Xbox Series/Vector/xbox_button_menu.svg?raw";
 import xboxView from "../../assets/Xbox Series/Vector/xbox_button_view.svg?raw";
 import xboxDpad from "../../assets/Xbox Series/Vector/xbox_dpad_horizontal_outline.svg?raw";
+import xboxRStick from "../../assets/Xbox Series/Vector/xbox_stick_r_vertical.svg?raw";
 
 // PlayStation Series SVGs
 import psCross from "../../assets/PlayStation Series/Vector/playstation_button_cross.svg?raw";
@@ -27,6 +28,7 @@ import psR2 from "../../assets/PlayStation Series/Vector/playstation_trigger_r2.
 import psOptions from "../../assets/PlayStation Series/Vector/playstation5_button_options.svg?raw";
 import psCreate from "../../assets/PlayStation Series/Vector/playstation5_button_create.svg?raw";
 import psDpad from "../../assets/PlayStation Series/Vector/playstation_dpad_horizontal_outline.svg?raw";
+import psRStick from "../../assets/PlayStation Series/Vector/playstation_stick_r_vertical.svg?raw";
 
 export type ControllerButtonKey =
   | "A"
@@ -46,7 +48,8 @@ export type ControllerButtonKey =
   | "SHARE"
   | "VIEW"
   | "CREATE"
-  | "DPAD";
+  | "DPAD"
+  | "RSTICK";
 
 export interface ControllerButtonGlyphProps {
   button: ControllerButtonKey;
@@ -95,6 +98,8 @@ export const ControllerButtonGlyph: React.FC<ControllerButtonGlyphProps> = ({
           return psCreate;
         case "DPAD":
           return psDpad;
+        case "RSTICK":
+          return psRStick;
         default:
           return psCross;
       }
@@ -131,6 +136,8 @@ export const ControllerButtonGlyph: React.FC<ControllerButtonGlyphProps> = ({
         return xboxView;
       case "DPAD":
         return xboxDpad;
+      case "RSTICK":
+        return xboxRStick;
       default:
         return xboxA;
     }

@@ -461,6 +461,13 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
     };
   }, [isSettingsOpen, localStream]);
 
+  // Um MediaStream segue com `active === true` enquanto tiver qualquer faixa,
+  // inclusive faixas ja encerradas. Sem checar o estado das faixas, o stream
+  // orfao de quem saiu mantinha o card da pessoa na chamada.
+  const hasLiveTrack = (stream: MediaStream | null | undefined) =>
+    Boolean(stream?.active) &&
+    (stream as MediaStream).getTracks().some((t) => t.readyState === "live");
+
   // Active feeds computation
   const activeFeeds: CallFeed[] = useMemo(() => {
     if (!session) return [];
@@ -483,8 +490,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             peerId &&
             peerId !== userProfile?.uid &&
             peerId !== "local-user" &&
-            stream &&
-            stream.active
+            hasLiveTrack(stream)
           ) {
             activeUids.add(peerId);
           }
@@ -496,8 +502,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             peerId &&
             peerId !== userProfile?.uid &&
             peerId !== "local-user" &&
-            stream &&
-            stream.active
+            hasLiveTrack(stream)
           ) {
             activeUids.add(peerId);
           }

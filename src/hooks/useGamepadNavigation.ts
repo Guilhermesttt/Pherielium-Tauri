@@ -100,24 +100,26 @@ export function useGamepadNavigation({
       rightStickYRef.current = detail?.y ?? 0;
     };
 
-    let rafId = requestAnimationFrame(function tick() {
+    // Velocidade por TEMPO, não por quadro: em tela pesada (poucos fps) a rolagem
+    // andava devagar, e com `scroll-behavior: smooth` (.hub-scroll) cada atribuição
+    // de scrollTop reiniciava a animação suave — parecia que o analógico não fazia nada.
+    let lastTick = performance.now();
+    let rafId = requestAnimationFrame(function tick(now) {
+      const frames = Math.min(3, Math.max(0, (now - lastTick) / (1000 / 60)));
+      lastTick = now;
       if (rightStickYRef.current !== 0 || rightStickXRef.current !== 0) {
         const el = resolveScrollableTarget(scrollRef?.current);
         if (el) {
-          if (rightStickYRef.current !== 0) {
-            const maxScrollTop = el.scrollHeight - el.clientHeight;
-            el.scrollTop = Math.max(
-              0,
-              Math.min(el.scrollTop + rightStickYRef.current * MAX_PX_PER_FRAME, maxScrollTop),
-            );
-          }
-          if (rightStickXRef.current !== 0) {
-            const maxScrollLeft = el.scrollWidth - el.clientWidth;
-            el.scrollLeft = Math.max(
-              0,
-              Math.min(el.scrollLeft + rightStickXRef.current * MAX_PX_PER_FRAME, maxScrollLeft),
-            );
-          }
+          const step = MAX_PX_PER_FRAME * frames;
+          const top =
+            rightStickYRef.current !== 0
+              ? Math.max(0, Math.min(el.scrollTop + rightStickYRef.current * step, el.scrollHeight - el.clientHeight))
+              : el.scrollTop;
+          const left =
+            rightStickXRef.current !== 0
+              ? Math.max(0, Math.min(el.scrollLeft + rightStickXRef.current * step, el.scrollWidth - el.clientWidth))
+              : el.scrollLeft;
+          el.scrollTo({ top, left, behavior: "instant" });
         }
       }
       rafId = requestAnimationFrame(tick);

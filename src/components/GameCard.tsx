@@ -32,11 +32,18 @@ export interface GameCardProps {
 }
 
 const EPIC_GAMES_ICON_PATH = "/epic_games_store.ico";
-const FALLBACK_CARD_BACKGROUND = "linear-gradient(180deg, #161820 0%, #08090C 100%)";
-const CARD_WIDTH = 168;
-const CARD_HEIGHT = 252;
-const CARD_FRAME_WIDTH = 178;
-const CARD_FRAME_HEIGHT = 264;
+// Sem capa: degrade entre as duas superficies do tema, nao um cinza cravado.
+const FALLBACK_CARD_BACKGROUND =
+  "linear-gradient(180deg, var(--surface-raised) 0%, var(--surface-base) 100%)";
+// Card e moldura vem de --card-w/--card-h/--card-frame-* (src/index.css), que
+// crescem com a altura da janela. O carrossel usa a mesma moldura para centralizar.
+const CARD_WIDTH = "var(--card-w)";
+const CARD_HEIGHT = "var(--card-h)";
+const CARD_FRAME_WIDTH = "var(--card-frame-w)";
+const CARD_FRAME_HEIGHT = "var(--card-frame-h)";
+// O card cresce ate aqui quando esta ativo; a folga de --card-focus-pad-* na
+// moldura foi dimensionada para este valor, entao o foco nunca e cortado.
+const FOCUS_SCALE = 1.025;
 
 const GameCard: React.FC<GameCardProps> = ({
   title,
@@ -120,9 +127,9 @@ const GameCard: React.FC<GameCardProps> = ({
   const platformBadge = useMemo(() => {
     const type = (launcherType || "").toLowerCase() || (isSteam ? "steam" : isEpic ? "epic" : "local");
     const badgeStyle = {
-      color: "#FFFFFF",
-      border: "rgba(255, 255, 255, 0.2)",
-      background: "rgba(18, 20, 26, 0.92)",
+      color: "var(--color-text-main)",
+      border: "var(--edge-strong)",
+      background: "color-mix(in srgb, var(--surface-base) 92%, transparent)",
     };
 
     if (type === "steam") {
@@ -214,7 +221,7 @@ const GameCard: React.FC<GameCardProps> = ({
       aria-label={title}
       aria-pressed={isActive}
       data-game-card={true}
-      className="group relative flex items-center justify-center p-0 text-left select-none outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-base)] cursor-pointer rounded-[var(--radius-card)]"
+      className="group relative flex items-center justify-center p-0 text-left select-none outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--edge-selected)] focus-visible:shadow-[var(--focus-shadow)] cursor-pointer rounded-[var(--radius-card)]"
       style={{
         width: CARD_FRAME_WIDTH,
         height: CARD_FRAME_HEIGHT,
@@ -225,22 +232,23 @@ const GameCard: React.FC<GameCardProps> = ({
         whileHover={{ scale: isActive ? 1.035 : 0.99, y: isActive ? -8 : -3 }}
         whileTap={{ scale: 0.95 }}
         animate={{
-          scale: isActive ? 1.025 : 0.96,
+          scale: isActive ? FOCUS_SCALE : 0.96,
           y: isActive ? -6 : 0,
-          borderColor: isActive ? "var(--border-selected)" : "var(--border-subtle)",
         }}
         transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
         style={{
           width: CARD_WIDTH,
           height: CARD_HEIGHT,
           borderRadius: "var(--radius-card, 16px)",
+          borderColor: isActive ? "var(--edge-selected)" : "var(--edge-subtle)",
           boxShadow: isActive
-            ? "0 22px 50px rgba(0,0,0,0.85), var(--focus-shadow), var(--surface-chamfer)"
-            : "0 8px 24px rgba(0,0,0,0.65), var(--surface-chamfer)",
-          transition: "box-shadow 0.3s ease",
+            ? "var(--elev-focus), var(--focus-shadow), var(--surface-chamfer)"
+            : "var(--elev-card), var(--surface-chamfer)",
+          transition:
+            "box-shadow var(--transition-focus), border-color var(--transition-focus)",
         }}
         className={`relative isolate bg-[var(--surface-raised)] border transform-gpu will-change-transform flex flex-col justify-between ${
-          isActive ? "ring-2 ring-[var(--border-selected)] z-20" : "z-10"
+          isActive ? "z-20" : "z-10"
         }`}
       >
         {/* Clip container isolado - borda arredondada herdada de var(--radius-card) */}
@@ -302,7 +310,7 @@ const GameCard: React.FC<GameCardProps> = ({
           <div className="flex items-center gap-1.5 pointer-events-auto ml-auto">
             {isFavorite && (
               <div
-                className="flex h-6 w-6 items-center justify-center rounded-xl bg-[#12141A]/95 border border-white/20 shadow-sm pointer-events-none"
+                className="flex h-6 w-6 items-center justify-center rounded-[var(--radius-badge)] bg-[color-mix(in_srgb,var(--surface-base)_95%,transparent)] border border-[color:var(--edge-strong)] shadow-sm pointer-events-none"
                 style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15)" }}
               >
                 <Star className="h-3 w-3 fill-amber-400 text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
@@ -392,7 +400,7 @@ const GameCard: React.FC<GameCardProps> = ({
             }}
             whileHover={{ scale: 1.1 }}
             transition={{ type: "spring", bounce: 0.3, duration: 0.3 }}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#12141A]/90 border border-white/40 shadow-lg"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--surface-base)_90%,transparent)] border border-[color:var(--edge-selected)] shadow-lg"
             style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)" }}
           >
             <Play className="h-4 w-4 fill-white text-white ml-0.5" />
@@ -402,7 +410,7 @@ const GameCard: React.FC<GameCardProps> = ({
 
         {/* Bottom Title (Clean & uncluttered) */}
         <div className="relative z-20 mt-auto p-3.5 flex flex-col justify-end pointer-events-none">
-          <h3 className="line-clamp-2 text-sm font-display font-semibold text-white/95 tracking-tight leading-snug drop-shadow-md">
+          <h3 className="line-clamp-2 text-[length:var(--fs-body)] font-display font-semibold text-white/95 tracking-tight leading-snug drop-shadow-md">
             {title}
           </h3>
         </div>

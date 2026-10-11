@@ -55,6 +55,7 @@ import {
   type ScreenShareOptions,
 } from "../services/voiceCall/screenShare";
 import { startDesktopAudioCapture } from "../services/voiceCall/desktopAudioCapture";
+import { reportFailure } from "../services/devError";
 import { publishVoiceLevel } from "../services/voiceCall/voiceLevelBridge";
 import { emptyCallMediaStats, summarizeRtcStats, type ByteSample, type CallMediaStats } from "../services/voiceCall/mediaStats";
 import { createVoiceRoom, joinVoiceRoom, leaveVoiceRoom, updateVoiceRoom } from "../services/voiceRooms";
@@ -648,6 +649,20 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   const screenShareStoppingRef = useRef(false);
   const tauriScreenStopRef = useRef<(() => Promise<void>) | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
+  /**
+   * Estado real da camera e trava de reentrancia.
+   *
+   * `toggleCamera` e async e leva centenas de ms (getUserMedia, publish no
+   * LiveKit, renegociacao com cada peer). Ele decidia o ramo por `isCameraOn`,
+   * que so muda no fim: dois cliques rapidos liam `false` e entravam no ramo
+   * "ligar" duas vezes. A segunda stream sobrescrevia `cameraStreamRef` e a
+   * primeira ficava orfa, sem `stop()` -- camera acesa com a UI dizendo que
+   * estava desligada.
+   */
+  const cameraOnRef = useRef(false);
+  const cameraBusyRef = useRef(false);
+  /** Intencao mais recente: se mudar durante um await, o resultado e descartado. */
+  const cameraDesiredRef = useRef(false);
   const sessionRef = useRef<VoiceCallSession | null>(null);
   sessionRef.current = session;
   const callStateRef = useRef<CallState>(callState);
@@ -1641,6 +1656,19 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   }, []);
 
   // Complete Cleanup Helper (Full Mesh P2P, AudioPipelines, Timers, Media Streams)
+  /** Para e descarta a stream de camera atual. Seguro chamar varias vezes. */
+  const stopCameraStream = useCallback(() => {
+    const stream = cameraStreamRef.current;
+    cameraStreamRef.current = null;
+    if (stream) {
+      stream.getTracks().forEach((track) => {
+        try { track.stop(); } catch { /* ja encerrada */ }
+      });
+    }
+    cameraOnRef.current = false;
+    setLocalCameraStream(null);
+  }, []);
+
   const cleanUpCall = useCallback(() => {
     stopRingtone();
     if (callDurationTimerRef.current) {
@@ -1693,10 +1721,9 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
       screenStreamRef.current.getTracks().forEach((track) => track.stop());
       screenStreamRef.current = null;
     }
-    if (cameraStreamRef.current) {
-      cameraStreamRef.current.getTracks().forEach((track) => track.stop());
-      cameraStreamRef.current = null;
-    }
+    stopCameraStream();
+    cameraBusyRef.current = false;
+    cameraDesiredRef.current = false;
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((track) => track.stop());
       localStreamRef.current = null;
@@ -1783,6 +1810,76 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     setRoomConfig(null);
     setIncomingInvite(null);
     setCallDuration(0);
+  }, []);
+
+  /**
+   * Tira UM participante da chamada sem derrubar a sala.
+   *
+   * Antes isso estava escrito tres vezes (saida avisada, desconexao do LiveKit
+   * e kick) e cada copia limpava um subconjunto diferente -- por isso o card de
+   * quem saiu continuava na tela: `remoteStreamsRef` nao era zerado em todos os
+   * caminhos, e o tile e montado a partir da uniao de `session.participants`
+   * com as chaves de `remoteStreams`.
+   */
+  const prunePeer = useCallback((peerUid: string) => {
+    if (!peerUid) return;
+
+    const pc = peerConnectionsRef.current.get(peerUid);
+    if (pc) {
+      try {
+        pc.close();
+      } catch { }
+      peerConnectionsRef.current.delete(peerUid);
+      setPeerConnectionCount(peerConnectionsRef.current.size);
+    }
+
+    remoteStreamsRef.current.delete(peerUid);
+    remoteScreenStreamsRef.current.delete(peerUid);
+    remoteScreenSharingPeersRef.current.delete(peerUid);
+    pendingCandidatesRef.current.delete(peerUid);
+    setRemoteStreams(new Map(remoteStreamsRef.current));
+    setRemoteScreenStreams(new Map(remoteScreenStreamsRef.current));
+    setIsRemoteSharingScreen(
+      Array.from(remoteScreenSharingPeersRef.current.values()).some(Boolean),
+    );
+
+    const pipeline = remotePipelinesRef.current.get(peerUid);
+    if (pipeline) {
+      destroyAudioPipeline(pipeline);
+      remotePipelinesRef.current.delete(peerUid);
+    }
+
+    setRemoteSpeakingStates((prev) => {
+      if (!prev.has(peerUid)) return prev;
+      const next = new Map(prev);
+      next.delete(peerUid);
+      return next;
+    });
+    setRemoteStatesMap((prev) => {
+      if (!prev.has(peerUid)) return prev;
+      const next = new Map(prev);
+      next.delete(peerUid);
+      return next;
+    });
+    setActiveCallsByFriend((prev) => {
+      if (!prev.has(peerUid)) return prev;
+      const next = new Map(prev);
+      next.delete(peerUid);
+      return next;
+    });
+
+    setSession((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        participants: (prev.participants || []).filter((p) => p.uid !== peerUid),
+        friendUid: prev.friendUid === peerUid ? undefined : prev.friendUid,
+      };
+    });
+
+    if (sessionRef.current?.friendUid === peerUid || peerConnectionsRef.current.size === 0) {
+      setRemoteStream(null);
+    }
   }, []);
 
   const announceMemberJoinedOnce = useCallback(
@@ -2059,20 +2156,8 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         });
 
         room.on(LiveKitRoomEvent.ParticipantDisconnected, (participant) => {
-          const peerId = participant.identity;
-          remoteStreamsRef.current.delete(peerId);
-          remoteScreenStreamsRef.current.delete(peerId);
-          remoteScreenSharingPeersRef.current.delete(peerId);
-          setRemoteStreams(new Map(remoteStreamsRef.current));
-          setRemoteScreenStreams(new Map(remoteScreenStreamsRef.current));
+          prunePeer(participant.identity);
           syncRemoteScreenSharingFlag();
-          setSession((prev) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              participants: (prev.participants || []).filter((p) => p.uid !== peerId),
-            };
-          });
         });
 
         await room.connect(serverUrl, token);
@@ -2355,9 +2440,23 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
       const attemptPeerReconnect = async () => {
         if (!pc || pc.signalingState === "closed") return;
         if (reconnectAttemptsRef.current >= 8) {
-          notify("Conexão perdida com participante.", "error");
-          playRingtone("disconnect");
-          cleanUpCall();
+          // Desistiu deste peer. Antes isso chamava cleanUpCall() e derrubava a
+          // sala inteira para quem tinha ficado -- e, ate desistir, o card do
+          // peer morto seguia na tela. Agora so ele sai.
+          prunePeer(targetPeerUid);
+          reconnectAttemptsRef.current = 0;
+          setIsReconnecting(false);
+          const stillConnected =
+            peerConnectionsRef.current.size > 0 ||
+            (livekitRoomRef.current?.remoteParticipants.size ?? 0) > 0;
+          if (stillConnected) {
+            notify("Um participante perdeu a conexão.", "info");
+            playRingtone("disconnect");
+          } else {
+            notify("Conexão perdida com participante.", "error");
+            playRingtone("disconnect");
+            cleanUpCall();
+          }
           return;
         }
         reconnectAttemptsRef.current += 1;
@@ -2683,56 +2782,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         }
       },
       onMemberLeft: (left: CallMemberLeftPayload) => {
-        setSession((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            participants: (prev.participants || []).filter((p) => p.uid !== left.uid),
-            friendUid: prev.friendUid === left.uid ? undefined : prev.friendUid,
-          };
-        });
-
-        const pc = peerConnectionsRef.current.get(left.uid);
-        if (pc) {
-          try {
-            pc.close();
-          } catch { }
-          peerConnectionsRef.current.delete(left.uid);
-          setPeerConnectionCount(peerConnectionsRef.current.size);
-        }
-        remoteStreamsRef.current.delete(left.uid);
-        remoteScreenStreamsRef.current.delete(left.uid);
-        remoteScreenSharingPeersRef.current.delete(left.uid);
-        setRemoteStreams(new Map(remoteStreamsRef.current));
-        setRemoteScreenStreams(new Map(remoteScreenStreamsRef.current));
-        setIsRemoteSharingScreen(Array.from(remoteScreenSharingPeersRef.current.values()).some(Boolean));
-        if (sessionRef.current?.friendUid === left.uid || peerConnectionsRef.current.size === 0) {
-          setRemoteStream(null);
-        }
-
-        const pipeline = remotePipelinesRef.current.get(left.uid);
-        if (pipeline) {
-          destroyAudioPipeline(pipeline);
-          remotePipelinesRef.current.delete(left.uid);
-        }
-
-        setRemoteSpeakingStates((prev) => {
-          const updated = new Map(prev);
-          updated.delete(left.uid);
-          return updated;
-        });
-
-        setRemoteStatesMap((prev) => {
-          const updated = new Map(prev);
-          updated.delete(left.uid);
-          return updated;
-        });
-
-        setActiveCallsByFriend((prev) => {
-          const updated = new Map(prev);
-          updated.delete(left.uid);
-          return updated;
-        });
+        prunePeer(left.uid);
 
         if (peerConnectionsRef.current.size === 0) {
           notify("O participante se desconectou.", "info");
@@ -2934,6 +2984,10 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
                 audio: false,
               });
               cameraStreamRef.current = camStream;
+              // mantem as refs de controle em sincronia: sem isto o primeiro
+              // toggle depois de atender com video pega o ramo errado
+              cameraOnRef.current = true;
+              cameraDesiredRef.current = true;
               setLocalCameraStream(camStream);
               setIsCameraOn(true);
               actualWithVideo = true;
@@ -3194,9 +3248,8 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
       }
 
       setIncomingInvite(null);
-    } catch (err: any) {
-      console.error("[useVoiceCall] answerCall failed", err);
-      notify("Erro ao atender chamada.", "error");
+    } catch (err) {
+      notify(reportFailure("call:answer", "Erro ao atender chamada.", err), "error");
       cleanUpCall();
     }
   }, [acquireAudioStream, announceMemberJoinedOnce, applyAudioProcessingChain, callState, cleanUpCall, createPeerConnectionForPeer, createUnifiedSessionHandlers, incomingInvite, inputMode, notify, playRingtone, selectedVideoInput, setupVoiceAnalyzer, stopRingtone, user, userProfile]);
@@ -3708,130 +3761,167 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   const toggleCamera = useCallback(async () => {
     if (!session?.chatId) return;
 
-    if (isCameraOn) {
-      const cameraStream = cameraStreamRef.current;
-      const cameraTracks = cameraStream?.getVideoTracks() ?? [];
+    // Registra a intencao mesmo se houver uma troca em voo: o ramo que estiver
+    // rodando confere isto depois de cada await e desfaz o proprio trabalho se
+    // a pessoa mudou de ideia.
+    const desired = !cameraOnRef.current;
+    cameraDesiredRef.current = desired;
+    if (cameraBusyRef.current) return;
+    cameraBusyRef.current = true;
 
-      if (livekitVideoPubRef.current && livekitRoomRef.current?.localParticipant) {
-        try {
-          if (livekitVideoPubRef.current.track) {
-            await livekitRoomRef.current.localParticipant.unpublishTrack(livekitVideoPubRef.current.track);
-          }
-        } catch { /* ignore */ }
-        livekitVideoPubRef.current = null;
-      }
+    try {
+      if (cameraOnRef.current) {
+        const cameraStream = cameraStreamRef.current;
+        const cameraTracks = cameraStream?.getVideoTracks() ?? [];
 
-      const senderId = user?.uid;
-      const skipP2P =
-        isSharingScreen ||
-        isLocalTestCall(session.chatId, session.friendUid) ||
-        !senderId;
-      if (!skipP2P && senderId) {
-        try {
-          await detachCameraTrackFromPeers({
-            peerConnections: peerConnectionsRef.current.values(),
-            cameraTracks,
-          });
-          for (const [peerId, pc] of peerConnectionsRef.current.entries()) {
-            try {
-              const offer = await pc.createOffer();
-              await pc.setLocalDescription(offer);
-              await sendCallSignal(session.chatId, {
-                senderId,
-                chatId: session.chatId,
-                targetUid: peerId,
-                signal: offer,
-              });
-            } catch (err) {
-              console.warn("[useVoiceCall] P2P camera-off renegotiation warning:", peerId, err);
-            }
-          }
-        } catch (err) {
-          console.warn("[useVoiceCall] camera sender teardown warning:", err);
-        }
-      }
+        // A camera morre primeiro. Antes isto vinha depois da renegociacao, e
+        // uma chamada intercalada trocava a ref antes do stop -- LED aceso.
+        cameraOnRef.current = false;
+        stopCameraStream();
 
-      cameraTracks.forEach((track) => {
-        try { track.stop(); } catch { /* ignore */ }
-      });
-      cameraStreamRef.current = null;
-      setLocalCameraStream(null);
-
-      setIsCameraOn(false);
-      if (session.chatId && user?.uid) {
-        void sendCallState(session.chatId, {
-          senderId: user.uid,
-          chatId: session.chatId,
-          isCameraOn: false,
-        });
-      }
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            deviceId: selectedVideoInput !== "default" ? { exact: selectedVideoInput } : undefined,
-            width: { ideal: 640 },
-            height: { ideal: 480 },
-            frameRate: { ideal: 30 },
-          },
-          audio: false,
-        });
-        cameraStreamRef.current = stream;
-        setLocalCameraStream(stream);
-        const videoTrack = stream.getVideoTracks()[0];
-
-        if (videoTrack && livekitRoomRef.current?.localParticipant) {
+        if (livekitVideoPubRef.current && livekitRoomRef.current?.localParticipant) {
           try {
-            const pub = await livekitRoomRef.current.localParticipant.publishTrack(videoTrack, {
-              name: "camera",
-              source: LiveKitTrack.Source.Camera,
+            if (livekitVideoPubRef.current.track) {
+              await livekitRoomRef.current.localParticipant.unpublishTrack(livekitVideoPubRef.current.track);
+            }
+          } catch { /* ignore */ }
+          livekitVideoPubRef.current = null;
+        }
+
+        const senderId = user?.uid;
+        const skipP2P =
+          isSharingScreen ||
+          isLocalTestCall(session.chatId, session.friendUid) ||
+          !senderId;
+        if (!skipP2P && senderId) {
+          try {
+            await detachCameraTrackFromPeers({
+              peerConnections: peerConnectionsRef.current.values(),
+              cameraTracks,
             });
-            livekitVideoPubRef.current = pub;
-          } catch (lkErr) {
-            console.warn("[LiveKit] Camera track publish note:", lkErr);
+            for (const [peerId, pc] of peerConnectionsRef.current.entries()) {
+              try {
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                await sendCallSignal(session.chatId, {
+                  senderId,
+                  chatId: session.chatId,
+                  targetUid: peerId,
+                  signal: offer,
+                });
+              } catch (err) {
+                console.warn("[useVoiceCall] P2P camera-off renegotiation warning:", peerId, err);
+              }
+            }
+          } catch (err) {
+            console.warn("[useVoiceCall] camera sender teardown warning:", err);
           }
         }
 
-        if (isLocalTestCall(session.chatId, session.friendUid)) {
-          setRemoteStream(stream);
-          setIsCameraOn(true);
-          return;
-        }
-
-        // Add track to all peers and renegotiate
-        for (const [peerId, pc] of peerConnectionsRef.current.entries()) {
-          const sender = pc.getSenders().find((s) => s.track?.kind === "video");
-          if (sender) {
-            await sender.replaceTrack(videoTrack);
-          } else {
-            pc.addTrack(videoTrack, stream);
-          }
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          if (user?.uid) {
-            await sendCallSignal(session.chatId, {
-              senderId: user.uid,
-              chatId: session.chatId,
-              targetUid: peerId,
-              signal: offer,
-            });
-          }
-        }
-
-        setIsCameraOn(true);
+        setIsCameraOn(false);
         if (session.chatId && user?.uid) {
           void sendCallState(session.chatId, {
             senderId: user.uid,
             chatId: session.chatId,
-            isCameraOn: true,
+            isCameraOn: false,
           });
         }
-      } catch (err) {
-        console.error("[useVoiceCall] toggleCamera error", err);
-        notify("Não foi possível acessar a câmera.", "error");
+      } else {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              deviceId: selectedVideoInput !== "default" ? { exact: selectedVideoInput } : undefined,
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+              frameRate: { ideal: 30 },
+            },
+            audio: false,
+          });
+          // Mudou de ideia durante o getUserMedia: a stream recem-aberta morre
+          // aqui mesmo, em vez de ficar orfa segurando a camera acesa.
+          if (!cameraDesiredRef.current) {
+            stream.getTracks().forEach((track) => {
+              try { track.stop(); } catch { /* ja encerrada */ }
+            });
+            return;
+          }
+          stopCameraStream(); // nunca sobrescrever uma stream viva
+          cameraStreamRef.current = stream;
+          cameraOnRef.current = true;
+          setLocalCameraStream(stream);
+          const videoTrack = stream.getVideoTracks()[0];
+
+          if (videoTrack && livekitRoomRef.current?.localParticipant) {
+            try {
+              const pub = await livekitRoomRef.current.localParticipant.publishTrack(videoTrack, {
+                name: "camera",
+                source: LiveKitTrack.Source.Camera,
+              });
+              livekitVideoPubRef.current = pub;
+            } catch (lkErr) {
+              console.warn("[LiveKit] Camera track publish note:", lkErr);
+            }
+          }
+
+          if (isLocalTestCall(session.chatId, session.friendUid)) {
+            setRemoteStream(stream);
+            setIsCameraOn(true);
+            return;
+          }
+
+          // Add track to all peers and renegotiate
+          for (const [peerId, pc] of peerConnectionsRef.current.entries()) {
+            const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+            if (sender) {
+              await sender.replaceTrack(videoTrack);
+            } else {
+              pc.addTrack(videoTrack, stream);
+            }
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            if (user?.uid) {
+              await sendCallSignal(session.chatId, {
+                senderId: user.uid,
+                chatId: session.chatId,
+                targetUid: peerId,
+                signal: offer,
+              });
+            }
+          }
+
+          setIsCameraOn(true);
+          if (session.chatId && user?.uid) {
+            void sendCallState(session.chatId, {
+              senderId: user.uid,
+              chatId: session.chatId,
+              isCameraOn: true,
+            });
+          }
+        } catch (err) {
+          console.error("[useVoiceCall] toggleCamera error", err);
+          stopCameraStream();
+          setIsCameraOn(false);
+          // Zera a intencao: sem isto o reexecutar do `finally` tentaria ligar
+          // de novo para sempre quando a permissao e negada.
+          cameraDesiredRef.current = false;
+          notify("Não foi possível acessar a câmera.", "error");
+        }
+      }
+    } finally {
+      cameraBusyRef.current = false;
+      // A pessoa clicou de novo durante a troca: aplica a ultima intencao.
+      if (cameraDesiredRef.current !== cameraOnRef.current) {
+        void toggleCameraRef.current?.();
       }
     }
-  }, [isCameraOn, isSharingScreen, notify, selectedVideoInput, session?.chatId, session?.friendUid, user?.uid]);
+  }, [isSharingScreen, notify, selectedVideoInput, session?.chatId, session?.friendUid, stopCameraStream, user?.uid]);
+
+  // A trava reexecuta o toggle quando a intencao mudou no meio; a ref evita a
+  // dependencia circular do useCallback consigo mesmo.
+  const toggleCameraRef = useRef<(() => Promise<void>) | null>(null);
+  useEffect(() => {
+    toggleCameraRef.current = toggleCamera;
+  }, [toggleCamera]);
 
   // START SCREEN SHARE (Otimizado para até 1080p 60fps com LiveKit SFU)
   const startScreenShare = useCallback(
@@ -3853,7 +3943,17 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
             desktopAudio = await startDesktopAudioCapture();
             tauriScreenStopRef.current = desktopAudio.stop;
           } catch (audioErr) {
-            console.warn("[useVoiceCall] Process loopback unavailable:", audioErr);
+            // Sem o loopback de processo a tela inteira sai MUDA: o pedido ao
+            // getDisplayMedia usa systemAudio:"exclude" de propósito, para a voz
+            // da chamada não voltar em eco. Então isto nunca pode passar calado.
+            notify(
+              reportFailure(
+                "screenshare:audio",
+                "Áudio do PC indisponível; transmitindo apenas o vídeo.",
+                audioErr,
+              ),
+              "info",
+            );
           }
         }
         const capture = await captureNativeScreenShare({

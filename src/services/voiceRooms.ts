@@ -7,8 +7,16 @@ let roomsChannel: any = null;
 let currentTrackedRoom: PublicVoiceRoom | null = null;
 let voiceRoomsTableChannel: ReturnType<typeof supabase.channel> | null = null;
 
-const friendlyRoomError = (message?: string): string => {
+const friendlyRoomError = (message?: string, code?: string): string => {
+  // Erro de ambiente não pode se disfarçar de erro de validação: PGRST202 é
+  // "função não encontrada", ou seja, migration de sala de voz não aplicada.
+  if (code === "PGRST202") {
+    return "O banco está desatualizado: aplique as migrations de sala de voz.";
+  }
   const m = (message || "").toLowerCase();
+  if (m.includes("does not exist") && m.includes("crypt")) {
+    return "O banco está sem a extensão pgcrypto no search_path (migration 20261009130000).";
+  }
   if (m.includes("nao e o dono")) return "Só o dono da sala pode editá-la.";
   if (m.includes("exige uma senha")) return "Uma sala privada precisa de senha.";
   if (m.includes("descricao muito longa")) return "A descrição pode ter no máximo 200 caracteres.";
@@ -137,7 +145,10 @@ const joinVoiceRoomViaSupabase = async (
   });
 
   if (error || !data) {
-    throw new Error(error?.message || "Não foi possível entrar na sala de voz.");
+    console.error("[room:join] falha ao entrar na sala", { code: error?.code, error });
+    throw new Error(
+      friendlyRoomError(error?.message, error?.code) || "Não foi possível entrar na sala de voz.",
+    );
   }
 
   const payload = data as { room?: VoiceRoomRow; participants?: VoiceRoomParticipant[] };
@@ -343,7 +354,12 @@ export const updateVoiceRoom = async (
     p_banner_url: config.bannerUrl ?? null,
     p_clear_banner: Boolean(config.clearBanner),
   });
-  if (error || !data) throw new Error(friendlyRoomError(error?.message) || "Não foi possível salvar a sala.");
+  if (error || !data) {
+    console.error("[room:update] falha ao salvar a sala", { code: error?.code, error });
+    throw new Error(
+      friendlyRoomError(error?.message, error?.code) || "Não foi possível salvar a sala.",
+    );
+  }
   const session = await supabase.auth.getSession();
   return mapVoiceRoomFromDb(data as VoiceRoomRow, { hostUid: session.data.session?.user.id });
 };

@@ -43,7 +43,8 @@
     ],
     "resources": {
       "../assets/icon.ico": "assets/icon.ico",
-      "../assets/icon.png": "assets/icon.png"
+      "../assets/icon.png": "assets/icon.png",
+      "windows/drivers/*": "drivers/"
     },
     "windows": {
       "wix": {},
@@ -51,7 +52,8 @@
         "installMode": "currentUser",
         "installerIcon": "icons/icon.ico",
         "headerImage": "../assets/installerHeader.bmp",
-        "sidebarImage": "../assets/installerSidebar.bmp"
+        "sidebarImage": "../assets/installerSidebar.bmp",
+        "installerHooks": "windows/hooks.nsh"
       }
     }
   },

@@ -5,6 +5,9 @@ import { cleanupAllChannels } from "../services/voiceCall";
 import { markCheckpointOfflineSync } from "../services/checkpointFriends";
 import type { UserProfile, SocialPresenceStatus } from "../types/domain";
 
+/** Presença mais velha que isto conta como offline. O heartbeat da Home roda a cada 25s. */
+const PRESENCE_STALE_MS = 90_000;
+
 export interface AuthUser {
   uid: string;
   email?: string | null;
@@ -203,7 +206,13 @@ const loadSocialGraph = async (uid: string) => {
   const compact = (relatedUid: string, createdAt?: string) => {
     const profile = profileById.get(relatedUid);
     const presenceUpdatedAt = Date.parse(String(profile?.presence_updated_at || ""));
-    const isFresh = Number.isFinite(presenceUpdatedAt) && Date.now() - presenceUpdatedAt < 75_000;
+    // Nenhum código do cliente escreve `presence_updated_at`, e nenhuma migration
+    // deste repo a cria: quem a preenche é o /api/presence. Se o backend não
+    // estiver bumpando a coluna, TODO amigo cai para offline aqui. Trata ausência
+    // (coluna nula/inexistente) como "sem informação": aí vale o status cru, em
+    // vez de declarar o mundo inteiro offline.
+    const hasFreshness = Number.isFinite(presenceUpdatedAt);
+    const isFresh = !hasFreshness || Date.now() - presenceUpdatedAt < PRESENCE_STALE_MS;
     const rawStatus = String(profile?.status || "");
     const resolvedStatus: SocialPresenceStatus =
       isFresh && (rawStatus === "online" || rawStatus === "playing" || rawStatus === "streaming" || rawStatus === "in_call" || rawStatus === "idle" || rawStatus === "dnd")

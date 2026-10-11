@@ -37,3 +37,6 @@ target-check
 # E2E visual harness output
 e2e/screenshots
 test-results
+
+# Instaladores de driver (baixados por scripts/fetch-drivers.mjs)
+src-tauri/windows/drivers/*.exe

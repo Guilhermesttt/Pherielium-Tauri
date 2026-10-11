@@ -11,6 +11,8 @@ export interface GameDetailPanelProps {
   onLibraryChanged?: () => Promise<void> | void;
   onGameHydrated?: (game: Game) => void;
   onOpenMods?: () => void;
+  /** Abre Configurações › Controle já no perfil deste jogo. */
+  onOpenControllerSettings?: (game: Game) => void;
   currentPresenceGame?: string | null;
   friends?: import("./domain").SocialFriend[];
   onToggleFavorite?: (game: Game) => Promise<void> | void;

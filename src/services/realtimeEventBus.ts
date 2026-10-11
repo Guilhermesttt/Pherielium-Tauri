@@ -74,35 +74,91 @@ const deliverPresenceStatusUpdate = (presence: PresencePayload) => {
   globalEventHandlers.forEach((h) => h.onStatusUpdate?.(presence));
 };
 
+/**
+ * Canais usados só para ENVIAR. Nunca entram em `subscribe()`: servem apenas
+ * como handle para o POST do `httpSend`, então criar um custa um objeto.
+ */
+type SenderChannel = ReturnType<typeof supabase.channel>;
+const senderChannels = new Map<string, SenderChannel>();
+
+/** Teto de handles guardados; além disso descarta o mais antigo (Map é ordenado). */
+const MAX_SENDER_CHANNELS = 50;
+
+const getSenderChannel = (channelName: string) => {
+  const existing = senderChannels.get(channelName);
+  if (existing) {
+    // reinsere para virar o mais recente
+    senderChannels.delete(channelName);
+    senderChannels.set(channelName, existing);
+    return existing;
+  }
+  const channel = supabase.channel(channelName, {
+    config: { broadcast: { self: false } },
+  });
+  senderChannels.set(channelName, channel);
+  while (senderChannels.size > MAX_SENDER_CHANNELS) {
+    const oldest = senderChannels.keys().next().value as string | undefined;
+    if (!oldest) break;
+    const stale = senderChannels.get(oldest);
+    senderChannels.delete(oldest);
+    if (!stale) continue;
+    // nunca entrou em subscribe(), então só precisa sair do registro do cliente
+    try {
+      supabase.removeChannel(stale);
+    } catch {
+      /* handle já descartado; nada a desfazer */
+    }
+  }
+  return channel;
+};
+
+/** Uma vez por processo: servidor Realtime antigo não tem o endpoint HTTP. */
+let httpBroadcastUnavailable = false;
+
+/**
+ * Entrega um evento na caixa de entrada de outro usuário.
+ *
+ * Antes isto chamava `getOrCreateChannel`, que faz o handshake de JOIN do
+ * WebSocket **no canal do destinatário** antes de poder enviar -- com timeout
+ * de 12s e backoff de 1s/2s/4s. Como os canais ociosos fecham em 30s, toda
+ * primeira mensagem (e toda mensagem depois de meio minuto de silêncio) pagava
+ * o join inteiro antes de o "caminho rápido" começar. Na prática ele chegava
+ * depois do INSERT no banco.
+ *
+ * `httpSend` publica o broadcast por um único POST, sem entrar no canal: uma
+ * ida e volta em vez de um handshake. O join só é usado como contingência se o
+ * servidor Realtime for antigo demais para o endpoint.
+ */
 const broadcastToUserInbox = async (
   receiverUid: string,
   event: string,
   payload: unknown,
 ): Promise<boolean> => {
   const channelName = `user_inbox_${receiverUid}`;
+
+  if (!httpBroadcastUnavailable) {
+    try {
+      await getSenderChannel(channelName).httpSend(
+        event,
+        payload as Record<string, unknown>,
+      );
+      return true;
+    } catch (err) {
+      // 404 = servidor Realtime sem o endpoint. Qualquer outro erro é
+      // pontual (rede), e aí vale tentar o caminho do WebSocket desta vez.
+      if (err instanceof Error && err.message.includes("requires Realtime server")) {
+        httpBroadcastUnavailable = true;
+        console.warn("[realtimeEventBus] httpSend indisponivel; usando WebSocket.", err);
+      }
+    }
+  }
+
   try {
     const targetChannel = await getOrCreateChannel(channelName);
     if (!targetChannel) return false;
 
     activeInboxChannels.set(channelName, targetChannel);
-
-    const message = {
-      type: "broadcast" as const,
-      event,
-      payload,
-    };
-
-    if (targetChannel.state === "joined") {
-      await targetChannel.send(message);
-      return true;
-    }
-
-    if (typeof targetChannel.httpSend === "function") {
-      await targetChannel.httpSend(event, payload as Record<string, unknown>);
-      return true;
-    }
-
-    await targetChannel.send(message);
+    await targetChannel.send({ type: "broadcast" as const, event, payload });
     return true;
   } catch (err) {
     console.warn(`[realtimeEventBus] broadcast ${event} failed for ${channelName}:`, err);

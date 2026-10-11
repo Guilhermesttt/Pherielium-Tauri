@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { resetCachedLedDevice } from "../services/controllerLed";
 import { isLauncherInputLocked } from "../utils/launcherInputLock";
+import { INPUT_ACTIVITY_EVENT } from "../utils/videoHold";
 
 /** O Windows não distingue USB de Bluetooth de forma confiável: sempre "unknown". */
 export type ControllerConnectionType = "bluetooth" | "usb" | "unknown";
@@ -237,11 +238,16 @@ export const GamepadProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (cancelled) return;
         const level = typeof result.batteryLevel === "number" ? result.batteryLevel : null;
         const charging = Boolean(result.isCharging);
+        // O Rust já identifica o transporte pelo ID do relatório HID / BatteryType
+        // do XInput; antes isso era lido e sobrescrito por "unknown" aqui.
+        const rawLink = String((result as { connectionType?: string }).connectionType || "");
+        const connectionType: ControllerConnectionType =
+          rawLink === "usb" || rawLink === "bluetooth" ? rawLink : "unknown";
         setBatteryState({
           batteryLevel: level,
           isCharging: charging,
           approximate: Boolean(result.approximate),
-          connectionType: "unknown",
+          connectionType,
           isLowBattery: level !== null && level <= LOW_BATTERY_PERCENT && !charging,
         });
       } catch {
@@ -327,6 +333,7 @@ export const GamepadProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const dispatchButtonPress = useCallback((buttonName: GamepadButtonName) => {
     if (isLauncherInputLocked()) return;
+    window.dispatchEvent(new Event(INPUT_ACTIVITY_EVENT));
     const subscribers = Array.from(gamepadButtonSubscribers.get(buttonName) ?? []);
     if (subscribers.length === 0) return;
 

@@ -131,6 +131,16 @@ html[data-launcher-theme="checkpoint"] {
   --safe-y: clamp(20px, 2.5vw, 72px);
   /* topo do header: mais baixo que a margem lateral para o header ocupar menos */
   --header-pt: clamp(14px, 1.25vw, 36px);
+  /* Altura do notch e da title bar, publicadas em tempo real por
+     DesktopNotch.tsx e TitleBar.tsx. Defaults = notch desligado / janela. */
+  --notch-h: 0px;
+  --titlebar-h: 36px;
+  /* Topo do header de fato: o maior entre o respiro normal e o que sobra do
+     notch depois da faixa da title bar. Em tela cheia --titlebar-h e 0, entao a
+     folga vira a altura inteira do notch. Nao e soma: em modo janela a title
+     bar ja cobre parte do notch e somar empurraria o header duas vezes. */
+  --notch-clearance: max(0px, calc(var(--notch-h) - var(--titlebar-h) + 8px));
+  --header-pt-safe: max(var(--header-pt), var(--notch-clearance));
 
   /* Ritmo vertical entre secoes (header / continuar / hero / biblioteca) */
   --gap-section: clamp(16px, 1.6vw, 44px);
@@ -156,17 +166,38 @@ html[data-launcher-theme="checkpoint"] {
      limita a coluna central do header para a pill de abas nunca invadi-lo */
   --header-side-reserve: 28vw;
 
-  /* Cards da Biblioteca (2:3) e espaco reservado ao foco */
-  --card-w: clamp(132px, 8.75vw, 280px);
-  --card-h: calc(var(--card-w) * 1.5);
+  /* Cards da Biblioteca (2:3) e espaco reservado ao foco.
+     A altura manda, nao a largura: o card vive numa prateleira no rodape, entao
+     o que decide o tamanho dele e quanta altura a janela tem. A reta passa por
+     240px em 720p, 300px em 1080p e 360px em 1440p -- em 1080p o card cresce
+     sem comer o hero, e em 1440p ele deixa de parecer um selo. */
+  --card-h: clamp(240px, calc(120px + 16.67vh), 360px);
+  --card-w: calc(var(--card-h) / 1.5);
   --card-gap: var(--gap-inline);
-  --card-focus-scale: 1.06;
-  --card-focus-pad-x: calc(var(--card-w) * 0.06 + 6px);
-  --card-focus-pad-y: calc(var(--card-h) * 0.06 + 6px);
+  /* Maior escala que o card atinge (hover do card ativo). A folga vem dela,
+     nao de um 6% chutado: com 6% sobravam ~40px entre cards so de respiro. */
+  --card-focus-scale: 1.035;
+  --card-focus-pad-x: calc(var(--card-w) * (var(--card-focus-scale) - 1) / 2 + 4px);
+  /* +10px no eixo Y por causa do levante (translateY -8px) do card em foco. */
+  --card-focus-pad-y: calc(var(--card-h) * (var(--card-focus-scale) - 1) / 2 + 10px);
+  /* Moldura = card + o espaco que o foco precisa para crescer sem ser cortado.
+     O carrossel centraliza o slide a partir dela (nada de numero magico). */
+  --card-frame-w: calc(var(--card-w) + 2 * var(--card-focus-pad-x));
+  --card-frame-h: calc(var(--card-h) + 2 * var(--card-focus-pad-y));
+
+  /* Pontos do carrossel */
+  --dot-w: clamp(20px, 1.45vw, 36px);
+  --dot-h: 3px;
+  --dot-gap: var(--space-1);
 
   /* Cards do "Continuar jogando" */
   --continue-card-w: clamp(260px, 17vw, 440px);
-  --continue-card-h: clamp(88px, 5.4vw, 140px);
+  --continue-card-h: clamp(96px, 7.2vh, 150px);
+  /* Largura da cortina que apaga o corte seco nas pontas do trilho */
+  --rail-fade-w: clamp(48px, 4vw, 112px);
+
+  /* Hero: altura minima do bloco titulo + metadados + CTA */
+  --hero-min-h: clamp(140px, 13vh, 300px);
 
   /* Raios (complementam --radius-panel/card/control dos temas) */
   --radius-badge: 8px;

@@ -55,7 +55,13 @@ const GameCardSlot = React.memo(
       // quase idêntico já que ele só aparece de relance durante o scroll rápido.
       return (
         <div
-          className="shrink-0 w-44.5 h-66 rounded-3xl pointer-events-none border border-white/8 bg-black/70"
+          className="shrink-0 pointer-events-none border border-[color:var(--edge-subtle)]"
+          style={{
+            width: "var(--card-frame-w)",
+            height: "var(--card-frame-h)",
+            borderRadius: "var(--radius-card)",
+            background: "color-mix(in srgb, var(--surface-base) 70%, transparent)",
+          }}
           aria-hidden="true"
         />
       );
@@ -174,13 +180,15 @@ const GameRow: React.FC<GameRowProps> = ({
 
   return (
     <div className="relative w-full flex flex-col" style={{ gap: 0 }}>
-      <div className="overflow-visible pt-3 pb-2" ref={emblaRef}>
+      <div className="overflow-visible" ref={emblaRef}>
         <div
           className="flex items-center"
           style={{
-            gap: 12,
-            paddingLeft: "calc(50vw - 89px)",
-            paddingRight: "calc(50vw - 89px)",
+            gap: "var(--card-gap)",
+            paddingTop: "var(--card-focus-pad-y)",
+            paddingBottom: "var(--card-focus-pad-y)",
+            paddingLeft: "calc(50% - var(--card-frame-w) / 2)",
+            paddingRight: "calc(50% - var(--card-frame-w) / 2)",
           }}
         >
           {games.map((game, idx) => (
@@ -198,7 +206,10 @@ const GameRow: React.FC<GameRowProps> = ({
         </div>
       </div>
 
-      <div className="flex justify-center mt-6 gap-1.5">
+      <div
+        className="flex justify-center"
+        style={{ marginTop: "var(--gap-stack)", gap: "var(--dot-gap)" }}
+      >
         {visibleDots.map((i) => {
           const isActive = i === canonicalIndex;
           return (
@@ -206,13 +217,13 @@ const GameRow: React.FC<GameRowProps> = ({
             type="button"
             key={i}
             aria-label={`Ir para jogo ${i + 1}`}
-            className="h-0.75 rounded-full cursor-pointer origin-center bg-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/60"
+            className="rounded-full cursor-pointer origin-center bg-[rgb(var(--launcher-accent))] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--edge-selected)]"
             animate={{
               scaleX: isActive ? 1 : 0.22,
               opacity: isActive ? 0.95 : 0.35,
             }}
             transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-            style={{ width: 28 }}
+            style={{ width: "var(--dot-w)", height: "var(--dot-h)" }}
             onClick={() => onSelect(i)}
             />
           );

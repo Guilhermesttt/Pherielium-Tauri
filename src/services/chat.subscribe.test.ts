@@ -45,17 +45,46 @@ function createHistoryQuery(result: { data?: unknown[] | null; error?: { message
 
 function setupRealtimeChannel() {
   const channelHandlers: Record<string, (payload: unknown) => void> = {};
+  const fastBus: { onMessage?: (message: ChatMessage) => void } = {};
   const channel = {
-    on: vi.fn((_type: string, _filter: unknown, handler: (payload: unknown) => void) => {
-      channelHandlers.insert = handler;
+    on: vi.fn((_type: string, filter: { event?: string }, handler: (payload: unknown) => void) => {
+      channelHandlers[(filter?.event ?? "INSERT").toLowerCase()] = handler;
       return channel;
     }),
     subscribe: vi.fn(),
   };
   mockChannel.mockReturnValue(channel);
-  mockSubscribeToGlobalEventBus.mockReturnValue(() => undefined);
-  return { channel, channelHandlers };
+  mockSubscribeToGlobalEventBus.mockImplementation(
+    (_uid: unknown, handlers: { onMessage?: (message: ChatMessage) => void }) => {
+      fastBus.onMessage = handlers.onMessage;
+      return () => undefined;
+    },
+  );
+  return { channel, channelHandlers, fastBus };
 }
+
+/** Linha como o Postgres devolve (snake_case), para o handler de INSERT. */
+const dbRow = (over: Record<string, unknown> = {}) => ({
+  id: "db-1",
+  chat_id: "550e8400-e29b-41d4-a716-446655440000",
+  sender_id: "friend-1",
+  receiver_id: "user-1",
+  text: "oi",
+  read: false,
+  created_at: new Date().toISOString(),
+  ...over,
+});
+
+const fastMessage = (over: Partial<ChatMessage> = {}): ChatMessage => ({
+  id: `fast_${Math.random().toString(36).slice(2, 8)}`,
+  chatId: "550e8400-e29b-41d4-a716-446655440000",
+  senderId: "friend-1",
+  receiverId: "user-1",
+  text: "oi",
+  createdAt: new Date().toISOString(),
+  read: false,
+  ...over,
+});
 
 describe("subscribeToChatMessages", () => {
   beforeEach(() => {
@@ -191,5 +220,102 @@ describe("subscribeToChatMessages", () => {
     });
 
     expect(messages[0]).toEqual([]);
+  });
+
+  it("pairs the fast message with its database row even after a long delay", async () => {
+    mockFrom.mockReturnValue(createHistoryQuery({ data: [], error: null }));
+    const { channelHandlers, fastBus } = setupRealtimeChannel();
+
+    const messages: ChatMessage[][] = [];
+    const unsubscribe = subscribeToChatMessages("friend-1", (next) => messages.push(next));
+    await vi.waitFor(() => expect(messages).toHaveLength(1));
+
+    const fast = fastMessage({ text: "bom dia" });
+    fastBus.onMessage?.(fast);
+    await vi.waitFor(() => expect(messages.at(-1)).toHaveLength(1));
+
+    // Banco lento: a linha chega muito depois da antiga janela de 15s.
+    const old = new Date(Date.now() - 120_000).toISOString();
+    await channelHandlers.insert?.({
+      new: dbRow({ id: "db-99", text: "bom dia", created_at: old }),
+    });
+
+    await vi.waitFor(() => {
+      const last = messages.at(-1)!;
+      expect(last).toHaveLength(1);
+      expect(last[0].id).toBe("db-99");
+    });
+    unsubscribe();
+  });
+
+  it("keeps two identical messages sent back to back as two messages", async () => {
+    mockFrom.mockReturnValue(createHistoryQuery({ data: [], error: null }));
+    const { channelHandlers, fastBus } = setupRealtimeChannel();
+
+    const messages: ChatMessage[][] = [];
+    const unsubscribe = subscribeToChatMessages("friend-1", (next) => messages.push(next));
+    await vi.waitFor(() => expect(messages).toHaveLength(1));
+
+    fastBus.onMessage?.(fastMessage({ text: "oi" }));
+    fastBus.onMessage?.(fastMessage({ text: "oi" }));
+    await vi.waitFor(() => expect(messages.at(-1)).toHaveLength(2));
+
+    await channelHandlers.insert?.({ new: dbRow({ id: "db-a", text: "oi" }) });
+    await channelHandlers.insert?.({ new: dbRow({ id: "db-b", text: "oi" }) });
+
+    await vi.waitFor(() => {
+      const last = messages.at(-1)!;
+      expect(last).toHaveLength(2);
+      expect(last.map((m) => m.id).sort()).toEqual(["db-a", "db-b"]);
+    });
+    unsubscribe();
+  });
+
+  it("pairs by client_id, not by text, so edited text still replaces the fast copy", async () => {
+    mockFrom.mockReturnValue(createHistoryQuery({ data: [], error: null }));
+    const { channelHandlers, fastBus } = setupRealtimeChannel();
+
+    const messages: ChatMessage[][] = [];
+    const unsubscribe = subscribeToChatMessages("friend-1", (next) => messages.push(next));
+    await vi.waitFor(() => expect(messages).toHaveLength(1));
+
+    fastBus.onMessage?.(fastMessage({ text: "ola", clientId: "cid-1" }));
+    await vi.waitFor(() => expect(messages.at(-1)).toHaveLength(1));
+
+    // Mesmo client_id, texto diferente e muito mais velho: o pareamento por
+    // texto/tempo erraria aqui e deixaria duas mensagens.
+    await channelHandlers.insert?.({
+      new: dbRow({
+        id: "db-1",
+        text: "ola!",
+        client_id: "cid-1",
+        created_at: new Date(Date.now() - 300_000).toISOString(),
+      }),
+    });
+
+    await vi.waitFor(() => {
+      const last = messages.at(-1)!;
+      expect(last).toHaveLength(1);
+      expect(last[0].id).toBe("db-1");
+      expect(last[0].clientId).toBe("cid-1");
+    });
+    unsubscribe();
+  });
+
+  it("ignores an update broadcast for a message that is not loaded", async () => {
+    mockFrom.mockReturnValue(createHistoryQuery({ data: [], error: null }));
+    const { fastBus } = setupRealtimeChannel();
+
+    const messages: ChatMessage[][] = [];
+    const unsubscribe = subscribeToChatMessages("friend-1", (next) => messages.push(next));
+    await vi.waitFor(() => expect(messages).toHaveLength(1));
+
+    fastBus.onMessage?.(
+      fastMessage({ id: "db-antiga", text: "texto editado", isUpdate: true }),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(messages.at(-1)).toHaveLength(0);
+    unsubscribe();
   });
 });

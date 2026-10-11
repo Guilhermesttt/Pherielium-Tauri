@@ -15,7 +15,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "drivers:fetch": "node scripts/fetch-drivers.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

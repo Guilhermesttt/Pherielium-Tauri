@@ -1,4 +1,3 @@
-import { Squircle } from "../components/ui/Squircle";
 import React, {
   useState,
   useEffect,
@@ -8,20 +7,8 @@ import React, {
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
-import {
-  Plus,
-  RefreshCw,
-  Search,
-  Star,
-  Gamepad2,
-  X,
-  Filter,
-  Trophy,
-  Clock,
-  Compass,
-  ChevronDown,
-} from "lucide-react";
-import { SfGamepadIcon, SfComputerIcon } from "../design-system/sf-symbols";
+import { Star, X, Trophy, Clock, Compass } from "lucide-react";
+
 import { PlatformSelectorModal } from "../components/home/PlatformSelectorModal";
 import {
   PlatformAllIcon,
@@ -39,6 +26,8 @@ import {
 import { TopBarClock } from "../components/home/TopBarClock";
 import { ConsoleLibraryTabs } from "../components/home/ConsoleLibraryTabs";
 import { SteamDeckControllerFooter } from "../components/home/SteamDeckControllerFooter";
+import { ControllerLegend } from "../components/ui/ControllerLegend";
+import { PAGE_CONTROLLER_HINTS } from "../components/ui/controllerHints";
 import { ControllerButtonGlyph } from "../components/ui/ControllerButtonGlyph";
 
 import DynamicBackground from "../components/DynamicBackground";
@@ -61,7 +50,11 @@ import { HomeOnboardingQuests } from "../components/home/HomeOnboardingQuests";
 import { OnboardingTour } from "../tour/OnboardingTour";
 import { useAutoLibrarySync } from "../hooks/useAutoLibrarySync";
 import { readLastSync, writeLastSync } from "../hooks/autoLibrarySync";
-import { getAllQuestsWithStatus, shouldShowOnboardingQuests, areAllQuestsCompleted } from "../services/userQuests";
+import {
+  getAllQuestsWithStatus,
+  shouldShowOnboardingQuests,
+  areAllQuestsCompleted,
+} from "../services/userQuests";
 
 import { PHERIELIUM_LOGO_PATH } from "../constants/assets";
 import {
@@ -80,8 +73,17 @@ import { DigitPopIn } from "../components/ui/DigitPopIn";
 import { useAuth } from "../auth/AuthProvider";
 import { supabase } from "../services/supabase";
 // Correção 1: Importando Game, UserProfile e SocialFriend no mesmo lugar
-import type { ChatMessage, Game, SocialFriend, UserProfile, LauncherType } from "../types/domain";
-import { getMonitorableExecutablePath, resolveMonitorableExecutablePath } from "../services/launcher";
+import type {
+  ChatMessage,
+  Game,
+  SocialFriend,
+  UserProfile,
+  LauncherType,
+} from "../types/domain";
+import {
+  getMonitorableExecutablePath,
+  resolveMonitorableExecutablePath,
+} from "../services/launcher";
 import { resolveGameFromPresence } from "../utils/presenceGameMatch";
 import { useImagePreloader } from "../hooks/useImagePreloader";
 import { useSoundEffects } from "../hooks/useSoundEffects";
@@ -98,13 +100,16 @@ import Sidebar, {
   RiotBrandIcon,
   BattlenetBrandIcon,
   RockstarBrandIcon,
-} from '../components/Sidebar';
-import { useGamepadFocusNavigation } from '../hooks/useGamepadFocusNavigation';
-import { useGamePresence } from '../hooks/useGamePresence';
-import { useAchievementLibrarySync } from '../hooks/useAchievementLibrarySync';
-import { useAccountConnections } from '../hooks/useAccountConnections';
-import { buildLocalFriendProfile, useFriendsSystem } from '../hooks/useFriendsSystem';
-import { useVoiceCallContext } from '../context/VoiceCallContext';
+} from "../components/Sidebar";
+import { useGamepadFocusNavigation } from "../hooks/useGamepadFocusNavigation";
+import { useGamePresence } from "../hooks/useGamePresence";
+import { useAchievementLibrarySync } from "../hooks/useAchievementLibrarySync";
+import { useAccountConnections } from "../hooks/useAccountConnections";
+import {
+  buildLocalFriendProfile,
+  useFriendsSystem,
+} from "../hooks/useFriendsSystem";
+import { useVoiceCallContext } from "../context/VoiceCallContext";
 import { useGamepadNavigation } from "../hooks/useGamepadNavigation";
 import {
   usePreferences,
@@ -158,40 +163,64 @@ import {
   syncPublicLibrarySummary,
   updateLibraryGame,
 } from "../services/localLibrary";
-import { useGamepadButton, useGamepad, playHapticPattern } from "../context/GamepadContext";
+import {
+  useGamepadButton,
+  useGamepad,
+  playHapticPattern,
+} from "../context/GamepadContext";
 import { activateElementWithController } from "../utils/controllerTextInput";
 import { calculateAchievementTotals } from "../utils/achievementTotals";
 import { formatPlayedHours, getGamePlayedHours } from "../utils/playtime";
-import { calculatePlayerLevel, aggregateTrophyCounts } from "../utils/trophyTiers";
-import { getHubAggregateCounts, getUserUnifiedLevel } from "../utils/hubTrophies";
+import {
+  calculatePlayerLevel,
+  aggregateTrophyCounts,
+} from "../utils/trophyTiers";
+import {
+  getHubAggregateCounts,
+  getUserUnifiedLevel,
+} from "../utils/hubTrophies";
 import { progressionEventBus } from "../services/progressionEvents";
 import { completeUserQuest } from "../services/userQuests";
 import { resolveLibraryLoadingState } from "../utils/libraryLoading";
 
 const AddGameModal = React.lazy(() => import("../components/AddGameModal"));
-const GameDetailPanel = React.lazy(() => import("../components/GameDetailPanel"));
-const UserProfilePage = React.lazy(() => import("../components/UserProfilePage"));
-const GamingRadarPage = React.lazy(() => import("../components/GamingRadarPage"));
+const GameDetailPanel = React.lazy(
+  () => import("../components/GameDetailPanel"),
+);
+const UserProfilePage = React.lazy(
+  () => import("../components/UserProfilePage"),
+);
+const GamingRadarPage = React.lazy(
+  () => import("../components/GamingRadarPage"),
+);
 const ModsPage = React.lazy(() => import("./ModsPage"));
 const TrophiesPage = React.lazy(() => import("../components/TrophiesPage"));
 const SettingsPageV2 = React.lazy(() =>
-  import("../pages/SettingsPage").then((m) => ({ default: m.SettingsPageV2 }))
+  import("../pages/SettingsPage").then((m) => ({ default: m.SettingsPageV2 })),
 );
 const FriendsPage = React.lazy(() =>
-  import("../pages/FriendsPage").then((m) => ({ default: m.FriendsPage }))
+  import("../pages/FriendsPage").then((m) => ({ default: m.FriendsPage })),
 );
 const AddFriendModal = React.lazy(() =>
-  import("../pages/FriendsPage").then((m) => ({ default: m.AddFriendModal }))
+  import("../pages/FriendsPage").then((m) => ({ default: m.AddFriendModal })),
 );
 const ChatModal = React.lazy(() =>
-  import("../components/home/ChatModal").then((m) => ({ default: m.ChatModal }))
+  import("../components/home/ChatModal").then((m) => ({
+    default: m.ChatModal,
+  })),
 );
-const LibraryFilterModal = React.lazy(() => import("../components/LibraryFilterModal"));
+const LibraryFilterModal = React.lazy(
+  () => import("../components/LibraryFilterModal"),
+);
 const CommandPalette = React.lazy(() => import("../components/CommandPalette"));
 const WelcomeModal = React.lazy(() => import("../components/WelcomeModal"));
 
 const steamDiscKey = (uid: string) => `checkpoint_steam_disconnected_${uid}`;
-const LANGUAGE_OPTIONS: Array<{ id: LauncherLanguage; label: string; hint: string }> = [
+const LANGUAGE_OPTIONS: Array<{
+  id: LauncherLanguage;
+  label: string;
+  hint: string;
+}> = [
   { id: "pt-BR", label: "Português", hint: "Brasil" },
   { id: "en-US", label: "English", hint: "United States" },
   { id: "es-ES", label: "Español", hint: "España" },
@@ -201,79 +230,86 @@ const LANGUAGE_OPTIONS: Array<{ id: LauncherLanguage; label: string; hint: strin
 ];
 
 const APP_THEME_OPTIONS: Array<{
-  id: "default" | "ps5" | "playstation" | "ps4" | "psp" | "gamecube" | "xbox360" | "cyberpunk";
+  id:
+    | "default"
+    | "ps5"
+    | "playstation"
+    | "ps4"
+    | "psp"
+    | "gamecube"
+    | "xbox360"
+    | "cyberpunk";
   label: string;
   hint: string;
   swatch: string;
   soundTheme: SoundTheme;
   visualTheme: VisualTheme;
 }> = [
-    {
-      id: "default",
-      label: "Phelierium Default",
-      hint: "Preto carvão + branco neutro, superfícies foscas",
-      swatch: "rgb(255 255 255)",
-      soundTheme: "default",
-      visualTheme: "phelierium",
-    },
-    {
-      id: "ps5",
-      label: "PlayStation 5",
-      hint: "Branco porcelana + azul elétrico pontual",
-      swatch: "rgb(244 244 246)",
-      soundTheme: "ps5",
-      visualTheme: "ps5",
-    },
-    {
-      id: "ps4",
-      label: "PlayStation 4",
-      hint: "Azul médio intenso com gradientes amplos",
-      swatch: "rgb(0 112 209)",
-      soundTheme: "ps4",
-      visualTheme: "ps4",
-    },
-    {
-      id: "psp",
-      label: "PSP",
-      hint: "Grafite + prata com ondas e champagne discreto",
-      swatch: "rgb(203 213 225)",
-      soundTheme: "psp",
-      visualTheme: "psp",
-    },
-    {
-      id: "playstation",
-      label: "PlayStation 2",
-      hint: "Azul profundo com ciano pontual",
-      swatch: "rgb(29 78 216)",
-      soundTheme: "ps2",
-      visualTheme: "playstation",
-    },
-    {
-      id: "gamecube",
-      label: "GameCube",
-      hint: "Roxo Nintendo + sons GameCube",
-      swatch: "rgb(124 58 237)",
-      soundTheme: "gamecube",
-      visualTheme: "gamecube",
-    },
-    {
-      id: "cyberpunk",
-      label: "Cyberpunk 2077",
-      hint: "Amarelo Neon + sons Cyberpunk 2077",
-      swatch: "rgb(255 238 0)",
-      soundTheme: "cyberpunk",
-      visualTheme: "cyberpunk",
-    },
-    {
-      id: "xbox360",
-      label: "Xbox 360",
-      hint: "Verde Xbox + sons Metro UI",
-      swatch: "rgb(132 204 22)",
-      soundTheme: "xbox360",
-      visualTheme: "xbox360",
-    },
-  ];
-
+  {
+    id: "default",
+    label: "Phelierium Default",
+    hint: "Preto carvão + branco neutro, superfícies foscas",
+    swatch: "rgb(255 255 255)",
+    soundTheme: "default",
+    visualTheme: "phelierium",
+  },
+  {
+    id: "ps5",
+    label: "PlayStation 5",
+    hint: "Branco porcelana + azul elétrico pontual",
+    swatch: "rgb(244 244 246)",
+    soundTheme: "ps5",
+    visualTheme: "ps5",
+  },
+  {
+    id: "ps4",
+    label: "PlayStation 4",
+    hint: "Azul médio intenso com gradientes amplos",
+    swatch: "rgb(0 112 209)",
+    soundTheme: "ps4",
+    visualTheme: "ps4",
+  },
+  {
+    id: "psp",
+    label: "PSP",
+    hint: "Grafite + prata com ondas e champagne discreto",
+    swatch: "rgb(203 213 225)",
+    soundTheme: "psp",
+    visualTheme: "psp",
+  },
+  {
+    id: "playstation",
+    label: "PlayStation 2",
+    hint: "Azul profundo com ciano pontual",
+    swatch: "rgb(29 78 216)",
+    soundTheme: "ps2",
+    visualTheme: "playstation",
+  },
+  {
+    id: "gamecube",
+    label: "GameCube",
+    hint: "Roxo Nintendo + sons GameCube",
+    swatch: "rgb(124 58 237)",
+    soundTheme: "gamecube",
+    visualTheme: "gamecube",
+  },
+  {
+    id: "cyberpunk",
+    label: "Cyberpunk 2077",
+    hint: "Amarelo Neon + sons Cyberpunk 2077",
+    swatch: "rgb(255 238 0)",
+    soundTheme: "cyberpunk",
+    visualTheme: "cyberpunk",
+  },
+  {
+    id: "xbox360",
+    label: "Xbox 360",
+    hint: "Verde Xbox + sons Metro UI",
+    swatch: "rgb(132 204 22)",
+    soundTheme: "xbox360",
+    visualTheme: "xbox360",
+  },
+];
 
 const Home: React.FC = () => {
   const { user, userProfile, signOutUser, refreshProfile } = useAuth();
@@ -355,8 +391,7 @@ const Home: React.FC = () => {
     useState(false);
   const [disconnectDiscordModalOpen, setDisconnectDiscordModalOpen] =
     useState(false);
-  const [disconnectEpicModalOpen, setDisconnectEpicModalOpen] =
-    useState(false);
+  const [disconnectEpicModalOpen, setDisconnectEpicModalOpen] = useState(false);
   const [steamDisconnecting, setSteamDisconnecting] = useState(false);
   const [discordDisconnecting, setDiscordDisconnecting] = useState(false);
   const [epicDisconnecting, setEpicDisconnecting] = useState(false);
@@ -375,6 +410,8 @@ const Home: React.FC = () => {
   const [epicDisplayName, setEpicDisplayName] = useState("");
   const [isExitingSession, setIsExitingSession] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("general");
+  // Jogo cujo perfil de controle deve abrir selecionado em Configurações › Controle.
+  const [controllerSettingsGameId, setControllerSettingsGameId] = useState<string | undefined>(undefined);
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [isPlatformModalOpen, setIsPlatformModalOpen] = useState(false);
   const [openedViaShortcut, setOpenedViaShortcut] = useState(false);
@@ -466,7 +503,10 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     try {
-      localStorage.setItem("checkpoint_library_filters", JSON.stringify(libraryFilters));
+      localStorage.setItem(
+        "checkpoint_library_filters",
+        JSON.stringify(libraryFilters),
+      );
     } catch {
       // ignore
     }
@@ -476,9 +516,12 @@ const Home: React.FC = () => {
     profile: UserProfile;
     games: Game[];
   } | null>(null);
-  const [pendingFriendRemoval, setPendingFriendRemoval] = useState<SocialFriend | null>(null);
+  const [pendingFriendRemoval, setPendingFriendRemoval] =
+    useState<SocialFriend | null>(null);
   const [pendingDeleteGame, setPendingDeleteGame] = useState<Game | null>(null);
-  const [friendProfileLoadingId, setFriendProfileLoadingId] = useState<string | null>(null);
+  const [friendProfileLoadingId, setFriendProfileLoadingId] = useState<
+    string | null
+  >(null);
   const [localSocialStateLoaded, setLocalSocialStateLoaded] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -490,7 +533,8 @@ const Home: React.FC = () => {
 
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [addModalInitialLauncherType, setAddModalInitialLauncherType] = useState<LauncherType | undefined>(undefined);
+  const [addModalInitialLauncherType, setAddModalInitialLauncherType] =
+    useState<LauncherType | undefined>(undefined);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [isAddFriendModalOpen, setIsAddFriendModalOpen] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(() => {
@@ -508,7 +552,10 @@ const Home: React.FC = () => {
     };
     window.addEventListener("checkpoint:sidebar-toggle" as any, handleToggle);
     return () => {
-      window.removeEventListener("checkpoint:sidebar-toggle" as any, handleToggle);
+      window.removeEventListener(
+        "checkpoint:sidebar-toggle" as any,
+        handleToggle,
+      );
     };
   }, []);
 
@@ -518,7 +565,8 @@ const Home: React.FC = () => {
   useEffect(() => {
     const backToLibrary = () => setActiveCategory("ALL");
     window.addEventListener("pherielium:restart-tour", backToLibrary);
-    return () => window.removeEventListener("pherielium:restart-tour", backToLibrary);
+    return () =>
+      window.removeEventListener("pherielium:restart-tour", backToLibrary);
   }, []);
 
   useEffect(() => {
@@ -534,14 +582,21 @@ const Home: React.FC = () => {
   useEffect(() => {
     const handleOpenTour = () => setIsWelcomeModalOpen(true);
     window.addEventListener("phelierium:open-welcome-modal", handleOpenTour);
-    return () => window.removeEventListener("phelierium:open-welcome-modal", handleOpenTour);
+    return () =>
+      window.removeEventListener(
+        "phelierium:open-welcome-modal",
+        handleOpenTour,
+      );
   }, []);
 
   const handleCloseWelcomeModal = useCallback(() => {
     setIsWelcomeModalOpen(false);
     if (user?.uid) {
       try {
-        localStorage.setItem(`phelierium_welcome_modal_seen_${user.uid}`, "true");
+        localStorage.setItem(
+          `phelierium_welcome_modal_seen_${user.uid}`,
+          "true",
+        );
       } catch {}
     }
   }, [user?.uid]);
@@ -551,12 +606,21 @@ const Home: React.FC = () => {
   const previousDiscordIdRef = useRef<string | undefined>(undefined);
   // useRef does NOT support lazy initializers — read localStorage directly at declaration time.
   const previousEpicAuthRef = useRef<boolean>(
-    (() => { try { return Boolean(localStorage.getItem("checkpoint_epic_linked_uid")); } catch { return false; } })()
+    (() => {
+      try {
+        return Boolean(localStorage.getItem("checkpoint_epic_linked_uid"));
+      } catch {
+        return false;
+      }
+    })(),
   );
   const didInitConnectionRefs = useRef(false);
   const lastOverlayWelcomeGameRef = useRef<string | null>(null);
   const lastOverlayWelcomeAtRef = useRef(0);
-  const lastGameLaunchSoundRef = useRef<{ title: string; time: number }>({ title: "", time: 0 });
+  const lastGameLaunchSoundRef = useRef<{ title: string; time: number }>({
+    title: "",
+    time: 0,
+  });
 
   const {
     language: launcherLanguage,
@@ -584,39 +648,61 @@ const Home: React.FC = () => {
   const restoredNavigationUidRef = useRef<string | null>(null);
   const currentUserUid = user?.uid;
 
-  const selectCategory = useCallback((category: string) => {
-    setActiveCategory(category);
-    if (currentUserUid) writeLastCategory(currentUserUid, category);
-  }, [currentUserUid]);
+  const selectCategory = useCallback(
+    (category: string) => {
+      setActiveCategory(category);
+      // O jogo pré-selecionado em Configurações › Controle só vale para a viagem
+      // que o pediu (botão de controle do detalhe); qualquer outra navegação o
+      // descarta, senão Configurações reabriria sempre naquele jogo.
+      setControllerSettingsGameId(undefined);
+      if (currentUserUid) writeLastCategory(currentUserUid, category);
+    },
+    [currentUserUid],
+  );
 
-  const handleSettingsTabChange = useCallback((tab: SettingsTab) => {
-    setSettingsTab(tab);
-    if (currentUserUid) writeLastSettingsTab(currentUserUid, tab);
-  }, [currentUserUid]);
+  const handleSettingsTabChange = useCallback(
+    (tab: SettingsTab) => {
+      setSettingsTab(tab);
+      if (currentUserUid) writeLastSettingsTab(currentUserUid, tab);
+    },
+    [currentUserUid],
+  );
 
   useEffect(() => {
-    if (!currentUserUid || !preferencesHydrated || restoredNavigationUidRef.current === currentUserUid) return;
+    if (
+      !currentUserUid ||
+      !preferencesHydrated ||
+      restoredNavigationUidRef.current === currentUserUid
+    )
+      return;
     restoredNavigationUidRef.current = currentUserUid;
     const lastNavigation = readLastNavigation(currentUserUid);
     const openConnections = consumeSettingsConnectionsRequest(currentUserUid);
     const timer = window.setTimeout(() => {
       setSettingsTab(lastNavigation.settingsTab);
-      if (openConnections || restoreLastScreen) setActiveCategory(lastNavigation.category);
+      if (openConnections || restoreLastScreen)
+        setActiveCategory(lastNavigation.category);
     }, 0);
     return () => window.clearTimeout(timer);
   }, [currentUserUid, preferencesHydrated, restoreLastScreen]);
 
   useEffect(() => {
     if (!preferencesHydrated) return;
-    void window.electronAPI?.setWindowBehavior?.({
-      minimizeToTray: minimizeToTrayOnClose,
-      confirmBeforeExit,
-    }).catch(console.error);
+    void window.electronAPI
+      ?.setWindowBehavior?.({
+        minimizeToTray: minimizeToTrayOnClose,
+        confirmBeforeExit,
+      })
+      .catch(console.error);
   }, [minimizeToTrayOnClose, confirmBeforeExit, preferencesHydrated]);
 
-  useEffect(() => window.electronAPI?.onExitConfirmationRequested?.(() => {
-    setQuitAppModalOpen(true);
-  }), []);
+  useEffect(
+    () =>
+      window.electronAPI?.onExitConfirmationRequested?.(() => {
+        setQuitAppModalOpen(true);
+      }),
+    [],
+  );
   const { playSound } = useSoundEffects(
     effectsVolume / 100,
     soundTheme,
@@ -636,12 +722,19 @@ const Home: React.FC = () => {
       }
     };
 
-    window.addEventListener("wheel", handleAltWheelTrigger, { capture: true, passive: false });
-    return () => window.removeEventListener("wheel", handleAltWheelTrigger, { capture: true });
+    window.addEventListener("wheel", handleAltWheelTrigger, {
+      capture: true,
+      passive: false,
+    });
+    return () =>
+      window.removeEventListener("wheel", handleAltWheelTrigger, {
+        capture: true,
+      });
   }, [isPlatformModalOpen, playSound]);
   const userDisplay =
     userProfile?.displayName || user?.email?.split("@")[0] || "Jogador";
-  const legacySteamId = (userProfile as unknown as { steam_id?: string })?.steam_id;
+  const legacySteamId = (userProfile as unknown as { steam_id?: string })
+    ?.steam_id;
   const resolvedSteamId = useMemo(
     () => userProfile?.steamId || legacySteamId || undefined,
     [userProfile?.steamId, legacySteamId],
@@ -663,7 +756,10 @@ const Home: React.FC = () => {
       return;
     }
     if (prevLevelRef.current === 0) prevLevelRef.current = storedLevel;
-    if (playerLevel.level > storedLevel && playerLevel.level > prevLevelRef.current) {
+    if (
+      playerLevel.level > storedLevel &&
+      playerLevel.level > prevLevelRef.current
+    ) {
       const tierInfo = playerLevel.tierInfo;
       setLevelUpData({
         level: playerLevel.level,
@@ -682,14 +778,27 @@ const Home: React.FC = () => {
       });
       setShowLevelUp(true);
       if (levelUpTimerRef.current) window.clearTimeout(levelUpTimerRef.current);
-      levelUpTimerRef.current = window.setTimeout(() => setShowLevelUp(false), 6000) as unknown as number;
+      levelUpTimerRef.current = window.setTimeout(
+        () => setShowLevelUp(false),
+        6000,
+      ) as unknown as number;
       playSound("select");
       localStorage.setItem(storageKey, String(playerLevel.level));
     } else if (playerLevel.level > storedLevel) {
       localStorage.setItem(storageKey, String(playerLevel.level));
     }
     prevLevelRef.current = playerLevel.level;
-  }, [playerLevel.level, playerLevel.rank, playerLevel.rankColor, playerLevel.xp, playerLevel.progress, user?.uid, isLoading, games.length, playSound]);
+  }, [
+    playerLevel.level,
+    playerLevel.rank,
+    playerLevel.rankColor,
+    playerLevel.xp,
+    playerLevel.progress,
+    user?.uid,
+    isLoading,
+    games.length,
+    playSound,
+  ]);
 
   const refreshLibrary = useCallback(async () => {
     if (!user?.uid) {
@@ -776,8 +885,11 @@ const Home: React.FC = () => {
 
     let linkedLocally = false;
     try {
-      linkedLocally = localStorage.getItem("checkpoint_epic_linked_uid") === user.uid;
-    } catch { /* ignore */ }
+      linkedLocally =
+        localStorage.getItem("checkpoint_epic_linked_uid") === user.uid;
+    } catch {
+      /* ignore */
+    }
     if (linkedLocally) {
       setEpicAuthConnected(true);
     }
@@ -789,7 +901,9 @@ const Home: React.FC = () => {
         previousEpicAuthRef.current = true;
         try {
           localStorage.setItem("checkpoint_epic_linked_uid", user.uid);
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
         if (data.displayName) setEpicDisplayName(data.displayName);
         return;
       }
@@ -800,7 +914,10 @@ const Home: React.FC = () => {
         setEpicAuthConnected(false);
       }
     } catch (err) {
-      console.warn("[Home] checkEpicStatus falhou; mantendo estado visual:", err);
+      console.warn(
+        "[Home] checkEpicStatus falhou; mantendo estado visual:",
+        err,
+      );
     }
   }, [user?.uid]);
 
@@ -810,7 +927,9 @@ const Home: React.FC = () => {
       if (localStorage.getItem("checkpoint_epic_linked_uid") === user.uid) {
         setEpicAuthConnected(true);
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     void checkEpicStatus();
   }, [checkEpicStatus, user?.uid]);
 
@@ -824,7 +943,11 @@ const Home: React.FC = () => {
     epicConnected: epicAuthConnected,
     syncSilently: (platform) =>
       platform === "steam"
-        ? platformOps.syncPlatform("steam", { steamId: resolvedSteamId, language: launcherLanguage }, true)
+        ? platformOps.syncPlatform(
+            "steam",
+            { steamId: resolvedSteamId, language: launcherLanguage },
+            true,
+          )
         : platformOps.syncPlatform("epic", launcherLanguage, true),
     currentGameTitle: currentPresenceGame,
     games,
@@ -834,7 +957,10 @@ const Home: React.FC = () => {
   const handleSyncLibraries = useCallback(() => {
     const steamConnected = Boolean(resolvedSteamId);
     if (!steamConnected && !epicAuthConnected) {
-      notify("Conecte sua conta Steam ou Epic para sincronizar os jogos.", "info");
+      notify(
+        "Conecte sua conta Steam ou Epic para sincronizar os jogos.",
+        "info",
+      );
       setSettingsTab("connections");
       selectCategory("SETTINGS");
       return;
@@ -849,7 +975,14 @@ const Home: React.FC = () => {
           : "Sincronizando Epic Games... (Steam não conectada: veja Configurações > Conexões)",
       "info",
     );
-  }, [resolvedSteamId, epicAuthConnected, notify, selectCategory, handleSyncSteam, handleSyncEpic]);
+  }, [
+    resolvedSteamId,
+    epicAuthConnected,
+    notify,
+    selectCategory,
+    handleSyncSteam,
+    handleSyncEpic,
+  ]);
 
   const {
     socialFriends,
@@ -880,18 +1013,35 @@ const Home: React.FC = () => {
     unlocked: number;
     available: number;
   }>({ loading: false, items: [], unlocked: 0, available: 0 });
-  const [overlayAchievementRevision, setOverlayAchievementRevision] = useState(0);
-  const [overlayChatFriendId, setOverlayChatFriendId] = useState<string | null>(null);
-  const [overlayChatMessages, setOverlayChatMessages] = useState<ChatMessage[]>([]);
+  const [overlayAchievementRevision, setOverlayAchievementRevision] =
+    useState(0);
+  const [overlayChatFriendId, setOverlayChatFriendId] = useState<string | null>(
+    null,
+  );
+  const [overlayChatMessages, setOverlayChatMessages] = useState<ChatMessage[]>(
+    [],
+  );
   const [overlayChatTyping, setOverlayChatTyping] = useState(false);
   const [overlayChatSending, setOverlayChatSending] = useState(false);
   const [overlayChatError, setOverlayChatError] = useState<string | null>(null);
   const [showLevelUp, setShowLevelUp] = useState(false);
-  const [levelUpData, setLevelUpData] = useState<{ level: number; rank: string; rankColor: string; tierInfo?: any; prevLevel?: number; xp?: number; progress?: number } | null>(null);
+  const [levelUpData, setLevelUpData] = useState<{
+    level: number;
+    rank: string;
+    rankColor: string;
+    tierInfo?: any;
+    prevLevel?: number;
+    xp?: number;
+    progress?: number;
+  } | null>(null);
 
   const overlayCurrentGame = useMemo(() => {
     if (!currentPresenceGame && !currentPresenceExecutablePath) return null;
-    return resolveGameFromPresence(games, currentPresenceGame, currentPresenceExecutablePath);
+    return resolveGameFromPresence(
+      games,
+      currentPresenceGame,
+      currentPresenceExecutablePath,
+    );
   }, [currentPresenceGame, currentPresenceExecutablePath, games]);
   const overlayCurrentGameRef = useRef(overlayCurrentGame);
   overlayCurrentGameRef.current = overlayCurrentGame;
@@ -899,10 +1049,10 @@ const Home: React.FC = () => {
   const overlayPanelPayloadRef = useRef<Record<string, unknown> | null>(null);
 
   const overlayChatFriend = useMemo(
-    () => socialFriends.find((friend) => friend.id === overlayChatFriendId) || null,
+    () =>
+      socialFriends.find((friend) => friend.id === overlayChatFriendId) || null,
     [overlayChatFriendId, socialFriends],
   );
-
 
   useEffect(() => {
     if (!didInitConnectionRefs.current) {
@@ -925,7 +1075,13 @@ const Home: React.FC = () => {
 
     previousSteamIdRef.current = resolvedSteamId;
     previousDiscordIdRef.current = resolvedDiscordId;
-  }, [notify, resolvedDiscordId, resolvedSteamId, setDiscordConnecting, setSteamConnecting]);
+  }, [
+    notify,
+    resolvedDiscordId,
+    resolvedSteamId,
+    setDiscordConnecting,
+    setSteamConnecting,
+  ]);
 
   useEffect(() => {
     const openSettings = () => {
@@ -933,7 +1089,8 @@ const Home: React.FC = () => {
       selectCategory("SETTINGS");
     };
     window.addEventListener("phelierium:open-settings-tab", openSettings);
-    return () => window.removeEventListener("phelierium:open-settings-tab", openSettings);
+    return () =>
+      window.removeEventListener("phelierium:open-settings-tab", openSettings);
   }, [selectCategory]);
 
   // ── Auto-Updater Global Listener ──────────────────────────────────────────
@@ -941,30 +1098,44 @@ const Home: React.FC = () => {
     const api = window.electronAPI;
     if (!api?.onUpdateMessage) return;
 
-    const showUpdateNotification = (status: string, data?: { version?: string } | string) => {
+    const showUpdateNotification = (
+      status: string,
+      data?: { version?: string } | string,
+    ) => {
       const version = typeof data === "object" ? data?.version : undefined;
       if (status === "update-available") {
         notify(
           `Nova atualização pendente${version ? ` (v${version})` : ""}. Abra as Configurações para baixar e atualizar.`,
           "warning",
-          { id: "checkpoint-app-update", title: "Atualização do Pherielium", duration: 0 },
+          {
+            id: "checkpoint-app-update",
+            title: "Atualização do Pherielium",
+            duration: 0,
+          },
         );
       } else if (status === "update-downloaded") {
         notify(
           `A versão${version ? ` v${version}` : " nova"} está pronta. Vá em Configurações para instalar.`,
           "success",
-          { id: "checkpoint-app-update", title: "Atualização pronta", duration: 0 },
+          {
+            id: "checkpoint-app-update",
+            title: "Atualização pronta",
+            duration: 0,
+          },
         );
       }
     };
 
-    void api.getUpdateState?.().then((state) => {
-      if (state.status === "available" || state.status === "downloading") {
-        showUpdateNotification("update-available", state.info || undefined);
-      } else if (state.status === "downloaded") {
-        showUpdateNotification("update-downloaded", state.info || undefined);
-      }
-    }).catch(() => undefined);
+    void api
+      .getUpdateState?.()
+      .then((state) => {
+        if (state.status === "available" || state.status === "downloading") {
+          showUpdateNotification("update-available", state.info || undefined);
+        } else if (state.status === "downloaded") {
+          showUpdateNotification("update-downloaded", state.info || undefined);
+        }
+      })
+      .catch(() => undefined);
 
     const unsubscribe = api.onUpdateMessage((msg, data) => {
       if (msg === "update-available") {
@@ -978,9 +1149,12 @@ const Home: React.FC = () => {
     const bootCheck = window.setTimeout(() => {
       void api.checkForUpdates?.().catch(() => undefined);
     }, 5000);
-    const interval = window.setInterval(() => {
-      void api.checkForUpdates?.().catch(() => undefined);
-    }, 6 * 60 * 60 * 1000);
+    const interval = window.setInterval(
+      () => {
+        void api.checkForUpdates?.().catch(() => undefined);
+      },
+      6 * 60 * 60 * 1000,
+    );
 
     return () => {
       unsubscribe?.();
@@ -999,7 +1173,10 @@ const Home: React.FC = () => {
       return;
     }
 
-    if (!window.electronAPI?.importLegacyGames || !userProfile?.gamesMigratedAt) {
+    if (
+      !window.electronAPI?.importLegacyGames ||
+      !userProfile?.gamesMigratedAt
+    ) {
       setLocalLibraryReady(true);
     }
     void refreshLibrary();
@@ -1007,17 +1184,21 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     if (
-      !user?.uid
-      || !userProfile?.gamesMigratedAt
-      || !window.electronAPI?.importLegacyGames
-    ) return;
+      !user?.uid ||
+      !userProfile?.gamesMigratedAt ||
+      !window.electronAPI?.importLegacyGames
+    )
+      return;
     const migrateLocalLibrary = async () => {
       try {
         const result = await importFirestoreLibraryIntoLocal(user.uid);
         if (result.imported > 0) await refreshLibrary();
         setLocalLibraryReady(true);
       } catch (error) {
-        console.error("Falha ao importar a biblioteca do Firestore para SQLite:", error);
+        console.error(
+          "Falha ao importar a biblioteca do Firestore para SQLite:",
+          error,
+        );
       }
     };
     void migrateLocalLibrary();
@@ -1050,7 +1231,10 @@ const Home: React.FC = () => {
               "Resumo público pendente: banco sem constraint única (rode `supabase db push`). Tentando de novo em 60s.",
             );
           } else {
-            console.warn("Falha ao sincronizar resumo publico da biblioteca:", error);
+            console.warn(
+              "Falha ao sincronizar resumo publico da biblioteca:",
+              error,
+            );
           }
         })
         .finally(() => {
@@ -1069,7 +1253,7 @@ const Home: React.FC = () => {
 
     setOnboardingCompleted(
       localStorage.getItem(`checkpoint_onboarding_${user.uid}`) === "1" ||
-      Boolean(userProfile?.onboardingCompletedAt),
+        Boolean(userProfile?.onboardingCompletedAt),
     );
   }, [user?.uid, userProfile?.onboardingCompletedAt]);
 
@@ -1100,7 +1284,9 @@ const Home: React.FC = () => {
     if (!user?.uid) return;
 
     const heartbeat = () => {
-      const inCall = Boolean(voiceCall?.callState && voiceCall.callState !== "idle");
+      const inCall = Boolean(
+        voiceCall?.callState && voiceCall.callState !== "idle",
+      );
       const sharing = Boolean(voiceCall?.isSharingScreen);
       const idle = Date.now() - lastPresenceActivityRef.current > 5 * 60 * 1000;
       const status = currentPresenceGame
@@ -1123,29 +1309,43 @@ const Home: React.FC = () => {
     };
 
     heartbeat();
-    const interval = window.setInterval(heartbeat, 60_000);
+    // AuthProvider trata presença com mais de 75s como offline. Um heartbeat de
+    // 60s deixava só 15s de folga: um POST lento ou perdido já jogava a pessoa
+    // para offline (é o que aparecia ao entrar em chamada). 25s dá três
+    // tentativas dentro da janela.
+    const interval = window.setInterval(heartbeat, 25_000);
     window.addEventListener(PRESENCE_PREF_EVENT, heartbeat);
     return () => {
       window.clearInterval(interval);
       window.removeEventListener(PRESENCE_PREF_EVENT, heartbeat);
     };
-  }, [currentPresenceGame, user?.uid, userProfile?.displayName, userProfile?.photoURL, voiceCall?.callState, voiceCall?.isSharingScreen]);
+  }, [
+    currentPresenceGame,
+    user?.uid,
+    userProfile?.displayName,
+    userProfile?.photoURL,
+    voiceCall?.callState,
+    voiceCall?.isSharingScreen,
+  ]);
 
   useEffect(() => {
     const handleGameLaunch = (event: Event) => {
-      const detail = (event as CustomEvent<{
-        title?: string;
-        gameId?: string;
-        executablePath?: string | null;
-        game?: Game;
-      }>).detail;
+      const detail = (
+        event as CustomEvent<{
+          title?: string;
+          gameId?: string;
+          executablePath?: string | null;
+          game?: Game;
+        }>
+      ).detail;
       const title = detail?.title?.trim();
       if (!title) return;
 
-      const matchedGame = detail?.game
-        || (detail?.gameId ? games.find((g) => g.id === detail.gameId) : null)
-        || resolveGameFromPresence(games, title, detail?.executablePath)
-        || null;
+      const matchedGame =
+        detail?.game ||
+        (detail?.gameId ? games.find((g) => g.id === detail.gameId) : null) ||
+        resolveGameFromPresence(games, title, detail?.executablePath) ||
+        null;
 
       const effectiveTitle = matchedGame?.title || title;
 
@@ -1162,21 +1362,29 @@ const Home: React.FC = () => {
         lastGameLaunchSoundRef.current = { title: effectiveTitle, time: now };
       }
       const nowWelcome = Date.now();
-      const welcomeAlreadyShown = lastOverlayWelcomeGameRef.current === effectiveTitle
-        && nowWelcome - lastOverlayWelcomeAtRef.current < 20_000;
+      const welcomeAlreadyShown =
+        lastOverlayWelcomeGameRef.current === effectiveTitle &&
+        nowWelcome - lastOverlayWelcomeAtRef.current < 20_000;
       if (!welcomeAlreadyShown) {
         lastOverlayWelcomeGameRef.current = effectiveTitle;
         lastOverlayWelcomeAtRef.current = nowWelcome;
-        void window.electronAPI?.showGameStartOverlay({ gameTitle: effectiveTitle });
+        void window.electronAPI?.showGameStartOverlay({
+          gameTitle: effectiveTitle,
+        });
       }
 
       void (async () => {
-        const monitorablePath = detail?.executablePath
-          || (matchedGame ? await resolveMonitorableExecutablePath(matchedGame) : null)
-          || (matchedGame ? getMonitorableExecutablePath(matchedGame) : null);
+        const monitorablePath =
+          detail?.executablePath ||
+          (matchedGame
+            ? await resolveMonitorableExecutablePath(matchedGame)
+            : null) ||
+          (matchedGame ? getMonitorableExecutablePath(matchedGame) : null);
 
         if (monitorablePath && window.electronAPI?.setGameWatchTarget) {
-          void window.electronAPI.setGameWatchTarget(monitorablePath).catch(() => undefined);
+          void window.electronAPI
+            .setGameWatchTarget(monitorablePath)
+            .catch(() => undefined);
         }
 
         // Presença fica pendente até o processo ser confirmado pelo watcher/monitor.
@@ -1192,14 +1400,16 @@ const Home: React.FC = () => {
     };
 
     window.addEventListener("checkpoint:game-launch", handleGameLaunch);
-    return () => window.removeEventListener("checkpoint:game-launch", handleGameLaunch);
+    return () =>
+      window.removeEventListener("checkpoint:game-launch", handleGameLaunch);
   }, [games, prepareLaunchPresence, playSound, user?.uid, notify]);
 
   // Detecta jogos já abertos quando o hub inicia ou quando a lista de jogos
   // é carregada pela primeira vez (caso o usuário tenha aberto o hub com um jogo já rodando).
   const didInitialGameScanRef = React.useRef(false);
   useEffect(() => {
-    if (!user?.uid || games.length === 0 || didInitialGameScanRef.current) return;
+    if (!user?.uid || games.length === 0 || didInitialGameScanRef.current)
+      return;
     didInitialGameScanRef.current = true;
     if (!currentPresenceGame) {
       void syncDetectedRunningGame();
@@ -1210,8 +1420,8 @@ const Home: React.FC = () => {
     if (!currentPresenceGame) return;
     const nowWelcome = Date.now();
     if (
-      lastOverlayWelcomeGameRef.current === currentPresenceGame
-      && nowWelcome - lastOverlayWelcomeAtRef.current < 20_000
+      lastOverlayWelcomeGameRef.current === currentPresenceGame &&
+      nowWelcome - lastOverlayWelcomeAtRef.current < 20_000
     ) {
       return;
     }
@@ -1255,7 +1465,10 @@ const Home: React.FC = () => {
             userProfile?.photoURL,
           );
         } catch (error) {
-          console.warn("[home] Failed to sync offline presence before quit", error);
+          console.warn(
+            "[home] Failed to sync offline presence before quit",
+            error,
+          );
         }
       }
       void window.electronAPI?.confirmAppQuit?.();
@@ -1308,7 +1521,16 @@ const Home: React.FC = () => {
     } else {
       previousEpicAuthRef.current = epicAuthConnected;
     }
-  }, [resolvedSteamId, resolvedDiscordId, epicAuthConnected, user?.uid, notify, playSound, handleSyncSteam, handleSyncEpic]);
+  }, [
+    resolvedSteamId,
+    resolvedDiscordId,
+    epicAuthConnected,
+    user?.uid,
+    notify,
+    playSound,
+    handleSyncSteam,
+    handleSyncEpic,
+  ]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1343,7 +1565,8 @@ const Home: React.FC = () => {
         denied: "Autorização do Discord cancelada.",
         missing_code: "Código de retorno do Discord não recebido.",
         missing_id: "Conta Discord não retornou identificador.",
-        client_not_configured: "Credenciais do Discord não configuradas no backend.",
+        client_not_configured:
+          "Credenciais do Discord não configuradas no backend.",
         server_not_configured: "Backend Supabase Admin não configurado.",
         token_error: "O Discord recusou a troca do código de autenticação.",
         error: "Erro inesperado.",
@@ -1358,33 +1581,36 @@ const Home: React.FC = () => {
   }, [notify, refreshProfile, user?.uid]);
 
   useEffect(() => {
-    const unsubscribe = window.electronAPI?.onAccountAuthCallback?.((payload) => {
-      if (payload.steamStatus) {
-        setSteamConnecting(false);
-        if (payload.steamStatus === "ok") {
-          void refreshProfile();
-        } else {
-          notify(`Não foi possível conectar com a Steam (${payload.steamStatus}).`, "error");
+    const unsubscribe = window.electronAPI?.onAccountAuthCallback?.(
+      (payload) => {
+        if (payload.steamStatus) {
+          setSteamConnecting(false);
+          if (payload.steamStatus === "ok") {
+            void refreshProfile();
+          } else {
+            notify(
+              `Não foi possível conectar com a Steam (${payload.steamStatus}).`,
+              "error",
+            );
+          }
         }
-      }
 
-      if (payload.discordStatus) {
-        setDiscordConnecting(false);
-        if (payload.discordStatus === "ok") {
-          void refreshProfile();
-        } else {
-          notify(`Não foi possível conectar com o Discord (${payload.discordStatus}).`, "error");
+        if (payload.discordStatus) {
+          setDiscordConnecting(false);
+          if (payload.discordStatus === "ok") {
+            void refreshProfile();
+          } else {
+            notify(
+              `Não foi possível conectar com o Discord (${payload.discordStatus}).`,
+              "error",
+            );
+          }
         }
-      }
-    });
+      },
+    );
 
     return () => unsubscribe?.();
-  }, [
-    notify,
-    refreshProfile,
-    setDiscordConnecting,
-    setSteamConnecting,
-  ]);
+  }, [notify, refreshProfile, setDiscordConnecting, setSteamConnecting]);
 
   const {
     displayGames,
@@ -1418,33 +1644,72 @@ const Home: React.FC = () => {
   const activePlatformConfig = useMemo(() => {
     switch (activeCategory) {
       case "STEAM":
-        return { label: "Steam", icon: <PlatformSteamIcon className="w-3.5 h-3.5" /> };
+        return {
+          label: "Steam",
+          icon: <PlatformSteamIcon className="w-3.5 h-3.5" />,
+        };
       case "EPIC":
-        return { label: "Epic Games", icon: <PlatformEpicIcon className="w-3.5 h-3.5" /> };
+        return {
+          label: "Epic Games",
+          icon: <PlatformEpicIcon className="w-3.5 h-3.5" />,
+        };
       case "EA":
-        return { label: "EA App", icon: <PlatformEaIcon className="w-3.5 h-3.5" /> };
+        return {
+          label: "EA App",
+          icon: <PlatformEaIcon className="w-3.5 h-3.5" />,
+        };
       case "UBISOFT":
-        return { label: "Ubisoft", icon: <PlatformUbisoftIcon className="w-3.5 h-3.5" /> };
+        return {
+          label: "Ubisoft",
+          icon: <PlatformUbisoftIcon className="w-3.5 h-3.5" />,
+        };
       case "GOG":
-        return { label: "GOG Galaxy", icon: <PlatformGogIcon className="w-3.5 h-3.5" /> };
+        return {
+          label: "GOG Galaxy",
+          icon: <PlatformGogIcon className="w-3.5 h-3.5" />,
+        };
       case "XBOX":
-        return { label: "Xbox", icon: <PlatformXboxIcon className="w-3.5 h-3.5" /> };
+        return {
+          label: "Xbox",
+          icon: <PlatformXboxIcon className="w-3.5 h-3.5" />,
+        };
       case "RIOT":
-        return { label: "Riot Games", icon: <PlatformRiotIcon className="w-3.5 h-3.5" /> };
+        return {
+          label: "Riot Games",
+          icon: <PlatformRiotIcon className="w-3.5 h-3.5" />,
+        };
       case "BATTLENET":
-        return { label: "Battle.net", icon: <PlatformBattlenetIcon className="w-3.5 h-3.5" /> };
+        return {
+          label: "Battle.net",
+          icon: <PlatformBattlenetIcon className="w-3.5 h-3.5" />,
+        };
       case "ROCKSTAR":
-        return { label: "Rockstar", icon: <PlatformRockstarIcon className="w-3.5 h-3.5" /> };
+        return {
+          label: "Rockstar",
+          icon: <PlatformRockstarIcon className="w-3.5 h-3.5" />,
+        };
       case "LOCAL":
-        return { label: "Jogos Locais", icon: <PlatformLocalIcon className="w-3.5 h-3.5" /> };
+        return {
+          label: "Jogos Locais",
+          icon: <PlatformLocalIcon className="w-3.5 h-3.5" />,
+        };
       case "FAVORITES":
-        return { label: "Favoritos", icon: <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> };
+        return {
+          label: "Favoritos",
+          icon: <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />,
+        };
       case "INSTALLED":
-        return { label: "Instalados", icon: <PlatformAllIcon className="w-3.5 h-3.5" /> };
+        return {
+          label: "Instalados",
+          icon: <PlatformAllIcon className="w-3.5 h-3.5" />,
+        };
       case "RECENT":
         return { label: "Recentes", icon: <Clock className="w-3.5 h-3.5" /> };
       default:
-        return { label: "Todas as Plataformas", icon: <PlatformAllIcon className="w-3.5 h-3.5" /> };
+        return {
+          label: "Todas as Plataformas",
+          icon: <PlatformAllIcon className="w-3.5 h-3.5" />,
+        };
     }
   }, [activeCategory]);
 
@@ -1507,8 +1772,10 @@ const Home: React.FC = () => {
     if (displayGames.length === 0 && selectedIndex !== 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedIndex(0);
-    } else if (displayGames.length > 0 && selectedIndex > displayGames.length - 1) {
-
+    } else if (
+      displayGames.length > 0 &&
+      selectedIndex > displayGames.length - 1
+    ) {
       setSelectedIndex(displayGames.length - 1);
     }
   }, [displayGames.length, selectedIndex]);
@@ -1530,7 +1797,16 @@ const Home: React.FC = () => {
     [playSound],
   );
 
-  const isSystemCategory = ["FRIENDS", "FEED", "MODS", "SETTINGS", "PROFILE", "DEALS", "TROPHIES", "RADAR"].includes(activeCategory);
+  const isSystemCategory = [
+    "FRIENDS",
+    "FEED",
+    "MODS",
+    "SETTINGS",
+    "PROFILE",
+    "DEALS",
+    "TROPHIES",
+    "RADAR",
+  ].includes(activeCategory);
 
   const { moveSystemFocus, adjustFocusedRange } = useGamepadFocusNavigation({
     playSound,
@@ -1645,7 +1921,8 @@ const Home: React.FC = () => {
   useGamepadButton("X", () => {
     if (searchOpen) {
       const activeElement = document.activeElement;
-      if (activeElement instanceof HTMLElement) activateElementWithController(activeElement);
+      if (activeElement instanceof HTMLElement)
+        activateElementWithController(activeElement);
       return;
     }
     if (isAnyModalOpen) return;
@@ -1708,7 +1985,11 @@ const Home: React.FC = () => {
       return;
     }
     // No hub (biblioteca): DPAD_UP foca a pesquisa se existir
-    if (!["SETTINGS", "FRIENDS", "MODS", "RADAR", "PROFILE"].includes(activeCategory)) {
+    if (
+      !["SETTINGS", "FRIENDS", "MODS", "RADAR", "PROFILE"].includes(
+        activeCategory,
+      )
+    ) {
       searchInputRef.current?.focus();
       searchInputRef.current?.select();
       playSound("search");
@@ -1750,7 +2031,9 @@ const Home: React.FC = () => {
     (direction: -1 | 1) => {
       let customIds: string[] = [];
       try {
-        const stored = localStorage.getItem("checkpoint_custom_library_filters");
+        const stored = localStorage.getItem(
+          "checkpoint_custom_library_filters",
+        );
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed)) {
@@ -1791,7 +2074,9 @@ const Home: React.FC = () => {
     if (isAnyModalOpen || searchOpen) return;
     // FRIENDS: open chat with focused friend
     if (activeCategory === "FRIENDS") {
-      const focused = document.querySelector<HTMLElement>("[data-gamepad-focused='true']");
+      const focused = document.querySelector<HTMLElement>(
+        "[data-gamepad-focused='true']",
+      );
       const card = focused?.closest<HTMLElement>("[data-friend-id]");
       const friendId = card?.dataset.friendId || focused?.dataset.friendId;
       if (friendId) {
@@ -1804,7 +2089,9 @@ const Home: React.FC = () => {
       return;
     }
     if (isSystemCategory) return;
-    const triggerBtn = document.querySelector<HTMLButtonElement>("[data-context-menu-trigger='true']");
+    const triggerBtn = document.querySelector<HTMLButtonElement>(
+      "[data-context-menu-trigger='true']",
+    );
     if (triggerBtn) {
       triggerBtn.click();
       playSound("select");
@@ -1819,7 +2106,9 @@ const Home: React.FC = () => {
     if (isAnyModalOpen || searchOpen) return;
     // FRIENDS: start call with focused friend
     if (activeCategory === "FRIENDS") {
-      const focused = document.querySelector<HTMLElement>("[data-gamepad-focused='true']");
+      const focused = document.querySelector<HTMLElement>(
+        "[data-gamepad-focused='true']",
+      );
       const card = focused?.closest<HTMLElement>("[data-friend-id]");
       const friendId = card?.dataset.friendId || focused?.dataset.friendId;
       if (friendId) {
@@ -1856,21 +2145,35 @@ const Home: React.FC = () => {
     playHapticPattern("action");
   });
 
-  const categoryToLauncherType = useCallback((cat: string): LauncherType | undefined => {
-    switch (cat) {
-      case "STEAM": return "steam";
-      case "EPIC": return "epic";
-      case "EA": return "ea";
-      case "UBISOFT": return "ubisoft";
-      case "GOG": return "gog";
-      case "XBOX": return "xbox";
-      case "RIOT": return "riot";
-      case "BATTLENET": return "battlenet";
-      case "ROCKSTAR": return "rockstar";
-      case "LOCAL": return "local";
-      default: return undefined;
-    }
-  }, []);
+  const categoryToLauncherType = useCallback(
+    (cat: string): LauncherType | undefined => {
+      switch (cat) {
+        case "STEAM":
+          return "steam";
+        case "EPIC":
+          return "epic";
+        case "EA":
+          return "ea";
+        case "UBISOFT":
+          return "ubisoft";
+        case "GOG":
+          return "gog";
+        case "XBOX":
+          return "xbox";
+        case "RIOT":
+          return "riot";
+        case "BATTLENET":
+          return "battlenet";
+        case "ROCKSTAR":
+          return "rockstar";
+        case "LOCAL":
+          return "local";
+        default:
+          return undefined;
+      }
+    },
+    [],
+  );
 
   const openAddGameModal = useCallback(
     (gameOrLauncherType?: Game | LauncherType | null) => {
@@ -1891,12 +2194,15 @@ const Home: React.FC = () => {
     [activeCategory, categoryToLauncherType, playSound],
   );
 
-  const closeAddModal = useCallback((silent = false) => {
-    if (!silent) playSound("back");
-    setIsAddModalOpen(false);
-    setEditingGame(null);
-    setAddModalInitialLauncherType(undefined);
-  }, [playSound]);
+  const closeAddModal = useCallback(
+    (silent = false) => {
+      if (!silent) playSound("back");
+      setIsAddModalOpen(false);
+      setEditingGame(null);
+      setAddModalInitialLauncherType(undefined);
+    },
+    [playSound],
+  );
 
   useEffect(() => {
     const handleAddGameShortcut = (e: KeyboardEvent) => {
@@ -1910,7 +2216,6 @@ const Home: React.FC = () => {
     window.addEventListener("keydown", handleAddGameShortcut);
     return () => window.removeEventListener("keydown", handleAddGameShortcut);
   }, [openAddGameModal]);
-
 
   // OPTIONS (PS) / MENU (Xbox): Toggle Sidebar open/close
   useGamepadButton("OPTIONS", () => {
@@ -1967,7 +2272,12 @@ const Home: React.FC = () => {
         if (displayGames[selectedIndex])
           openDetails(displayGames[selectedIndex]);
       } else if (e.key.toLowerCase() === "s") {
-        if (!isAnyModalOpen && !["SETTINGS", "FRIENDS", "MODS", "RADAR", "PROFILE"].includes(activeCategory)) {
+        if (
+          !isAnyModalOpen &&
+          !["SETTINGS", "FRIENDS", "MODS", "RADAR", "PROFILE"].includes(
+            activeCategory,
+          )
+        ) {
           e.preventDefault();
           searchInputRef.current?.focus();
           searchInputRef.current?.select();
@@ -2002,28 +2312,43 @@ const Home: React.FC = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isAnyModalOpen, displayGames, selectedIndex, openDetails, playSound, searchOpen, isPlatformOrFavoritesPage, cycleLibraryTab, toggleFavoriteGame]);
+  }, [
+    isAnyModalOpen,
+    displayGames,
+    selectedIndex,
+    openDetails,
+    playSound,
+    searchOpen,
+    isPlatformOrFavoritesPage,
+    cycleLibraryTab,
+    toggleFavoriteGame,
+  ]);
 
-  const handleGameRailWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
-    if (isAnyModalOpen || searchOpen || displayGames.length === 0) return;
+  const handleGameRailWheel = useCallback(
+    (event: React.WheelEvent<HTMLDivElement>) => {
+      if (isAnyModalOpen || searchOpen || displayGames.length === 0) return;
 
-    const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX)
-      ? event.deltaY
-      : event.deltaX;
-    if (Math.abs(delta) <= 15) return;
+      const delta =
+        Math.abs(event.deltaY) >= Math.abs(event.deltaX)
+          ? event.deltaY
+          : event.deltaX;
+      if (Math.abs(delta) <= 15) return;
 
-    const now = performance.now();
-    if (now - gameRailWheelTimeRef.current < 120) return;
-    gameRailWheelTimeRef.current = now;
+      const now = performance.now();
+      if (now - gameRailWheelTimeRef.current < 120) return;
+      gameRailWheelTimeRef.current = now;
 
-    setSelectedIndex((current) => {
-      const next = delta > 0
-        ? Math.min(current + 1, displayGames.length - 1)
-        : Math.max(current - 1, 0);
-      if (next !== current) playSound("navigate");
-      return next;
-    });
-  }, [displayGames.length, isAnyModalOpen, playSound, searchOpen]);
+      setSelectedIndex((current) => {
+        const next =
+          delta > 0
+            ? Math.min(current + 1, displayGames.length - 1)
+            : Math.max(current - 1, 0);
+        if (next !== current) playSound("navigate");
+        return next;
+      });
+    },
+    [displayGames.length, isAnyModalOpen, playSound, searchOpen],
+  );
 
   // Construção do perfil com busca resiliente de jogos da conta e favoritos
   const handleViewFriendProfile = async (friend: SocialFriend) => {
@@ -2039,7 +2364,10 @@ const Home: React.FC = () => {
     } catch {
       const fallback = buildLocalFriendProfile(friend);
       try {
-        const games = await fetchUserGamesForProfile(friendUid, fallback.profile);
+        const games = await fetchUserGamesForProfile(
+          friendUid,
+          fallback.profile,
+        );
         setFriendProfileModal({ profile: fallback.profile, games });
       } catch {
         setFriendProfileModal(fallback);
@@ -2063,7 +2391,9 @@ const Home: React.FC = () => {
         playSound("detailOpen");
       } catch {
         notify(
-          error instanceof Error ? error.message : "Não foi possível abrir este perfil.",
+          error instanceof Error
+            ? error.message
+            : "Não foi possível abrir este perfil.",
           "error",
         );
       }
@@ -2092,17 +2422,25 @@ const Home: React.FC = () => {
 
       if (!achievementUnlockBelongsToGame(game, payload)) return;
 
-      const payloadSteamAppId = String(payload.gameId || "").match(/^steam_(\d+)$/i)?.[1];
+      const payloadSteamAppId = String(payload.gameId || "").match(
+        /^steam_(\d+)$/i,
+      )?.[1];
 
       if (payloadSteamAppId && userProfile?.steamId) {
-        invalidateSteamAchievementCache(userProfile.steamId, payloadSteamAppId, launcherLanguage);
+        invalidateSteamAchievementCache(
+          userProfile.steamId,
+          payloadSteamAppId,
+          launcherLanguage,
+        );
       }
 
-      setOverlayAchievements((current) => patchOverlayAchievementUnlock(current, {
-        achievementId: payload.achievementId,
-        earnedTime: payload.earnedTime,
-        unlockedAt: payload.unlockedAt,
-      }));
+      setOverlayAchievements((current) =>
+        patchOverlayAchievementUnlock(current, {
+          achievementId: payload.achievementId,
+          earnedTime: payload.earnedTime,
+          unlockedAt: payload.unlockedAt,
+        }),
+      );
       setOverlayAchievementRevision((current) => current + 1);
     });
     return () => api.removeRealtimeAchievementUnlock(handler);
@@ -2112,17 +2450,25 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
-    const loadAchievements = async (options?: { silent?: boolean; forceRefresh?: boolean }) => {
+    const loadAchievements = async (options?: {
+      silent?: boolean;
+      forceRefresh?: boolean;
+    }) => {
       const game = overlayCurrentGame;
       if (!game) {
-        setOverlayAchievements({ loading: false, items: [], unlocked: 0, available: 0 });
+        setOverlayAchievements({
+          loading: false,
+          items: [],
+          unlocked: 0,
+          available: 0,
+        });
         return;
       }
 
       if (!options?.silent) {
-        setOverlayAchievements((current) => (
-          current.items.length > 0 ? current : { ...current, loading: true }
-        ));
+        setOverlayAchievements((current) =>
+          current.items.length > 0 ? current : { ...current, loading: true },
+        );
       }
 
       try {
@@ -2144,8 +2490,16 @@ const Home: React.FC = () => {
         setOverlayAchievements((current) => ({
           loading: false,
           items: current.items.length > 0 ? current.items : snapshot.items,
-          unlocked: current.unlocked || snapshot.unlocked || game.completedAchievements || 0,
-          available: current.available || snapshot.available || game.totalAchievements || 0,
+          unlocked:
+            current.unlocked ||
+            snapshot.unlocked ||
+            game.completedAchievements ||
+            0,
+          available:
+            current.available ||
+            snapshot.available ||
+            game.totalAchievements ||
+            0,
         }));
       } catch {
         if (cancelled) return;
@@ -2161,7 +2515,9 @@ const Home: React.FC = () => {
 
     void loadAchievements({ forceRefresh: overlayAchievementRevision > 0 });
     const intervalId = overlayCurrentGame
-      ? window.setInterval(() => { void loadAchievements({ silent: true }); }, 60_000)
+      ? window.setInterval(() => {
+          void loadAchievements({ silent: true });
+        }, 60_000)
       : null;
     return () => {
       cancelled = true;
@@ -2183,35 +2539,47 @@ const Home: React.FC = () => {
       return;
     }
     void markMessagesAsRead(overlayChatFriendUid);
-    const unsubscribeMessages = subscribeToChatMessages(overlayChatFriendUid, setOverlayChatMessages);
-    const unsubscribeTyping = subscribeToFriendTyping(overlayChatFriendUid, setOverlayChatTyping);
+    const unsubscribeMessages = subscribeToChatMessages(
+      overlayChatFriendUid,
+      setOverlayChatMessages,
+    );
+    const unsubscribeTyping = subscribeToFriendTyping(
+      overlayChatFriendUid,
+      setOverlayChatTyping,
+    );
     return () => {
       unsubscribeMessages();
       unsubscribeTyping();
     };
   }, [overlayChatFriendUid]);
 
-  const mapOverlayAchievementsPayload = useCallback(() => ({
-    unlocked: overlayAchievements.unlocked,
-    available: overlayAchievements.available,
-    loading: overlayAchievements.loading,
-    items: overlayAchievements.items.map((achievement) => ({
-      id: achievement.apiName,
-      name: achievement.name,
-      description: achievement.description,
-      icon: achievement.icon || achievement.iconGray,
-      achieved: achievement.achieved,
-      unlockedAt: achievement.unlockTime > 0
-        ? new Date(achievement.unlockTime * 1000).toISOString()
-        : "",
-    })),
-  }), [overlayAchievements]);
+  const mapOverlayAchievementsPayload = useCallback(
+    () => ({
+      unlocked: overlayAchievements.unlocked,
+      available: overlayAchievements.available,
+      loading: overlayAchievements.loading,
+      items: overlayAchievements.items.map((achievement) => ({
+        id: achievement.apiName,
+        name: achievement.name,
+        description: achievement.description,
+        icon: achievement.icon || achievement.iconGray,
+        achieved: achievement.achieved,
+        unlockedAt:
+          achievement.unlockTime > 0
+            ? new Date(achievement.unlockTime * 1000).toISOString()
+            : "",
+      })),
+    }),
+    [overlayAchievements],
+  );
 
   useEffect(() => {
     if (!window.electronAPI?.updateOverlayPanel) return;
-    void window.electronAPI.updateOverlayPanel({
-      achievements: mapOverlayAchievementsPayload(),
-    }).catch(() => undefined);
+    void window.electronAPI
+      .updateOverlayPanel({
+        achievements: mapOverlayAchievementsPayload(),
+      })
+      .catch(() => undefined);
   }, [mapOverlayAchievementsPayload]);
 
   useEffect(() => {
@@ -2226,7 +2594,9 @@ const Home: React.FC = () => {
       }
       const send = () => {
         overlayPanelTimerRef.current = null;
-        void window.electronAPI?.updateOverlayPanel(payload as any).catch(() => undefined);
+        void window.electronAPI
+          ?.updateOverlayPanel(payload as any)
+          .catch(() => undefined);
       };
       if (immediate) {
         send();
@@ -2235,33 +2605,71 @@ const Home: React.FC = () => {
       overlayPanelTimerRef.current = window.setTimeout(send, 350);
     };
 
-    const localCustomDisplayName = user?.uid ? localStorage.getItem(`phelierium_custom_display_name_${user.uid}`) : null;
-    const localCustomAvatar = user?.uid ? localStorage.getItem(`phelierium_custom_avatar_${user.uid}`) : null;
-    const effectiveDisplayName = localCustomDisplayName || userProfile?.displayName || userProfile?.steamUsername || userDisplay;
-    const effectiveAvatar = localCustomAvatar || userProfile?.photoURL || userProfile?.discordAvatar || userProfile?.steamAvatar || "";
+    const localCustomDisplayName = user?.uid
+      ? localStorage.getItem(`phelierium_custom_display_name_${user.uid}`)
+      : null;
+    const localCustomAvatar = user?.uid
+      ? localStorage.getItem(`phelierium_custom_avatar_${user.uid}`)
+      : null;
+    const effectiveDisplayName =
+      localCustomDisplayName ||
+      userProfile?.displayName ||
+      userProfile?.steamUsername ||
+      userDisplay;
+    const effectiveAvatar =
+      localCustomAvatar ||
+      userProfile?.photoURL ||
+      userProfile?.discordAvatar ||
+      userProfile?.steamAvatar ||
+      "";
 
     const hasActiveSessionClock = Boolean(overlaySessionStartedAt);
-    const effectiveCurrentGame = (overlayCurrentGame || currentPresenceGame) ? {
-      id: overlayCurrentGame?.id || "active-game",
-      title: overlayCurrentGame?.title || currentPresenceGame || "",
-      image: overlayCurrentGame?.backgroundImage || overlayCurrentGame?.cardImage || overlayCurrentGame?.image || "",
-      platform: overlayCurrentGame?.launcherType === "steam"
-        ? "Steam"
-        : overlayCurrentGame?.launcherType === "epic" ? "Epic Games" : "Jogo local",
-      category: overlayCurrentGame?.category || "",
-      developer: overlayCurrentGame?.developer || "",
-      releaseDate: overlayCurrentGame?.releaseDate || "",
-      executableName: String(overlayCurrentGame?.executablePath || currentPresenceExecutablePath || "").split(/[\\/]/).pop() || "",
-      totalPlaytimeMinutes: overlayCurrentGame?.steamPlaytimeMinutes
-        ?? Math.round(Math.max(0, Number(overlayCurrentGame?.hoursPlayed || 0)) * 60),
-      sessionStartedAt: overlaySessionStartedAt || "",
-      presenceStatus: hasActiveSessionClock ? "playing" : "waiting",
-      windowMode: overlayCurrentGame?.launchProfile?.windowMode || "default",
-      resolution: overlayCurrentGame?.launchProfile?.resolutionWidth && overlayCurrentGame?.launchProfile?.resolutionHeight
-        ? `${overlayCurrentGame.launchProfile.resolutionWidth} × ${overlayCurrentGame.launchProfile.resolutionHeight}`
-        : "Automática",
-      monitoring: (hasActiveSessionClock ? "verified" : "unverified") as "verified" | "unverified",
-    } : null;
+    const effectiveCurrentGame =
+      overlayCurrentGame || currentPresenceGame
+        ? {
+            id: overlayCurrentGame?.id || "active-game",
+            title: overlayCurrentGame?.title || currentPresenceGame || "",
+            image:
+              overlayCurrentGame?.backgroundImage ||
+              overlayCurrentGame?.cardImage ||
+              overlayCurrentGame?.image ||
+              "",
+            platform:
+              overlayCurrentGame?.launcherType === "steam"
+                ? "Steam"
+                : overlayCurrentGame?.launcherType === "epic"
+                  ? "Epic Games"
+                  : "Jogo local",
+            category: overlayCurrentGame?.category || "",
+            developer: overlayCurrentGame?.developer || "",
+            releaseDate: overlayCurrentGame?.releaseDate || "",
+            executableName:
+              String(
+                overlayCurrentGame?.executablePath ||
+                  currentPresenceExecutablePath ||
+                  "",
+              )
+                .split(/[\\/]/)
+                .pop() || "",
+            totalPlaytimeMinutes:
+              overlayCurrentGame?.steamPlaytimeMinutes ??
+              Math.round(
+                Math.max(0, Number(overlayCurrentGame?.hoursPlayed || 0)) * 60,
+              ),
+            sessionStartedAt: overlaySessionStartedAt || "",
+            presenceStatus: hasActiveSessionClock ? "playing" : "waiting",
+            windowMode:
+              overlayCurrentGame?.launchProfile?.windowMode || "default",
+            resolution:
+              overlayCurrentGame?.launchProfile?.resolutionWidth &&
+              overlayCurrentGame?.launchProfile?.resolutionHeight
+                ? `${overlayCurrentGame.launchProfile.resolutionWidth} × ${overlayCurrentGame.launchProfile.resolutionHeight}`
+                : "Automática",
+            monitoring: (hasActiveSessionClock ? "verified" : "unverified") as
+              | "verified"
+              | "unverified",
+          }
+        : null;
 
     overlayPanelPayloadRef.current = {
       language: launcherLanguage,
@@ -2282,24 +2690,30 @@ const Home: React.FC = () => {
           : 0,
         canChat: friend.id.startsWith("cp-friend:"),
       })),
-      chat: overlayChatFriend && overlayChatFriendUid ? {
-        friendId: overlayChatFriend.id,
-        friendName: overlayChatFriend.name,
-        friendAvatar: overlayChatFriend.avatar,
-        typing: overlayChatTyping,
-        sending: overlayChatSending,
-        error: overlayChatError || "",
-        messages: overlayChatMessages.map((message) => ({
-          id: message.id || `${message.senderId}:${message.createdAt}`,
-          text: message.text,
-          attachmentUrl: message.attachmentUrl,
-          attachmentName: message.attachmentName,
-          createdAt: message.createdAt,
-          mine: message.senderId === user?.uid || message.senderId === "me",
-          pending: String(message.id || "").startsWith("overlay-pending-") && !(message as any).failed,
-          failed: Boolean((message as any).failed),
-        })),
-      } : null,
+      chat:
+        overlayChatFriend && overlayChatFriendUid
+          ? {
+              friendId: overlayChatFriend.id,
+              friendName: overlayChatFriend.name,
+              friendAvatar: overlayChatFriend.avatar,
+              typing: overlayChatTyping,
+              sending: overlayChatSending,
+              error: overlayChatError || "",
+              messages: overlayChatMessages.map((message) => ({
+                id: message.id || `${message.senderId}:${message.createdAt}`,
+                text: message.text,
+                attachmentUrl: message.attachmentUrl,
+                attachmentName: message.attachmentName,
+                createdAt: message.createdAt,
+                mine:
+                  message.senderId === user?.uid || message.senderId === "me",
+                pending:
+                  String(message.id || "").startsWith("overlay-pending-") &&
+                  !(message as any).failed,
+                failed: Boolean((message as any).failed),
+              })),
+            }
+          : null,
       profile: {
         name: effectiveDisplayName,
         avatar: effectiveAvatar,
@@ -2314,16 +2728,21 @@ const Home: React.FC = () => {
         isCharging: gamepad.batteryCharging,
         connectionType: gamepad.connectionType,
       },
-      voiceCall: voiceCall?.session ? {
-        inCall: true,
-        channelName: voiceCall.session.friendName || "Chamada de Voz",
-        isMuted: voiceCall.isMuted,
-        isDeafened: voiceCall.isDeafened,
-        participantsCount: (voiceCall.session.participants?.length || 0) + 1,
-        speakingUserNames: voiceCall.isSpeakingLocal ? ["Você"] : [],
-      } : null,
+      voiceCall: voiceCall?.session
+        ? {
+            inCall: true,
+            channelName: voiceCall.session.friendName || "Chamada de Voz",
+            isMuted: voiceCall.isMuted,
+            isDeafened: voiceCall.isDeafened,
+            participantsCount:
+              (voiceCall.session.participants?.length || 0) + 1,
+            speakingUserNames: voiceCall.isSpeakingLocal ? ["Você"] : [],
+          }
+        : null,
       activeCall:
-        callOverlayEnabled && voiceCall?.session && voiceCall.callState !== "idle"
+        callOverlayEnabled &&
+        voiceCall?.session &&
+        voiceCall.callState !== "idle"
           ? {
               active: true,
               friendId: voiceCall.session.friendUid,
@@ -2334,20 +2753,23 @@ const Home: React.FC = () => {
               cameraOn: voiceCall.isCameraOn,
               screenSharing: voiceCall.isSharingScreen,
               speaking: voiceCall.isSpeakingLocal,
-              connectionState: voiceCall.callState === "active" ? "connected" : "calling",
+              connectionState:
+                voiceCall.callState === "active" ? "connected" : "calling",
             }
           : null,
       settings: {
         callOverlayEnabled,
         effectsVolume: effectsVolume / 100,
       },
-      playerLevel: playerLevel ? {
-        level: playerLevel.level,
-        xp: playerLevel.xp,
-        progress: playerLevel.progress,
-        tierName: playerLevel.tierName,
-        rankColor: playerLevel.rankColor,
-      } : null,
+      playerLevel: playerLevel
+        ? {
+            level: playerLevel.level,
+            xp: playerLevel.xp,
+            progress: playerLevel.progress,
+            tierName: playerLevel.tierName,
+            rankColor: playerLevel.rankColor,
+          }
+        : null,
     };
 
     flushOverlayPanel(!currentPresenceGame && !overlayCurrentGame);
@@ -2400,24 +2822,36 @@ const Home: React.FC = () => {
   ]);
 
   // Última ação de voz vinda do overlay (defesa contra entrega duplicada).
-  const lastOverlayVoiceActionRef = useRef<{ kind: string; at: number }>({ kind: "", at: 0 });
+  const lastOverlayVoiceActionRef = useRef<{ kind: string; at: number }>({
+    kind: "",
+    at: 0,
+  });
 
   useEffect(() => {
     if (!window.electronAPI?.onOverlayPanelAction) return;
     return window.electronAPI.onOverlayPanelAction((action) => {
       // Mutar/silenciar/desligar repetidos em <300ms são a MESMA ação entregue duas
       // vezes (listener duplicado); um humano não alterna mute 2x em 300ms.
-      if (action.kind === "voice-mute" || action.kind === "voice-deafen" || action.kind === "voice-hangup") {
+      if (
+        action.kind === "voice-mute" ||
+        action.kind === "voice-deafen" ||
+        action.kind === "voice-hangup"
+      ) {
         const now = performance.now();
         const last = lastOverlayVoiceActionRef.current;
         if (last.kind === action.kind && now - last.at < 300) return;
         lastOverlayVoiceActionRef.current = { kind: action.kind, at: now };
       }
-      if (action.kind === "open-launcher-chat" || action.kind === "open-launcher-friends") {
+      if (
+        action.kind === "open-launcher-chat" ||
+        action.kind === "open-launcher-friends"
+      ) {
         selectCategory("FRIENDS");
         setIsDetailOpen(false);
         if (action.kind === "open-launcher-chat" && action.friendId) {
-          const friend = socialFriends.find((candidate) => candidate.id === action.friendId);
+          const friend = socialFriends.find(
+            (candidate) => candidate.id === action.friendId,
+          );
           if (friend?.id.startsWith("cp-friend:")) {
             setActiveChatFriend(friend);
           }
@@ -2425,7 +2859,9 @@ const Home: React.FC = () => {
         return;
       }
       if (action.kind === "select-chat") {
-        const friend = socialFriends.find((candidate) => candidate.id === action.friendId);
+        const friend = socialFriends.find(
+          (candidate) => candidate.id === action.friendId,
+        );
         if (friend?.id.startsWith("cp-friend:")) {
           setOverlayChatMessages([]);
           setOverlayChatTyping(false);
@@ -2435,7 +2871,8 @@ const Home: React.FC = () => {
         return;
       }
       if (action.kind === "close-chat") {
-        if (overlayChatFriendUid) void setChatTyping(overlayChatFriendUid, false);
+        if (overlayChatFriendUid)
+          void setChatTyping(overlayChatFriendUid, false);
         setOverlayChatMessages([]);
         setOverlayChatTyping(false);
         setOverlayChatError(null);
@@ -2443,31 +2880,53 @@ const Home: React.FC = () => {
         return;
       }
       if (action.kind === "set-typing") {
-        if (overlayChatFriendUid) void setChatTyping(overlayChatFriendUid, action.typing);
+        if (overlayChatFriendUid)
+          void setChatTyping(overlayChatFriendUid, action.typing);
         return;
       }
       if (action.kind === "send-image") {
         if (!overlayChatFriendUid || overlayChatSending) return;
-        const bytes = action.data instanceof Uint8Array
-          ? action.data
-          : new Uint8Array(action.data);
+        const bytes =
+          action.data instanceof Uint8Array
+            ? action.data
+            : new Uint8Array(action.data);
         const imageBuffer = new ArrayBuffer(bytes.byteLength);
         new Uint8Array(imageBuffer).set(bytes);
-        const file = new File([imageBuffer], action.name, { type: action.type });
+        const file = new File([imageBuffer], action.name, {
+          type: action.type,
+        });
         setOverlayChatSending(true);
         setOverlayChatError(null);
-        void sendChatImage(overlayChatFriendUid, file).then((message) => {
-          setOverlayChatMessages((current) => current.some((item) => item.id === message.id)
-            ? current
-            : [...current, message].sort(compareChatMessages));
-        }).catch((error) => {
-          setOverlayChatError(error instanceof Error ? error.message : "Nao foi possivel enviar a imagem.");
-        }).finally(() => setOverlayChatSending(false));
+        void sendChatImage(overlayChatFriendUid, file)
+          .then((message) => {
+            setOverlayChatMessages((current) =>
+              current.some((item) => item.id === message.id)
+                ? current
+                : [...current, message].sort(compareChatMessages),
+            );
+          })
+          .catch((error) => {
+            setOverlayChatError(
+              error instanceof Error
+                ? error.message
+                : "Nao foi possivel enviar a imagem.",
+            );
+          })
+          .finally(() => setOverlayChatSending(false));
         return;
       }
       if (action.kind === "voice-call") {
-        const found = socialFriends.find((candidate) => candidate.id === action.friendId || candidate.id === `cp-friend:${action.friendId}`);
-        const friendUid = action.friendUid || (action.friendId?.startsWith("cp-friend:") ? action.friendId.replace("cp-friend:", "") : action.friendId) || "";
+        const found = socialFriends.find(
+          (candidate) =>
+            candidate.id === action.friendId ||
+            candidate.id === `cp-friend:${action.friendId}`,
+        );
+        const friendUid =
+          action.friendUid ||
+          (action.friendId?.startsWith("cp-friend:")
+            ? action.friendId.replace("cp-friend:", "")
+            : action.friendId) ||
+          "";
         const targetFriend: SocialFriend = found || {
           id: `cp-friend:${friendUid}`,
           name: action.friendName || "Amigo",
@@ -2525,18 +2984,76 @@ const Home: React.FC = () => {
         voiceCallContext?.setIsVoiceWindowOpen(true);
         return;
       }
-      if (action.kind === "retry-message" && (action as any).text && overlayChatFriendUid) {
+      if (
+        action.kind === "retry-message" &&
+        (action as any).text &&
+        overlayChatFriendUid
+      ) {
         const text = (action as any).text.trim();
         const oldId = (action as any).messageId;
         if (oldId) {
-          setOverlayChatMessages((current) => current.filter((item) => item.id !== oldId));
+          setOverlayChatMessages((current) =>
+            current.filter((item) => item.id !== oldId),
+          );
         }
         if (!text || overlayChatSending) return;
         const pendingId = `overlay-pending-${Date.now()}`;
         setOverlayChatSending(true);
         setOverlayChatError(null);
         void setChatTyping(overlayChatFriendUid, false);
-        setOverlayChatMessages((current) => [...current, {
+        setOverlayChatMessages((current) => [
+          ...current,
+          {
+            id: pendingId,
+            chatId: overlayChatFriendUid,
+            senderId: user?.uid || "me",
+            receiverId: overlayChatFriendUid,
+            text,
+            createdAt: new Date().toISOString(),
+            read: true,
+          },
+        ]);
+        void sendChatMessage(overlayChatFriendUid, text)
+          .then((message) => {
+            setOverlayChatMessages((current) =>
+              [
+                ...current.filter(
+                  (item) => item.id !== pendingId && item.id !== message.id,
+                ),
+                message,
+              ].sort(compareChatMessages),
+            );
+          })
+          .catch((error) => {
+            setOverlayChatMessages((current) =>
+              current.map((item) =>
+                item.id === pendingId ? { ...item, failed: true } : item,
+              ),
+            );
+            setOverlayChatError(
+              error instanceof Error
+                ? error.message
+                : "Não foi possível enviar a mensagem.",
+            );
+          })
+          .finally(() => setOverlayChatSending(false));
+        return;
+      }
+      if (
+        action.kind !== "send-message" ||
+        !overlayChatFriendUid ||
+        overlayChatSending
+      )
+        return;
+      const text = action.text.trim();
+      if (!text) return;
+      const pendingId = `overlay-pending-${Date.now()}`;
+      setOverlayChatSending(true);
+      setOverlayChatError(null);
+      void setChatTyping(overlayChatFriendUid, false);
+      setOverlayChatMessages((current) => [
+        ...current,
+        {
           id: pendingId,
           chatId: overlayChatFriendUid,
           senderId: user?.uid || "me",
@@ -2544,45 +3061,43 @@ const Home: React.FC = () => {
           text,
           createdAt: new Date().toISOString(),
           read: true,
-        }]);
-        void sendChatMessage(overlayChatFriendUid, text).then((message) => {
-          setOverlayChatMessages((current) => [
-            ...current.filter((item) => item.id !== pendingId && item.id !== message.id),
-            message,
-          ].sort(compareChatMessages));
-        }).catch((error) => {
-          setOverlayChatMessages((current) => current.map((item) => item.id === pendingId ? { ...item, failed: true } : item));
-          setOverlayChatError(error instanceof Error ? error.message : "Não foi possível enviar a mensagem.");
-        }).finally(() => setOverlayChatSending(false));
-        return;
-      }
-      if (action.kind !== "send-message" || !overlayChatFriendUid || overlayChatSending) return;
-      const text = action.text.trim();
-      if (!text) return;
-      const pendingId = `overlay-pending-${Date.now()}`;
-      setOverlayChatSending(true);
-      setOverlayChatError(null);
-      void setChatTyping(overlayChatFriendUid, false);
-      setOverlayChatMessages((current) => [...current, {
-        id: pendingId,
-        chatId: overlayChatFriendUid,
-        senderId: user?.uid || "me",
-        receiverId: overlayChatFriendUid,
-        text,
-        createdAt: new Date().toISOString(),
-        read: true,
-      }]);
-      void sendChatMessage(overlayChatFriendUid, text).then((message) => {
-        setOverlayChatMessages((current) => [
-          ...current.filter((item) => item.id !== pendingId && item.id !== message.id),
-          message,
-        ].sort(compareChatMessages));
-      }).catch((error) => {
-        setOverlayChatMessages((current) => current.map((item) => item.id === pendingId ? { ...item, failed: true } : item));
-        setOverlayChatError(error instanceof Error ? error.message : "Não foi possível enviar a mensagem.");
-      }).finally(() => setOverlayChatSending(false));
+        },
+      ]);
+      void sendChatMessage(overlayChatFriendUid, text)
+        .then((message) => {
+          setOverlayChatMessages((current) =>
+            [
+              ...current.filter(
+                (item) => item.id !== pendingId && item.id !== message.id,
+              ),
+              message,
+            ].sort(compareChatMessages),
+          );
+        })
+        .catch((error) => {
+          setOverlayChatMessages((current) =>
+            current.map((item) =>
+              item.id === pendingId ? { ...item, failed: true } : item,
+            ),
+          );
+          setOverlayChatError(
+            error instanceof Error
+              ? error.message
+              : "Não foi possível enviar a mensagem.",
+          );
+        })
+        .finally(() => setOverlayChatSending(false));
     });
-  }, [notify, overlayChatFriendUid, overlayChatSending, selectCategory, setActiveChatFriend, socialFriends, user?.uid, voiceCallContext]);
+  }, [
+    notify,
+    overlayChatFriendUid,
+    overlayChatSending,
+    selectCategory,
+    setActiveChatFriend,
+    socialFriends,
+    user?.uid,
+    voiceCallContext,
+  ]);
 
   const onSelectHandler = useCallback(
     (index: number, openGame?: Game) => {
@@ -2596,29 +3111,31 @@ const Home: React.FC = () => {
     [openDetails, playSound],
   );
 
-
   const closeCtx = (silent = false) => {
     setContextMenu(null);
     if (!silent) playSound("back");
   };
 
-  const handleMenuAction = useCallback(async (action: string, game: Game) => {
-    if (action === "delete") {
-      setPendingDeleteGame(game);
+  const handleMenuAction = useCallback(
+    async (action: string, game: Game) => {
+      if (action === "delete") {
+        setPendingDeleteGame(game);
+        closeCtx(true);
+        return;
+      } else if (action === "favorite" && user?.uid) {
+        await updateLibraryGame(user.uid, game.id, {
+          isFavorite: !game.isFavorite,
+        });
+        await refreshLibrary();
+      } else if (action === "edit") {
+        openAddGameModal(game);
+        closeCtx(true);
+        return;
+      }
       closeCtx(true);
-      return;
-    } else if (action === "favorite" && user?.uid) {
-      await updateLibraryGame(user.uid, game.id, {
-        isFavorite: !game.isFavorite,
-      });
-      await refreshLibrary();
-    } else if (action === "edit") {
-      openAddGameModal(game);
-      closeCtx(true);
-      return;
-    }
-    closeCtx(true);
-  }, [user?.uid, refreshLibrary]);
+    },
+    [user?.uid, refreshLibrary],
+  );
 
   const handleSignOut = async () => {
     playSound("back");
@@ -2628,12 +3145,11 @@ const Home: React.FC = () => {
         user.uid,
         userProfile?.displayName || undefined,
         userProfile?.photoURL,
-      ).catch(() => { });
+      ).catch(() => {});
     }
     await new Promise((r) => window.setTimeout(r, 450));
     await signOutUser();
   };
-
 
   // Correção 4: Adição das listas de IDs calculadas para o AddFriendModal
   const checkpointFriendIds = useMemo(() => {
@@ -2652,9 +3168,18 @@ const Home: React.FC = () => {
     );
   }, [userProfile?.checkpointFriendRequestsOutgoing]);
 
-  const friendIdSet = useMemo(() => new Set(checkpointFriendIds), [checkpointFriendIds]);
-  const outgoingRequestIdSet = useMemo(() => new Set(outgoingFriendRequestIds), [outgoingFriendRequestIds]);
-  const incomingRequestIdSet = useMemo(() => new Set(incomingFriendRequestIds), [incomingFriendRequestIds]);
+  const friendIdSet = useMemo(
+    () => new Set(checkpointFriendIds),
+    [checkpointFriendIds],
+  );
+  const outgoingRequestIdSet = useMemo(
+    () => new Set(outgoingFriendRequestIds),
+    [outgoingFriendRequestIds],
+  );
+  const incomingRequestIdSet = useMemo(
+    () => new Set(incomingFriendRequestIds),
+    [incomingFriendRequestIds],
+  );
 
   const handleGameHydrated = React.useCallback((hydrated: Game) => {
     setSelectedGame((prev) => {
@@ -2691,58 +3216,84 @@ const Home: React.FC = () => {
 
   const currentGamePlatformInfo = useMemo(() => {
     if (!currentGame) return null;
-    const launcher = (currentGame.launcherType || currentGame.source || "").toLowerCase();
-    if (launcher === "steam") return { icon: PlatformSteamIcon, label: "Steam" };
-    if (launcher === "epic") return { icon: PlatformEpicIcon, label: "Epic Games" };
+    const launcher = (
+      currentGame.launcherType ||
+      currentGame.source ||
+      ""
+    ).toLowerCase();
+    if (launcher === "steam")
+      return { icon: PlatformSteamIcon, label: "Steam" };
+    if (launcher === "epic")
+      return { icon: PlatformEpicIcon, label: "Epic Games" };
     if (launcher === "ea") return { icon: PlatformEaIcon, label: "EA App" };
-    if (launcher === "ubisoft") return { icon: PlatformUbisoftIcon, label: "Ubisoft" };
-    if (launcher === "gog") return { icon: PlatformGogIcon, label: "GOG Galaxy" };
+    if (launcher === "ubisoft")
+      return { icon: PlatformUbisoftIcon, label: "Ubisoft" };
+    if (launcher === "gog")
+      return { icon: PlatformGogIcon, label: "GOG Galaxy" };
     if (launcher === "xbox") return { icon: PlatformXboxIcon, label: "Xbox" };
-    if (launcher === "riot") return { icon: PlatformRiotIcon, label: "Riot Games" };
-    if (launcher === "battlenet") return { icon: PlatformBattlenetIcon, label: "Battle.net" };
-    if (launcher === "rockstar") return { icon: PlatformRockstarIcon, label: "Rockstar" };
+    if (launcher === "riot")
+      return { icon: PlatformRiotIcon, label: "Riot Games" };
+    if (launcher === "battlenet")
+      return { icon: PlatformBattlenetIcon, label: "Battle.net" };
+    if (launcher === "rockstar")
+      return { icon: PlatformRockstarIcon, label: "Rockstar" };
     return { icon: PlatformLocalIcon, label: "Executável Local" };
   }, [currentGame]);
 
   const isCurrentGameRunning = useMemo(() => {
     if (!currentGame) return false;
-    const running = resolveGameFromPresence(games, currentPresenceGame, currentPresenceExecutablePath);
+    const running = resolveGameFromPresence(
+      games,
+      currentPresenceGame,
+      currentPresenceExecutablePath,
+    );
     return running?.id === currentGame.id;
   }, [currentGame, games, currentPresenceGame, currentPresenceExecutablePath]);
 
-  const handleSelectContinuePlaying = useCallback((game: Game) => {
-    const idx = displayGames.findIndex((g) => g.id === game.id);
-    if (idx !== -1) {
-      setSelectedIndex(idx);
-    }
-  }, [displayGames]);
+  const handleSelectContinuePlaying = useCallback(
+    (game: Game) => {
+      const idx = displayGames.findIndex((g) => g.id === game.id);
+      if (idx !== -1) {
+        setSelectedIndex(idx);
+      }
+    },
+    [displayGames],
+  );
 
-  const handlePlayContinuePlaying = useCallback((game: Game) => {
-    openDetails(game);
-    playSound("select");
-  }, [openDetails, playSound]);
+  const handlePlayContinuePlaying = useCallback(
+    (game: Game) => {
+      openDetails(game);
+      playSound("select");
+    },
+    [openDetails, playSound],
+  );
 
-  const handleOpenDetailsContinuePlaying = useCallback((game: Game) => {
-    openDetails(game);
-    playSound("select");
-  }, [openDetails, playSound]);
+  const handleOpenDetailsContinuePlaying = useCallback(
+    (game: Game) => {
+      openDetails(game);
+      playSound("select");
+    },
+    [openDetails, playSound],
+  );
 
-  const handleHeroPlay = useCallback((game: Game) => {
-    openDetails(game);
-  }, [openDetails]);
-
-  const handleHeroOpenDetails = useCallback((game: Game) => {
-    openDetails(game);
-  }, [openDetails]);
-
-  const handleHeroToggleFavorite = useCallback((game: Game) => {
-    void toggleFavoriteGame(game);
-  }, [toggleFavoriteGame]);
+  const handleHeroOpenDetails = useCallback(
+    (game: Game) => {
+      openDetails(game);
+    },
+    [openDetails],
+  );
 
   const renderedContinuePlaying = useMemo(() => {
-    if (activeCategory !== "ALL" || continuePlayingGames.length === 0) return null;
+    if (activeCategory !== "ALL" || continuePlayingGames.length === 0)
+      return null;
     return (
-      <div className="shrink-0 [@media(max-height:799px)]:hidden">
+      // Com a legenda do controle ocupando o rodapé, telas entre 800 e 1019 px de altura
+      // não comportam esta faixa junto com o carrossel: ela cede o lugar.
+      <div
+        className={`shrink-0 [@media(max-height:799px)]:hidden ${
+          isGamepadConnected ? "[@media(max-height:1019px)]:hidden" : ""
+        }`}
+      >
         <DashboardContinuePlaying
           continuePlayingGames={continuePlayingGames}
           selectedGameId={currentGame?.id}
@@ -2761,6 +3312,7 @@ const Home: React.FC = () => {
     handlePlayContinuePlaying,
     handleOpenDetailsContinuePlaying,
     playSound,
+    isGamepadConnected,
   ]);
 
   const renderedHeroGame = useMemo(() => {
@@ -2770,13 +3322,8 @@ const Home: React.FC = () => {
         game={currentGame}
         isRunning={isCurrentGameRunning}
         platformInfo={currentGamePlatformInfo}
-        isGamepadConnected={isGamepadConnected}
-        gamepadFamily={gamepadFamily}
-        onPlay={handleHeroPlay}
         onOpenDetails={handleHeroOpenDetails}
-        onToggleFavorite={handleHeroToggleFavorite}
         playSound={playSound}
-        playNowLabel={t("playNow")}
         runningLabel="Em execução"
       />
     );
@@ -2784,24 +3331,24 @@ const Home: React.FC = () => {
     currentGame,
     isCurrentGameRunning,
     currentGamePlatformInfo,
-    isGamepadConnected,
-    gamepadFamily,
-    handleHeroPlay,
     handleHeroOpenDetails,
-    handleHeroToggleFavorite,
     playSound,
-    t,
   ]);
 
   const renderedGameShelf = useMemo(() => {
     return (
       <div
-        className="shrink-0 pb-[var(--gap-stack)] hub-scroll transform-gpu flex flex-col gap-[var(--gap-stack)]"
+        // Com a legenda do controle embaixo, ela faz o papel da folga inferior.
+        className={`shrink-0 hub-scroll transform-gpu flex flex-col gap-[var(--gap-stack)] ${
+          isGamepadConnected ? "" : "pb-[var(--safe-y)]"
+        }`}
         onWheel={handleGameRailWheel}
       >
         <div className="px-[var(--safe-x)] flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-white/75 font-display">
-            {activeCategory === "ALL" ? "Biblioteca" : activePlatformConfig.label}
+          <h2 className="text-[length:var(--fs-title)] font-semibold text-white/75 font-display">
+            {activeCategory === "ALL"
+              ? "Biblioteca"
+              : activePlatformConfig.label}
           </h2>
           <div className="flex items-center gap-[var(--gap-section)]">
             {!isGamepadConnected && (
@@ -2813,7 +3360,8 @@ const Home: React.FC = () => {
               />
             )}
             <span className="text-[length:var(--fs-caption)] font-medium text-white/55">
-              {displayGames.length} {displayGames.length === 1 ? "jogo" : "jogos"}
+              {displayGames.length}{" "}
+              {displayGames.length === 1 ? "jogo" : "jogos"}
             </span>
           </div>
         </div>
@@ -2856,7 +3404,11 @@ const Home: React.FC = () => {
           ""
         }
         dominantColor={dominantColor}
-        videoUrl={activeCategory === "ALL" && !isAnyModalOpen ? settledTrailer : undefined}
+        videoUrl={
+          activeCategory === "ALL" && !isAnyModalOpen
+            ? settledTrailer
+            : undefined
+        }
         reducedEffects={isAnyModalOpen}
         className="left-0"
         style={{ left: 0 }}
@@ -2882,7 +3434,6 @@ const Home: React.FC = () => {
         </motion.div>
       )}
 
-
       <Sidebar
         activeCategory={activeCategory}
         onCategory={selectCategory}
@@ -2891,8 +3442,8 @@ const Home: React.FC = () => {
         playSound={playSound}
         platformOperations={platformOperations}
         notificationCount={
-          incomingFriendRequests.length
-          + Object.values(unreadMessagesByFriend).reduce(
+          incomingFriendRequests.length +
+          Object.values(unreadMessagesByFriend).reduce(
             (total, count) => total + Math.max(0, Number(count) || 0),
             0,
           )
@@ -2919,10 +3470,30 @@ const Home: React.FC = () => {
           onOpenFilterModal={() => setFilterModalOpen(true)}
           onSyncLibraries={handleSyncLibraries}
           isSyncingLibraries={isAnySyncing}
-          onSyncSteam={resolvedSteamId ? () => { if (user?.uid) writeLastSync(user.uid, "steam", Date.now(), localStorage); void handleSyncSteam(); } : undefined}
-          onSyncEpic={epicAuthConnected ? () => { if (user?.uid) writeLastSync(user.uid, "epic", Date.now(), localStorage); void handleSyncEpic(); } : undefined}
-          lastSteamSyncAt={user?.uid ? readLastSync(user.uid, "steam", localStorage) : 0}
-          lastEpicSyncAt={user?.uid ? readLastSync(user.uid, "epic", localStorage) : 0}
+          onSyncSteam={
+            resolvedSteamId
+              ? () => {
+                  if (user?.uid)
+                    writeLastSync(user.uid, "steam", Date.now(), localStorage);
+                  void handleSyncSteam();
+                }
+              : undefined
+          }
+          onSyncEpic={
+            epicAuthConnected
+              ? () => {
+                  if (user?.uid)
+                    writeLastSync(user.uid, "epic", Date.now(), localStorage);
+                  void handleSyncEpic();
+                }
+              : undefined
+          }
+          lastSteamSyncAt={
+            user?.uid ? readLastSync(user.uid, "steam", localStorage) : 0
+          }
+          lastEpicSyncAt={
+            user?.uid ? readLastSync(user.uid, "epic", localStorage) : 0
+          }
           isSyncingSteam={steamSyncing}
           isSyncingEpic={epicSyncing}
           onToggleSidebar={() => {
@@ -2967,22 +3538,38 @@ const Home: React.FC = () => {
           }}
         />
 
-        <div className="flex-1 flex flex-col justify-end min-h-0 hub-60fps will-change-transform" style={{ contain: "layout paint" }}>
+        <div
+          className="flex-1 flex flex-col justify-end min-h-0 hub-60fps will-change-transform"
+          style={{ contain: "layout paint" }}
+        >
           <AnimatePresence mode="wait" custom={activeCategory}>
             <motion.div
               key={activeCategory}
-              initial={{ opacity: 0, x: activeCategory === "ALL" ? -40 : 40, scale: activeCategory === "ALL" ? 0.98 : 1 }}
+              initial={{
+                opacity: 0,
+                x: activeCategory === "ALL" ? -40 : 40,
+                scale: activeCategory === "ALL" ? 0.98 : 1,
+              }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: activeCategory === "ALL" ? 40 : -40, scale: activeCategory === "ALL" ? 1 : 0.98 }}
+              exit={{
+                opacity: 0,
+                x: activeCategory === "ALL" ? 40 : -40,
+                scale: activeCategory === "ALL" ? 1 : 0.98,
+              }}
               transition={{ type: "spring", bounce: 0, duration: 0.4 }}
               className="flex-1 flex flex-col justify-end min-h-0 w-full"
             >
               {activeCategory === "SETTINGS" ? (
-                <React.Suspense fallback={
-                  <div className="flex flex-1 items-center justify-center">
-                    <LoadingState label="Carregando Configurações" variant="breathing" />
-                  </div>
-                }>
+                <React.Suspense
+                  fallback={
+                    <div className="flex flex-1 items-center justify-center">
+                      <LoadingState
+                        label="Carregando Configurações"
+                        variant="breathing"
+                      />
+                    </div>
+                  }
+                >
                   <SettingsPageV2
                     language={launcherLanguage}
                     effectsVolume={effectsVolume}
@@ -3055,6 +3642,7 @@ const Home: React.FC = () => {
                       void window.electronAPI?.testOverlayAchievement(tier);
                     }}
                     initialTab={settingsTab}
+                    controllerGameId={controllerSettingsGameId}
                     onTabChange={handleSettingsTabChange}
                     onClose={() => {
                       playSound("back");
@@ -3064,11 +3652,16 @@ const Home: React.FC = () => {
                   />
                 </React.Suspense>
               ) : activeCategory === "FRIENDS" ? (
-                <React.Suspense fallback={
-                  <div className="flex flex-1 items-center justify-center">
-                    <LoadingState label="Carregando Amigos" variant="breathing" />
-                  </div>
-                }>
+                <React.Suspense
+                  fallback={
+                    <div className="flex flex-1 items-center justify-center">
+                      <LoadingState
+                        label="Carregando Amigos"
+                        variant="breathing"
+                      />
+                    </div>
+                  }
+                >
                   <FriendsPage
                     t={t}
                     language={launcherLanguage}
@@ -3099,33 +3692,50 @@ const Home: React.FC = () => {
                       playSound("select");
                       setActiveChatFriend(friend);
                     }}
-                    onStartVoiceCall={(friend, withVideo) => void startCall(friend, withVideo)}
+                    onStartVoiceCall={(friend, withVideo) =>
+                      void startCall(friend, withVideo)
+                    }
                     onStartTestCall={startTestCall}
                     playSound={playSound}
                   />
                 </React.Suspense>
               ) : activeCategory === "FEED" ? (
-                <React.Suspense fallback={
-                  <div className="flex flex-1 items-center justify-center">
-                    <LoadingState label="Carregando Radar Gamer" variant="searching" />
-                  </div>
-                }>
+                <React.Suspense
+                  fallback={
+                    <div className="flex flex-1 items-center justify-center">
+                      <LoadingState
+                        label="Carregando Radar Gamer"
+                        variant="searching"
+                      />
+                    </div>
+                  }
+                >
                   <GamingRadarPage />
                 </React.Suspense>
               ) : activeCategory === "MODS" ? (
-                <React.Suspense fallback={
-                  <div className="flex flex-1 items-center justify-center">
-                    <LoadingState label="Carregando Gerenciador de Mods" variant="shaping" />
-                  </div>
-                }>
+                <React.Suspense
+                  fallback={
+                    <div className="flex flex-1 items-center justify-center">
+                      <LoadingState
+                        label="Carregando Gerenciador de Mods"
+                        variant="shaping"
+                      />
+                    </div>
+                  }
+                >
                   <ModsPage uid={user?.uid || "local"} games={games} />
                 </React.Suspense>
               ) : activeCategory === "PROFILE" ? (
-                <React.Suspense fallback={
-                  <div className="flex flex-1 items-center justify-center">
-                    <LoadingState label="Carregando Perfil" variant="breathing" />
-                  </div>
-                }>
+                <React.Suspense
+                  fallback={
+                    <div className="flex flex-1 items-center justify-center">
+                      <LoadingState
+                        label="Carregando Perfil"
+                        variant="breathing"
+                      />
+                    </div>
+                  }
+                >
                   <UserProfilePage
                     userProfile={userProfile}
                     user={user}
@@ -3138,11 +3748,16 @@ const Home: React.FC = () => {
                   />
                 </React.Suspense>
               ) : activeCategory === "TROPHIES" ? (
-                <React.Suspense fallback={
-                  <div className="flex flex-1 items-center justify-center">
-                    <LoadingState label="Carregando Troféus" variant="solving" />
-                  </div>
-                }>
+                <React.Suspense
+                  fallback={
+                    <div className="flex flex-1 items-center justify-center">
+                      <LoadingState
+                        label="Carregando Troféus"
+                        variant="solving"
+                      />
+                    </div>
+                  }
+                >
                   <TrophiesPage
                     games={games}
                     onOpenGame={openDetails}
@@ -3153,42 +3768,128 @@ const Home: React.FC = () => {
                 <div className="flex-1 flex flex-col justify-between w-full h-full">
                   <LoadingSkeleton />
                 </div>
-              ) : (activeCategory === "ALL" && isAnySyncing && displayGames.length === 0) ? (
+              ) : activeCategory === "ALL" &&
+                isAnySyncing &&
+                displayGames.length === 0 ? (
                 <div className="flex-1 flex flex-col justify-between w-full h-full">
                   {steamSyncing ? (
                     <PlatformLibrarySkeleton
                       platform="steam"
-                      phase={(platformOperations?.steam as { status: string; phase?: string })?.phase || "reading-library"}
-                      completed={(platformOperations?.steam as { status: string; completed?: number })?.completed}
-                      total={(platformOperations?.steam as { status: string; total?: number })?.total}
+                      phase={
+                        (
+                          platformOperations?.steam as {
+                            status: string;
+                            phase?: string;
+                          }
+                        )?.phase || "reading-library"
+                      }
+                      completed={
+                        (
+                          platformOperations?.steam as {
+                            status: string;
+                            completed?: number;
+                          }
+                        )?.completed
+                      }
+                      total={
+                        (
+                          platformOperations?.steam as {
+                            status: string;
+                            total?: number;
+                          }
+                        )?.total
+                      }
                     />
                   ) : epicSyncing ? (
                     <PlatformLibrarySkeleton
                       platform="epic"
-                      phase={(platformOperations?.epic as { status: string; phase?: string })?.phase || "reading-library"}
-                      completed={(platformOperations?.epic as { status: string; completed?: number })?.completed}
-                      total={(platformOperations?.epic as { status: string; total?: number })?.total}
+                      phase={
+                        (
+                          platformOperations?.epic as {
+                            status: string;
+                            phase?: string;
+                          }
+                        )?.phase || "reading-library"
+                      }
+                      completed={
+                        (
+                          platformOperations?.epic as {
+                            status: string;
+                            completed?: number;
+                          }
+                        )?.completed
+                      }
+                      total={
+                        (
+                          platformOperations?.epic as {
+                            status: string;
+                            total?: number;
+                          }
+                        )?.total
+                      }
                     />
                   ) : (
                     <LoadingSkeleton />
                   )}
                 </div>
-              ) : (activeCategory === "STEAM" && steamSyncing) ? (
+              ) : activeCategory === "STEAM" && steamSyncing ? (
                 <div className="flex-1 flex flex-col justify-between w-full h-full">
                   <PlatformLibrarySkeleton
                     platform="steam"
-                    phase={(platformOperations?.steam as { status: string; phase?: string })?.phase || "reading-library"}
-                    completed={(platformOperations?.steam as { status: string; completed?: number })?.completed}
-                    total={(platformOperations?.steam as { status: string; total?: number })?.total}
+                    phase={
+                      (
+                        platformOperations?.steam as {
+                          status: string;
+                          phase?: string;
+                        }
+                      )?.phase || "reading-library"
+                    }
+                    completed={
+                      (
+                        platformOperations?.steam as {
+                          status: string;
+                          completed?: number;
+                        }
+                      )?.completed
+                    }
+                    total={
+                      (
+                        platformOperations?.steam as {
+                          status: string;
+                          total?: number;
+                        }
+                      )?.total
+                    }
                   />
                 </div>
-              ) : (activeCategory === "EPIC" && epicSyncing) ? (
+              ) : activeCategory === "EPIC" && epicSyncing ? (
                 <div className="flex-1 flex flex-col justify-between w-full h-full">
                   <PlatformLibrarySkeleton
                     platform="epic"
-                    phase={(platformOperations?.epic as { status: string; phase?: string })?.phase || "reading-library"}
-                    completed={(platformOperations?.epic as { status: string; completed?: number })?.completed}
-                    total={(platformOperations?.epic as { status: string; total?: number })?.total}
+                    phase={
+                      (
+                        platformOperations?.epic as {
+                          status: string;
+                          phase?: string;
+                        }
+                      )?.phase || "reading-library"
+                    }
+                    completed={
+                      (
+                        platformOperations?.epic as {
+                          status: string;
+                          completed?: number;
+                        }
+                      )?.completed
+                    }
+                    total={
+                      (
+                        platformOperations?.epic as {
+                          status: string;
+                          total?: number;
+                        }
+                      )?.total
+                    }
                   />
                 </div>
               ) : displayGames.length === 0 ? (
@@ -3197,7 +3898,9 @@ const Home: React.FC = () => {
                     <EmptyState
                       searchTerm={searchTerm}
                       activeCategory={activeCategory}
-                      onAddGame={() => openAddGameModal(categoryToLauncherType(activeCategory))}
+                      onAddGame={() =>
+                        openAddGameModal(categoryToLauncherType(activeCategory))
+                      }
                       onConnect={connectSteam}
                       onSyncSteam={handleSyncSteam}
                       steamConnected={Boolean(resolvedSteamId)}
@@ -3215,7 +3918,9 @@ const Home: React.FC = () => {
                   ) : (
                     <EmptyLibraryOnboarding
                       onConnectSteam={connectSteam}
-                      onOpenAddGame={() => openAddGameModal(categoryToLauncherType(activeCategory))}
+                      onOpenAddGame={() =>
+                        openAddGameModal(categoryToLauncherType(activeCategory))
+                      }
                       onComplete={async () => {
                         if (!user?.uid) return;
                         localStorage.setItem(
@@ -3223,9 +3928,12 @@ const Home: React.FC = () => {
                           "1",
                         );
                         setOnboardingCompleted(true);
-                        await supabase.from("profiles").update({
-                          onboarding_completed_at: new Date().toISOString(),
-                        }).eq("uid", user.uid);
+                        await supabase
+                          .from("profiles")
+                          .update({
+                            onboarding_completed_at: new Date().toISOString(),
+                          })
+                          .eq("uid", user.uid);
                         await refreshProfile();
                       }}
                       playSound={playSound}
@@ -3258,7 +3966,10 @@ const Home: React.FC = () => {
                       playHapticPattern("action");
                     }}
                     onOpenOptions={() => {
-                      const triggerBtn = document.querySelector<HTMLButtonElement>("[data-context-menu-trigger='true']");
+                      const triggerBtn =
+                        document.querySelector<HTMLButtonElement>(
+                          "[data-context-menu-trigger='true']",
+                        );
                       if (triggerBtn) {
                         triggerBtn.click();
                         playSound("select");
@@ -3295,6 +4006,10 @@ const Home: React.FC = () => {
               )}
             </motion.div>
           </AnimatePresence>
+          {/* Ajustes cobre a tela toda e desenha a própria legenda. */}
+          {activeCategory !== "SETTINGS" && PAGE_CONTROLLER_HINTS[activeCategory] && (
+            <ControllerLegend hints={PAGE_CONTROLLER_HINTS[activeCategory]} />
+          )}
         </div>
       </div>
 
@@ -3312,6 +4027,13 @@ const Home: React.FC = () => {
           onOpenMods={() => {
             setIsDetailOpen(false);
             selectCategory("MODS");
+          }}
+          onOpenControllerSettings={(game) => {
+            setIsDetailOpen(false);
+            setSettingsTab("controller");
+            selectCategory("SETTINGS");
+            // Depois do selectCategory, que limpa o valor.
+            setControllerSettingsGameId(game.id);
           }}
           currentPresenceGame={currentPresenceGame}
           friends={socialFriends}
@@ -3426,7 +4148,10 @@ const Home: React.FC = () => {
             await refreshLibrary();
             notify("Jogo removido da biblioteca.", "success");
           } catch (e) {
-            notify(e instanceof Error ? e.message : "Erro ao remover jogo.", "error");
+            notify(
+              e instanceof Error ? e.message : "Erro ao remover jogo.",
+              "error",
+            );
           } finally {
             setPendingDeleteGame(null);
           }
@@ -3511,7 +4236,9 @@ const Home: React.FC = () => {
             setEpicDisplayName("");
             try {
               localStorage.removeItem("checkpoint_epic_linked_uid");
-            } catch { /* ignore */ }
+            } catch {
+              /* ignore */
+            }
             await refreshLibrary();
           } finally {
             setEpicDisconnecting(false);
@@ -3546,7 +4273,9 @@ const Home: React.FC = () => {
           onClose={() => setActiveChatFriend(null)}
           friend={activeChatFriend}
           playSound={playSound}
-          onStartVoiceCall={(friend, withVideo) => void startCall(friend, withVideo)}
+          onStartVoiceCall={(friend, withVideo) =>
+            void startCall(friend, withVideo)
+          }
         />
       </React.Suspense>
 
@@ -3588,7 +4317,11 @@ const Home: React.FC = () => {
               <div className="relative mb-6">
                 <motion.div
                   animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.5, 0.2] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
                   className="absolute inset-0 rounded-full bg-white blur-2xl"
                 />
                 <img
@@ -3625,7 +4358,10 @@ const Home: React.FC = () => {
           setEpicConnecting(true);
           try {
             await platformOps.connectEpic(sid);
-            notify("Epic Games conectada com sucesso! Sincronizando jogos...", "info");
+            notify(
+              "Epic Games conectada com sucesso! Sincronizando jogos...",
+              "info",
+            );
             await checkEpicStatus();
             await handleSyncEpic();
           } catch (err: any) {
@@ -3693,64 +4429,156 @@ const Home: React.FC = () => {
             exit={{ opacity: 0, x: 40, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 320, damping: 24 }}
             className="fixed bottom-6 right-6 z-9999 pointer-events-auto"
-            onMouseEnter={() => { if (levelUpTimerRef.current) window.clearTimeout(levelUpTimerRef.current); }}
-            onMouseLeave={() => { levelUpTimerRef.current = window.setTimeout(() => setShowLevelUp(false), 2500) as any; }}
+            onMouseEnter={() => {
+              if (levelUpTimerRef.current)
+                window.clearTimeout(levelUpTimerRef.current);
+            }}
+            onMouseLeave={() => {
+              levelUpTimerRef.current = window.setTimeout(
+                () => setShowLevelUp(false),
+                2500,
+              ) as any;
+            }}
           >
             <div
               className="relative w-90 overflow-hidden rounded-2xl border bg-black/90 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
               style={{
-                borderColor: (levelUpData as any)?.tierInfo?.hexColor ? `${(levelUpData as any).tierInfo.hexColor}40` : "rgba(255,255,255,0.12)",
+                borderColor: (levelUpData as any)?.tierInfo?.hexColor
+                  ? `${(levelUpData as any).tierInfo.hexColor}40`
+                  : "rgba(255,255,255,0.12)",
                 boxShadow: `0 0 30px ${(levelUpData as any)?.tierInfo?.hexColor ?? "#fbbf24"}25, 0 20px 60px rgba(0,0,0,0.6)`,
               }}
             >
               {/* glow topo */}
-              <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full blur-3xl opacity-20" style={{ background: (levelUpData as any)?.tierInfo?.hexColor ?? "#fbbf24" }} />
+              <div
+                className="absolute -top-10 -right-10 h-32 w-32 rounded-full blur-3xl opacity-20"
+                style={{
+                  background:
+                    (levelUpData as any)?.tierInfo?.hexColor ?? "#fbbf24",
+                }}
+              />
               <div className="absolute inset-0 bg-linear-to-br from-white/6 to-transparent pointer-events-none" />
               {/* barra de progresso fina no topo */}
               {typeof (levelUpData as any)?.progress === "number" && (
                 <div className="absolute top-0 left-0 right-0 h-0.5 bg-white/5">
-                  <motion.div className="h-full" style={{ background: (levelUpData as any)?.tierInfo?.hexColor ?? "#fbbf24" }} initial={{ width: 0 }} animate={{ width: `${(levelUpData as any).progress}%` }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }} />
+                  <motion.div
+                    className="h-full"
+                    style={{
+                      background:
+                        (levelUpData as any)?.tierInfo?.hexColor ?? "#fbbf24",
+                    }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(levelUpData as any).progress}%` }}
+                    transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                  />
                 </div>
               )}
               <div className="relative flex gap-4 p-4">
-                <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border bg-black/40" style={{ borderColor: `${(levelUpData as any)?.tierInfo?.hexColor ?? "#fbbf24"}40`, background: `${(levelUpData as any)?.tierInfo?.hexColor ?? "#fbbf24"}12` }}>
-                  <motion.div initial={{ scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", stiffness: 260, damping: 14 }}>
+                <div
+                  className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border bg-black/40"
+                  style={{
+                    borderColor: `${(levelUpData as any)?.tierInfo?.hexColor ?? "#fbbf24"}40`,
+                    background: `${(levelUpData as any)?.tierInfo?.hexColor ?? "#fbbf24"}12`,
+                  }}
+                >
+                  <motion.div
+                    initial={{ scale: 0, rotate: -30 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 14 }}
+                  >
                     {(levelUpData as any)?.tierInfo?.tier === "platinum" ? (
                       <span className="text-xl">💎</span>
                     ) : (
-                      <Trophy className="h-7 w-7" style={{ color: (levelUpData as any)?.tierInfo?.hexColor ?? "#fbbf24" }} fill="currentColor" />
+                      <Trophy
+                        className="h-7 w-7"
+                        style={{
+                          color:
+                            (levelUpData as any)?.tierInfo?.hexColor ??
+                            "#fbbf24",
+                        }}
+                        fill="currentColor"
+                      />
                     )}
                   </motion.div>
-                  <div className="absolute -bottom-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-black bg-white px-1 text-[10px] font-black text-black">Lv{(levelUpData as any)?.prevLevel ?? ""}→{levelUpData.level}</div>
+                  <div className="absolute -bottom-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-black bg-white px-1 text-[10px] font-black text-black">
+                    Lv{(levelUpData as any)?.prevLevel ?? ""}→
+                    {levelUpData.level}
+                  </div>
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">Nível Alcançado</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">
+                        Nível Alcançado
+                      </p>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-black text-white tracking-tight">{levelUpData.level}</span>
-                        <span className={`text-xs font-bold ${(levelUpData as any)?.tierInfo ? "" : levelUpData.rankColor}`} style={(levelUpData as any)?.tierInfo ? { color: (levelUpData as any).tierInfo.hexColor } : undefined}>{(levelUpData as any)?.tierInfo?.name ?? levelUpData.rank}</span>
+                        <span className="text-2xl font-black text-white tracking-tight">
+                          {levelUpData.level}
+                        </span>
+                        <span
+                          className={`text-xs font-bold ${(levelUpData as any)?.tierInfo ? "" : levelUpData.rankColor}`}
+                          style={
+                            (levelUpData as any)?.tierInfo
+                              ? {
+                                  color: (levelUpData as any).tierInfo.hexColor,
+                                }
+                              : undefined
+                          }
+                        >
+                          {(levelUpData as any)?.tierInfo?.name ??
+                            levelUpData.rank}
+                        </span>
                       </div>
                     </div>
-                    <button onClick={() => setShowLevelUp(false)} className="rounded-full p-1 text-white/40 hover:text-white hover:bg-white/10 transition-colors">
+                    <button
+                      onClick={() => setShowLevelUp(false)}
+                      className="rounded-full p-1 text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                    >
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-white/60">
-                    <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-amber-300">+{(levelUpData as any)?.xp?.toLocaleString?.() ?? ""} XP</span>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+                      +{(levelUpData as any)?.xp?.toLocaleString?.() ?? ""} XP
+                    </span>
                     <span className="text-white/30">•</span>
-                    <span>{(levelUpData as any)?.progress ?? 0}% para próximo nível</span>
+                    <span>
+                      {(levelUpData as any)?.progress ?? 0}% para próximo nível
+                    </span>
                   </div>
                   <div className="mt-3 flex gap-2">
-                    <button onClick={() => { setShowLevelUp(false); (window as any).checkpointSelectCategory?.("TROPHIES"); selectCategory("TROPHIES"); playSound("select"); }} className="flex-1 rounded-xl bg-white text-black px-3 py-2 text-xs font-black hover:bg-white/90 transition-colors">Ver troféus</button>
-                    <button onClick={() => setShowLevelUp(false)} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white/70 hover:bg-white/10">Fechar</button>
+                    <button
+                      onClick={() => {
+                        setShowLevelUp(false);
+                        (window as any).checkpointSelectCategory?.("TROPHIES");
+                        selectCategory("TROPHIES");
+                        playSound("select");
+                      }}
+                      className="flex-1 rounded-xl bg-white text-black px-3 py-2 text-xs font-black hover:bg-white/90 transition-colors"
+                    >
+                      Ver troféus
+                    </button>
+                    <button
+                      onClick={() => setShowLevelUp(false)}
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white/70 hover:bg-white/10"
+                    >
+                      Fechar
+                    </button>
                   </div>
                 </div>
               </div>
               {/* partículas sparkle discreta */}
-              <motion.div className="pointer-events-none absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
+              <motion.div
+                className="pointer-events-none absolute inset-0"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
                 <div className="absolute left-8 top-3 h-1 w-1 rounded-full bg-white/60 animate-pulse" />
-                <div className="absolute right-12 top-6 h-0.5 w-0.5 rounded-full bg-white/40 animate-pulse" style={{ animationDelay: "0.3s" }} />
+                <div
+                  className="absolute right-12 top-6 h-0.5 w-0.5 rounded-full bg-white/40 animate-pulse"
+                  style={{ animationDelay: "0.3s" }}
+                />
               </motion.div>
             </div>
           </motion.div>
@@ -3758,77 +4586,83 @@ const Home: React.FC = () => {
       </AnimatePresence>
 
       {/* Botão flutuante no canto da tela para abrir/reaparecer o Guia de Missões */}
-      {
-        isQuestsEligible && activeCategory === "ALL" && (
-          <button
-            type="button"
-            onClick={() => {
-              playSound("select");
-              setIsQuestsModalOpen(true);
-            }}
-            className="fixed bottom-6 right-6 z-120 flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#0D0E15]/90 hover:bg-[#161824] border border-amber-500/40 hover:border-amber-500/80 shadow-[0_10px_30px_rgba(0,0,0,0.7),0_0_20px_rgba(245,158,11,0.2)] text-white text-xs font-bold transition-all duration-200 backdrop-blur-xl group hover:scale-105 cursor-pointer"
-            title="Abrir Guia de Missões"
-          >
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 group-hover:bg-amber-500/30">
-              <Compass className="h-3.5 w-3.5 animate-[spin_20s_linear_infinite]" />
-            </div>
-            <span className="tracking-wide">Missões</span>
-            <span className="rounded-full bg-amber-500/25 px-2 py-0.5 font-mono text-[10px] font-extrabold text-amber-400">
-              {questsStatus.completed}/{questsStatus.total}
-            </span>
-          </button>
-        )
-      }
+      {isQuestsEligible && activeCategory === "ALL" && (
+        <button
+          type="button"
+          onClick={() => {
+            playSound("select");
+            setIsQuestsModalOpen(true);
+          }}
+          className="fixed bottom-6 right-6 z-120 flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#0D0E15]/90 hover:bg-[#161824] border border-amber-500/40 hover:border-amber-500/80 shadow-[0_10px_30px_rgba(0,0,0,0.7),0_0_20px_rgba(245,158,11,0.2)] text-white text-xs font-bold transition-all duration-200 backdrop-blur-xl group hover:scale-105 cursor-pointer"
+          title="Abrir Guia de Missões"
+        >
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 group-hover:bg-amber-500/30">
+            <Compass className="h-3.5 w-3.5 animate-[spin_20s_linear_infinite]" />
+          </div>
+          <span className="tracking-wide">Missões</span>
+          <span className="rounded-full bg-amber-500/25 px-2 py-0.5 font-mono text-[10px] font-extrabold text-amber-400">
+            {questsStatus.completed}/{questsStatus.total}
+          </span>
+        </button>
+      )}
 
       {/* Tutorial de boas-vindas (novos usuários; "Rever tutorial" nas configurações) */}
       <OnboardingTour
         uid={user?.uid}
         // só depois de a biblioteca carregar (antes ela vem vazia e todo mundo parecia novo) e com poucos jogos
-        eligible={isQuestsEligible && !isLoading && games.length <= 2 && playerLevel.level < 2}
+        eligible={
+          isQuestsEligible &&
+          !isLoading &&
+          games.length <= 2 &&
+          playerLevel.level < 2
+        }
         blocked={isWelcomeModalOpen}
         playSound={(name) => playSound(name)}
       />
 
       {/* Modal/Overlay Flutuante de Missões */}
-      {
-        isQuestsModalOpen && (
-          <HomeOnboardingQuests
-            userId={user?.uid}
-            userProfile={userProfile}
-            userLevel={playerLevel.level}
-            hasFriends={(userProfile?.checkpointFriends?.length || 0) > 0}
-            totalGames={games.length}
-            favoritesCount={games.filter((g) => (g as any).isFavorite || (g as any).favorite).length}
-            hasAchievements={games.some((g) => (g.completedAchievements || 0) > 0)}
-            hasSteamConnected={Boolean(resolvedSteamId)}
-            hasEpicConnected={epicAuthConnected}
-            hasDiscordConnected={Boolean(userProfile?.discordId)}
-            onOpenAddFriend={() => {
-              setIsQuestsModalOpen(false);
-              setIsAddFriendModalOpen(true);
-            }}
-            onOpenAddGame={() => {
-              setIsQuestsModalOpen(false);
-              openAddGameModal(categoryToLauncherType(activeCategory));
-            }}
-            onOpenSettings={() => {
-              setIsQuestsModalOpen(false);
-              selectCategory("SETTINGS");
-            }}
-            onOpenProfile={() => {
-              setIsQuestsModalOpen(false);
-              selectCategory("PROFILE");
-            }}
-            onOpenTrophies={() => {
-              setIsQuestsModalOpen(false);
-              selectCategory("TROPHIES");
-            }}
-            playSound={playSound}
-            isModal={true}
-            onClose={() => setIsQuestsModalOpen(false)}
-          />
-        )
-      }
+      {isQuestsModalOpen && (
+        <HomeOnboardingQuests
+          userId={user?.uid}
+          userProfile={userProfile}
+          userLevel={playerLevel.level}
+          hasFriends={(userProfile?.checkpointFriends?.length || 0) > 0}
+          totalGames={games.length}
+          favoritesCount={
+            games.filter((g) => (g as any).isFavorite || (g as any).favorite)
+              .length
+          }
+          hasAchievements={games.some(
+            (g) => (g.completedAchievements || 0) > 0,
+          )}
+          hasSteamConnected={Boolean(resolvedSteamId)}
+          hasEpicConnected={epicAuthConnected}
+          hasDiscordConnected={Boolean(userProfile?.discordId)}
+          onOpenAddFriend={() => {
+            setIsQuestsModalOpen(false);
+            setIsAddFriendModalOpen(true);
+          }}
+          onOpenAddGame={() => {
+            setIsQuestsModalOpen(false);
+            openAddGameModal(categoryToLauncherType(activeCategory));
+          }}
+          onOpenSettings={() => {
+            setIsQuestsModalOpen(false);
+            selectCategory("SETTINGS");
+          }}
+          onOpenProfile={() => {
+            setIsQuestsModalOpen(false);
+            selectCategory("PROFILE");
+          }}
+          onOpenTrophies={() => {
+            setIsQuestsModalOpen(false);
+            selectCategory("TROPHIES");
+          }}
+          playSound={playSound}
+          isModal={true}
+          onClose={() => setIsQuestsModalOpen(false)}
+        />
+      )}
 
       <UpdateAvailableBanner />
     </div>

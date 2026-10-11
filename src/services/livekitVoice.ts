@@ -46,7 +46,14 @@ export const fetchLiveKitToken = async (
   metadata?: any,
 ): Promise<LiveKitTokenResponse> => {
   if (!isLiveKitCompatibleRoom(roomName)) {
-    throw new Error("Identificador de sala inválido.");
+    // O nome aceito é UUID ou {uuid}_{uuid}. Chamada 1:1 monta o id com
+    // `[uid1, uid2].sort().join("_")`, então um amigo com id que não é UUID
+    // (Discord, por exemplo) reprova aqui — antes de qualquer ida à rede.
+    console.error("[call:token] identificador de sala recusado", {
+      roomName,
+      parts: String(roomName || "").split("_"),
+    });
+    throw new Error(`Identificador de sala inválido: ${roomName}`);
   }
 
   const response = await apiFetch("/api/voice/livekit-token", {

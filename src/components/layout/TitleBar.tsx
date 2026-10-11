@@ -86,6 +86,17 @@ export const TitleBar: React.FC<TitleBarProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isFullscreen, handleToggleFullscreen]);
 
+  // Altura que a title bar ocupa no fluxo: 36px em janela, 0 em tela cheia
+  // (la ela e `fixed` e fica escondida). O header usa isso junto com --notch-h
+  // para nunca ficar embaixo do notch.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--titlebar-h", isFullscreen ? "0px" : "36px");
+    return () => {
+      root.style.removeProperty("--titlebar-h");
+    };
+  }, [isFullscreen]);
+
   const handleMinimize = useCallback(() => {
     window.electronAPI?.minimizeWindow?.();
   }, []);

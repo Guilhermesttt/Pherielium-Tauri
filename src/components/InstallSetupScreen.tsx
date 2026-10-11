@@ -32,7 +32,26 @@ interface InstallSetupScreenProps {
 
 const STEPS = 3;
 
+/**
+ * Marca no documento que a configuracao inicial esta na tela. O tutorial da
+ * Pherie (OnboardingTour, montado na Home) le isso para nao comecar por baixo
+ * deste overlay -- os dois apareciam ao mesmo tempo em contas novas.
+ */
+export const INSTALL_SETUP_ACTIVE_ATTR = "data-install-setup";
+
+export function isInstallSetupActive(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.documentElement.getAttribute(INSTALL_SETUP_ACTIVE_ATTR) === "true";
+}
+
 export const InstallSetupScreen: React.FC<InstallSetupScreenProps> = ({ onFinish }) => {
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute(INSTALL_SETUP_ACTIVE_ATTR, "true");
+    return () => {
+      root.removeAttribute(INSTALL_SETUP_ACTIVE_ATTR);
+    };
+  }, []);
   const [step, setStep] = useState(0);
   const reduceMotion = useReducedMotion();
   const {

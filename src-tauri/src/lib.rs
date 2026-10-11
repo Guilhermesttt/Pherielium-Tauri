@@ -4,6 +4,16 @@ mod store;
 mod tray;
 mod utils;
 
+use commands::controller_config::{
+    controller_profile_clear_game, controller_profile_get, controller_profile_list_games,
+    controller_profile_reset_global, controller_profile_resolve, controller_profile_save,
+    controller_curve_preview, controller_driver_status, controller_trigger_preview,
+    hidhide_status, vigem_status,
+};
+use commands::audio_capture::{desktop_audio_capabilities, desktop_audio_selftest};
+use commands::virtual_pad::{
+    virtual_pad_attach, virtual_pad_detach, virtual_pad_is_attached, virtual_pad_update,
+};
 use commands::{
     achievement_watcher::*,
     achievements::*,
@@ -175,7 +185,25 @@ pub fn run() {
             system_set_open_at_login,
             system_is_fullscreen_active,
             system_get_media_info,
+            controller_profile_resolve,
+            controller_profile_get,
+            controller_profile_save,
+            controller_profile_clear_game,
+            controller_profile_reset_global,
+            controller_profile_list_games,
+            controller_curve_preview,
+            controller_trigger_preview,
+            vigem_status,
+            hidhide_status,
+            controller_driver_status,
+            virtual_pad_attach,
+            virtual_pad_detach,
+            virtual_pad_is_attached,
+            virtual_pad_update,
+            desktop_audio_capabilities,
+            desktop_audio_selftest,
             system_media_play_pause,
+            system_media_set_playing,
             system_media_next,
             system_media_previous,
             window_set_behavior,

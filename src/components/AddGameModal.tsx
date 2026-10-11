@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useMountWhileOpen } from "./ui/mountWhileOpen";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -216,7 +217,7 @@ const GameSearchDropdown: React.FC<{
   );
 };
 
-const AddGameModal: React.FC<AddGameModalProps> = ({
+const AddGameModalBody: React.FC<AddGameModalProps> = ({
   isOpen,
   onClose,
   playSound,
@@ -2326,6 +2327,11 @@ const AddGameModal: React.FC<AddGameModalProps> = ({
       </div>
     </ModalShell>
   );
+};
+
+const AddGameModal: React.FC<AddGameModalProps> = (props) => {
+  const mounted = useMountWhileOpen(props.isOpen);
+  return mounted ? <AddGameModalBody {...props} /> : null;
 };
 
 export default AddGameModal;

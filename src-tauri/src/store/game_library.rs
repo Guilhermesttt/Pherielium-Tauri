@@ -151,6 +151,8 @@ pub fn open(uid: &str) -> Result<Connection> {
     let conn = Connection::open(db_path(uid))?;
     conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")?;
     migrate(&conn)?;
+    // Perfis de controle moram no mesmo banco por usuário (aditivo).
+    super::controller_profiles::migrate(&conn)?;
     Ok(conn)
 }
 

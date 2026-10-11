@@ -149,7 +149,7 @@ const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ release, onClose }) => {
                   Pronto para uso
                 </span>
                 <span className="px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] text-white/40 text-[11px] font-mono">
-                  Sincronização Ativa
+                  Atualização instalada
                 </span>
               </div>
             </motion.div>
@@ -173,7 +173,7 @@ const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ release, onClose }) => {
                 Controles Nativos
               </h3>
               <p className="mt-1.5 text-xs font-body text-white/50 leading-relaxed">
-                Navegação total pelo controle (PS5, Xbox, genéricos) e teclado virtual integrado.
+                Navegação total pelo controle (PS5, Xbox, genéricos), agora com legendas em cada página e perfis nas Ajustes.
               </p>
             </div>
 

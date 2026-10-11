@@ -17,6 +17,9 @@ pub mod process_identity;
 pub mod process_monitor;
 pub mod ptt;
 pub mod screen_capture;
+pub mod audio_capture;
+pub mod controller_config;
 pub mod system;
+pub mod virtual_pad;
 pub mod system_perf;
 

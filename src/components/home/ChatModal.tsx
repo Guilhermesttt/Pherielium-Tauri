@@ -427,6 +427,9 @@ const Reply: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+/** Reacoes rapidas. O backend aceita qualquer emoji; estas sao os atalhos. */
+const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥"] as const;
+
 const ACTION_BTN =
   "flex h-7 w-7 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40";
 
@@ -447,7 +450,7 @@ const ChatMessageRow: React.FC<{
   onReply?: (message: ChatMessage) => void;
   onEdit?: (message: ChatMessage) => void;
   onDelete?: (message: ChatMessage) => void;
-  onReact?: (message: ChatMessage) => void;
+  onReact?: (message: ChatMessage, emoji: string) => void;
 }> = ({ msg, isMe, friend, selfAvatarUrl, startsGroup, endsGroup, animateIn, onViewImage, onJoinCall, playSound, replyPreview, onReply, onEdit, onDelete, onReact }) => {
   const spring = useBubbleSpring(isMe, animateIn);
   const inviteMeta = parseCallInviteText(msg.text);
@@ -542,7 +545,7 @@ const ChatMessageRow: React.FC<{
             {/* ações: aparecem ao passar o mouse / focar, sem poluir a conversa */}
             {!deleted && (onReply || onReact || (isMe && (onEdit || onDelete))) ? (
               <div
-                className="flex shrink-0 items-center rounded-full border border-white/10 bg-[#161618]/95 p-0.5 opacity-0 shadow-lg backdrop-blur transition-opacity duration-150 group-hover/bubble:opacity-100 group-focus-within/bubble:opacity-100"
+                className="flex shrink-0 items-center rounded-full border border-[color:var(--edge-subtle)] bg-[color:var(--surface-overlay)] p-0.5 opacity-0 shadow-lg backdrop-blur transition-opacity duration-150 group-hover/bubble:opacity-100 group-focus-within/bubble:opacity-100"
                 role="toolbar"
                 aria-label="Ações da mensagem"
               >
@@ -551,11 +554,20 @@ const ChatMessageRow: React.FC<{
                     <Reply className="h-3.5 w-3.5" />
                   </button>
                 ) : null}
-                {onReact ? (
-                  <button type="button" className={`${ACTION_BTN} text-[13px]`} onClick={() => onReact(msg)} title="Curtir" aria-label="Curtir">
-                    👍
-                  </button>
-                ) : null}
+                {onReact
+                  ? QUICK_REACTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-[14px] leading-none transition-transform hover:scale-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--edge-selected)]"
+                        onClick={() => onReact(msg, emoji)}
+                        title={`Reagir com ${emoji}`}
+                        aria-label={`Reagir com ${emoji}`}
+                      >
+                        {emoji}
+                      </button>
+                    ))
+                  : null}
                 {isMe && onEdit ? (
                   <button type="button" className={ACTION_BTN} onClick={() => onEdit(msg)} title="Editar" aria-label="Editar">
                     <Pencil className="h-3.5 w-3.5" />
@@ -576,7 +588,7 @@ const ChatMessageRow: React.FC<{
                 <button
                   key={emoji}
                   type="button"
-                  onClick={() => onReact?.(msg)}
+                  onClick={() => onReact?.(msg, emoji)}
                   className="rounded-full bg-white/[0.08] px-2 py-0.5 text-[11px] text-white/80 transition-colors hover:bg-white/[0.14]"
                 >
                   {emoji} {users.length}
@@ -619,7 +631,7 @@ export const ChatMessageList: React.FC<{
   onReply?: (message: ChatMessage) => void;
   onEdit?: (message: ChatMessage) => void;
   onDelete?: (message: ChatMessage) => void;
-  onReact?: (message: ChatMessage) => void;
+  onReact?: (message: ChatMessage, emoji: string) => void;
 }> = ({
   isLoading,
   loadError,
@@ -1332,9 +1344,9 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
                 .then((updated) => setDisplayMessages((current) => current.map((item) => (item.id === updated.id ? updated : item))))
                 .catch((error) => notify(error instanceof Error ? error.message : "Não foi possível apagar a mensagem.", "error"));
             }}
-            onReact={(message) => {
+            onReact={(message, emoji) => {
               if (!user?.uid) return;
-              void toggleChatReaction(message, "👍", user.uid)
+              void toggleChatReaction(message, emoji, user.uid)
                 .then((updated) => setDisplayMessages((current) => current.map((item) => (item.id === updated.id ? updated : item))))
                 .catch((error) => notify(error instanceof Error ? error.message : "Não foi possível reagir.", "error"));
             }}

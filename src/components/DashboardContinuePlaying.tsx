@@ -106,8 +106,8 @@ const ContinueCard = React.memo<ContinueCardProps>(({
   // A barra horizontal segue a cor dominante do jogo (color-mix mantém
   // tudo escuro: 26% da cor sobre a base + borda tingida a 35%).
   const cardBackground = accentColor
-    ? `linear-gradient(145deg, color-mix(in srgb, ${accentColor} 26%, #242424) 0%, #0A0A0A 100%)`
-    : "linear-gradient(145deg, #242424 0%, #0A0A0A 100%)";
+    ? `linear-gradient(145deg, color-mix(in srgb, ${accentColor} 26%, var(--surface-overlay)) 0%, var(--surface-base) 100%)`
+    : "linear-gradient(145deg, var(--surface-overlay) 0%, var(--surface-base) 100%)";
   const cardBorderColor = isSelected
     ? "rgba(255, 255, 255, 0.45)"
     : accentColor
@@ -182,10 +182,10 @@ const ContinueCard = React.memo<ContinueCardProps>(({
         className="absolute bottom-0 right-4 flex flex-col justify-center gap-1 overflow-hidden"
         style={{ height: CARD_HEIGHT, left: TEXT_OFFSET }}
       >
-        <h3 className="truncate text-[15px] font-semibold leading-tight tracking-tight text-white/90 drop-shadow-sm transition-colors group-hover:text-white">
+        <h3 className="truncate text-[length:var(--fs-title)] font-semibold leading-tight tracking-tight text-white/90 drop-shadow-sm transition-colors group-hover:text-white">
           {game.title}
         </h3>
-        <p className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[11px] font-medium text-white/50">
+        <p className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[length:var(--fs-label)] font-medium text-white/50">
           <span className="shrink-0">{hours > 0 ? `${formatPlayedHours(hours)}h` : "Recente"}</span>
           <span className="h-1 w-1 shrink-0 rounded-full bg-white/20" />
           <span className="flex shrink-0 items-center gap-1 truncate max-w-[80px]">{platform.label}</span>
@@ -201,7 +201,7 @@ const ContinueCard = React.memo<ContinueCardProps>(({
 
       {/* Cover — pops above the card, but stays inside the article's own box */}
       <motion.div
-        className="absolute top-0 z-10 overflow-hidden rounded-[13px] border border-white/10 bg-[#0f1115] shadow-[0_12px_24px_rgba(0,0,0,0.55)]"
+        className="absolute top-0 z-10 overflow-hidden rounded-[calc(var(--radius-card)-3px)] border border-[color:var(--edge-subtle)] bg-[color:var(--surface-base)] shadow-[var(--elev-card)]"
         style={{ left: COVER_LEFT, width: COVER_WIDTH, height: COVER_HEIGHT - 10 }}
       >
         {coverArt ? (
@@ -278,32 +278,21 @@ export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> =
       ? "w-[calc((100%-80px)/5)] min-w-[270px] max-w-[350px]"
       : "w-[300px]";
 
+  // O corte seco nas pontas do trilho e resolvido so com mascara: o conteudo
+  // some para transparente e quem aparece atras e o fundo real da tela, entao
+  // nao ha cor cravada para destoar em outro tema. A rampa tem tres paradas
+  // para o fade ser suave em vez de um corte em dois passos.
   const maskStyle = React.useMemo(() => {
-    if (canScrollLeft && canScrollRight) {
-      return {
-        maskImage:
-          "linear-gradient(to right, transparent 0%, black 64px, black calc(100% - 64px), transparent 100%)",
-        WebkitMaskImage:
-          "linear-gradient(to right, transparent 0%, black 64px, black calc(100% - 64px), transparent 100%)",
-      };
-    }
-    if (canScrollRight) {
-      return {
-        maskImage:
-          "linear-gradient(to right, black 0%, black calc(100% - 64px), transparent 100%)",
-        WebkitMaskImage:
-          "linear-gradient(to right, black 0%, black calc(100% - 64px), transparent 100%)",
-      };
-    }
-    if (canScrollLeft) {
-      return {
-        maskImage:
-          "linear-gradient(to right, transparent 0%, black 64px, black 100%)",
-        WebkitMaskImage:
-          "linear-gradient(to right, transparent 0%, black 64px, black 100%)",
-      };
-    }
-    return {};
+    if (!canScrollLeft && !canScrollRight) return {};
+    const w = "var(--rail-fade-w)";
+    const head = canScrollLeft
+      ? `transparent 0%, rgba(0,0,0,0.45) calc(${w} * 0.45), black ${w}`
+      : "black 0%";
+    const tail = canScrollRight
+      ? `black calc(100% - ${w}), rgba(0,0,0,0.45) calc(100% - ${w} * 0.45), transparent 100%`
+      : "black 100%";
+    const gradient = `linear-gradient(to right, ${head}, ${tail})`;
+    return { maskImage: gradient, WebkitMaskImage: gradient };
   }, [canScrollLeft, canScrollRight]);
 
   if (continuePlayingGames.length === 0) return null;
@@ -311,46 +300,20 @@ export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> =
   return (
     <section aria-label="Continuar jogando" className="px-[var(--safe-x)] pt-[var(--gap-section)] relative group/section">
       <div className="mb-3 flex flex-col">
-        <p className="text-[12px] font-medium text-white/45">
+        <p className="text-[length:var(--fs-label)] font-medium text-white/45">
           Retomar
         </p>
         <div className="mt-1 flex items-baseline gap-3">
-          <h2 className="text-[18px] font-semibold leading-[1.1] tracking-[-0.02em] text-white/88">
+          <h2 className="text-[length:var(--fs-heading)] font-semibold leading-[1.1] tracking-[-0.02em] text-white/88">
             Continuar jogando
           </h2>
-          <span className="text-[10.5px] font-medium text-white/34">
+          <span className="text-[length:var(--fs-label)] font-medium text-white/34">
             {continuePlayingGames.length} {continuePlayingGames.length === 1 ? "jogo" : "jogos"}
           </span>
         </div>
       </div>
 
       <div className="relative w-full">
-        {/* Cortina de Desfoque e Gradiente à Esquerda (suaviza o corte seco) */}
-        <AnimatePresence>
-          {canScrollLeft && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="pointer-events-none absolute left-0 top-0 bottom-0 w-28 bg-gradient-to-r from-[#070707] via-[#070707]/80 to-transparent backdrop-blur-[2px] z-10"
-            />
-          )}
-        </AnimatePresence>
-
-        {/* Cortina de Desfoque e Gradiente à Direita (suaviza o corte seco) */}
-        <AnimatePresence>
-          {canScrollRight && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="pointer-events-none absolute right-0 top-0 bottom-0 w-28 bg-gradient-to-l from-[#070707] via-[#070707]/80 to-transparent backdrop-blur-[2px] z-10"
-            />
-          )}
-        </AnimatePresence>
-
         {/* Seta Voltar (Esquerda) */}
         <AnimatePresence>
           {canScrollLeft && (
@@ -364,7 +327,7 @@ export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> =
               transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
               onClick={handleScrollLeft}
               aria-label="Voltar aos jogos anteriores"
-              className="absolute -left-3 sm:-left-4 top-[56%] -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-[#161616]/90 hover:bg-[#262626] border border-white/15 hover:border-white/30 text-white shadow-[0_8px_30px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.15)] backdrop-blur-2xl transition-colors cursor-pointer"
+              className="absolute -left-3 sm:-left-4 top-[56%] -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--surface-raised)_90%,transparent)] hover:bg-[color:var(--surface-overlay)] border border-[color:var(--edge-subtle)] hover:border-[color:var(--edge-strong)] text-white shadow-[var(--elev-pill)] backdrop-blur-2xl transition-colors cursor-pointer"
             >
               <ArrowLeft className="h-5 w-5" />
             </motion.button>
@@ -384,7 +347,7 @@ export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> =
               transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
               onClick={handleScrollRight}
               aria-label="Ver mais jogos recentes"
-              className="absolute -right-3 sm:-right-4 top-[56%] -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-[#161616]/90 hover:bg-[#262626] border border-white/15 hover:border-white/30 text-white shadow-[0_8px_30px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.15)] backdrop-blur-2xl transition-colors cursor-pointer"
+              className="absolute -right-3 sm:-right-4 top-[56%] -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--surface-raised)_90%,transparent)] hover:bg-[color:var(--surface-overlay)] border border-[color:var(--edge-subtle)] hover:border-[color:var(--edge-strong)] text-white shadow-[var(--elev-pill)] backdrop-blur-2xl transition-colors cursor-pointer"
             >
               <ArrowRight className="h-5 w-5" />
             </motion.button>

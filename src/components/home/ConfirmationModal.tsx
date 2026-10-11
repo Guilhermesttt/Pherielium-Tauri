@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import ModalShell from "../ui/ModalShell";
+import { useMountWhileOpen } from "../ui/mountWhileOpen";
 import type { SoundEffectType } from "../../hooks/useSoundEffects";
 import {
   LogOut as AnimatedLogOut,
@@ -90,7 +91,7 @@ const VARIANT_VISUALS: Record<ConfirmationVariant, VariantVisual> = {
  * Modal de confirmação com mensagem clara (ícone animado → título → descrição → ações).
  * Referência: hierarquia "clear message" — o ícone deixa a intenção óbvia antes de ler o texto.
  */
-export const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(
+const ConfirmationModalBody: React.FC<ConfirmationModalProps> = React.memo(
   ({
     isOpen,
     title,
@@ -107,10 +108,8 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(
     const resolvedCancel = cancelLabel ?? defaultCancel;
 
     // Re-dispara a animação do ícone a cada abertura do modal
-    const [iconKey, setIconKey] = useState(0);
-    useEffect(() => {
-      if (isOpen) setIconKey((k) => k + 1);
-    }, [isOpen]);
+    // O corpo só existe enquanto o modal está aberto (ver useMountWhileOpen): cada
+    // abertura remonta o ícone, então a animação de entrada reinicia sozinha.
 
     const handleCloseAction = () => {
       playSound("back");
@@ -135,15 +134,13 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(
 
         <div className="flex flex-col items-center text-center">
           <motion.div
-            key={iconKey}
             initial={{ opacity: 0, scale: 0.7, y: 6 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ type: "spring", bounce: 0.35, duration: 0.45 }}
             className={`mb-5 flex h-16 w-16 items-center justify-center rounded-[var(--radius-card)] border ${iconWrapClass}`}
           >
             <Icon
-              key={iconKey}
-              size={28}
+                size={28}
               animate
               loop={false}
               className={iconClass}
@@ -181,4 +178,9 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = React.memo(
   },
 );
 
-ConfirmationModal.displayName = "ConfirmationModal";
+ConfirmationModalBody.displayName = "ConfirmationModal";
+
+export const ConfirmationModal: React.FC<ConfirmationModalProps> = (props) => {
+  const mounted = useMountWhileOpen(props.isOpen);
+  return mounted ? <ConfirmationModalBody {...props} /> : null;
+};

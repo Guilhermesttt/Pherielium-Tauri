@@ -110,7 +110,7 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={FOCUS_TRANSITION}
-      className="shrink-0 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-[var(--gap-inline)] px-[var(--safe-x)] pt-[var(--header-pt)] pb-[var(--gap-stack)] relative z-30 select-none will-change-transform"
+      className="shrink-0 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-[var(--gap-inline)] px-[var(--safe-x)] pt-[var(--header-pt-safe)] pb-[var(--gap-stack)] relative z-30 select-none will-change-transform"
       role="banner"
     >
       {/* 1. Left: Pherielium Brand Identity */}
@@ -129,7 +129,7 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
               className="ctl-icon object-contain grayscale brightness-200 opacity-90 group-hover:opacity-100 transition-opacity"
             />
           </div>
-          <span className="font-display font-bold text-[length:var(--fs-heading)] leading-none tracking-tight bg-gradient-to-b from-[#FFFFFF] to-[#999999] bg-clip-text text-transparent">
+          <span className="font-display font-bold text-[length:var(--fs-heading)] leading-none tracking-tight bg-gradient-to-b from-[color:var(--color-text-main)] to-[color:var(--color-text-sub)] bg-clip-text text-transparent">
             Pherielium
           </span>
         </button>
@@ -260,13 +260,13 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                     <RefreshCw className={`ctl-icon ${isSyncingLibraries ? "animate-spin" : ""}`} />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" sideOffset={10} className="min-w-[220px] rounded-2xl border border-white/10 bg-[#141416]/95 p-1.5 backdrop-blur-xl">
+                <DropdownMenuContent align="end" sideOffset={10} className="min-w-[220px] rounded-[var(--radius-panel)] border border-[color:var(--edge-subtle)] bg-[color-mix(in_srgb,var(--surface-overlay)_95%,transparent)] p-1.5 backdrop-blur-xl">
                   <DropdownMenuItem
                     onSelect={() => {
                       onSyncLibraries();
                       playSound("select");
                     }}
-                    className="cursor-pointer gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/90 focus:bg-white/10"
+                    className="cursor-pointer gap-2.5 rounded-[var(--radius-control)] px-3 py-2 text-[length:var(--fs-caption)] font-medium text-white/90 focus:bg-white/10"
                   >
                     <RefreshCw className="h-4 w-4 text-white/60" />
                     Sincronizar tudo
@@ -278,12 +278,12 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                         onSyncSteam();
                         playSound("select");
                       }}
-                      className="cursor-pointer gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/90 focus:bg-white/10"
+                      className="cursor-pointer gap-2.5 rounded-[var(--radius-control)] px-3 py-2 text-[length:var(--fs-caption)] font-medium text-white/90 focus:bg-white/10"
                     >
                       <SteamBrandIcon className="h-4 w-4 text-white/60" />
                       <span className="flex min-w-0 flex-col leading-tight">
                         <span>{isSyncingSteam ? "Sincronizando Steam…" : "Só a Steam"}</span>
-                        <span className="text-[11px] font-normal text-white/40">{syncAgo(lastSteamSyncAt)}</span>
+                        <span className="text-[length:var(--fs-label)] font-normal text-white/40">{syncAgo(lastSteamSyncAt)}</span>
                       </span>
                     </DropdownMenuItem>
                   )}
@@ -294,12 +294,12 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                         onSyncEpic();
                         playSound("select");
                       }}
-                      className="cursor-pointer gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-white/90 focus:bg-white/10"
+                      className="cursor-pointer gap-2.5 rounded-[var(--radius-control)] px-3 py-2 text-[length:var(--fs-caption)] font-medium text-white/90 focus:bg-white/10"
                     >
                       <EpicBrandIcon className="h-4 w-4 text-white/60" />
                       <span className="flex min-w-0 flex-col leading-tight">
                         <span>{isSyncingEpic ? "Sincronizando Epic…" : "Só a Epic Games"}</span>
-                        <span className="text-[11px] font-normal text-white/40">{syncAgo(lastEpicSyncAt)}</span>
+                        <span className="text-[length:var(--fs-label)] font-normal text-white/40">{syncAgo(lastEpicSyncAt)}</span>
                       </span>
                     </DropdownMenuItem>
                   )}

@@ -792,14 +792,17 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
 
   return (
     <motion.div
-      ref={scrollRef}
-      data-system-page="trophies"
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-      className="relative min-h-0 flex-1 overflow-y-auto thin-scrollbar px-10 pb-16 pt-8 text-white font-sans"
+      className="relative flex min-h-0 flex-1 flex-col text-white font-sans"
       style={{ contain: "layout paint", transform: "translate3d(0,0,0)", willChange: "transform" }}
     >
+      <div
+        ref={scrollRef}
+        data-system-page="trophies"
+        className="min-h-0 flex-1 overflow-y-auto thin-scrollbar px-10 pb-8 pt-8"
+      >
       <div className="mx-auto mb-8 w-full max-w-5xl">
         <h1
           className="font-display font-black bg-gradient-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent leading-[1.08]"
@@ -1090,19 +1093,19 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
             </motion.div>
           )}
         </div>
-
-        {/* InputHints oficial do sistema (Imagem 2) */}
-        <div className="pt-6 pb-2 flex justify-end">
-          <InputHints
-            hints={[
-              { button: "L1_R1", label: "Filtrar" },
-              { button: "DPAD", label: "Navegar" },
-              { button: "X", label: "Abrir Jogo" },
-              { button: "SCROLL", label: "Rolar" },
-              { button: "O", label: "Voltar" },
-            ]}
-          />
-        </div>
+      </div>
+      </div>
+      {/* Legenda fixa no rodapé da página (fora da rolagem), como nas demais. */}
+      <div className="flex shrink-0 justify-end border-t border-[color:var(--edge-subtle)] px-10 py-2.5">
+        <InputHints
+          hints={[
+            { button: "L1_R1", label: "Filtrar" },
+            { button: "DPAD", label: "Navegar" },
+            { button: "X", label: "Abrir Jogo" },
+            { button: "SCROLL", label: "Rolar" },
+            { button: "O", label: "Voltar" },
+          ]}
+        />
       </div>
     </motion.div>
   );

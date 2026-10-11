@@ -87,9 +87,14 @@ windows = { version = "0.58", features = [
   "Win32_Media_Audio",
   "Win32_System_Com",
   "Win32_System_Threading",
+  "Win32_Security", # CreateEventW (captura de áudio orientada a evento)
   "Win32_UI_Input_KeyboardAndMouse",
   "Win32_UI_Input_XboxController",
 ] }
+
+# Gamepad virtual: fala com o driver ViGEmBus, que o usuário instala à parte.
+# Pure Rust, sem SDK em C++.
+vigem-client = "0.1.4"
 # Bateria real de DualSense/DualShock 4 (relatório HID de entrada)
 hidapi = { version = "2", default-features = false, features = ["windows-native"] }
 

@@ -214,6 +214,18 @@ export interface ChatMessage {
   deletedAt?: string;
   mentions?: string[];
   reactions?: Record<string, string[]>;
+  /**
+   * Id gerado pelo remetente antes de qualquer ida à rede. Viaja tanto no
+   * broadcast rápido quanto na linha persistida (coluna `client_id`), então o
+   * destinatário parea as duas entregas sem heurística de texto e tempo.
+   */
+  clientId?: string;
+  /**
+   * Marca um broadcast que so patcheia uma mensagem que o destinatario ja tem
+   * (edicao, remocao, reacao). Sem isso, um patch de mensagem fora da janela de
+   * historico carregada era tratado como mensagem nova e aparecia duplicada.
+   */
+  isUpdate?: boolean;
 }
 
 export interface Chat {

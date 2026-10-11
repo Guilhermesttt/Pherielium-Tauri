@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { X, Search, Check, Trash2, Filter } from "lucide-react";
 import ModalShell from "../ui/ModalShell";
+import { useMountWhileOpen } from "../ui/mountWhileOpen";
 import type { Game } from "../../types/domain";
 import type { SoundEffectType } from "../../hooks/useSoundEffects";
 import type { CustomLibraryFilter } from "../../services/customLibraryFilters";
@@ -20,7 +21,7 @@ interface CustomFilterModalProps {
   playSound?: (type: SoundEffectType) => void;
 }
 
-export const CustomFilterModal: React.FC<CustomFilterModalProps> = ({
+const CustomFilterModalBody: React.FC<CustomFilterModalProps> = ({
   isOpen,
   onClose,
   games = [],
@@ -276,6 +277,11 @@ export const CustomFilterModal: React.FC<CustomFilterModalProps> = ({
       </form>
     </ModalShell>
   );
+};
+
+export const CustomFilterModal: React.FC<CustomFilterModalProps> = (props) => {
+  const mounted = useMountWhileOpen(props.isOpen);
+  return mounted ? <CustomFilterModalBody {...props} /> : null;
 };
 
 export default CustomFilterModal;

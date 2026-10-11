@@ -15,6 +15,7 @@ import {
   type Rect,
   type TourStep,
 } from "./tourSteps";
+import { isInstallSetupActive } from "../components/InstallSetupScreen";
 
 const INTRO_KEY = "pherielium_intro_v1";
 const Z = 320; // acima de ModalShell (100) e GameLaunchIntro (200)
@@ -147,16 +148,35 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
   const [paused, setPaused] = useState(false);
   const indexRef = useRef(0);
   indexRef.current = index;
+  // lido dentro do loop de espera sem recriar o efeito de início
+  const blockedRef = useRef(blocked);
+  useEffect(() => {
+    blockedRef.current = blocked;
+  }, [blocked]);
 
   // inicia: novo usuário não concluído, ou refazer forçado pelas configurações
   useEffect(() => {
     if (!uid) return;
+    let cancelled = false;
+    let retry: number | undefined;
+
+    // Em conta nova a tela de configuração inicial (App.tsx) e o modal de
+    // boas-vindas ainda estão por cima da Home. Antes o tutorial começava
+    // mesmo assim e os dois apareciam juntos; agora ele espera a tela sair.
+    const somethingElseOnScreen = () => blockedRef.current || isInstallSetupActive();
+
     const start = async () => {
+      if (cancelled) return;
+      if (somethingElseOnScreen()) {
+        retry = window.setTimeout(start, 600);
+        return;
+      }
       const forced = localStorage.getItem(tourForceKey(uid)) === "1";
       const state = loadTourState(uid, localStorage);
       if ((forced || (eligible && !state.done)) && !(state.done && !forced)) {
         localStorage.removeItem(tourForceKey(uid));
         await playIntroOnce(forced);
+        if (cancelled) return;
         setIndex(state.step);
         setActive(true);
       }
@@ -167,7 +187,9 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
     const onRestart = () => window.setTimeout(start, 700);
     window.addEventListener("pherielium:restart-tour", onRestart);
     return () => {
+      cancelled = true;
       window.clearTimeout(first);
+      if (retry) window.clearTimeout(retry);
       window.removeEventListener("pherielium:restart-tour", onRestart);
     };
   }, [uid, eligible]);
