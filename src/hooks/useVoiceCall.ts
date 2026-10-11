@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { streamDebugLog } from "@/services/voiceCall/streamDebug";
+import { startStreamDiagnostics } from "@/services/voiceCall/streamDiagnostics";
 import {
   effectivePercent,
   toElementVolume,
@@ -642,6 +643,9 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   const livekitAudioPubRef = useRef<LocalTrackPublication | null>(null);
   const livekitVideoPubRef = useRef<LocalTrackPublication | null>(null);
   const livekitScreenPubRef = useRef<LocalTrackPublication | null>(null);
+  // Debug-only (flag pherielium_stream_debug): stop functions that print a stats summary.
+  const senderDiagnosticsStopRef = useRef<(() => void) | null>(null);
+  const receiverDiagnosticsStopRef = useRef<Map<string, () => void>>(new Map());
   const livekitScreenAudioPubRef = useRef<LocalTrackPublication | null>(null);
   const livekitAttachedElementsRef = useRef<Set<HTMLMediaElement>>(new Set());
   const livekitAttachedTrackKeysRef = useRef<Set<string>>(new Set());
@@ -1800,6 +1804,10 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     livekitVideoPubRef.current = null;
     livekitScreenPubRef.current = null;
     livekitScreenAudioPubRef.current = null;
+    senderDiagnosticsStopRef.current?.();
+    senderDiagnosticsStopRef.current = null;
+    receiverDiagnosticsStopRef.current.forEach((stop) => stop());
+    receiverDiagnosticsStopRef.current.clear();
     screenVideoTrackRef.current = null;
     screenAudioTrackRef.current = null;
     screenShareStoppingRef.current = false;
@@ -2110,6 +2118,18 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           lockRemoteScreenShareQuality(publication);
           ingestRemoteLiveKitTrack(track, publication, peerId);
 
+          if (track.kind === LiveKitTrack.Kind.Video && track.source === LiveKitTrack.Source.ScreenShare) {
+            receiverDiagnosticsStopRef.current.get(track.sid ?? peerId)?.();
+            receiverDiagnosticsStopRef.current.set(
+              track.sid ?? peerId,
+              startStreamDiagnostics({
+                role: "receiver",
+                label: `screen from ${peerId}`,
+                readReport: () => track.getRTCStatsReport(),
+              }),
+            );
+          }
+
           if (track.kind === LiveKitTrack.Kind.Audio) {
             // LiveKit already exposes ActiveSpeakersChanged. Avoid a second Web Audio
             // analyser/AudioContext per remote participant.
@@ -2125,6 +2145,12 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           const peerId = participant.identity;
           const mediaTrack = track.mediaStreamTrack as MediaStreamTrack | undefined;
           const screenShare = isScreenShareSource(track.source ?? _pub?.source);
+
+          const stopReceiverDiagnostics = receiverDiagnosticsStopRef.current.get(track.sid ?? peerId);
+          if (stopReceiverDiagnostics) {
+            stopReceiverDiagnostics();
+            receiverDiagnosticsStopRef.current.delete(track.sid ?? peerId);
+          }
 
           if (mediaTrack) {
             if (screenShare) {
@@ -4075,6 +4101,13 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
             );
             livekitScreenPubRef.current = published.videoPublication;
             livekitScreenAudioPubRef.current = published.audioPublication ?? null;
+            senderDiagnosticsStopRef.current?.();
+            senderDiagnosticsStopRef.current = startStreamDiagnostics({
+              role: "sender",
+              label: `screen ${fps}fps ${targetBitrate}bps audio=${published.audioPublication ? "on" : "off"}`,
+              readReport: async () => published.videoPublication.track?.getRTCStatsReport(),
+              readTrackFrameRate: () => videoTrack.getSettings().frameRate ?? null,
+            });
             console.info("[LiveKit] Screen share published", {
               maxBitrate: targetBitrate,
               maxFramerate: fps,
@@ -4199,6 +4232,8 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     } catch (err) {
       console.warn("[useVoiceCall] LiveKit screen unpublish warning:", err);
     } finally {
+      senderDiagnosticsStopRef.current?.();
+      senderDiagnosticsStopRef.current = null;
       livekitScreenPubRef.current = null;
       livekitScreenAudioPubRef.current = null;
     }
