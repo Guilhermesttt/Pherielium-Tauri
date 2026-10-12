@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   buildDisplayMediaRequest,
   captureNativeScreenShare,
+  planScreenShareAudio,
   isDisplayMediaCancelledError,
   screenShareAudioBarrierConstraints,
   screenShareProfile,
@@ -96,85 +97,56 @@ describe("buildDisplayMediaRequest", () => {
   });
 });
 
-describe("captureNativeScreenShare", () => {
-  it("uses exactly one getDisplayMedia call for 1080p60 with audio", async () => {
-    const getDisplayMedia = vi.fn().mockResolvedValue({
-      getVideoTracks: () => [{ kind: "video", getSettings: () => ({ displaySurface: "window" }) }],
-      getAudioTracks: () => [{ kind: "audio" }],
-      removeTrack: vi.fn(),
-    });
+describe("planScreenShareAudio", () => {
+  it.each([
+    // [quer áudio, áudio nativo subiu, avisar]
+    [true, true, false],
+    [true, false, true],
+    [false, true, false],
+    [false, false, false],
+  ])("includeAudio=%s nativeAudioStarted=%s -> warn=%s, never browser audio", (includeAudio, nativeAudioStarted, warn) => {
+    expect(planScreenShareAudio({ includeAudio, nativeAudioStarted })).toEqual({ requestBrowserAudio: false, warnNoAudio: warn });
+  });
+});
 
-    const result = await captureNativeScreenShare({
-      width: 1920,
-      height: 1080,
-      fps: 60,
-      withAudio: true,
-      getDisplayMedia,
-      supportedConstraints: chromiumAudioIsolation,
-    });
+describe("captureNativeScreenShare", () => {
+  const fakeStream = (surface: string, audioTracks: Array<{ kind: string; stop: () => void }>) => {
+    const audio = [...audioTracks];
+    return {
+      getVideoTracks: () => [{ kind: "video", getSettings: () => ({ displaySurface: surface }) }],
+      getAudioTracks: () => audio,
+      removeTrack: vi.fn((t: unknown) => audio.splice(audio.indexOf(t as never), 1)),
+    };
+  };
+
+  it("uses exactly one getDisplayMedia call and never asks the browser for audio", async () => {
+    const getDisplayMedia = vi.fn().mockResolvedValue(fakeStream("window", []));
+    await captureNativeScreenShare({ width: 1920, height: 1080, fps: 60, getDisplayMedia });
 
     expect(getDisplayMedia).toHaveBeenCalledTimes(1);
-    expect(result.hasSystemAudio).toBe(true);
-    expect(getDisplayMedia.mock.calls[0]?.[0]?.video).toMatchObject({
-      width: { ideal: 1920, max: 1920 },
-      frameRate: { ideal: 60, max: 60 },
-    });
-    expect(getDisplayMedia.mock.calls[0]?.[0]?.audio).toEqual({
-      restrictOwnAudio: true,
-    });
-    expect(getDisplayMedia.mock.calls[0]?.[0]?.systemAudio).toBe("exclude");
-    expect(getDisplayMedia.mock.calls[0]?.[0]?.windowAudio).toBe("window");
+    const request = getDisplayMedia.mock.calls[0]?.[0];
+    expect(request.audio).toBe(false);
+    expect(request.systemAudio).toBeUndefined();
+    expect(request.video).toMatchObject({ width: { ideal: 1920, max: 1920 }, frameRate: { ideal: 60, max: 60 } });
+  });
+
+  it("discards an audio track the browser delivers anyway", async () => {
+    const stop = vi.fn();
+    const stream = fakeStream("monitor", [{ kind: "audio", stop }]);
+    const getDisplayMedia = vi.fn().mockResolvedValue(stream);
+    const result = await captureNativeScreenShare({ width: 1280, height: 720, fps: 30, getDisplayMedia });
+
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(result.stream.getAudioTracks()).toHaveLength(0);
+    expect(result.isMonitorShare).toBe(true);
   });
 
   it("does not publish when the native picker is cancelled", async () => {
     const getDisplayMedia = vi.fn().mockRejectedValue(Object.assign(new Error("denied"), { name: "NotAllowedError" }));
-
-    await expect(captureNativeScreenShare({
-      width: 1280,
-      height: 720,
-      fps: 30,
-      withAudio: true,
-      getDisplayMedia,
-    })).rejects.toMatchObject({ name: "NotAllowedError" });
-
+    await expect(captureNativeScreenShare({ width: 1280, height: 720, fps: 30, getDisplayMedia })).rejects.toMatchObject({
+      name: "NotAllowedError",
+    });
     expect(getDisplayMedia).toHaveBeenCalledTimes(1);
-  });
-
-  it("returns video-only when the user shares screen without audio", async () => {
-    const getDisplayMedia = vi.fn().mockResolvedValue({
-      getVideoTracks: () => [{ kind: "video", getSettings: () => ({ displaySurface: "window" }) }],
-      getAudioTracks: () => [],
-      removeTrack: vi.fn(),
-    });
-
-    const result = await captureNativeScreenShare({
-      width: 1280,
-      height: 720,
-      fps: 30,
-      withAudio: true,
-      getDisplayMedia,
-    });
-
-    expect(getDisplayMedia).toHaveBeenCalledTimes(1);
-    expect(result.hasSystemAudio).toBe(false);
-  });
-
-  it("flags monitor capture without requesting local playback suppression", async () => {
-    const getDisplayMedia = vi.fn().mockResolvedValue({
-      getVideoTracks: () => [{ kind: "video", getSettings: () => ({ displaySurface: "monitor" }) }],
-      getAudioTracks: () => [{ kind: "audio" }],
-    });
-
-    const result = await captureNativeScreenShare({
-      width: 1280,
-      height: 720,
-      fps: 30,
-      withAudio: true,
-      getDisplayMedia,
-    });
-
-    expect(result.hasSystemAudio).toBe(true);
-    expect(result.isMonitorShare).toBe(true);
   });
 });
 

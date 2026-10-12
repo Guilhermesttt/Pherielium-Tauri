@@ -86,6 +86,7 @@ import { buildProcessedAudioTrack } from "../services/audio/audioProcessing";
 import { attachKrispToTrack, detachKrispFromTrack } from "../services/audio/krispNoiseFilter";
 import {
   captureNativeScreenShare,
+  planScreenShareAudio,
   isDisplayMediaCancelledError,
   publishScreenShareTracks,
   releaseScreenCaptureStream,
@@ -4220,6 +4221,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
 
       let screenStream: MediaStream | null = null;
       let desktopAudio: Awaited<ReturnType<typeof startDesktopAudioCapture>> | null = null;
+      let audioFailure: unknown = null;
       try {
         tauriScreenStopRef.current = null;
         if (includeAudio) {
@@ -4227,32 +4229,22 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
             desktopAudio = await startDesktopAudioCapture();
             tauriScreenStopRef.current = desktopAudio.stop;
           } catch (audioErr) {
-            // Sem o loopback de processo a tela inteira sai MUDA: o pedido ao
-            // getDisplayMedia usa systemAudio:"exclude" de propósito, para a voz
-            // da chamada não voltar em eco. Então isto nunca pode passar calado.
-            notify(
-              reportFailure(
-                "screenshare:audio",
-                "Áudio do PC indisponível; transmitindo apenas o vídeo.",
-                audioErr,
-              ),
-              "info",
-            );
+            // Sem o loopback de processo a transmissão sai sem áudio: o navegador nunca é fonte de áudio
+            // (voltaria a voz da chamada em eco). O aviso único sai abaixo, via planScreenShareAudio.
+            audioFailure = audioErr;
           }
         }
-        const capture = await captureNativeScreenShare({
-          width,
-          height,
-          fps,
-          withAudio: includeAudio && !desktopAudio,
-        });
+        const capture = await captureNativeScreenShare({ width, height, fps });
         screenStream = capture.stream;
         const desktopTrack = desktopAudio?.stream.getAudioTracks()[0];
         if (desktopTrack) {
           screenStream.addTrack(desktopTrack);
         }
-        if (includeAudio && !desktopTrack && !capture.hasSystemAudio) {
-          notify("Áudio indisponível para esta superfície; compartilhando apenas o vídeo.", "info");
+        if (planScreenShareAudio({ includeAudio, nativeAudioStarted: Boolean(desktopTrack) }).warnNoAudio) {
+          notify(
+            reportFailure("screenshare:audio", "Áudio do PC indisponível; transmitindo apenas o vídeo.", audioFailure),
+            "info",
+          );
         }
 
         screenStreamRef.current = screenStream;

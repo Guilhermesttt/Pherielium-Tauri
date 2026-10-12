@@ -117,22 +117,41 @@ export function isDisplayMediaCancelledError(error: unknown): boolean {
 
 export type NativeScreenCaptureResult = {
   stream: MediaStream;
-  hasSystemAudio: boolean;
   /** Full desktop / monitor surface, as reported by the capture track. */
   isMonitorShare: boolean;
 };
 
 /**
- * Opens exactly one native getDisplayMedia picker.
+ * Política de áudio da transmissão. O áudio do PC vem SEMPRE da captura nativa (loopback excluindo o Pherielium);
+ * o navegador nunca é fonte de áudio, porque seu "áudio do sistema" inclui a voz da chamada e voltaria como eco.
+ * `warnNoAudio` é verdadeiro quando o usuário queria áudio e a captura nativa não subiu: o app avisa UMA vez.
+ */
+export function planScreenShareAudio(input: { includeAudio: boolean; nativeAudioStarted: boolean }): {
+  requestBrowserAudio: false;
+  warnNoAudio: boolean;
+} {
+  return { requestBrowserAudio: false, warnNoAudio: input.includeAudio && !input.nativeAudioStarted };
+}
+
+/** Remove (e para) qualquer trilha de áudio que o navegador tenha entregue mesmo sem pedir. Devolve quantas descartou. */
+export function discardBrowserAudioTracks(stream: MediaStream): number {
+  const tracks = stream.getAudioTracks();
+  for (const track of tracks) {
+    stream.removeTrack(track);
+    track.stop();
+  }
+  return tracks.length;
+}
+
+/**
+ * Opens exactly one native getDisplayMedia picker (video only; see `planScreenShareAudio`).
  * Cancellation must not trigger a second picker or publish partial tracks.
  */
 export async function captureNativeScreenShare(options: {
   width: number;
   height: number;
   fps: number;
-  withAudio: boolean;
   getDisplayMedia?: typeof navigator.mediaDevices.getDisplayMedia;
-  supportedConstraints?: ScreenShareSupportedConstraints;
 }): Promise<NativeScreenCaptureResult> {
   const getDisplayMedia =
     options.getDisplayMedia ?? navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
@@ -140,24 +159,14 @@ export async function captureNativeScreenShare(options: {
     width: options.width,
     height: options.height,
     fps: options.fps,
-    withAudio: options.withAudio,
-    supportedConstraints: options.supportedConstraints,
+    withAudio: false,
   });
 
   const stream = await getDisplayMedia(request);
+  discardBrowserAudioTracks(stream);
   const videoTrack = stream.getVideoTracks()[0];
-  if (!videoTrack) {
-    return { stream, hasSystemAudio: false, isMonitorShare: false };
-  }
-
-  const isMonitorShare = videoTrack.getSettings().displaySurface === "monitor";
-  const hasSystemAudio = options.withAudio && stream.getAudioTracks().length > 0;
-
-  return {
-    stream,
-    hasSystemAudio,
-    isMonitorShare,
-  };
+  const isMonitorShare = videoTrack?.getSettings().displaySurface === "monitor";
+  return { stream, isMonitorShare };
 }
 
 export type ScreenSharePublishResult = {
