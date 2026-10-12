@@ -30,3 +30,10 @@ B1 (depois do P-1 a P-3) → D1 (ADR 0006) → F1 (depois do P-3 e P-10) → U (
 - **Proposta (não aplicada):** política de áudio tela x janela (`10-audio-janela-unica-proposta.md`).
 - **Registrado como regressão conhecida (flag ligada):** o notch deixa de mostrar o convite como ligação (ver `docs/invite-notifications.md`).
 - **Aguardando o dono:** P-10 refeito com o rc; consulta do print; item 7 (usuários simultâneos em 6 meses); schema, API, plano do Supabase, staging.
+
+## Fechamento para teste (2026-10-12): 1.0.3-rc.1
+- **Versão:** `1.0.3-rc.1` (package.json, tauri.conf.json, Cargo.toml e os lockfiles), commit `chore(release)`.
+- **Folha de testes:** `docs/TESTES-RC1.md` (a a g, com blocos para ligar e desligar as flags). **Notas:** `docs/RELEASE-NOTES-rc1.md`.
+- **Isolamento do notch:** o efeito do convite no mascote está só em `d94f8ad` (uma linha em `DesktopNotch.tsx`); reverter esse commit remove todos os efeitos.
+- **Pendente do dono:** roteiro (d) N-invite; P-1 a P-3 e P-10; as 3 linhas de `displaySurface`; consulta do print; item 7 (usuários simultâneos); schema, API, plano do Supabase e staging.
+- **Pendente de implementação (não iniciar sem OK):** reordenação da captura, B1, F1, I e R, A2, U, C, E.

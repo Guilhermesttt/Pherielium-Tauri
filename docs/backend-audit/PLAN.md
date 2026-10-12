@@ -715,3 +715,28 @@ A flag só vira padrão **depois** de o convite aparecer no notch e no overlay d
 
 ### 18.z. N-invite aprovada e implementada atrás da flag (2026-10-12)
 Convite pendente no notch e no overlay do jogo (front-only, `pherielium_invite_notifications`). **Continua pré-requisito para ligar a flag por padrão**: a flag só vira padrão depois de o dono validar o roteiro de `docs/invite-notifications.md` (seção N-invite) e o critério de `docs/backend-audit/11-notch-overlay-convite-desenho.md`. Plano B (notificação nativa) avaliado: o plugin não devolve clique.
+
+## 19. Status das fatias no fechamento para teste (2026-10-12, 1.0.3-rc.1)
+
+| Fatia | Status | Observação |
+| --- | --- | --- |
+| Higiene (`.env.example`, `npm audit fix`, baselines, docs) | **feita** | ESLint 383 (comando em `docs/tech-debt/eslint-baseline.md`), clippy 18 |
+| B0 (diagnóstico de presença) | **feita**, atrás de `presence_debug` | resultados P-1 a P-3 pendentes |
+| A1 (protocolo `pv`, DM sem texto no canal público, barramento global só escuta, filtros em `log`) | **feita** | `enforce` depende do `pherieliumGuardReport()` |
+| D1 (3 tentativas, sem P2P silencioso, convite em paralelo) | **feita** | teste de bloqueio do token: TESTES-RC1 (e) |
+| F0 / F-áudio (captura do áudio do PC) | **feita** | P-10 refeito pendente |
+| getDisplayMedia sem áudio do navegador + texto da caixa | **feita** | |
+| Diagnóstico `displaySurface` | **feita**, atrás de `stream_debug` | medição pendente (3 linhas); reordenar a captura só depois |
+| V (diagnóstico) e V-fix | **feitas** | aceite V-1 a V-7 pendente |
+| I0 (convite como notificação, local) | **feita**, atrás de `invite_notifications` (desligada) | |
+| N-invite (notch e overlay do jogo) | **feita**, atrás da mesma flag | notch em commit isolado `d94f8ad`; **pré-requisito para ligar a flag por padrão**: roteiro validado pelo dono |
+| `drivers:fetch` com assinatura Authenticode | **feita** | |
+| Procedimento rc, folha de testes, notas | **feitos** | `docs/release-rc.md`, `docs/TESTES-RC1.md`, `docs/RELEASE-NOTES-rc1.md` |
+| B1 (mitigações de presença) | pendente | depende de P-1 a P-3 |
+| F1 (excluir só a árvore do WebView2) | condicional | só se o P-10 refeito mostrar silêncio para jogo lançado pelo hub |
+| Reordenação da captura por superfície | aguardando medição | `docs/backend-audit/10-audio-janela-unica-proposta.md` |
+| I (autoritativa) e R | **bloqueadas** | schema (consultas 01, 02, 03, 05, 06, 07, 08), código da API, plano do Supabase, staging |
+| A2 (Realtime privado) | backlog | ADR-0001 |
+| U (updater, ADR 0010) | backlog | |
+| C (detecção ambiente), E (DM offline), B2/B3 | backlog | |
+| Notificação nativa do Windows | avaliada, não implementada | o plugin não devolve clique |

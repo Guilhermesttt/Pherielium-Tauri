@@ -82,6 +82,21 @@ O notch deriva `incomingInvite` de `hubInvite`. Com um convite pendente, as mesm
 5. `ringing` do mascote verdadeiro (`:1197` e `:1231`; o `MascotView` usa para a animação de "tocando" e para não dançar), e o mascote não "espia" na borda enquanto há convite (`:1031`).
 Com a flag desligada, nenhum desses efeitos ocorre (`pendingInvite` é sempre `null`).
 
+**Linhas exatas em `src/components/notch/DesktopNotch.tsx`** (o que muda é só a linha 939-940; as demais passam a reagir porque leem `incomingInvite`):
+
+| Linha | O que lê o convite |
+| --- | --- |
+| 939-940 | **a única edição**: `hubInvite` passa a incluir `voiceCall.pendingInvite` |
+| 954 | `busy` do humor da situação |
+| 960 | humor `excited` |
+| 978 | `moodHasOwnSound` (a "voz" da Pherie não toca) |
+| 1009 | `incomingCall` da atividade ao vivo (largura da barra) |
+| 1023 | `revealNotch()` (aparece sozinho) |
+| 1033 | o mascote não "espia" enquanto há convite |
+| 1199, 1233 | `ringing` do mascote |
+
+**Isolamento:** essa edição está **sozinha** no commit `d94f8ad` (`feat(notch): show the pending invite in the notch`). `git revert d94f8ad` remove todos os efeitos no mascote e o resto da N-invite (toast e overlay) continua funcionando. O restante da N-invite está em `97cd417`.
+
 ### Roteiro de teste: hub oculto, jogo em tela cheia
 Receptor com o rc, flag ligada (`localStorage.setItem("pherielium_invite_notifications","1")`, reiniciar), jogo em tela cheia, hub minimizado ou atrás do jogo. O remetente pode ser o 1.0.2.
 1. **Chega:** remetente convida (canal ou 1:1). Esperado: cartão/barra de chamada no overlay do jogo, **um único som**, sem toque; nada de modal.
@@ -94,12 +109,32 @@ Receptor com o rc, flag ligada (`localStorage.setItem("pherielium_invite_notific
 8. **Hub visível, sem jogo:** o mesmo vale; o toast fica mudo e o aviso vem do overlay (um som só).
 9. **Flag desligada:** o fluxo antigo (toque, modal, 35 s) é idêntico ao da 1.0.2 (regressão).
 
+**Em todos os passos, registre: "o convite chegou mudo?" (sim/não) e quantos sons ouviu (esperado: 1).** Com o overlay disponível o toast do hub é mudo de propósito; se o overlay não exibir, o convite chega mudo.
+
 ### Plano B: notificação nativa do Windows (somente avaliação)
 - `tauri-plugin-notification` 2.4.0 está registrado e com permissão, e `@tauri-apps/plugin-notification` já está instalado: **não precisa de dependência nova**.
 - **Devolve clique? Não.** [VERIFICADO na fonte do plugin, `src/desktop.rs` do crate 2.4.0 no cache do cargo: o desktop chama `notification.show()` dentro de `spawn` e descarta o resultado; não há `on_activated` nem `wait_for_action`, e não existe ouvinte de clique em JS no desktop.] A biblioteca de baixo (`tauri-winrt-notification` 0.7.3) tem `on_activated`, mas o plugin não a usa.
 - Detalhe: o `app_id` só é definido no app instalado; em `target/debug|release` o toast aparece com a identidade do PowerShell.
 - **Não foi testado rodando** (exige sessão gráfica interativa). [INFERIDO] Jogos em tela cheia exclusiva e o Assistente de Foco do Windows podem suprimir o toast, então ele não substitui o overlay.
 - Conclusão: serviria só como aviso ("abra o Pherielium"); sem ação de aceitar. Para clique seria preciso código nativo próprio (Rust com `on_activated`), o que é uma fatia nova. **Não implementado.**
+
+### Chamadores de `answerCall()` / `rejectCall()` sem argumento, e prova de que a flag desligada não muda nada
+Chamadores sem argumento (busca em `src/`, fora dos testes):
+
+| Arquivo | Uso |
+| --- | --- |
+| `DesktopNotch.tsx:1253-1254` | barra de atender/recusar (notch compacto) |
+| `DesktopNotch.tsx:1615, 1623` | atender/recusar no painel expandido |
+| `VoiceCallContext.tsx:301-302` | `IncomingCallModal` (`onAccept` / `onReject`; o modal os chama sem argumentos, `IncomingCallModal.tsx:119,124`) |
+| `Home.tsx:2967, 2976` | ação `voice-accept` / `voice-reject` do overlay **sem id de convite** (caminho antigo) |
+
+Com argumento: `acceptPendingInviteRef` chama `answerCall(entry.invite)` (`useVoiceCall.ts`), e o overlay chama `acceptPendingInvite(chave)` / `dismissPendingInvite(chave)`.
+
+**Prova por teste** (`src/services/voiceCall/inviteSurfaces.test.ts`, bloco "flag OFF keeps the previous behavior"): a decisão foi extraída para funções puras usadas pelo hook.
+- `inviteHandling({ flagOn: false, callState })` é `"legacy"` em **todos** os estados, então o ramo que cria convites pendentes nunca roda e `pendingCount` é sempre 0.
+- `resolveAnswerSource` / `resolveRejectSource` com `pendingCount = 0` devolvem exatamente o que o código anterior fazia (`override || incoming || nada` e `incoming || nada`).
+- Convites pendentes só são usados quando nada está tocando.
+O teste cobre as regras de decisão; o hook em si não tem teste de componente.
 
 ## Fora do escopo do I0
 Validação no servidor, RPCs, senha, o 1:1 como canal efêmero, remoção do ciclo antigo (ADR 0009), notch/overlay.
