@@ -324,7 +324,7 @@ Este capítulo **tem precedência** sobre os §5 a §7 quando houver conflito. *
   **Contador e relatório:** contagem por tipo de evento e por motivo, em memória e `localStorage`; comando de console que imprime um bloco de texto para colar (sem payloads nem UIDs completos: só os 4 primeiros caracteres).
 - **D1 (substitui o fim da assimetria do §5):** `connectLiveKitRoom` com **até 3 tentativas e backoff** (1 s, 2 s, 4 s) antes de desistir; se todas falharem: encerrar a chamada, avisar os dois lados com mensagem clara e **registrar o motivo** (`livekit_unavailable`, `token_unauthorized`, `token_timeout`, `network`). O ramo P2P (`createPeerConnectionForPeer`, `PeerAudioNode`) fica **atrás de `pherielium_p2p_fallback` (padrão desligada)**; só liga manualmente. ADR `0006`.
 - **C (substitui a detecção por nome do §6):** ordem de confiança e denylist do item 5 acima; campo `confidence: "high" | "medium" | "low"` no evento; `low` nunca vira "jogando X".
-- **Updater (novo, pré-requisito de A2):** fatia **U**: plugin do Tauri ativo, chave pública no `tauri.conf.json`, endpoints em GitHub Releases, assinatura no CI ou local, documentação de geração e guarda da chave privada. O primeiro build com updater é instalação manual. ADR `0007`. Esforço: 3 a 4 dias.
+- **Updater (novo, pré-requisito de A2):** fatia **U**: plugin do Tauri ativo, chave pública no `tauri.conf.json`, endpoints em GitHub Releases, assinatura no CI ou local, documentação de geração e guarda da chave privada. O primeiro build com updater é instalação manual. ADR `0010` (reservada; antes chamada 0007, ver `docs/decisions/README.md`). Esforço: 3 a 4 dias.
 
 ### 15.3. Corte do v1: dois cenários (ajuste a)
 Efeito documentado (Supabase, [Realtime Settings](https://supabase.com/docs/guides/realtime/settings)): ao desligar **"Allow public access"**, "every join is checked against the Row Level Security policies on `realtime.messages`" e os clientes que **não** usam `config.private = true` são recusados com `PrivateOnly`; com **nenhuma policy**, os clientes conectam mas **não recebem mensagens**; e **qualquer mudança nessa tela desconecta todos os clientes conectados**. Para o app antigo isso significa: sem presença instantânea, sem fast-path de DM, sem convite nem sinalização de chamada e sem canal de sala; o que usa REST/Postgres continua funcionando.
@@ -702,3 +702,10 @@ Issue registrado em `docs/tech-debt/issue-drafts.md` (item 4): boost real no Liv
 
 ### 18.6. Insumos e dependências
 As 7 consultas indispensáveis (01, 02, 03, 05, 06, 07, 08), o código da API (agora também para o requisito do token), o plano do Supabase, o staging (e, se possível, um segundo projeto para ensaiar a migração do `has_password`).
+
+
+### 18.x. Decisões confirmadas em 2026-10-12 (respostas do dono)
+- **Semântica da senha: opção A.** A senha só é pedida na **primeira entrada**; depois a pessoa é membro salvo. O dono controla a expulsão (e a troca de senha não expulsa quem já é membro).
+- **I inclui o 1:1 depois dos canais:** o "ligar para um amigo" vira canal efêmero de 2 pessoas e **substitui a ADR-0004** (ver `docs/decisions/README.md`).
+- **I0 aprovada** com a flag `pherielium_invite_notifications` desligada na primeira release (guia: `docs/invite-notifications.md`).
+- **I (autoritativa) e R continuam bloqueadas** pelo schema (consultas 01, 02, 03, 05, 06, 07, 08) e pelo código da API.
