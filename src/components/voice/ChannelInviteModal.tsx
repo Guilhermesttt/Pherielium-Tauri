@@ -4,6 +4,7 @@ import { Search, UserPlus, Check, X, Users, Radio, Send } from "lucide-react";
 import type { SocialFriend, UserProfile, VoiceCallSession } from "../../types/domain";
 import { sendChatMessage } from "../../services/chat";
 import { sendCallInvite } from "../../services/voiceCall";
+import { APP_PROTOCOL_VERSION } from "../../lib/protocolVersion";
 import { callCapacityMessage, canAcceptNewParticipant } from "../../services/voiceCall/limits";
 
 interface ChannelInviteModalProps {
@@ -65,6 +66,7 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
         chatId: session.chatId,
         hasVideo: false,
         timestamp: Date.now(),
+        pv: APP_PROTOCOL_VERSION,
       }).catch(() => {});
 
       // 2. Send structured chat message for interactive invite card in DM

@@ -3,6 +3,7 @@ import { getOrCreateChannel } from "./voiceCall/channelLifecycle";
 import type { ChatMessage } from "../types/domain";
 import type { CallEndPayload, CallInvitePayload } from "./voiceCall/types";
 import { presenceDebugLog, shortUid } from "./presenceDebug";
+import { recordPeerProtocol } from "./peerProtocol";
 
 export type UserPresenceStatus = "online" | "playing" | "streaming" | "in_call" | "idle" | "dnd" | "offline";
 
@@ -13,6 +14,10 @@ export interface PresencePayload {
   status: UserPresenceStatus;
   playing?: string | null;
   updatedAt: number;
+  /** Versão do protocolo do remetente (ausente = protocolo 1, app antigo). Ver src/lib/protocolVersion.ts. */
+  pv?: number;
+  /** Versão do app do remetente (só informativo). */
+  av?: string;
 }
 
 export interface U2UEventHandlers {
@@ -84,6 +89,8 @@ const deliverPresenceStatusUpdate = (presence: PresencePayload, source: Presence
     skewMs: typeof presence?.updatedAt === "number" ? Date.now() - presence.updatedAt : null,
   });
   if (!accepted) return;
+  // O app novo anuncia `pv`; é assim que se descobre, por par, quem aceita DM sem texto no fast-path.
+  recordPeerProtocol(presence.uid, presence.pv);
   cancelPendingLeave(presence.uid);
   globalEventHandlers.forEach((h) => h.onStatusUpdate?.(presence));
 };

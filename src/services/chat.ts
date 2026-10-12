@@ -2,6 +2,15 @@ import { supabase } from "./supabase";
 import type { ChatMessage } from "../types/domain";
 import { apiFetch, getUsableSession } from "./api";
 import { sendFastReadReceipt, sendFastU2UMessage, subscribeToGlobalEventBus } from "./realtimeEventBus";
+import { getPeerProtocol, isDmPingOnlyEnabled, shouldUseTextFastPath } from "./peerProtocol";
+
+/**
+ * O broadcast do fast-path leva o texto da mensagem num canal público. Para um amigo que já é protocolo >= 2
+ * ele recebe pelo Postgres Changes (INSERT e UPDATE de `chat_messages`, protegidos por RLS), então o broadcast
+ * com texto é pulado. Amigo v1 ou desconhecido continua recebendo o payload completo (o app antigo precisa dele).
+ */
+const mayBroadcastMessageText = (peerUid: string): boolean =>
+  shouldUseTextFastPath(getPeerProtocol(peerUid), isDmPingOnlyEnabled());
 
 const HISTORY_LIMIT = 50;
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
@@ -365,7 +374,9 @@ export const sendChatMessage = async (
     mentions: options?.mentions,
   };
 
-  void sendFastU2UMessage(receiverId, fastMsg);
+  if (mayBroadcastMessageText(receiverId)) {
+    void sendFastU2UMessage(receiverId, fastMsg);
+  }
 
   const newMsg = {
     chat_id: chatId,
@@ -421,7 +432,7 @@ export const sendChatMessage = async (
 };
 
 const broadcastMessageUpdate = async (message: ChatMessage) => {
-  if (message.receiverId) {
+  if (message.receiverId && mayBroadcastMessageText(message.receiverId)) {
     // `isUpdate` impede que o destinatario trate o patch como mensagem nova
     // quando ele nao tem a original carregada (fora do HISTORY_LIMIT).
     void sendFastU2UMessage(message.receiverId, { ...message, isUpdate: true });

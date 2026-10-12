@@ -26,6 +26,8 @@ export interface CallInvitePayload {
   hasVideo?: boolean;
   timestamp: number;
   category?: RoomCategory;
+  /** Versão do protocolo de quem convida (ausente = protocolo 1). */
+  pv?: number;
 }
 
 export interface CallKickPayload {

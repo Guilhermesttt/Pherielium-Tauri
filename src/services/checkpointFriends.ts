@@ -6,6 +6,7 @@ import { apiFetch, apiUrl, getUsableSession } from "./api";
 import { broadcastPresenceStatus, getPresenceAudienceUids } from "./realtimeEventBus";
 import { fetchSteamLibrary } from "./steam";
 import { presenceDebugLog, shortUid } from "./presenceDebug";
+import { getAppVersionCached, peekAppVersion, protocolFields } from "../lib/protocolVersion";
 import { parsePresenceUpdatedAt } from "./presenceOrdering";
 
 const friendAudienceForBroadcast = (): string[] | undefined => {
@@ -131,6 +132,7 @@ export const updateCheckpointPresence = async (
     status,
     playing: currentGameTitle || null,
     updatedAt: Date.now(),
+    ...protocolFields(await getAppVersionCached()),
   }, friendAudienceForBroadcast()).catch(() => {});
 
   let response: Response;
@@ -177,6 +179,7 @@ export const markCheckpointOfflineSync = (
       status: "offline" as const,
       playing: null,
       updatedAt: Date.now(),
+      ...protocolFields(peekAppVersion()),
     };
 
     // 1. Notificação instantânea via WebSocket para amigos conectados
@@ -236,6 +239,7 @@ export const markCheckpointOfflineAsync = async (
     status: "offline" as const,
     playing: null,
     updatedAt: Date.now(),
+    ...protocolFields(peekAppVersion()),
   };
 
   const token = cachedAccessToken;

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { streamDebugLog } from "@/services/voiceCall/streamDebug";
+import { APP_PROTOCOL_VERSION } from "@/lib/protocolVersion";
 import { startStreamDiagnostics } from "@/services/voiceCall/streamDiagnostics";
 import {
   effectivePercent,
@@ -3115,6 +3116,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           chatId,
           hasVideo: actualWithVideo,
           timestamp: Date.now(),
+          pv: APP_PROTOCOL_VERSION,
         });
 
         // Notifica a sala caso o participante já esteja nela aguardando
