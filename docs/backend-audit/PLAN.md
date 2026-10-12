@@ -648,3 +648,57 @@ Total aproximado de I+R: **25 a 35 dias** de um desenvolvedor, **±50%** até o 
 4. O resultado da consulta do print (17.3.2) e o **print**, se quiser que eu feche a causa dos dois cards como `[VERIFICADO]`.
 5. **Schema** (as 7 consultas indispensáveis), **repositório da API**, plano do Supabase e **staging**.
 6. OK para a **V-fix**.
+
+## 18. Aprovações e acréscimos (2026-10-12, segunda rodada)
+
+**Este capítulo complementa o §17.** I e R continuam **BLOQUEADOS** até o schema e o código da API.
+
+### 18.1. Estado das fatias
+| Fatia | Estado |
+| --- | --- |
+| F-áudio | aceita; falta o **P-10** (depois da V-fix). Constraints do `getDisplayMedia` reportadas em `08-f0-audio-ativacao.md` (seção final); correção **proposta, não aplicada** |
+| **V-fix** | **FEITA** (esta rodada): invariante "`<video>` de mídia LiveKit sempre mutado", câmera/voz em dobro, `setSinkId`, testes |
+| **I0** | **escopo mínimo e riscos propostos em 18.4**; implementação só depois do seu OK |
+| I (canais), depois I para o 1:1 | planejadas (§17); o 1:1 como canal efêmero de 2 pessoas entra **depois** dos canais e **substitui a ADR-0004** |
+| R | planejada (§17); bloqueada |
+| Backlog | A2, B1, B2/B3, C, U, E, drivers |
+
+### 18.2. Requisitos de segurança acrescentados (valem para I e R e para o código da API)
+1. **O token do LiveKit só pode ser emitido a quem passou na RPC de entrada** (ou o endpoint chama uma RPC de autorização). Hoje o `livekit-token` recebe `roomName` e `identity` do cliente (`livekitVoice.ts:50-67`); se o servidor só validar o formato, **basta saber o nome da sala para entrar na mídia sem senha**. Requisito para o código da API: (a) a identidade vem do JWT, nunca do corpo; (b) o token só sai se `voice_channel_authorize_media(room_id)` (RPC `SECURITY DEFINER`, usa `auth.uid()`) confirmar presença ativa e não expulso, e capacidade; (c) TTL curto; (d) a sala 1:1 exige amizade. A ADR-0005 (token em Edge Function) fica no backlog e reforça isto. **Marcado `[INFERIDO]` até eu ler a API.**
+2. **A mensagem de convite NUNCA contém senha nem hash**, nem de forma indireta (o texto só leva `inviteId`, nome, categoria e `createdAt`; o selo "Privada" é só informativo).
+3. **RPCs `SECURITY DEFINER` com `set search_path` fixo** (`public, pg_temp`, nomes qualificados) e **`auth.uid()` como única identidade**: nenhum parâmetro de usuário (`p_user_id`) é confiado, exceto como alvo validado (convidado, expulso). `revoke all ... from public, anon` e `grant execute ... to authenticated` em cada função.
+4. **Limite de tentativas de senha por usuário E por canal**, com tamanho mínimo da senha (≥ 8 caracteres) e validação **no servidor** (comprimento, caracteres, tamanho máximo para o bcrypt: 72 bytes). Duas contagens: (usuário, canal) e (canal, todos os usuários) para barrar ataque distribuído por contas; ambas travam temporariamente e registram o evento.
+5. **Migração do `has_password`** em expand/contract com **backup** (`pg_dump` das tabelas afetadas antes), **ensaio no staging** (se o plano do Supabase permitir um segundo projeto; senão, ensaio em cópia restaurada do backup) e **script de volta testado** (recria a coluna gerada a partir de `password_hash`). Só então o contract (`drop column password_hash`).
+6. **O card consulta o estado no servidor** (`voice_invite_get`) com o **`server_now` da RPC**; o cliente nunca decide validade.
+7. O resultado da consulta do print continua pendente (você roda). **O selo diferente não decide entre duplicação e dois convites**: o mesmo convite chegando por dois caminhos (fast-path e Postgres Changes) pode ter payloads diferentes (o `fast_` otimista é montado no cliente; o INSERT vem do banco). A prova correta é comparar **ids e `created_at`** das linhas em `chat_messages`, não o selo.
+
+### 18.3. Semântica da senha: pendente
+O modelo da mensagem trouxe `<<A: só na primeira entrada / B: em toda entrada>>` **sem escolha**. Padrão do plano (A, o que você aprovou antes): senha **só na primeira entrada válida**. Se for **B**, mudam: (i) `voice_channel_join` confere a senha em **toda** entrada de canal com senha, inclusive de membro salvo; (ii) o canal salvo guarda a associação mas **não** dispensa a senha; (iii) o limite de tentativas pesa mais (todo reingresso é uma tentativa); (iv) "trocar a senha" passa a bloquear quem não a souber, sem precisar expulsar. **Preciso da escolha antes de implementar R.**
+
+### 18.4. I0: escopo mínimo e riscos (proposta; nada implementado)
+**Objetivo:** o aviso de convite (o broadcast do 1.0.2 e os novos) deixa de abrir o modal de atender e vira **notificação** "[nome] está te convidando para uma call" **mais o card no chat**, **atrás de flag** (`pherielium_invite_notifications`, padrão desligada na primeira release). A expiração é provisória: `created_at + 15 min` no cliente, **não autoritativa**; clicar vencido mostra "convite inválido ou expirado".
+**Escopo mínimo (front-only):**
+1. Em `useVoiceCall` o `onInvite` (e o do inbox) com a flag ligada **não** faz `setCallState("ringing-in")`, nem toca o toque, nem arma o timer de 35 s: grava o convite numa lista local de convites pendentes (id = `chatId:callerId:timestamp`, dedupe por esse id) e dispara a notificação (`notify` + central de notificações, som de mensagem, **não** o toque).
+2. `answerCall` passa a aceitar o convite por parâmetro (`answerCall(invite)`), em vez de ler só `incomingInvite`; o "Entrar" do card e da notificação chama isso. O resto do `answerCall` (D1) não muda.
+3. O card (`CallInviteCard`) ganha o estado derivado `pendente/expirado/cancelado` calculado do `createdAt` do convite: `expirado` quando `now >= createdAt + 15 min`; o clique em vencido não entra e mostra "convite inválido ou expirado". Para o aviso 1:1 do app antigo (que **não** grava mensagem), o app novo **injeta um card local** (sem persistir) na conversa daquele amigo.
+4. `call:end` do mesmo `chatId` vindo do convidante marca o convite como `cancelado` (não autoritativo).
+5. Função pura `inviteState({ createdAtMs, nowMs, ttlMs, cancelled })` e um reducer puro da lista de convites, ambos com testes (limite exato, relógio adiantado/atrasado, dedupe, cancelamento).
+**Fora do escopo do I0:** validação no servidor, RPCs, expiração autoritativa, remoção do ciclo antigo (ADR-0009), o 1:1 como canal efêmero, o notch.
+**Riscos e como mitigar:**
+| Risco | Mitigação |
+| --- | --- |
+| **Chamadas perdidas**: sem modal nem toque, o 1:1 de um amigo no 1.0.2 pode passar despercebido (ele espera 35 s) | notificação persistente com som de mensagem e botão "Entrar"; o card fica na conversa; opcional: manter o toque só para 1:1 de par v1 (decisão sua) |
+| **O notch deixa de mostrar o convite** (`DesktopNotch.tsx:938` depende de `ringing-in`) | efeito colateral real; você pediu para não mexer no notch; documentar. Se incomodar, o notch pode escutar a lista de convites pendentes numa fatia sua |
+| **`answerCall` é o código mais sensível** (D1: mídia em paralelo, P2P por flag) | só trocar a origem do convite (parâmetro); testes de caracterização do fluxo antes |
+| **"Ocupado"**: hoje quem está em outra chamada responde `busy` sozinho (`useVoiceCall.ts:~3022`); sem modal, o chamador espera os 35 s e vê "não atendeu" | manter a resposta automática `busy` (sem abrir nada) quando já está em chamada |
+| **Duas notificações** (a mensagem nova do card e o aviso) para o mesmo convite | dedupe por `chatId` + janela de 10 s; uma só notificação com o texto do convite |
+| **Forja**: o aviso continua vindo de canal público | o filtro A1 de convite (só de amigo) segue valendo; a validação real vem com I |
+| **Card local some ao recarregar** (aviso 1:1 legado) | aceitável no provisório; o convite de canal tem a mensagem persistida |
+| **Expiração pelo relógio do cliente** | provisória e documentada; a decisão autoritativa vem com I (`server_now`) |
+**Esforço:** 2 a 3 dias. **Reverter:** desligar a flag restaura o modal atual (o código antigo não é apagado).
+
+### 18.5. Boost acima de 100% (fora da V-fix)
+Issue registrado em `docs/tech-debt/issue-drafts.md` (item 4): boost real no LiveKit com `RemoteAudioTrack.setVolume` + Web Audio ou um `GainNode` próprio **com limitador** (como o `PeerAudioNode`). **Nota:** o slider de **voz** promete 200% e, no LiveKit, nada muda além de 100% (`el.volume` é limitado a 1,0); a transmissão já está limitada a 100% no slider.
+
+### 18.6. Insumos e dependências
+As 7 consultas indispensáveis (01, 02, 03, 05, 06, 07, 08), o código da API (agora também para o requisito do token), o plano do Supabase, o staging (e, se possível, um segundo projeto para ensaiar a migração do `has_password`).

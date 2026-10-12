@@ -68,3 +68,15 @@ O caminho antigo (`start_excluding_self`, `run_excluding_self`, `activate_exclud
 O medidor de nível do overlay (`win_loopback.rs`) também chamava `activate_excluding_self()` e **sempre** caía no loopback clássico; agora usa o loopback clássico direto (mesmo comportamento efetivo, sem o erro no log).
 Prova nesta máquina: `cargo test --lib open_exclude_self -- --ignored --nocapture` abre a captura nova e recebe áudio de outro processo (295 leituras, todas com dados, pico 0,35). Conversor f32→s16 coberto por testes unitários (`audio_capture/ipc.rs`).
 Falta o teste com 2 contas (P-10 refeito) e uma chamada com voz durante a transmissão, para confirmar que a voz não volta no stream.
+
+## Antes do P-10: o que o `getDisplayMedia` pede hoje (relatório) e correção proposta (NÃO aplicada)
+**Há um único ponto de chamada:** `captureNativeScreenShare` em `useVoiceCall.ts` (bloco de início da transmissão), que monta o pedido com `buildDisplayMediaRequest` (`services/voiceCall/screenShare.ts`).
+- **Com o áudio nativo ativo** (`desktopAudio` iniciou): o código chama `captureNativeScreenShare({ ..., withAudio: includeAudio && !desktopAudio })`, ou seja `withAudio: false`, e o pedido é `{ video, audio: false }`. **Nesse caso o espectador não recebe 2ª trilha do navegador.** [VERIFICADO: `useVoiceCall.ts` ~`:4245-4250`, `screenShare.ts:86-110`]
+- **Quando o áudio nativo FALHA** (o caso do `0x8000000E` antes da F-áudio, ou qualquer falha futura): `withAudio` vira `includeAudio` = `true`, e o pedido passa a ser `{ video, audio: { restrictOwnAudio: true (se suportado) }, systemAudio: "exclude", windowAudio: "window" }`. **Isso pede áudio ao navegador**, contra a política que você definiu (sem áudio nativo ⇒ só vídeo, com aviso). Em transmissão de janela o Chromium captura o áudio daquela janela; se a janela for do próprio Pherielium, ele pode incluir a voz da call apesar de `restrictOwnAudio`. Além disso o aviso mostrado em seguida ("Áudio indisponível para esta superfície") é enganoso, pois sugere que o áudio da superfície é a alternativa.
+
+**Correção proposta (não aplicada):**
+1. Chamar sempre `captureNativeScreenShare({ ..., withAudio: false })`. O único áudio da transmissão passa a ser o nativo.
+2. Descartar defensivamente qualquer trilha de áudio que o stream do `getDisplayMedia` traga (`stream.getAudioTracks().forEach((t) => { stream.removeTrack(t); t.stop(); })`) antes de anexar a trilha nativa.
+3. Quando `includeAudio` e o áudio nativo não iniciou: **só** o aviso claro já existente ("Áudio do PC indisponível; transmitindo apenas o vídeo.", com o motivo em desenvolvimento); remover o segundo aviso ("Áudio indisponível para esta superfície").
+4. Extrair a decisão para `planScreenShareAudio({ includeAudio, nativeAudioStarted })` (pura) com teste em tabela; `buildDisplayMediaRequest` mantém o parâmetro `withAudio` só para os testes existentes.
+Esforço: 0,5 dia. **Aguarda o seu OK.**
