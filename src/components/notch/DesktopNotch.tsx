@@ -935,7 +935,9 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   const isAchievement = notchEvent?.kind === "achievement";
 
   // Chamada recebendo (janela principal): o notch mostra quem liga com atender/recusar
-  const hubInvite = !overlayCall && voiceCall.callState === "ringing-in" ? voiceCall.incomingInvite : null;
+  // Convite pendente (flag de convite como notificação): vira a mesma barra de atender/recusar, sem toque. `pendingInvite` só existe ocioso.
+  const hubInvite =
+    !overlayCall && voiceCall.callState === "ringing-in" ? voiceCall.incomingInvite : !overlayCall ? voiceCall.pendingInvite : null;
   const incomingInvite = overlayIncomingCall
     ? { callerName: overlayIncomingCall.name, callerAvatar: overlayIncomingCall.avatar ?? null }
     : hubInvite;
