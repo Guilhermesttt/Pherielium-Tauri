@@ -5,6 +5,8 @@ import type { Game, UserProfile } from "../types/domain";
 import { apiFetch, apiUrl, getUsableSession } from "./api";
 import { broadcastPresenceStatus, getPresenceAudienceUids } from "./realtimeEventBus";
 import { fetchSteamLibrary } from "./steam";
+import { presenceDebugLog, shortUid } from "./presenceDebug";
+import { parsePresenceUpdatedAt } from "./presenceOrdering";
 
 const friendAudienceForBroadcast = (): string[] | undefined => {
   const uids = getPresenceAudienceUids();
@@ -101,11 +103,16 @@ export const updateCheckpointPresence = async (
   currentGameTitle?: string,
   customDisplayName?: string,
   customPhotoURL?: string | null,
+  /** Só para diagnóstico: o que disparou este envio (interval, initial, pref-event). */
+  trigger = "unknown",
 ) => {
   const session = await getUsableSession();
   if (!session?.user) {
+    presenceDebugLog("heartbeat_sent", { trigger, status, skipped: "sem sessão" });
     throw new Error("Sessao expirada. Entre novamente.");
   }
+  presenceDebugLog("heartbeat_sent", { trigger, status, playing: currentGameTitle ? "yes" : "no" });
+  const sentAt = Date.now();
 
   const displayName =
     customDisplayName ||
@@ -126,13 +133,25 @@ export const updateCheckpointPresence = async (
     updatedAt: Date.now(),
   }, friendAudienceForBroadcast()).catch(() => {});
 
-  const response = await apiFetch("/api/presence", {
-    method: "POST",
-    authenticated: true,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status, currentGameTitle }),
-  });
+  let response: Response;
+  try {
+    response = await apiFetch("/api/presence", {
+      method: "POST",
+      authenticated: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, currentGameTitle }),
+    });
+  } catch (error) {
+    presenceDebugLog("heartbeat_ack", { ok: false, ms: Date.now() - sentAt, error: String(error) });
+    throw error;
+  }
   const payload = (await response.json().catch(() => ({}))) as { error?: string };
+  presenceDebugLog("heartbeat_ack", {
+    ok: response.ok,
+    ms: Date.now() - sentAt,
+    httpStatus: response.status,
+    ...(response.ok ? {} : { error: payload.error ?? "sem mensagem" }),
+  });
   if (!response.ok) {
     throw new Error(payload.error || "Erro ao atualizar presenca.");
   }
@@ -146,7 +165,10 @@ export const markCheckpointOfflineSync = (
   uid: string,
   customDisplayName?: string,
   customPhotoURL?: string | null,
+  /** Só para diagnóstico: o evento que pediu o offline (pagehide, beforeunload...). */
+  origin = "unknown",
 ) => {
+  presenceDebugLog("offline_trigger", { origin, mode: "sync" });
   try {
     const presencePayload = {
       uid,
@@ -203,7 +225,10 @@ export const markCheckpointOfflineAsync = async (
   uid: string,
   customDisplayName?: string,
   customPhotoURL?: string | null,
+  /** Só para diagnóstico: o evento que pediu o offline. */
+  origin = "unknown",
 ) => {
+  presenceDebugLog("offline_trigger", { origin, mode: "async" });
   const presencePayload = {
     uid,
     displayName: customDisplayName || "Jogador",
@@ -243,6 +268,18 @@ export const getCheckpointFriendStatuses = async (): Promise<UserProfile[]> => {
   if (!response.ok) {
     throw new Error(payload.error || "Erro ao consultar presenca dos amigos.");
   }
+  presenceDebugLog("friend_poll", {
+    count: payload.friends?.length ?? 0,
+    // idade do dado segundo o servidor: se passar de ~90 s o amigo aparece como offline
+    friends: (payload.friends ?? []).slice(0, 20).map((f) => ({
+      uid: shortUid(f.uid),
+      status: f.status,
+      ageSec:
+        typeof f.updatedAt === "number" || typeof f.updatedAt === "string"
+          ? Math.round((Date.now() - parsePresenceUpdatedAt(f.updatedAt)) / 1000)
+          : null,
+    })),
+  });
   return payload.friends ?? [];
 };
 

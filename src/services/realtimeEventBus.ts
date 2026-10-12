@@ -2,6 +2,7 @@ import { supabase } from "./supabase";
 import { getOrCreateChannel } from "./voiceCall/channelLifecycle";
 import type { ChatMessage } from "../types/domain";
 import type { CallEndPayload, CallInvitePayload } from "./voiceCall/types";
+import { presenceDebugLog, shortUid } from "./presenceDebug";
 
 export type UserPresenceStatus = "online" | "playing" | "streaming" | "in_call" | "idle" | "dnd" | "offline";
 
@@ -68,8 +69,21 @@ export const isPresenceAudienceMember = (uid: string): boolean => {
 /** Snapshot of the current friend audience UIDs (for optional send-side fan-out). */
 export const getPresenceAudienceUids = (): string[] => Array.from(presenceAudienceUids);
 
-const deliverPresenceStatusUpdate = (presence: PresencePayload) => {
-  if (!presence?.uid || !isPresenceAudienceMember(presence.uid)) return;
+/** De onde veio a atualização de presença (só para diagnóstico; não altera o comportamento). */
+type PresenceSource = "inbox" | "bus-broadcast" | "presence-sync" | "presence-join" | "presence-leave";
+
+const deliverPresenceStatusUpdate = (presence: PresencePayload, source: PresenceSource) => {
+  const accepted = Boolean(presence?.uid) && isPresenceAudienceMember(presence.uid);
+  presenceDebugLog("presence_received", {
+    source,
+    uid: shortUid(presence?.uid),
+    status: presence?.status,
+    playing: presence?.playing ? "yes" : "no",
+    accepted,
+    // diferença entre o relógio do remetente e o deste cliente; o plano avalia trocar por relógio do servidor
+    skewMs: typeof presence?.updatedAt === "number" ? Date.now() - presence.updatedAt : null,
+  });
+  if (!accepted) return;
   cancelPendingLeave(presence.uid);
   globalEventHandlers.forEach((h) => h.onStatusUpdate?.(presence));
 };
@@ -245,7 +259,7 @@ export const subscribeToGlobalEventBus = (
       })
       .on("broadcast", { event: "u2u:status" }, (e: any) => {
         if (e.payload && typeof e.payload === "object") {
-          deliverPresenceStatusUpdate(e.payload as PresencePayload);
+          deliverPresenceStatusUpdate(e.payload as PresencePayload, "inbox");
         }
       })
       .on("broadcast", { event: "u2u:typing" }, (e: any) => {
@@ -306,10 +320,12 @@ export const subscribeToGlobalEventBus = (
       },
     });
 
+    presenceDebugLog("presence_key", { key: shortUid(myUid), channel: "checkpoint_presence_bus" });
+
     presenceChannel
       .on("broadcast", { event: "presence:status_update" }, (e: any) => {
         if (e.payload && typeof e.payload === "object") {
-          deliverPresenceStatusUpdate(e.payload as PresencePayload);
+          deliverPresenceStatusUpdate(e.payload as PresencePayload, "bus-broadcast");
         }
       })
       .on("presence", { event: "sync" }, () => {
@@ -318,7 +334,7 @@ export const subscribeToGlobalEventBus = (
           if (Array.isArray(presences)) {
             presences.forEach((p: any) => {
               if (p.presence && p.presence.uid) {
-                deliverPresenceStatusUpdate(p.presence);
+                deliverPresenceStatusUpdate(p.presence, "presence-sync");
               }
             });
           }
@@ -328,12 +344,18 @@ export const subscribeToGlobalEventBus = (
         if (Array.isArray(newPresences)) {
           newPresences.forEach((p: any) => {
             if (p.presence && p.presence.uid) {
-              deliverPresenceStatusUpdate(p.presence);
+              deliverPresenceStatusUpdate(p.presence, "presence-join");
             }
           });
         }
       })
       .on("presence", { event: "leave" }, ({ key, leftPresences }: any) => {
+        // Diagnóstico: o `leave` abaixo vira OFFLINE imediato para quem assiste. Registra a chave e quantas
+        // presenças saíram, para separar "saiu de verdade" de "uma de duas instâncias da mesma conta saiu".
+        presenceDebugLog("presence_leave_raw", {
+          key: shortUid(key),
+          leftCount: Array.isArray(leftPresences) ? leftPresences.length : 0,
+        });
         const presences = Array.isArray(leftPresences) && leftPresences.length > 0 ? leftPresences : [{}];
         presences.forEach((p: any) => {
           const uid = p?.presence?.uid || p?.uid || (key && key !== "guest" ? key : null);
@@ -346,14 +368,18 @@ export const subscribeToGlobalEventBus = (
               status: "offline",
               playing: null,
               updatedAt: Date.now(),
-            });
+            }, "presence-leave");
           }
         });
       });
 
     try {
-      presenceChannel.subscribe();
-    } catch { }
+      presenceChannel.subscribe((status: string) => {
+        presenceDebugLog("presence_channel_status", { status });
+      });
+    } catch (error) {
+      console.warn("[realtimeEventBus] subscribe do canal de presença falhou:", error);
+    }
   }
 
   const unsubscribe = () => {
@@ -398,9 +424,20 @@ export const broadcastPresenceStatus = async (
           },
         },
       });
+      // Diagnóstico: este canal foi criado AQUI, sem os ouvintes de join/leave/sync (que só são ligados em
+      // subscribeToGlobalEventBus e somente quando `presenceChannel` ainda é nulo).
+      presenceDebugLog("presence_key", {
+        key: shortUid(presence.uid),
+        channel: "checkpoint_presence_bus",
+        createdWithoutListeners: true,
+      });
       try {
-        presenceChannel.subscribe((s: string) => { });
-      } catch { }
+        presenceChannel.subscribe((status: string) => {
+          presenceDebugLog("presence_channel_status", { status, createdBy: "broadcastPresenceStatus" });
+        });
+      } catch (error) {
+        console.warn("[realtimeEventBus] subscribe do canal de presença falhou:", error);
+      }
     }
 
     const audience =
@@ -408,6 +445,12 @@ export const broadcastPresenceStatus = async (
         ? friendUids.map((uid) => String(uid || "").trim()).filter(Boolean)
         : Array.from(presenceAudienceUids);
     const hasAudience = friendUids !== undefined || presenceAudienceUids.size > 0;
+    presenceDebugLog("presence_broadcast", {
+      status: presence.status,
+      audience: audience.length,
+      hasAudience,
+      action: presence.status === "offline" ? "untrack" : "track",
+    });
 
     // 1. Fan-out to each friend's personal inbox (capped concurrency)
     if (audience.length > 0) {
@@ -439,6 +482,7 @@ export const broadcastPresenceStatus = async (
       });
     }
   } catch (err) {
+    presenceDebugLog("presence_broadcast", { status: presence.status, failed: String(err) });
     console.warn("[realtimeEventBus] broadcastPresenceStatus error:", err);
   }
 };

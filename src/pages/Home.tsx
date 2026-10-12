@@ -130,6 +130,8 @@ import {
   subscribeToFriendTyping,
 } from "../services/chat";
 import { isManualDnd, PRESENCE_PREF_EVENT } from "../services/presenceStatus";
+import { installPresenceDebugListeners, presenceDebugLog } from "../services/presenceDebug";
+import { getVersion as getAppVersion } from "@tauri-apps/api/app";
 import type { SteamAchievement } from "../services/steam";
 import {
   invalidateSteamAchievementCache,
@@ -1283,7 +1285,15 @@ const Home: React.FC = () => {
   useEffect(() => {
     if (!user?.uid) return;
 
-    const heartbeat = () => {
+    // `trigger` e o registro abaixo são só diagnóstico (flag pherielium_presence_debug).
+    let lastTickAt = 0;
+    const heartbeat = (trigger = "interval") => {
+      const tickAt = Date.now();
+      presenceDebugLog("heartbeat_tick", {
+        trigger,
+        sinceLastTickMs: lastTickAt ? tickAt - lastTickAt : null,
+      });
+      lastTickAt = tickAt;
       const inCall = Boolean(
         voiceCall?.callState && voiceCall.callState !== "idle",
       );
@@ -1305,19 +1315,25 @@ const Home: React.FC = () => {
         currentPresenceGame || undefined,
         userProfile?.displayName || undefined,
         userProfile?.photoURL,
+        trigger,
       ).catch(() => undefined);
     };
 
-    heartbeat();
+    installPresenceDebugListeners({
+      appVersion: () => getAppVersion(),
+      uid: () => user.uid,
+    });
+    heartbeat("initial");
     // AuthProvider trata presença com mais de 75s como offline. Um heartbeat de
     // 60s deixava só 15s de folga: um POST lento ou perdido já jogava a pessoa
     // para offline (é o que aparecia ao entrar em chamada). 25s dá três
     // tentativas dentro da janela.
-    const interval = window.setInterval(heartbeat, 25_000);
-    window.addEventListener(PRESENCE_PREF_EVENT, heartbeat);
+    const interval = window.setInterval(() => heartbeat("interval"), 25_000);
+    const onPrefChanged = () => heartbeat("pref-event");
+    window.addEventListener(PRESENCE_PREF_EVENT, onPrefChanged);
     return () => {
       window.clearInterval(interval);
-      window.removeEventListener(PRESENCE_PREF_EVENT, heartbeat);
+      window.removeEventListener(PRESENCE_PREF_EVENT, onPrefChanged);
     };
   }, [
     currentPresenceGame,
@@ -1445,11 +1461,12 @@ const Home: React.FC = () => {
       });
     }
 
-    const markOffline = () => {
+    const markOffline = (event?: Event) => {
       markCheckpointOfflineSync(
         user.uid,
         userProfile?.displayName || undefined,
         userProfile?.photoURL,
+        event?.type ?? "unknown",
       );
     };
 
@@ -1463,6 +1480,7 @@ const Home: React.FC = () => {
             user.uid,
             userProfile?.displayName || undefined,
             userProfile?.photoURL,
+            "app-quitting",
           );
         } catch (error) {
           console.warn(
