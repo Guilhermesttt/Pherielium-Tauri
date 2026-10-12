@@ -22,8 +22,8 @@ Fatos que importam (conferidos no código):
 - **Só NSIS.** O MSI (WiX) não aceita sufixo `-rc.1` na versão; por isso o comando abaixo usa `--bundles nsis`.
 - O verificador de atualização (`src/services/githubUpdater.ts`, `parseSemver`) **ignora o sufixo**: `1.0.3-rc.1` conta como `1.0.3`.
   Consequência: quem instala o rc **não é avisado** da versão final `1.0.3`. Para o aviso aparecer, a final tem que ser `1.0.4` (ou reinstale à mão).
-- Publique no GitHub como **pre-release** e **não** como "latest". O app lê a lista de releases e pega a primeira que não seja rascunho (`githubUpdater.ts:~160`), então uma pre-release publicada pode ser oferecida a todos os usuários de 1.0.2.
-  Se for só para 2 pessoas, **não publique**: envie o `.exe` direto (o dono decide).
+- **Não publique o rc no GitHub.** O app lê a lista de releases e pega a primeira que não seja rascunho (`githubUpdater.ts:~160`), então até uma pre-release seria oferecida a todos os usuários de 1.0.2. **Envie o `.exe` direto** às pessoas do teste.
+- A versão final será **1.0.4** (não 1.0.3), pelo motivo do sufixo acima.
 
 ## 2. Gerar
 
@@ -38,11 +38,24 @@ npm run tauri build -- --features devtools --bundles nsis
 - `--features devtools` liga a feature opcional `devtools` de `src-tauri/Cargo.toml` (repassa `tauri/devtools`). **O instalador oficial não usa essa feature.**
 - A primeira compilação de release (LTO) leva vários minutos.
 
+### O que `drivers:fetch` valida hoje (`scripts/fetch-drivers.mjs`, `scripts/drivers.manifest.json`)
+| Verificação | Estado |
+| --- | --- |
+| Versões fixas | **Sim**: ViGEmBus 1.22.0 e HidHide 1.5.230.0, por URL de release do GitHub |
+| SHA-256 | **Sim**: se o arquivo baixado não bater, o script apaga o arquivo e sai com erro; arquivo já baixado só é reaproveitado se o hash bater |
+| Assinatura digital (Authenticode) | **Não verificada pelo script.** O manifesto só pede conferência manual ao atualizar um driver (editora esperada: Nefarius Software Solutions e.U.). Hoje a proteção é o hash fixado |
+| Execução do instalador | O instalador NSIS embarca os arquivos; o hook `windows/hooks.nsh` os executa na instalação |
+
+Para conferir a assinatura à mão (PowerShell): `Get-AuthenticodeSignature src-tauri\windows\drivers\*.exe | Format-List Status, SignerCertificate`.
+Melhoria sugerida (não feita): o script chamar essa verificação e falhar se `Status` não for `Valid`.
+
 ## 3. Onde fica o arquivo
 
 `src-tauri/target/release/bundle/nsis/Pherielium_1.0.3-rc.1_x64-setup.exe`
 
 (`target/` está no `.gitignore`. As pastas `release/` e `dist-installers/` da raiz são de builds antigos e também ignoradas; não use.)
+
+**SmartScreen:** o instalador não é assinado com certificado de código e é novo, então o Windows mostra "O Windows protegeu o computador". Quem instala clica em **Mais informações > Executar assim mesmo**. Avise as pessoas antes de enviar o arquivo e passe o SHA-256 do `.exe` (`Get-FileHash <arquivo>`) para que confiram que é o mesmo.
 
 Instalação é por usuário (`installMode: currentUser`), sem pedir administrador para o app; os drivers opcionais são tratados pelo hook `src-tauri/windows/hooks.nsh`.
 Não há auto-update configurado (`plugins.updater` vazio), então **a primeira instalação e as trocas de rc são manuais**.

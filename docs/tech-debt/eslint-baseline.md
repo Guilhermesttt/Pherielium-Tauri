@@ -1,5 +1,18 @@
 # ESLint baseline (tech debt)
 
+## Comando exato e por que `eslint .` mostra mais
+
+Medição reproduzível (2026-10-12, `main` em `c031d64`):
+
+```
+npx eslint . --ignore-pattern "src-tauri/target/**" --ignore-pattern "src-tauri/target-check/**" -f json
+```
+Resultado: **383 erros, 956 avisos**. Ignores fixos do `eslint.config.js`: `dist`, `coverage`, `ui-ux-pro-max-skill`, `reference`.
+Os 387 do baseline foram medidos em `3d15192` com o mesmo critério ("excluindo saída de build"); hoje são 383, 4 a menos. [INFERIDO: código removido desde então; não foi feita bisseção.]
+
+**Por que `npx eslint .` sem ignores dá 1042:** o `eslint.config.js` não ignora `src-tauri/target/`, e a pasta de build do Rust contém JavaScript gerado (**659 erros** ali). 1042 − 659 = 383. Esses 659 não são código do projeto e não entram na conta.
+Proposta (não aplicada, é mudança de configuração): adicionar `src-tauri/target` e `src-tauri/target-check` ao `globalIgnores`, para `npm run lint` e a medição coincidirem.
+
 Snapshot taken on 2026-10-11 at commit `3d15192` with `npx eslint .`, excluding
 build output (`src-tauri/target`, `dist`, ...). **Not fixed here on purpose**: fixing
 it belongs in its own change, never mixed with feature or bug-fix commits.

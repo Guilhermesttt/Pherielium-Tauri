@@ -709,3 +709,6 @@ As 7 consultas indispensáveis (01, 02, 03, 05, 06, 07, 08), o código da API (a
 - **I inclui o 1:1 depois dos canais:** o "ligar para um amigo" vira canal efêmero de 2 pessoas e **substitui a ADR-0004** (ver `docs/decisions/README.md`).
 - **I0 aprovada** com a flag `pherielium_invite_notifications` desligada na primeira release (guia: `docs/invite-notifications.md`).
 - **I (autoritativa) e R continuam bloqueadas** pelo schema (consultas 01, 02, 03, 05, 06, 07, 08) e pelo código da API.
+
+### 18.y. Pré-requisito para ligar `pherielium_invite_notifications` por padrão (2026-10-12)
+A flag só vira padrão **depois** de o convite aparecer no notch e no overlay do jogo (hoje, ligada, ele some de lá). Desenho, riscos e esforço (2,5 a 3,5 dias) em `docs/backend-audit/11-notch-overlay-convite-desenho.md`, **aguardando OK do dono**. Na primeira release a flag continua desligada.
