@@ -1,6 +1,6 @@
 # Auditoria de dependências (npm audit)
 
-Medido em 2026-10-12 com `npm audit` no commit `9351625`. **Nada foi atualizado.** `cargo audit` **não está instalado** e não foi instalado (seria uma ferramenta nova); `gitleaks` não está instalado e roda por conta do dono.
+Medido em 2026-10-12 com `npm audit` no commit `9351625`. Depois, `npm audit fix` (sem `--force`) corrigiu `next` e `source-map-js` (commit `chore(deps)`); ver "Estado atual" no fim. `cargo audit` **não está instalado** e não foi instalado (seria uma ferramenta nova); `gitleaks` não está instalado e roda por conta do dono.
 
 Total: 8 vulnerabilidades (1 baixa, 3 moderadas, 2 altas, 2 críticas).
 
@@ -19,3 +19,7 @@ Total: 8 vulnerabilidades (1 baixa, 3 moderadas, 2 altas, 2 críticas).
 - O que **chega ao usuário** é `react-router-dom` (moderada). O app usa roteamento local de desktop e não faz SSR/hidratação; o open redirect exige link com destino controlado por terceiro. Risco baixo na prática.
 - `next` e `source-map-js` têm correção sem mudança de major (`npm audit fix`), mas **não apliquei**: mudar o lockfile é uma decisão do dono e deve ser um commit `chore(deps)` próprio com `npm test` e `npm run build`.
 - Atualizar `vitest` para 5 e `react-router-dom` para 7 são saltos de major; precisam de uma fatia própria.
+
+## Estado atual (depois de `npm audit fix`, sem `--force`)
+6 vulnerabilidades restantes (1 baixa, 3 moderadas, 2 críticas): `vitest` e `tinypool` (críticas, **só de teste**), `@vitest/mocker`, `react-router`, `react-router-dom` e `dompurify`.
+Todas exigem salto de major (`vitest@5`, `react-router-dom@7`) ou são de risco baixo; ficam como dívida para uma fatia própria. `next` passou de 16.3.6 para 16.4.0 e `source-map-js` foi corrigido; `typecheck`, 461 testes e `npm run build` passaram antes e depois.
