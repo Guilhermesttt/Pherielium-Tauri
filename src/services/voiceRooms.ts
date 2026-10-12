@@ -1,4 +1,5 @@
 import { apiFetch } from "./api";
+import { shouldFallbackToSupabase, VoiceRoomApiError } from "./voiceRoomFallbackPolicy";
 import { supabase } from "./supabase";
 import { MAX_CALL_PARTICIPANTS } from "./voiceCall/limits";
 import type { PublicVoiceRoom, VoiceRoom, RoomCategory, VoiceRoomParticipant } from "../types/voice-governance";
@@ -90,13 +91,8 @@ const mapVoiceRoomFromDb = (
   };
 };
 
-const shouldUseSupabaseVoiceFallback = (error: unknown) => {
-  const message = String((error as { message?: string })?.message || error || "").toLowerCase();
-  if (message.includes("sessao expirada") || message.includes("sessão expirada") || message.includes("auth")) {
-    return false;
-  }
-  return true;
-};
+// Decide pelo status HTTP (ver voiceRoomFallbackPolicy.ts): 401/403 etc. não caem no RPC; rede, timeout, 408, 429 e 5xx caem.
+const shouldUseSupabaseVoiceFallback = shouldFallbackToSupabase;
 
 const createVoiceRoomViaSupabase = async (config: {
   name: string;
@@ -261,7 +257,7 @@ const createVoiceRoomCore = async (config: {
 
     const data = (await res.json().catch(() => ({}))) as { error?: string; room?: VoiceRoom };
     if (!res.ok) {
-      throw new Error(data.error || `Não foi possível criar a sala de voz (HTTP ${res.status}).`);
+      throw new VoiceRoomApiError(data.error || `Não foi possível criar a sala de voz (HTTP ${res.status}).`, res.status);
     }
     if (!data.room) {
       throw new Error("Resposta inválida do servidor ao criar a sala.");
@@ -407,7 +403,7 @@ export const listPublicVoiceRooms = async (filters?: {
       });
 
       if (!res.ok) {
-        throw new Error(`Erro ao listar salas públicas (Status ${res.status})`);
+        throw new VoiceRoomApiError(`Erro ao listar salas públicas (Status ${res.status})`, res.status);
       }
 
       const data = (await res.json()) as { rooms?: VoiceRoom[] };
@@ -437,7 +433,7 @@ export const getMyVoiceRooms = async (): Promise<VoiceRoom[]> => {
       });
 
       if (!res.ok) {
-        throw new Error(`Erro ao buscar minhas salas (Status ${res.status})`);
+        throw new VoiceRoomApiError(`Erro ao buscar minhas salas (Status ${res.status})`, res.status);
       }
 
       const data = (await res.json()) as { rooms?: VoiceRoom[] };
@@ -506,7 +502,7 @@ export const joinVoiceRoom = async (
       participants?: VoiceRoomParticipant[];
     };
     if (!res.ok) {
-      throw new Error(data.error || "Não foi possível entrar na sala de voz.");
+      throw new VoiceRoomApiError(data.error || "Não foi possível entrar na sala de voz.", res.status);
     }
 
     return {

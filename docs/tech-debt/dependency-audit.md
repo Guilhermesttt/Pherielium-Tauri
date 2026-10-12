@@ -17,7 +17,7 @@ Total: 8 vulnerabilidades (1 baixa, 3 moderadas, 2 altas, 2 críticas).
 ## Leitura de risco
 - As duas críticas estão **só no ambiente de teste** (vitest/tinypool): exigem executar código/entrada maliciosa na máquina de desenvolvimento, não afetam o app distribuído.
 - O que **chega ao usuário** é `react-router-dom` (moderada). O app usa roteamento local de desktop e não faz SSR/hidratação; o open redirect exige link com destino controlado por terceiro. Risco baixo na prática.
-- `next` e `source-map-js` têm correção sem mudança de major (`npm audit fix`), mas **não apliquei**: mudar o lockfile é uma decisão do dono e deve ser um commit `chore(deps)` próprio com `npm test` e `npm run build`.
+- `next` e `source-map-js` tinham correção sem mudança de major; foi aplicada depois com `npm audit fix` (ver "Estado atual").
 - Atualizar `vitest` para 5 e `react-router-dom` para 7 são saltos de major; precisam de uma fatia própria.
 
 ## Estado atual (depois de `npm audit fix`, sem `--force`)
