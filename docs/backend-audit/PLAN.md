@@ -304,12 +304,59 @@ Tese reforçada: "migrar a autoridade da chamada e da presença para o servidor,
 8. **Suposição não verificada que sustenta o plano:** que a API grava `profiles.status/presence_updated_at` e que o trigger-ponte funciona. Marcada `[INFERIDO]` e travada pela Fatia 0.
 Resposta do dono pendente nos pontos que não consegui decidir sozinho (ver §15).
 
-## 15. Decisões que preciso de você
-1. Aprovar a ordem do §2 (1.0.3 compatível, depois C, depois o bloco bloqueado)?
-2. Rodar os imprescindíveis: **P-1, P-2, P-3** (uma instância por conta) e **P-10**; e fornecer a **Fatia 0** (consultas do schema, repo da API, plano do Supabase, staging).
-3. A1: aceita um release com modo "só log" antes de bloquear? E aceita **mudança de comportamento** do convite (descartar de não amigo)?
-4. D1: aceita **encerrar a chamada** quando o LiveKit falha, em vez de P2P silencioso?
-5. Configurar o updater do Tauri (assinatura) para viabilizar o desligamento do v1? (decisão de produto e de infraestrutura)
-6. Quantos usuários simultâneos você espera em 6 meses (define Free vs Pro)?
-7. C: o nome do executável sozinho basta como fallback de detecção?
-8. Posso criar o `.env.example`, renomear `CLAUDE.MD` e o `docs/ARCHITECTURE.md` como commits pequenos, em paralelo?
+## 15. Decisões do dono (aprovação de 2026-10-12) e alterações ao plano
+
+Este capítulo **tem precedência** sobre os §5 a §7 quando houver conflito.
+
+### 15.1. Decisões
+1. **Ordem aprovada:** A1 → B1 → D1 → F1 no 1.0.3; depois C; depois A2, B2/B3, D2 e E (após a Fatia 0).
+2. **A1:** modo "só log" **apenas** para os filtros do receptor (par esperado e convite de não amigo), atrás de flag, por no máximo um release (~1 semana), com **contador de eventos descartados** e um **relatório fácil de colar**.
+   **Não** ficam em modo só log (entram ativos): tirar o texto da DM do fast-path entre versões novas, com a entrega pelo Postgres Changes (que respeita RLS), e parar de publicar no canal global de presença.
+3. **D1:** sem fallback silencioso para P2P. Até **3 tentativas** de conectar ao LiveKit com backoff; depois encerrar com mensagem clara e **motivo registrado**. O código P2P fica **atrás de flag desligada** (não se apaga). Registrar em ADR (`0006`).
+4. **Updater do Tauri com assinatura:** aprovado. A chave privada **nunca** entra no repositório (documentar como gerar e onde guardar); endpoints em GitHub Releases. **Aviso:** a primeira versão com updater precisa de instalação manual (os apps atuais não têm o plugin ativo). É **pré-requisito do corte (A2)**.
+5. **Detecção de jogo (C):** o nome do executável **sozinho não basta**. Ordem de confiança: (1) `RunningAppID` da Steam (via `winreg`); (2) caminho do exe dentro de uma pasta de instalação conhecida da biblioteca; (3) nome só como fallback de **confiança baixa**, nunca publicado como "jogando X" sem confirmação (no máximo "jogando algo"). **Denylist** de launchers, anti-cheat, crash handlers e processos de sistema. Registrar em ADR (atualizar `0003`).
+6. **Higiene (fora das fatias, commits pequenos e separados):** `.env.example` (nomes derivados do código: `import.meta.env` e `std::env`, **sem ler o `.env`**), renomear `CLAUDE.MD` para `CLAUDE.md` e criar `docs/ARCHITECTURE.md`.
+7. **Usuários simultâneos em 6 meses: PENDENTE.** A mensagem de aprovação trouxe o modelo não preenchido (`hoje ~X testadores; esperado ~Y`). Sem esse número, o plano usa os limites oficiais como teto (200 Free, 500 Pro) e não presume nenhum.
+
+### 15.2. Alterações às fatias
+- **A1 (substitui os itens correspondentes do §5):** o aceite (1) e (3) do §5 (descartar `call:end`/`kick`/`privacy`/`answer`/`signal` e convite de não amigo) passam a rodar em **modo "só log"** na primeira release (flag `pherielium_event_guards = "log" | "enforce" | "off"`; padrão `log`; vira `enforce` na release seguinte, no máximo ~1 semana depois).
+  Entram **ativos**: (a) DM entre dois clientes v2 sem texto no broadcast: o broadcast leva só um aviso `{ id, chatId, clientId }` e a mensagem chega pelo `postgres_changes` de `chat_messages` (filtro `receiver_id=eq.{uid}`, que já existe em `chat.ts:251-268`) com RLS; para par v1 ou desconhecido continua o payload completo; (b) o cliente novo **não** faz `track`/`untrack`/broadcast no canal global `checkpoint_presence_bus`, e **continua escutando** para compatibilidade.
+  **Contador e relatório:** contagem por tipo de evento e por motivo, em memória e `localStorage`; comando de console que imprime um bloco de texto para colar (sem payloads nem UIDs completos: só os 4 primeiros caracteres).
+- **D1 (substitui o fim da assimetria do §5):** `connectLiveKitRoom` com **até 3 tentativas e backoff** (1 s, 2 s, 4 s) antes de desistir; se todas falharem: encerrar a chamada, avisar os dois lados com mensagem clara e **registrar o motivo** (`livekit_unavailable`, `token_unauthorized`, `token_timeout`, `network`). O ramo P2P (`createPeerConnectionForPeer`, `PeerAudioNode`) fica **atrás de `pherielium_p2p_fallback` (padrão desligada)**; só liga manualmente. ADR `0006`.
+- **C (substitui a detecção por nome do §6):** ordem de confiança e denylist do item 5 acima; campo `confidence: "high" | "medium" | "low"` no evento; `low` nunca vira "jogando X".
+- **Updater (novo, pré-requisito de A2):** fatia **U**: plugin do Tauri ativo, chave pública no `tauri.conf.json`, endpoints em GitHub Releases, assinatura no CI ou local, documentação de geração e guarda da chave privada. O primeiro build com updater é instalação manual. ADR `0007`. Esforço: 3 a 4 dias.
+
+### 15.3. Corte do v1: dois cenários (ajuste a)
+Efeito documentado (Supabase, [Realtime Settings](https://supabase.com/docs/guides/realtime/settings)): ao desligar **"Allow public access"**, "every join is checked against the Row Level Security policies on `realtime.messages`" e os clientes que **não** usam `config.private = true` são recusados com `PrivateOnly`; com **nenhuma policy**, os clientes conectam mas **não recebem mensagens**; e **qualquer mudança nessa tela desconecta todos os clientes conectados**. Para o app antigo isso significa: sem presença instantânea, sem fast-path de DM, sem convite nem sinalização de chamada e sem canal de sala; o que usa REST/Postgres continua funcionando.
+
+| | **Produto público** | **Base atual de testadores (corte coordenado)** |
+| --- | --- | --- |
+| Critério | ≥ 95% dos ativos em v2 (heartbeat de 7 dias), ≥ 6 semanas desde a 1.2.0, aviso de ≥ 14 dias, ensaio em staging | **todos os testadores ativos em v2** (lista conferida no heartbeat), ~1 a 2 semanas depois da 1.2.0, aviso direto por mensagem, ensaio em staging |
+| Como se sabe quem é v2 | `user_presence.protocol_version` | o mesmo, mais confirmação por mensagem a cada testador |
+| O que muda no risco | a cauda longa de clientes antigos fica sem Realtime até atualizar | **risco menor para o produto** (pouca gente a quebrar) e a janela de exposição cai de meses para ~2 semanas; **risco operacional maior se esquecer alguém** (um testador que não atualizou fica sem chamadas e presença) |
+| Rollback | religar a opção (desconecta todos uma vez) | idem |
+
+Em ambos os cenários o corte exige o **updater assinado (U)** em campo, o ensaio em staging e horário de baixo uso.
+
+### 15.4. Release e flags (ajuste b)
+- **O 1.0.3 sai primeiro como pré-release (`1.0.3-rc.N`) para os testadores**, no GitHub Releases. Cada fatia em **commits separados** e **atrás de flag local** para reverter isoladamente. **F1 só entra depois do P-3.**
+- Flags locais (localStorage, prefixo `pherielium_`): `event_guards` (A1), `presence_global_bus` (A1: padrão desligado = não publicar), `dm_ping_only` (A1), `stream_debug` (já existe), `presence_debug` (B0), `p2p_fallback` (D1), `audio_exclude_webview` (F1), `ambient_game_detection` (C).
+
+### 15.5. B0 vem antes de tudo? (ajuste c)
+**Os testes são executáveis com o build atual**, mas com pouco detalhe:
+- **P-1/P-2/P-3:** dá para rodar com a consulta SQL em `profiles` a cada 30 s e o Realtime Inspector do painel. Não dá para saber **quem disparou** cada offline nem o horário real de cada heartbeat enviado e confirmado.
+- **P-10 (áudio):** é um teste de escuta; roda sem instrumentação.
+Por isso **B0 vem primeiro** (depois dos commits de higiene), somente leitura, atrás de `pherielium_presence_debug`: horário de cada heartbeat enviado e confirmado, `visibilityState`, origem de cada leave/offline, chave de presença por instância, payload de presença recebido. Sem mudar nenhum comportamento.
+
+### 15.6. Esforço e menor recorte de 2 semanas (ajuste d)
+- **Compromisso:** 1.0.3 = A1 + B1 + D1 + F1 ≈ **2 semanas** (A1 3 a 4 dias, B1 1 a 3, D1 3 a 4 com as 3 tentativas, F1 2 a 3 depois do P-3), mais B0 (1 a 1,5 dia) e a higiene (~0,5 dia).
+- **Roadmap (±50%):** U 3 a 4 dias; C 9 a 12 dias (com a ordem de confiança e a denylist); A2, B2/B3, D2, E e o token em Edge Function conforme o §11.
+- **Menor recorte que entrega valor em 2 semanas:** **B0 + A1 + D1**. B0 destrava a decisão de presença; A1 reduz o vazamento de DM e o abuso casual; D1 resolve "não ouço meu amigo" e o convite lento. B1 e F1 entram assim que os resultados de P-1 a P-3 e P-10 chegarem.
+
+### 15.7. Auditorias de dependências (ajuste e)
+Ver `docs/tech-debt/dependency-audit.md`. `npm audit` rodou; `cargo audit` não está instalado e **não foi instalado**; o `gitleaks` roda por conta do dono.
+
+### 15.8. Pendências
+1. **Item 7** (usuários simultâneos) e a **Fatia 0** (schema, repositório da API, plano do Supabase, staging).
+2. Resultados de **P-1, P-2, P-3 e P-10** (liberam B1 e F1).
+3. Chave privada do updater: você gera e guarda (instruções na fatia U).
