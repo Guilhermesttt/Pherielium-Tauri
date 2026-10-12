@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
-import { streamDebugLog } from "@/services/voiceCall/streamDebug";
+import { isStreamDebugEnabled, streamDebugLog } from "@/services/voiceCall/streamDebug";
 import { APP_PROTOCOL_VERSION } from "@/lib/protocolVersion";
 import {
   cleanUid,
@@ -12,6 +12,13 @@ import {
   type GuardContext,
 } from "@/services/voiceCall/eventGuards";
 import { guardEvent, installGuardReport } from "@/services/voiceCall/eventGuardRuntime";
+import {
+  describeElement,
+  formatInventory,
+  shortId,
+  type ElementInfo,
+  type PublicationInfo,
+} from "@/services/voiceCall/audioInventory";
 import { startStreamDiagnostics } from "@/services/voiceCall/streamDiagnostics";
 import {
   effectivePercent,
@@ -2104,6 +2111,8 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           if (livekitAttachedTrackKeysRef.current.has(trackKey)) return;
 
           const el = track.attach() as HTMLMediaElement;
+          // Rótulo para o inventário de diagnóstico (window.pherieliumAudioInventory); não afeta a reprodução.
+          el.dataset.pherieLabel = `${String(publication?.source ?? "audio")} ${shortId(peerId)}`;
           livekitAttachedTrackKeysRef.current.add(trackKey);
           livekitAttachedElementsRef.current.add(el);
 
@@ -2984,6 +2993,74 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     }),
     [buildGuardContext, cleanUpCall, createPeerConnectionForPeer, notify, playRingtone, user?.uid],
   );
+
+  // Diagnóstico do volume da transmissão (flag pherielium_stream_debug): inventário dos elementos de áudio/vídeo e das
+  // publicações do Room. Só lê; não altera nada.
+  useEffect(() => {
+    if (!isStreamDebugEnabled()) return;
+    const target = window as unknown as { pherieliumAudioInventory?: () => Promise<string> };
+    target.pherieliumAudioInventory = async () => {
+      const elements: ElementInfo[] = [];
+      livekitAttachedElementsRef.current.forEach((element) => {
+        elements.push(describeElement(element, "livekit", element.dataset.pherieLabel ?? "livekit audio"));
+      });
+      document.querySelectorAll("video, audio").forEach((node) => {
+        const media = node as HTMLMediaElement;
+        elements.push(describeElement(media, "dom", media.getAttribute("aria-label") ?? media.tagName.toLowerCase()));
+      });
+
+      const publications: PublicationInfo[] = [];
+      const room = livekitRoomRef.current;
+      room?.remoteParticipants.forEach((participant) => {
+        participant.trackPublications.forEach((pub) => {
+          publications.push({
+            scope: "remote",
+            identity: shortId(participant.identity),
+            source: String(pub.source),
+            kind: String(pub.kind),
+            trackSid: pub.trackSid,
+            subscribed: pub.isSubscribed,
+            muted: pub.isMuted,
+          });
+        });
+      });
+      room?.localParticipant.trackPublications.forEach((pub) => {
+        publications.push({
+          scope: "local",
+          identity: shortId(room.localParticipant.identity),
+          source: String(pub.source),
+          kind: String(pub.kind),
+          trackSid: pub.trackSid,
+          subscribed: true,
+          muted: pub.isMuted,
+        });
+      });
+
+      const options = (room as unknown as { options?: { webAudioMix?: unknown; adaptiveStream?: unknown } } | null)?.options;
+      const text = formatInventory(
+        {
+          elements,
+          publications,
+          roomOptions: {
+            webAudioMix: options?.webAudioMix === undefined ? "unset (padrão: desligado)" : String(options.webAudioMix),
+            adaptiveStream: String(options?.adaptiveStream),
+          },
+          storedVolumes: peerVolumesRef.current,
+        },
+        await getAppVersionCached(),
+      );
+      console.info(text);
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (error) {
+        console.warn("[audioInventory] não foi possível copiar; copie o texto acima.", error);
+      }
+      return text;
+    };
+    return () => {
+      delete target.pherieliumAudioInventory;
+    };
+  }, []);
 
   // Incoming call listener on user_calls_${myUid}
   useEffect(() => {
