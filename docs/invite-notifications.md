@@ -58,5 +58,48 @@ O toast é invisível e só o som toca. Não há notificação nativa do Windows
 3. **Sem cartão local para o convite 1:1 antigo** (sem mensagem de chat). Decidido: vale só a notificação.
 4. Expiração e cancelamento são **locais**: reiniciar o app perde os convites pendentes (a notificação some; o cartão do chat continua calculando pela data da mensagem).
 
+## N-invite: notch e overlay do jogo (mesma flag)
+
+Com `pherielium_invite_notifications` ligada, o convite pendente aparece também no **notch** e no **overlay do jogo**, reaproveitando a UI de atender que já existia (nenhum componente visual, estilo ou arquivo do mascote foi editado).
+
+| Superfície | Como aparece | Fonte |
+| --- | --- | --- |
+| Toast do hub | "Convite de call" com botão **Entrar** | `useVoiceCall` (`notify`) |
+| Notch (hub) | barra de atender/recusar existente | `DesktopNotch.tsx:938`: `hubInvite` = `incomingInvite` (toque antigo) **ou** `pendingInvite` (primeiro convite pendente, só ocioso) |
+| Overlay do jogo | cartão/barra `incoming-call` existente, **15 min** | `VoiceCallContext` envia `showNotificationOverlay`; some por `dismissNotificationOverlay` ao aceitar, dispensar, cancelar ou expirar (um efeito compara a lista de pendentes com o que já foi enviado: `diffInviteOverlay`) |
+
+- **Aceitar/recusar pelo overlay** envia `panelAction({ kind: "voice-accept" | "voice-reject", notificationId })`; o hub (`Home.tsx`) valida o id (`invite:...`) e chama `acceptPendingInvite(chave)` / `dismissPendingInvite(chave)`. Sem id válido segue o caminho antigo (`answerCall()` / `rejectCall()`).
+- **Notch**: Aceitar chama `answerCall()` sem argumento, que agora atende o **primeiro convite pendente**; Recusar chama `rejectCall()`, que só **dispensa** o convite localmente (não envia nada a quem convidou, que pode estar numa sala).
+- **Expiração:** um temporizador poda a lista no vencimento (15 min após o recebimento) e todas as superfícies retiram o convite.
+- **Uma fonte sonora por convite:** o overlay toca o seu aviso ao exibir `incoming-call`; o notch não toca nada. Por isso, **com o overlay disponível o toast do hub fica mudo**; sem overlay (navegador/dev) o toast toca o som de mensagem (`inviteToastShouldPlaySound`). Observação: com overlay, o som é o do overlay (aviso de chamada do tema), não o de mensagem.
+
+### O que muda no mascote (efeito do estado já existente)
+O notch deriva `incomingInvite` de `hubInvite`. Com um convite pendente, as mesmas leituras que existiam para um toque passam a valer. **Antes** (flag ligada, só I0): nada disso acontecia. **Depois:**
+1. Humor `excited` (`mascotMood`, `DesktopNotch.tsx:~958`).
+2. `moodHasOwnSound` verdadeiro: a "voz" da Pherie não toca (evita som duplicado).
+3. `busy` e `liveKind = incomingCall`: a barra assume a largura do estado "chamada recebendo" e o notch deixa de ficar em pílula ociosa.
+4. `revealNotch()`: o notch aparece sozinho mesmo escondido por outra janela.
+5. `ringing` do mascote verdadeiro (`:1197` e `:1231`; o `MascotView` usa para a animação de "tocando" e para não dançar), e o mascote não "espia" na borda enquanto há convite (`:1031`).
+Com a flag desligada, nenhum desses efeitos ocorre (`pendingInvite` é sempre `null`).
+
+### Roteiro de teste: hub oculto, jogo em tela cheia
+Receptor com o rc, flag ligada (`localStorage.setItem("pherielium_invite_notifications","1")`, reiniciar), jogo em tela cheia, hub minimizado ou atrás do jogo. O remetente pode ser o 1.0.2.
+1. **Chega:** remetente convida (canal ou 1:1). Esperado: cartão/barra de chamada no overlay do jogo, **um único som**, sem toque; nada de modal.
+2. **Notch ligado:** a barra de atender/recusar aparece no notch do overlay; **desligado:** cartão de chamada.
+3. **Aceitar no overlay:** o hub entra na call (mesmo fluxo de atender) e o cartão some.
+4. **Recusar:** o cartão some; o remetente não recebe aviso.
+5. **Cancelar:** remetente encerra a chamada antes de aceitar: o cartão some do overlay, do notch e o toast fecha.
+6. **Expirar:** deixar 15 min: some de tudo sozinho; clicar antes disso ainda entra.
+7. **Dois convites:** o notch mostra o mais antigo; o segundo fica no toast/overlay.
+8. **Hub visível, sem jogo:** o mesmo vale; o toast fica mudo e o aviso vem do overlay (um som só).
+9. **Flag desligada:** o fluxo antigo (toque, modal, 35 s) é idêntico ao da 1.0.2 (regressão).
+
+### Plano B: notificação nativa do Windows (somente avaliação)
+- `tauri-plugin-notification` 2.4.0 está registrado e com permissão, e `@tauri-apps/plugin-notification` já está instalado: **não precisa de dependência nova**.
+- **Devolve clique? Não.** [VERIFICADO na fonte do plugin, `src/desktop.rs` do crate 2.4.0 no cache do cargo: o desktop chama `notification.show()` dentro de `spawn` e descarta o resultado; não há `on_activated` nem `wait_for_action`, e não existe ouvinte de clique em JS no desktop.] A biblioteca de baixo (`tauri-winrt-notification` 0.7.3) tem `on_activated`, mas o plugin não a usa.
+- Detalhe: o `app_id` só é definido no app instalado; em `target/debug|release` o toast aparece com a identidade do PowerShell.
+- **Não foi testado rodando** (exige sessão gráfica interativa). [INFERIDO] Jogos em tela cheia exclusiva e o Assistente de Foco do Windows podem suprimir o toast, então ele não substitui o overlay.
+- Conclusão: serviria só como aviso ("abra o Pherielium"); sem ação de aceitar. Para clique seria preciso código nativo próprio (Rust com `on_activated`), o que é uma fatia nova. **Não implementado.**
+
 ## Fora do escopo do I0
 Validação no servidor, RPCs, senha, o 1:1 como canal efêmero, remoção do ciclo antigo (ADR 0009), notch/overlay.

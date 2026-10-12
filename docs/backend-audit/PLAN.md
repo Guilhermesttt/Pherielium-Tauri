@@ -712,3 +712,6 @@ As 7 consultas indispensáveis (01, 02, 03, 05, 06, 07, 08), o código da API (a
 
 ### 18.y. Pré-requisito para ligar `pherielium_invite_notifications` por padrão (2026-10-12)
 A flag só vira padrão **depois** de o convite aparecer no notch e no overlay do jogo (hoje, ligada, ele some de lá). Desenho, riscos e esforço (2,5 a 3,5 dias) em `docs/backend-audit/11-notch-overlay-convite-desenho.md`, **aguardando OK do dono**. Na primeira release a flag continua desligada.
+
+### 18.z. N-invite aprovada e implementada atrás da flag (2026-10-12)
+Convite pendente no notch e no overlay do jogo (front-only, `pherielium_invite_notifications`). **Continua pré-requisito para ligar a flag por padrão**: a flag só vira padrão depois de o dono validar o roteiro de `docs/invite-notifications.md` (seção N-invite) e o critério de `docs/backend-audit/11-notch-overlay-convite-desenho.md`. Plano B (notificação nativa) avaliado: o plugin não devolve clique.

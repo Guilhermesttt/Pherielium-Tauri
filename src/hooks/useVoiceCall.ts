@@ -99,6 +99,15 @@ import {
 import { startDesktopAudioCapture } from "../services/voiceCall/desktopAudioCapture";
 import type { NotificationOptions } from "../components/NotificationCenter";
 import {
+  inviteHandling,
+  inviteNotificationId,
+  inviteToastShouldPlaySound,
+  isOverlayNotificationAvailable,
+  nextInviteExpiryMs,
+  resolveAnswerSource,
+  resolveRejectSource,
+} from "../services/voiceCall/inviteSurfaces";
+import {
   EMPTY_INVITE_STATE,
   inviteRemainingMs,
   inviteState,
@@ -759,7 +768,25 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     }
     return next;
   }, []);
-  const acceptPendingInviteRef = useRef<((key: string) => void) | null>(null);
+  const acceptPendingInviteRef = useRef<((key?: string) => void) | null>(null);
+  // Superfícies (notch, overlay do jogo, toast) leem o primeiro convite pendente e agem pelo id; sem id, o primeiro.
+  const acceptPendingInvite = useCallback((key?: string) => acceptPendingInviteRef.current?.(key), []);
+  const dismissPendingInvite = useCallback(
+    (key?: string) => {
+      const target = key ?? inviteStoreRef.current.pending[0]?.key;
+      if (!target) return;
+      dismissNotification?.(inviteNotificationId(target));
+      dispatchInvite({ type: "dismissed", key: target });
+    },
+    [dismissNotification, dispatchInvite],
+  );
+  // Expiração local: ao vencer o convite mais próximo, a lista é podada e todas as superfícies (overlay incluído) o retiram.
+  useEffect(() => {
+    const waitMs = nextInviteExpiryMs(inviteStore.pending, Date.now());
+    if (waitMs === null) return;
+    const timer = window.setTimeout(() => dispatchInvite({ type: "prune", nowMs: Date.now() }), waitMs + 50);
+    return () => window.clearTimeout(timer);
+  }, [inviteStore, dispatchInvite]);
 
   // Local audio analyzer pipeline
   const localPipelineRef = useRef<AudioPipeline>(createEmptyPipeline());
@@ -3108,7 +3135,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
         ) {
           return;
         }
-        if (isInviteNotificationsOn() && callStateRef.current === "idle") {
+        if (inviteHandling({ flagOn: isInviteNotificationsOn(), callState: callStateRef.current }) === "notification") {
           // I0: sem toque e sem modal; vira notificação até expirar ou ser dispensada. Ocupado/reconexão seguem o fluxo abaixo.
           const nowMs = Date.now();
           dispatchInvite({ type: "prune", nowMs });
@@ -3118,10 +3145,11 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
           if (after === before || !entry) return; // repetido (chave já pendente ou dentro da janela de 10 s)
           const remainingMs = inviteRemainingMs({ createdAtMs: entry.receivedAtMs, nowMs });
           notify(`${invite.callerName} está te convidando para uma call`, "info", {
-            id: `invite:${entry.key}`,
+            id: inviteNotificationId(entry.key),
             title: "Convite de call",
             duration: remainingMs,
-            sound: true,
+            // Uma fonte sonora por convite: com o overlay disponível ele toca e o toast do hub fica mudo.
+            sound: inviteToastShouldPlaySound({ overlayAvailable: isOverlayNotificationAvailable() }),
             soundKey: "chatReceived",
             action: { label: "Entrar", onClick: () => acceptPendingInviteRef.current?.(entry.key) },
           });
@@ -3177,7 +3205,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
           );
           if (cancelled.length > 0) {
             dispatchInvite({ type: "cancelled", chatId: endPayload.chatId, inviterId: endPayload.senderId, nowMs: Date.now() });
-            cancelled.forEach((p) => dismissNotification?.(`invite:${p.key}`));
+            cancelled.forEach((p) => dismissNotification?.(inviteNotificationId(p.key)));
           }
         }
         if (callStateRef.current === "idle") return;
@@ -3435,7 +3463,19 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     }
     // O botão do modal chama `onAccept` sem argumento útil; só um convite de verdade (I0) substitui o do estado.
     const override = typeof inviteOverride?.chatId === "string" && typeof inviteOverride.callerId === "string" ? inviteOverride : null;
-    const invite = override || incomingInvite || incomingInviteRef.current;
+    const incoming = incomingInvite || incomingInviteRef.current;
+    const invite = override || incoming;
+    if (
+      resolveAnswerSource({
+        hasOverride: Boolean(override),
+        hasIncoming: Boolean(incoming),
+        pendingCount: inviteStoreRef.current.pending.length,
+      }) === "pending"
+    ) {
+      // Notch/overlay chamam `answerCall()` sem argumento: atende o primeiro convite pendente (I0/N-invite).
+      acceptPendingInviteRef.current?.();
+      return;
+    }
     const currentState = callStateRef.current || callState;
     if (!user?.uid || !invite) {
       console.warn("[useVoiceCall] answerCall canceled: missing user or invite", { uid: user?.uid, invite, currentState });
@@ -3603,10 +3643,15 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
   }, [acquireAudioStream, announceMemberJoinedOnce, applyAudioProcessingChain, callState, cleanUpCall, createPeerConnectionForPeer, createUnifiedSessionHandlers, incomingInvite, inputMode, notify, playRingtone, selectedVideoInput, setupVoiceAnalyzer, stopRingtone, user, userProfile]);
 
   // I0: entrar a partir da notificação de convite. Revalida a validade na hora do clique (a notificação pode ter ficado aberta).
-  acceptPendingInviteRef.current = (key: string) => {
-    const entry = inviteStoreRef.current.pending.find((p) => p.key === key);
-    dismissNotification?.(`invite:${key}`);
-    dispatchInvite({ type: "dismissed", key });
+  acceptPendingInviteRef.current = (requestedKey?: string) => {
+    const entry = requestedKey
+      ? inviteStoreRef.current.pending.find((p) => p.key === requestedKey)
+      : inviteStoreRef.current.pending[0];
+    const key = entry?.key ?? requestedKey;
+    if (key) {
+      dismissNotification?.(inviteNotificationId(key));
+      dispatchInvite({ type: "dismissed", key });
+    }
     if (!entry || inviteState({ createdAtMs: entry.receivedAtMs, nowMs: Date.now() }) !== "pending") {
       notify("Convite inválido ou expirado.", "info");
       return;
@@ -3972,6 +4017,11 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
   // REJECT CALL
   const rejectCall = useCallback(async () => {
     stopRingtone();
+    if (resolveRejectSource({ hasIncoming: Boolean(incomingInvite), pendingCount: inviteStoreRef.current.pending.length }) === "pending") {
+      // Recusar um convite pendente só o dispensa aqui; não encerra nada do lado de quem convidou (pode estar numa sala).
+      dismissPendingInvite();
+      return;
+    }
     if (!user?.uid || !incomingInvite) return;
     const { callerId, chatId } = incomingInvite;
 
@@ -3985,7 +4035,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
 
     playRingtone("disconnect");
     cleanUpCall();
-  }, [cleanUpCall, incomingInvite, playRingtone, stopRingtone, user?.uid]);
+  }, [cleanUpCall, dismissPendingInvite, incomingInvite, playRingtone, stopRingtone, user?.uid]);
 
   // HANGUP / DISCONNECT - User leaves the call but call stays active for others
   const hangUp = useCallback(async () => {
@@ -5031,6 +5081,10 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     roomConfig,
     incomingInvite,
     inviteStore,
+    /** Primeiro convite pendente (I0), lido pelo notch; `null` se não há ou se a chamada já está em andamento. */
+    pendingInvite: callState === "idle" ? (inviteStore.pending[0]?.invite ?? null) : null,
+    acceptPendingInvite,
+    dismissPendingInvite,
     localStream,
     remoteStream,
     remoteStreams,

@@ -5,7 +5,8 @@ import { useAuth } from "../auth/AuthProvider";
 import { useNotification } from "../components/NotificationCenter";
 import { usePreferences } from "./PreferencesContext";
 import { useVoiceCall, type UseVoiceCallNotify } from "../hooks/useVoiceCall";
-import { EMPTY_INVITE_STATE } from "../services/voiceCall/inviteState";
+import { EMPTY_INVITE_STATE, isInviteNotificationsOn } from "../services/voiceCall/inviteState";
+import { diffInviteOverlay, inviteNotificationId, inviteOverlayPayload } from "../services/voiceCall/inviteSurfaces";
 import { IncomingCallModal } from "../components/voice/IncomingCallModal";
 import { VoiceCallWindow } from "../components/voice/VoiceCallWindow";
 import { ScreenPickerModal } from "../components/voice/ScreenPickerModal";
@@ -269,6 +270,25 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({
       lastNotifiedInviteKeyRef.current = "";
     }
   }, [voiceCall.callState, voiceCall.incomingInvite]);
+
+  // N-invite: convites pendentes (flag) vão para o overlay do jogo; sai quando aceito, cancelado, expirado ou dispensado.
+  const overlayInviteIdsRef = React.useRef<Set<string>>(new Set());
+  React.useEffect(() => {
+    const api = window.electronAPI;
+    const { show, dismiss } = diffInviteOverlay(
+      overlayInviteIdsRef.current,
+      voiceCall.inviteStore.pending,
+      isInviteNotificationsOn(),
+    );
+    for (const pending of show) {
+      overlayInviteIdsRef.current.add(inviteNotificationId(pending.key));
+      void api?.showNotificationOverlay?.(inviteOverlayPayload(pending));
+    }
+    for (const id of dismiss) {
+      overlayInviteIdsRef.current.delete(id);
+      void api?.dismissNotificationOverlay?.({ id });
+    }
+  }, [voiceCall.inviteStore.pending]);
 
   return (
     <VoiceCallContext.Provider value={voiceCall}>
@@ -535,6 +555,9 @@ const safeFallbackVoiceCallContext: Partial<VoiceCallContextType> = {
   startTestCall: async () => {},
   answerCall: async () => {},
   inviteStore: EMPTY_INVITE_STATE,
+  pendingInvite: null,
+  acceptPendingInvite: () => {},
+  dismissPendingInvite: () => {},
   rejectCall: async () => {},
   hangUp: async () => {},
   endCallForEveryone: async () => {},

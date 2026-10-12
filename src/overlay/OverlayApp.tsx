@@ -1590,7 +1590,7 @@ const OverlayApp: React.FC = () => {
                         isCall
                           ? () => {
                               uiSound();
-                              (window as any).achievementOverlay?.panelAction?.({ kind: "voice-accept" });
+                              (window as any).achievementOverlay?.panelAction?.({ kind: "voice-accept", notificationId: toast.id });
                               removeToast(toast.id);
                             }
                           : undefined
@@ -1599,7 +1599,7 @@ const OverlayApp: React.FC = () => {
                         isCall
                           ? () => {
                               uiSound();
-                              (window as any).achievementOverlay?.panelAction?.({ kind: "voice-reject" });
+                              (window as any).achievementOverlay?.panelAction?.({ kind: "voice-reject", notificationId: toast.id });
                               removeToast(toast.id);
                             }
                           : undefined
@@ -1696,11 +1696,11 @@ const OverlayApp: React.FC = () => {
                 name: incomingCallToast.senderName || incomingCallToast.description?.replace(/ está te ligando.*$/, "") || "Alguém",
                 avatar: incomingCallToast.avatar,
                 onAccept: () => {
-                  (window as any).achievementOverlay?.panelAction?.({ kind: "voice-accept" });
+                  (window as any).achievementOverlay?.panelAction?.({ kind: "voice-accept", notificationId: incomingCallToast.id });
                   removeToast(incomingCallToast.id);
                 },
                 onReject: () => {
-                  (window as any).achievementOverlay?.panelAction?.({ kind: "voice-reject" });
+                  (window as any).achievementOverlay?.panelAction?.({ kind: "voice-reject", notificationId: incomingCallToast.id });
                   removeToast(incomingCallToast.id);
                 },
               }

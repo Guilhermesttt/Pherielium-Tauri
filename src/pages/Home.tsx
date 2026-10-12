@@ -184,6 +184,7 @@ import {
 import { progressionEventBus } from "../services/progressionEvents";
 import { completeUserQuest } from "../services/userQuests";
 import { resolveLibraryLoadingState } from "../utils/libraryLoading";
+import { parseInviteNotificationId } from "../services/voiceCall/inviteSurfaces";
 
 const AddGameModal = React.lazy(() => import("../components/AddGameModal"));
 const GameDetailPanel = React.lazy(
@@ -2958,13 +2959,20 @@ const Home: React.FC = () => {
         return;
       }
       if (action.kind === "voice-accept") {
-        if (voiceCallContext) {
+        // Convite pendente (N-invite): o overlay manda o id da notificação; sem id válido segue o caminho antigo (toque).
+        const inviteKey = parseInviteNotificationId(action.notificationId);
+        if (inviteKey) {
+          voiceCallContext?.acceptPendingInvite(inviteKey);
+        } else if (voiceCallContext) {
           void voiceCallContext.answerCall();
         }
         return;
       }
       if (action.kind === "voice-reject") {
-        if (voiceCallContext) {
+        const inviteKey = parseInviteNotificationId(action.notificationId);
+        if (inviteKey) {
+          voiceCallContext?.dismissPendingInvite(inviteKey);
+        } else if (voiceCallContext) {
           void voiceCallContext.rejectCall();
         }
         return;

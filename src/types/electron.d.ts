@@ -695,8 +695,8 @@ declare global {
         | { kind: "open-launcher-chat"; friendId: string }
         | { kind: "open-launcher-friends" }
         | { kind: "voice-call"; friendId?: string; friendUid?: string; friendName?: string; friendAvatar?: string }
-        | { kind: "voice-accept" }
-        | { kind: "voice-reject" }
+        | { kind: "voice-accept"; notificationId?: string }
+        | { kind: "voice-reject"; notificationId?: string }
         | { kind: "voice-hangup" }
         | { kind: "voice-mute" }
         | { kind: "voice-deafen" }

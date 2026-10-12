@@ -1,4 +1,4 @@
-# 11. Convite de call no notch e no overlay do jogo (DESENHO, não implementado)
+# 11. Convite de call no notch e no overlay do jogo (DESENHO; implementado como N-invite, ver `docs/invite-notifications.md`)
 
 Data: 2026-10-12. **Aguarda OK do dono.** É **pré-requisito para ligar `pherielium_invite_notifications` por padrão** (sem isto, com a flag ligada, quem joga em tela cheia ou usa só o notch não vê o convite).
 Rótulos: `[VERIFICADO: arquivo:linha]` / `[INFERIDO]`.
