@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeElement, findDoublePlayback, formatInventory, type ElementInfo } from "./audioInventory";
+import { describeElement, findDoublePlayback, findSinkMismatches, formatInventory, type ElementInfo } from "./audioInventory";
 
 const el = (over: Partial<ElementInfo>): ElementInfo => ({
   tag: "audio",
@@ -10,6 +10,7 @@ const el = (over: Partial<ElementInfo>): ElementInfo => ({
   paused: false,
   audioTrackIds: ["t1"],
   videoTrackCount: 0,
+  sinkId: "",
   ...over,
 });
 
@@ -76,6 +77,7 @@ describe("formatInventory", () => {
         ],
         roomOptions: { webAudioMix: "unset", adaptiveStream: "true" },
         storedVolumes: { "screen:abcdef123": 20 },
+        selectedAudioOutput: "default",
       },
       "1.0.3-rc.1",
     );
@@ -88,9 +90,24 @@ describe("formatInventory", () => {
 
   it("says when nothing plays twice", () => {
     const text = formatInventory(
-      { elements: [], publications: [], roomOptions: { webAudioMix: "unset", adaptiveStream: "true" }, storedVolumes: {} },
+      { elements: [], publications: [], roomOptions: { webAudioMix: "unset", adaptiveStream: "true" }, storedVolumes: {}, selectedAudioOutput: "" },
       "x",
     );
     expect(text).toContain("(nenhuma)");
+  });
+});
+
+describe("findSinkMismatches", () => {
+  it("flags only audible elements on a different output than the chosen one", () => {
+    const onChosen = el({ label: "ok", sinkId: "dev-a" });
+    const onDefault = el({ label: "wrong", sinkId: "" });
+    const mutedVideo = el({ tag: "video", origin: "dom", label: "stage", muted: true, sinkId: "" });
+    const mismatches = findSinkMismatches([onChosen, onDefault, mutedVideo], "dev-a");
+    expect(mismatches.map((m) => m.label)).toEqual(["wrong"]);
+  });
+
+  it("treats default and empty as the same output", () => {
+    expect(findSinkMismatches([el({ sinkId: "" })], "default")).toEqual([]);
+    expect(findSinkMismatches([el({ sinkId: "" })], "")).toEqual([]);
   });
 });

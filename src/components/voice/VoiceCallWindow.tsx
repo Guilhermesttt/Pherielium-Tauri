@@ -39,6 +39,8 @@ import { ParticipantFilmstrip } from "./call-window/ParticipantFilmstrip";
 import { CallControlDock } from "./call-window/CallControlDock";
 import { CallSettingsPopover } from "./call-window/CallSettingsPopover";
 import { VideoRenderer } from "./call-window/VideoRenderer";
+import { MediaTransportProvider } from "./call-window/MediaTransportContext";
+import type { MediaTransport } from "@/services/voiceCall/feedAudioPolicy";
 import { OrbloomCustomizerModal } from "./call-window/OrbloomCustomizerModal";
 
 export type CallFeedId =
@@ -115,6 +117,8 @@ interface VoiceCallWindowProps {
   peerMuted?: Record<string, boolean>;
   onSetPeerMuted?: (key: string, muted: boolean) => void;
   isReconnecting?: boolean;
+  /** Transporte de mídia da chamada; define se os <video> tocam áudio (sob LiveKit ficam mutados). */
+  mediaTransport?: MediaTransport;
   inputMode?: "voice-activity" | "push-to-talk";
   setInputMode?: (mode: "voice-activity" | "push-to-talk") => void;
   pushToTalkKey?: string;
@@ -197,6 +201,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
   peerMuted = {},
   onSetPeerMuted,
   isReconnecting = false,
+  mediaTransport = "none",
   inputMode = "voice-activity",
   setInputMode,
   pushToTalkKey = "F8",
@@ -913,6 +918,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
   const focusedFeed = activeFeeds.find((f) => f.id === focusedFeedId) || null;
 
   return (
+    <MediaTransportProvider transport={mediaTransport}>
     <AnimatePresence>
       {isOpen && !isDisconnecting && (
         <motion.div
@@ -1308,5 +1314,6 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
         </motion.div>
       )}
     </AnimatePresence>
+    </MediaTransportProvider>
   );
 };

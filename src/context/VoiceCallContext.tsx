@@ -341,6 +341,7 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({
         peerMuted={voiceCall.peerMuted}
         onSetPeerMuted={voiceCall.setPeerMuted}
         isReconnecting={voiceCall.isReconnecting}
+        mediaTransport={voiceCall.mediaTransport}
         inputMode={voiceCall.inputMode}
         setInputMode={voiceCall.setInputMode}
         pushToTalkKey={voiceCall.pushToTalkKey}

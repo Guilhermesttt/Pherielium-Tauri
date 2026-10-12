@@ -48,3 +48,11 @@ Tornar o `<video>` de feeds remotos **mudo sempre que a mídia for LiveKit**, de
 
 ## Hipóteses restantes
 Nenhuma competindo com a causa acima; o inventário confirma ou refuta no runtime. Se **não** aparecer trilha em 2 elementos, a próxima suspeita é o `ScreenShareAudio` publicado pelo emissor ainda silencioso (a captura de desktop só passou a iniciar com a F-áudio), o que o inventário também mostra (publicação ausente ou `muted=true`).
+
+## V-fix: implementada (esta rodada)
+- **Invariante:** com transporte LiveKit (e `none`, antes de o transporte ser marcado), todo `<video>` fica **sempre mutado**; o `<audio>` de `track.attach()` é o único audível. Regra pura em `feedAudioPolicy.ts` (`effectiveVideoMuted`), aplicada **em um lugar só**: `VideoRenderer` lê o transporte do `MediaTransportContext` (provido por `VoiceCallWindow`). Isso cobre palco da transmissão, câmera, miniaturas (`ParticipantTile`), tela cheia, PiP e qualquer `VideoRenderer` futuro.
+- **P2P e eco:** comportamento anterior (o `<video>` toca o áudio do stream, porque ali não há `<audio>` do LiveKit). Documentado no cabeçalho de `feedAudioPolicy.ts`; nesses modos o `setSinkId` não vale para o `<video>` (limitação conhecida).
+- **Voz duplicada com câmera:** coberta pela mesma regra (câmera no palco, miniatura e tela cheia).
+- **Saída de áudio:** `setSinkId` agora vai pelo `applySinkId`, que só chama quando a saída muda e **também para voltar ao padrão** (antes escolher "default" depois de um dispositivo não revertia o elemento). O inventário imprime o `sinkId` de cada elemento e avisa quando um elemento audível não usa a saída escolhida.
+- **Testes:** `feedAudioPolicy.test.ts` cobre a regra, o invariante "no máximo um elemento audível por trilha" (transmissão e voz com câmera) e `applySinkId`; `audioInventory.test.ts` cobre `findSinkMismatches`.
+- **Fora do escopo (issue):** boost acima de 100% (ver `docs/tech-debt/issue-drafts.md`, item 4).

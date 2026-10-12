@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { isStreamDebugEnabled, streamDebugLog } from "@/services/voiceCall/streamDebug";
 import { APP_PROTOCOL_VERSION } from "@/lib/protocolVersion";
+import { applySinkId } from "@/services/voiceCall/feedAudioPolicy";
 import {
   cleanUid,
   evaluateCallAnswer,
@@ -776,9 +777,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
               });
               pub.track.attachedElements?.forEach((el) => {
                 el.volume = normVol;
-                if (selectedAudioOutput && selectedAudioOutput !== "default" && typeof (el as any).setSinkId === "function") {
-                  void (el as any).setSinkId(selectedAudioOutput).catch(() => { });
-                }
+                applySinkId(el, selectedAudioOutput);
               });
             }
           });
@@ -2138,9 +2137,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
               },
             ),
           );
-          if (selectedAudioOutputRef.current && selectedAudioOutputRef.current !== "default" && typeof (el as any).setSinkId === "function") {
-            void (el as any).setSinkId(selectedAudioOutputRef.current).catch(() => { });
-          }
+          applySinkId(el, selectedAudioOutputRef.current);
           void el.play().catch(() => { });
         };
 
@@ -3046,6 +3043,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
             adaptiveStream: String(options?.adaptiveStream),
           },
           storedVolumes: peerVolumesRef.current,
+          selectedAudioOutput: selectedAudioOutputRef.current ?? "",
         },
         await getAppVersionCached(),
       );

@@ -1,4 +1,6 @@
 import React, { useEffect, useRef } from "react";
+import { effectiveVideoMuted } from "../../../services/voiceCall/feedAudioPolicy";
+import { useMediaTransport } from "./MediaTransportContext";
 
 interface VideoRendererProps {
   stream: MediaStream | null;
@@ -20,6 +22,14 @@ export const VideoRenderer: React.FC<VideoRendererProps> = ({
   onVideoElement,
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  // Invariante de áudio: sob LiveKit o <video> é sempre mutado (o <audio> do attach() é o único audível).
+  const transport = useMediaTransport();
+  const effectiveMuted = effectiveVideoMuted(muted, transport);
+
+  // O atributo `muted` do React nem sempre é reaplicado quando a prop muda; garante pela propriedade do elemento.
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.muted = effectiveMuted;
+  }, [effectiveMuted]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -77,7 +87,7 @@ export const VideoRenderer: React.FC<VideoRendererProps> = ({
       }}
       autoPlay
       playsInline
-      muted={muted}
+      muted={effectiveMuted}
       disablePictureInPicture={false}
       className={`h-full w-full ${
         fitMode === "cover" ? "object-cover" : "object-contain"

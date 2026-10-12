@@ -19,6 +19,8 @@ export interface ElementInfo {
   paused: boolean;
   audioTrackIds: string[];
   videoTrackCount: number;
+  /** `HTMLMediaElement.sinkId`: saída de áudio do elemento ("" = padrão do sistema). */
+  sinkId: string;
 }
 
 export interface PublicationInfo {
@@ -38,6 +40,8 @@ export interface InventoryInput {
   roomOptions: { webAudioMix: string; adaptiveStream: string };
   /** Volumes salvos por chave (`voice:<uid>` / `screen:<uid>`), só os números. */
   storedVolumes: Record<string, number>;
+  /** Saída de áudio escolhida nas configurações ("default" ou vazio = padrão). */
+  selectedAudioOutput: string;
 }
 
 export const shortId = (value: string): string => (value ? value.slice(0, 4) : "?");
@@ -50,6 +54,7 @@ export function describeElement(
     muted: boolean;
     paused: boolean;
     srcObject?: unknown;
+    sinkId?: string;
   },
   origin: ElementInfo["origin"],
   label: string,
@@ -64,7 +69,18 @@ export function describeElement(
     paused: el.paused,
     audioTrackIds: stream?.getAudioTracks ? stream.getAudioTracks().map((t) => t.id) : [],
     videoTrackCount: stream?.getVideoTracks ? stream.getVideoTracks().length : 0,
+    sinkId: el.sinkId ?? "",
   };
+}
+
+const normalizeSink = (value: string): string => (value === "default" ? "" : value);
+
+/** Elementos audíveis (tocando, sem mute, volume > 0, com trilha de áudio) cuja saída difere da escolhida. */
+export function findSinkMismatches(elements: ElementInfo[], selectedAudioOutput: string): ElementInfo[] {
+  const wanted = normalizeSink(selectedAudioOutput);
+  return elements.filter(
+    (el) => !el.muted && !el.paused && el.volume > 0 && el.audioTrackIds.length > 0 && normalizeSink(el.sinkId) !== wanted,
+  );
 }
 
 export interface DoublePlayback {
@@ -110,7 +126,7 @@ export function formatInventory(input: InventoryInput, appVersion: string): stri
   lines.push(`--- elementos de mídia: ${input.elements.length} ---`);
   for (const el of input.elements) {
     lines.push(
-      `${el.origin}:${el.tag} "${el.label}" vol=${el.volume} muted=${el.muted} paused=${el.paused} audioTracks=${el.audioTrackIds.length} videoTracks=${el.videoTrackCount}`,
+      `${el.origin}:${el.tag} "${el.label}" vol=${el.volume} muted=${el.muted} paused=${el.paused} audioTracks=${el.audioTrackIds.length} videoTracks=${el.videoTrackCount} sink=${el.sinkId || "default"}`,
     );
   }
 
@@ -118,6 +134,13 @@ export function formatInventory(input: InventoryInput, appVersion: string): stri
   lines.push("--- trilhas tocando em mais de um elemento ---");
   if (doubles.length === 0) lines.push("(nenhuma)");
   for (const d of doubles) lines.push(`ATENÇÃO trilha ${d.trackId.slice(0, 8)} em ${d.elements.length} elementos: ${d.elements.join(" | ")}`);
+
+  const sinkMismatches = findSinkMismatches(input.elements, input.selectedAudioOutput);
+  lines.push(`--- saída de áudio escolhida: ${input.selectedAudioOutput || "default"} ---`);
+  if (sinkMismatches.length === 0) lines.push("(todo elemento audível usa a saída escolhida)");
+  for (const el of sinkMismatches) {
+    lines.push(`ATENÇÃO ${el.origin}:${el.tag} "${el.label}" está em sinkId="${el.sinkId || "default"}" e não na saída escolhida`);
+  }
 
   lines.push("--- volumes salvos (%) ---");
   const stored = Object.entries(input.storedVolumes);

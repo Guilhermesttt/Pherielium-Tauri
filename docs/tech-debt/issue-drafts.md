@@ -23,10 +23,11 @@ return a typed result, or document why ignoring is safe. Do it per file, not wit
 `ban-ts-comment`. Mostly mechanical.
 
 ## 4. feat(voice): real volume boost above 100% on the LiveKit path (P3)
+_Registrado em 2026-10-12 a pedido do dono; fora da V-fix. Nota: o slider de **voz** promete 200% e, no LiveKit, nada muda além de 100% (`el.volume` é limitado a 1,0)._
 `HTMLMediaElement.volume` is capped at 1.0, so on LiveKit the voice slider's 100-200% range
 does nothing today (only the P2P `PeerAudioNode` path applies gain up to 2.0). Screen-share
 audio is capped at 100% in the UI until this lands.
-Options: `RemoteAudioTrack.setVolume` with a Web Audio `audioContext` configured on the Room, or a
+Proposal: apply gain above 100% with `RemoteAudioTrack.setVolume` and `webAudioMix` enabled on the Room, or a
 dedicated `GainNode` chain. Either way add a limiter like `PeerAudioNode` (-6 dB threshold,
 20:1) to avoid clipping. Saved volumes are stored as the user left them, so no migration is needed.
 
