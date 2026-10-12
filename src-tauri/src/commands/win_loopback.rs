@@ -16,8 +16,7 @@ use windows::Win32::Media::Audio::{
     AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, WAVEFORMATEX, WAVEFORMATEXTENSIBLE,
 };
 use windows::Win32::System::Com::{
-    CoCreateInstance, CoGetApartmentType, CoInitializeEx, CoTaskMemFree, CoUninitialize, APTTYPE,
-    APTTYPEQUALIFIER, APTTYPE_MAINSTA, APTTYPE_MTA, APTTYPE_NA, APTTYPE_STA, CLSCTX_ALL,
+    CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, CLSCTX_ALL,
     COINIT_MULTITHREADED,
 };
 
@@ -27,54 +26,6 @@ const WAVE_FORMAT_PCM: u16 = 1;
 const WAVE_FORMAT_IEEE_FLOAT: u16 = 3;
 const WAVE_FORMAT_EXTENSIBLE: u16 = 0xFFFE;
 const AUDCLNT_BUFFERFLAGS_SILENT: u32 = 0x2;
-static DESKTOP_AUDIO_GEN: AtomicU64 = AtomicU64::new(0);
-/// Diagnóstico (flag `pherielium_stream_debug` no front, ligada por `stream_debug_set`). Só observa; nunca muda o comportamento.
-static STREAM_DEBUG: AtomicBool = AtomicBool::new(false);
-
-pub fn set_stream_debug(enabled: bool) {
-    STREAM_DEBUG.store(enabled, Ordering::Relaxed);
-}
-
-/// Emite um passo do diagnóstico para o front (console) e para o stderr. No-op com a flag desligada.
-fn diag(app: &AppHandle, stage: &str, detail: serde_json::Value) {
-    if !STREAM_DEBUG.load(Ordering::Relaxed) {
-        return;
-    }
-    let payload = json!({ "stage": stage, "detail": detail });
-    eprintln!("[desktop-audio-diag] {payload}");
-    if let Err(err) = app.emit_to("main", "stream-debug:desktop-audio", payload) {
-        eprintln!("[desktop-audio-diag] emit falhou: {err}");
-    }
-}
-
-/// Apartamento COM da thread atual, para o diagnóstico.
-fn apartment_name() -> &'static str {
-    let mut apartment = APTTYPE(0);
-    let mut qualifier = APTTYPEQUALIFIER(0);
-    // SAFETY: os dois ponteiros de saída são variáveis locais válidas.
-    match unsafe { CoGetApartmentType(&mut apartment, &mut qualifier) } {
-        Ok(()) => match apartment {
-            APTTYPE_MTA => "MTA",
-            APTTYPE_STA => "STA",
-            APTTYPE_MAINSTA => "MainSTA",
-            APTTYPE_NA => "NA",
-            _ => "other",
-        },
-        Err(_) => "uninitialized",
-    }
-}
-
-/// Extrai o primeiro `0x........` de uma mensagem de erro (os erros desta camada são texto).
-pub(crate) fn hresult_from_message(message: &str) -> Option<String> {
-    let start = message.find("0x")?;
-    let digits: String = message[start + 2..].chars().take_while(|c| c.is_ascii_hexdigit()).collect();
-    if digits.is_empty() {
-        None
-    } else {
-        Some(format!("0x{}", digits.to_ascii_uppercase()))
-    }
-}
-
 const SUBTYPE_IEEE_FLOAT: GUID = GUID::from_values(
     0x0000_0003,
     0x0000,
@@ -311,289 +262,6 @@ unsafe fn drain_packets(
     Ok(())
 }
 
-pub fn stop_excluding_self() {
-    DESKTOP_AUDIO_GEN.fetch_add(1, Ordering::SeqCst);
-}
-
-/// Captures the render mix except this process tree. Local playback is unchanged.
-pub fn start_excluding_self(app: AppHandle) -> Result<LoopbackInfo, String> {
-    let generation = DESKTOP_AUDIO_GEN.fetch_add(1, Ordering::SeqCst) + 1;
-    diag(
-        &app,
-        "start",
-        json!({
-            "path": "legacy win_loopback::start_excluding_self",
-            "mode": "EXCLUDE_TARGET_PROCESS_TREE",
-            "targetPid": std::process::id(),
-            "windowsBuild": crate::commands::audio_capture::win::windows_build(),
-            "generation": generation,
-            "previousGenerationStillRunning": generation > 1,
-        }),
-    );
-    let (tx, rx) = std::sync::mpsc::channel();
-    std::thread::Builder::new()
-        .name("desktop-audio-exclude".into())
-        .spawn(move || {
-            if let Err(err) = run_excluding_self(app, generation, &tx) {
-                let _ = tx.send(Err(err));
-            }
-        })
-        .map_err(|e| format!("Falha ao iniciar o audio de desktop: {e}"))?;
-
-    rx.recv_timeout(Duration::from_secs(4))
-        .map_err(|_| "Timeout ao iniciar o audio de desktop.".to_string())?
-}
-
-fn run_excluding_self(
-    app: AppHandle,
-    generation: u64,
-    tx: &std::sync::mpsc::Sender<Result<LoopbackInfo, String>>,
-) -> Result<(), String> {
-    let com_hr = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) };
-    diag(
-        &app,
-        "com",
-        json!({ "coInitializeEx": format!("{:#010x}", com_hr.0 as u32), "apartment": apartment_name() }),
-    );
-    struct ComGuard;
-    impl Drop for ComGuard {
-        fn drop(&mut self) {
-            unsafe { CoUninitialize(); }
-        }
-    }
-    let _com = ComGuard;
-
-    let client = match activate_excluding_self() {
-        Ok(client) => {
-            diag(&app, "activate", json!({ "ok": true }));
-            client
-        }
-        Err(message) => {
-            diag(
-                &app,
-                "activate",
-                json!({ "ok": false, "error": message, "hresult": hresult_from_message(&message) }),
-            );
-            return Err(message);
-        }
-    };
-    let pwfx = match unsafe { client.GetMixFormat() } {
-        Ok(ptr) => ptr,
-        Err(e) => {
-            // Cliente de process loopback não implementa GetMixFormat (E_NOTIMPL): a captura nunca chegaria a iniciar.
-            diag(&app, "get_mix_format", json!({ "ok": false, "hresult": format!("{:#010x}", e.code().0 as u32) }));
-            return Err(format!("GetMixFormat: {e}"));
-        }
-    };
-    if pwfx.is_null() {
-        return Err("Mix format nulo.".into());
-    }
-
-    let wfx = unsafe { *pwfx };
-    let channels = wfx.nChannels.max(1);
-    let sample_rate = wfx.nSamplesPerSec.max(8000);
-    let bits = wfx.wBitsPerSample;
-    let block_align = wfx.nBlockAlign.max(1);
-    let kind = unsafe { detect_kind(pwfx, bits) };
-
-    let init = unsafe {
-        client.Initialize(
-            AUDCLNT_SHAREMODE_SHARED,
-            AUDCLNT_STREAMFLAGS_LOOPBACK,
-            1_000_000,
-            0,
-            pwfx,
-            None,
-        )
-    };
-    unsafe { CoTaskMemFree(Some(pwfx.cast())); }
-    init.map_err(|e| format!("IAudioClient::Initialize: {e}"))?;
-
-    let capture: IAudioCaptureClient = unsafe {
-        client
-            .GetService()
-            .map_err(|e| format!("GetService IAudioCaptureClient: {e}"))?
-    };
-    unsafe {
-        client
-            .Start()
-            .map_err(|e| format!("IAudioClient::Start: {e}"))?;
-    }
-
-    let _ = tx.send(Ok(LoopbackInfo {
-        sample_rate,
-        channels,
-    }));
-
-    loop {
-        if DESKTOP_AUDIO_GEN.load(Ordering::SeqCst) != generation {
-            break;
-        }
-        unsafe {
-            match drain_packets(&app, &capture, channels, sample_rate, block_align, kind) {
-                Ok(()) => {}
-                Err(err) => {
-                    eprintln!("[desktop-audio] Falha no loopback por processo: {err}");
-                    break;
-                }
-            }
-        }
-        std::thread::sleep(Duration::from_millis(8));
-    }
-
-    unsafe { let _ = client.Stop(); }
-    Ok(())
-}
-
-fn activate_excluding_self() -> Result<IAudioClient, String> {
-    use std::sync::atomic::AtomicU32;
-    use std::sync::Mutex;
-    use windows::core::{Interface, GUID, HRESULT, IUnknown};
-    use windows::Win32::Media::Audio::{
-        ActivateAudioInterfaceAsync,
-        IActivateAudioInterfaceCompletionHandler, IActivateAudioInterfaceCompletionHandler_Vtbl,
-        AUDIOCLIENT_ACTIVATION_PARAMS, AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK,
-        AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS, PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE,
-        VIRTUAL_AUDIO_DEVICE_PROCESS_LOOPBACK,
-    };
-
-    #[repr(C)]
-    struct ActivationBlob {
-        vt: u16,
-        reserved1: u16,
-        reserved2: u16,
-        reserved3: u16,
-        size: u32,
-        data: *const AUDIOCLIENT_ACTIVATION_PARAMS,
-    }
-
-    #[repr(C)]
-    struct Handler {
-        vtbl: *const IActivateAudioInterfaceCompletionHandler_Vtbl,
-        ref_count: AtomicU32,
-        tx: Mutex<Option<std::sync::mpsc::Sender<()>>>,
-    }
-
-    unsafe extern "system" fn query_interface(
-        this: *mut std::ffi::c_void,
-        iid: *const GUID,
-        out: *mut *mut std::ffi::c_void,
-    ) -> HRESULT {
-        if iid.is_null() || out.is_null() {
-            return HRESULT(0x8000_4003u32 as i32);
-        }
-        let iid = unsafe { *iid };
-        let iunknown = GUID::from_u128(0x0000_0000_0000_0000_c000_0000_0000_0046);
-        let handler = <IActivateAudioInterfaceCompletionHandler as Interface>::IID;
-        if iid == iunknown || iid == handler {
-            unsafe {
-                *out = this;
-                add_ref(this);
-            }
-            HRESULT(0)
-        } else {
-            unsafe { *out = std::ptr::null_mut(); }
-            HRESULT(0x8000_4002u32 as i32)
-        }
-    }
-
-    unsafe extern "system" fn add_ref(this: *mut std::ffi::c_void) -> u32 {
-        let handler = unsafe { &*(this as *const Handler) };
-        handler.ref_count.fetch_add(1, Ordering::SeqCst) + 1
-    }
-
-    unsafe extern "system" fn release(this: *mut std::ffi::c_void) -> u32 {
-        let handler = unsafe { &*(this as *const Handler) };
-        let next = handler.ref_count.fetch_sub(1, Ordering::SeqCst) - 1;
-        if next == 0 {
-            unsafe { drop(Box::from_raw(this as *mut Handler)); }
-        }
-        next
-    }
-
-    unsafe extern "system" fn activate_completed(
-        this: *mut std::ffi::c_void,
-        _operation: *mut std::ffi::c_void,
-    ) -> HRESULT {
-        let handler = unsafe { &*(this as *const Handler) };
-        if let Some(tx) = handler.tx.lock().ok().and_then(|mut slot| slot.take()) {
-            let _ = tx.send(());
-        }
-        HRESULT(0)
-    }
-
-    static VTBL: IActivateAudioInterfaceCompletionHandler_Vtbl =
-        IActivateAudioInterfaceCompletionHandler_Vtbl {
-            base__: windows::core::IUnknown_Vtbl {
-                QueryInterface: query_interface,
-                AddRef: add_ref,
-                Release: release,
-            },
-            ActivateCompleted: activate_completed,
-        };
-
-    let params = AUDIOCLIENT_ACTIVATION_PARAMS {
-        ActivationType: AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK,
-        Anonymous: windows::Win32::Media::Audio::AUDIOCLIENT_ACTIVATION_PARAMS_0 {
-            ProcessLoopbackParams: AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS {
-                TargetProcessId: std::process::id(),
-                ProcessLoopbackMode: PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE,
-            },
-        },
-    };
-    let blob = ActivationBlob {
-        vt: 65, // VT_BLOB
-        reserved1: 0,
-        reserved2: 0,
-        reserved3: 0,
-        size: std::mem::size_of::<AUDIOCLIENT_ACTIVATION_PARAMS>() as u32,
-        data: &params,
-    };
-
-    let (ready_tx, ready_rx) = std::sync::mpsc::channel();
-    let handler = Box::new(Handler {
-        vtbl: &VTBL,
-        ref_count: AtomicU32::new(1),
-        tx: Mutex::new(Some(ready_tx)),
-    });
-    let raw = Box::into_raw(handler);
-    let handler_iface = unsafe {
-        IActivateAudioInterfaceCompletionHandler::from_raw(raw as *mut std::ffi::c_void)
-    };
-
-    let operation = unsafe {
-        ActivateAudioInterfaceAsync(
-            VIRTUAL_AUDIO_DEVICE_PROCESS_LOOPBACK,
-            &IAudioClient::IID,
-            Some(&blob as *const ActivationBlob as *const windows::core::PROPVARIANT),
-            &handler_iface,
-        )
-        .map_err(|e| format!("ActivateAudioInterfaceAsync: {e}"))?
-    };
-
-    ready_rx
-        .recv_timeout(Duration::from_secs(3))
-        .map_err(|_| "Timeout ao ativar o loopback por processo.".to_string())?;
-
-    let mut activate_hr = HRESULT(0);
-    let mut unknown: Option<IUnknown> = None;
-    unsafe {
-        operation
-            .GetActivateResult(&mut activate_hr, &mut unknown)
-            .map_err(|e| format!("GetActivateResult: {e}"))?;
-    }
-    if activate_hr.is_err() {
-        drop(handler_iface);
-        return Err(format!("Loopback por processo recusado: {activate_hr}"));
-    }
-    let unknown = unknown.ok_or_else(|| "Loopback por processo nao retornou cliente.".to_string())?;
-    let client: IAudioClient = unknown
-        .cast()
-        .map_err(|e| format!("IAudioClient: {e}"))?;
-    drop(handler_iface);
-    Ok(client)
-}
-
 fn to_s16le(bytes: &[u8], frames: u32, channels: u16, kind: SampleKind) -> Vec<u8> {
     let samples = frames as usize * channels as usize;
     let mut out = vec![0u8; samples * 2];
@@ -707,8 +375,7 @@ fn pcm_kind(kind: SampleKind) -> PcmKind {
     }
 }
 
-/// Loopback clássico do dispositivo de saída padrão (ouve tudo, inclusive este app);
-/// usado só se a captura "exceto este processo" não estiver disponível.
+/// Loopback clássico do dispositivo de saída padrão (ouve tudo, inclusive este app).
 fn default_render_client() -> Result<IAudioClient, String> {
     let enumerator: IMMDeviceEnumerator = unsafe {
         CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL)
@@ -738,13 +405,9 @@ fn run_level_meter(app: AppHandle, generation: u64) -> Result<(), String> {
     }
     let _com = ComGuard;
 
-    let client = match activate_excluding_self() {
-        Ok(client) => client,
-        Err(err) => {
-            eprintln!("[audio-level] captura por processo indisponivel ({err}); usando loopback classico");
-            default_render_client()?
-        }
-    };
+    // O medidor ouve o mix do dispositivo padrão. Antes tentava a captura "sem este app" e caía aqui sempre (a ativação
+    // antiga nunca funcionou: handler sem IAgileObject); o comportamento efetivo é este.
+    let client = default_render_client()?;
     let pwfx = unsafe { client.GetMixFormat().map_err(|e| format!("GetMixFormat: {e}"))? };
     if pwfx.is_null() {
         return Err("Mix format nulo.".into());
@@ -839,45 +502,3 @@ unsafe fn drain_levels(
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn extracts_the_hresult_from_an_error_message() {
-        assert_eq!(
-            hresult_from_message("ActivateAudioInterfaceAsync: Um método foi chamado em um horário inesperado. (0x8000000E)"),
-            Some("0x8000000E".to_string())
-        );
-        assert_eq!(hresult_from_message("Timeout ao ativar o loopback por processo."), None);
-        assert_eq!(hresult_from_message("erro 0x"), None);
-    }
-
-    /// DIAGNÓSTICO F0 (somente leitura): ativa o loopback por processo pelo caminho ANTIGO (o que o front usa em
-    /// `desktop_audio_start`) e imprime o HRESULT. Compara com `audio_capture::win::tests::getmixformat_on_process_loopback`,
-    /// que usa o caminho novo (handler com IAgileObject).
-    ///
-    /// `cargo test --lib legacy_activation_hresult -- --ignored --nocapture`
-    #[test]
-    #[ignore = "depende do Windows e do áudio desta máquina; só diagnóstico"]
-    fn legacy_activation_hresult() {
-        unsafe {
-            let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
-        }
-        match activate_excluding_self() {
-            Ok(client) => {
-                println!("legacy activate_excluding_self: OK (ativação aceita)");
-                // O caminho antigo chama GetMixFormat logo em seguida; mostra o que acontece.
-                match unsafe { client.GetMixFormat() } {
-                    Ok(ptr) => {
-                        println!("legacy GetMixFormat: OK");
-                        unsafe { CoTaskMemFree(Some(ptr.cast())) };
-                    }
-                    Err(e) => println!("legacy GetMixFormat: ERRO {:#010x} ({e})", e.code().0 as u32),
-                }
-            }
-            Err(message) => println!("legacy activate_excluding_self: ERRO: {message}"),
-        }
-        unsafe { CoUninitialize() };
-    }
-}

@@ -61,3 +61,10 @@ Conclusão: o defeito 1 sozinho explica o erro do usuário; o defeito 2 aparecer
 ## Hipóteses restantes
 - A hipótese da árvore excluída (R8 de `02-rust.md`) continua **não provada**; precisa do P-10 com a captura funcionando.
 - Se a transmissão por janela tem som hoje, falta saber por qual caminho (item 2 das perguntas).
+
+## Atualização: F-áudio implementada
+O `desktop_audio_start`/`desktop_audio_stop` agora usam o módulo `audio_capture` (`CaptureManager` único, `ExcludeSelf`, mesmo evento `screen-share:audio` com `{pcm, sampleRate: 48000, channels: 2, format: "s16le"}`, via `emit_to("main", ...)`).
+O caminho antigo (`start_excluding_self`, `run_excluding_self`, `activate_excluding_self`, `drain_packets` do modo "excluir") foi **removido**, junto com o código do experimento (reprodução do erro: commit `615c7f9`, teste `legacy_activation_hresult`).
+O medidor de nível do overlay (`win_loopback.rs`) também chamava `activate_excluding_self()` e **sempre** caía no loopback clássico; agora usa o loopback clássico direto (mesmo comportamento efetivo, sem o erro no log).
+Prova nesta máquina: `cargo test --lib open_exclude_self -- --ignored --nocapture` abre a captura nova e recebe áudio de outro processo (295 leituras, todas com dados, pico 0,35). Conversor f32→s16 coberto por testes unitários (`audio_capture/ipc.rs`).
+Falta o teste com 2 contas (P-10 refeito) e uma chamada com voz durante a transmissão, para confirmar que a voz não volta no stream.

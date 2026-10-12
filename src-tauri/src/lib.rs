@@ -10,7 +10,10 @@ use commands::controller_config::{
     controller_curve_preview, controller_driver_status, controller_trigger_preview,
     hidhide_status, vigem_status,
 };
-use commands::audio_capture::{desktop_audio_capabilities, desktop_audio_selftest};
+use commands::audio_capture::{
+    desktop_audio_capabilities, desktop_audio_selftest, desktop_audio_start, desktop_audio_stop, stream_debug_set,
+    CaptureManager,
+};
 use commands::virtual_pad::{
     virtual_pad_attach, virtual_pad_detach, virtual_pad_is_attached, virtual_pad_update,
 };
@@ -56,6 +59,7 @@ pub fn run() {
         .manage(GameWatchState::default())
         .manage(AchievementWatcherState::default())
         .manage(ScreenCaptureState::default())
+        .manage(CaptureManager::default())
         .manage(EpicLoginState::default())
         // ── Lifecycle Setup ────────────────────────────────────────────────
         .setup(|app| {
@@ -267,8 +271,8 @@ pub fn run() {
             screen_share_stop,
             screen_share_status,
             desktop_audio_start,
-            stream_debug_set,
             desktop_audio_stop,
+            stream_debug_set,
             capture_target_jpeg,
             // Push-to-Talk
             ptt_register,

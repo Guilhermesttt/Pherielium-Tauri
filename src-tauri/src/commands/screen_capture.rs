@@ -349,34 +349,6 @@ pub fn screen_share_status(state: State<'_, ScreenCaptureState>) -> Result<Value
     }))
 }
 
-/// Liga/desliga o diagnóstico do áudio de desktop (flag `pherielium_stream_debug` do front). Só observa; não muda a captura.
-#[tauri::command]
-pub fn stream_debug_set(enabled: bool) {
-    #[cfg(windows)]
-    win_loopback::set_stream_debug(enabled);
-    #[cfg(not(windows))]
-    let _ = enabled;
-}
-
-#[tauri::command]
-pub fn desktop_audio_start(app: AppHandle) -> Result<Value, String> {
-    #[cfg(windows)]
-    {
-        let info = win_loopback::start_excluding_self(app)?;
-        return Ok(json!({
-            "active": true,
-            "sampleRate": info.sample_rate,
-            "channels": info.channels,
-            "excludeProcess": true,
-        }));
-    }
-    #[cfg(not(windows))]
-    {
-        let _ = app;
-        Err("Captura de audio por processo disponivel apenas no Windows.".into())
-    }
-}
-
 /// Liga o medidor de nível do áudio do PC (headbang do mascote no overlay). Idempotente.
 #[tauri::command]
 pub fn overlay_audio_level_start(app: AppHandle) -> Result<(), String> {
@@ -395,13 +367,6 @@ pub fn overlay_audio_level_start(app: AppHandle) -> Result<(), String> {
 pub fn overlay_audio_level_stop() {
     #[cfg(windows)]
     win_loopback::stop_level_meter();
-}
-
-#[tauri::command]
-pub fn desktop_audio_stop() -> Result<Value, String> {
-    #[cfg(windows)]
-    win_loopback::stop_excluding_self();
-    Ok(json!({ "active": false }))
 }
 
 #[tauri::command]

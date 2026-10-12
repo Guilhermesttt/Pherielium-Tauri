@@ -11,8 +11,10 @@
 //! - `win`     — a captura WASAPI de verdade (todo o `unsafe`).
 //! - `packet`  — o formato binário que segue ao front.
 
+pub mod diag;
 pub mod error;
 pub mod format;
+pub mod ipc;
 pub mod packet;
 pub mod ring;
 pub mod session;
@@ -25,6 +27,7 @@ pub mod win;
 mod wav;
 
 use serde::Serialize;
+use tauri::{AppHandle, Emitter, Manager};
 
 pub use error::AudioCaptureError;
 pub use session::CaptureManager;
@@ -71,6 +74,110 @@ fn probe() -> Capability {
 ///
 /// O front usa isto para decidir se oferece "Áudio do sistema (sem a call)" ou
 /// explica por que não dá. Roda numa thread própria (a ativação espera o COM).
+/// Modo do compartilhamento de tela: o desktop inteiro MENOS este app (a voz da chamada não volta no stream).
+/// É o mesmo contrato do caminho antigo (`win_loopback`), para não mudar o que o espectador ouve.
+const SCREEN_SHARE_MODE: CaptureMode = CaptureMode::ExcludeSelf;
+
+/// Liga/desliga o diagnóstico do áudio de desktop (flag `pherielium_stream_debug` do front). Só observa.
+#[tauri::command]
+pub fn stream_debug_set(enabled: bool) {
+    diag::set_stream_debug(enabled);
+}
+
+#[cfg(target_os = "windows")]
+fn windows_build_for_diag() -> Option<u32> {
+    win::windows_build()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn windows_build_for_diag() -> Option<u32> {
+    None
+}
+
+/// Troca um erro genérico de ativação por `UnsupportedBuild` quando o build do Windows é anterior ao mínimo oficial.
+#[cfg(target_os = "windows")]
+fn explain_failure(err: AudioCaptureError) -> AudioCaptureError {
+    if matches!(err, AudioCaptureError::ActivationFailed { .. } | AudioCaptureError::Windows { .. }) {
+        if let Some(found) = win::windows_build() {
+            if found < source::MIN_PROCESS_LOOPBACK_BUILD {
+                return AudioCaptureError::UnsupportedBuild { found, required: source::MIN_PROCESS_LOOPBACK_BUILD };
+            }
+        }
+    }
+    err
+}
+
+#[cfg(not(target_os = "windows"))]
+fn explain_failure(err: AudioCaptureError) -> AudioCaptureError {
+    err
+}
+
+fn start_desktop_audio(app: &AppHandle) -> Result<serde_json::Value, AudioCaptureError> {
+    use serde_json::json;
+    diag::diag(
+        app,
+        "start",
+        json!({
+            "path": "audio_capture",
+            "mode": "exclude_self",
+            "targetPid": std::process::id(),
+            "windowsBuild": windows_build_for_diag(),
+        }),
+    );
+
+    // A ativação decide se o process loopback funciona; a sonda separada só serve para explicar a falha (`explain_failure`).
+    let selection = select(SCREEN_SHARE_MODE, Capability::Supported, None)?;
+    let source = build_source(selection)?;
+
+    let sink_app = app.clone();
+    let sink: session::PacketSink = Box::new(move |raw| match ipc::packet_to_event_payload(&raw) {
+        // `false` encerra a sessão: a janela principal não existe mais.
+        Ok(payload) => sink_app.emit_to("main", ipc::AUDIO_EVENT, payload).is_ok(),
+        Err(err) => {
+            eprintln!("[desktop-audio] pacote inválido descartado: {err:?}");
+            true
+        }
+    });
+
+    match app.state::<CaptureManager>().start(source, sink) {
+        Ok(()) => {
+            diag::diag(app, "result", json!({ "ok": true }));
+            Ok(json!({
+                "active": true,
+                "sampleRate": format::SAMPLE_RATE,
+                "channels": format::CHANNELS,
+                "excludeProcess": true,
+            }))
+        }
+        Err(err) => {
+            let err = explain_failure(err);
+            diag::diag(app, "result", json!({ "ok": false, "code": err.code(), "error": err.to_string() }));
+            Err(err)
+        }
+    }
+}
+
+/// Inicia a captura do áudio do desktop (sem o app) e passa a emitir `screen-share:audio` para a janela principal.
+#[tauri::command]
+pub async fn desktop_audio_start(app: AppHandle) -> Result<serde_json::Value, AudioCaptureError> {
+    tauri::async_runtime::spawn_blocking(move || start_desktop_audio(&app))
+        .await
+        .map_err(|e| AudioCaptureError::Thread(e.to_string()))?
+}
+
+/// Para a captura. Idempotente: sem sessão ativa também devolve sucesso.
+#[tauri::command]
+pub async fn desktop_audio_stop(app: AppHandle) -> Result<serde_json::Value, AudioCaptureError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        if let Some(report) = app.state::<CaptureManager>().stop() {
+            diag::diag(&app, "stop", serde_json::json!({ "packets": report.packets }));
+        }
+        Ok(serde_json::json!({ "active": false }))
+    })
+    .await
+    .map_err(|e| AudioCaptureError::Thread(e.to_string()))?
+}
+
 #[tauri::command]
 pub async fn desktop_audio_capabilities() -> Capability {
     tauri::async_runtime::spawn_blocking(probe)

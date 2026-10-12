@@ -1,12 +1,12 @@
 # Clippy baseline (dívida técnica)
 
 Medido em 2026-10-12 com `cargo clippy -- -D warnings` em `src-tauri`, no commit `16fa66f`
-(nenhum código Rust foi alterado desde então). **19 erros**, todos preexistentes.
+(nenhum código Rust foi alterado desde então). **19 erros**, todos preexistentes. **Atualização (F-áudio): 18 erros**; o `needless_return` removido era do caminho antigo de captura (`screen_capture.rs` agora tem 5).
 Critério de aceite: **nenhum erro novo nos arquivos tocados**. Não corrigir agora.
 
 | Arquivo | Erros | Lints |
 | --- | --- | --- |
-| `src/commands/screen_capture.rs` | 6 | `needless_return` (2), `while_let_loop`, `drop_non_drop`, `manual_as_chunks`, `redundant_pattern_matching` |
+| `src/commands/screen_capture.rs` | 5 | `needless_return` (2), `while_let_loop`, `drop_non_drop`, `manual_as_chunks`, `redundant_pattern_matching` |
 | `src/commands/process_monitor.rs` | 3 | `unnecessary_map_or` (2), `manual_strip` |
 | `src/commands/win_loopback.rs` | 2 | `while_let_loop`, `drop_non_drop` |
 | `src/commands/epic.rs` | 2 | `unnecessary_map_or`, `collapsible_if` |
