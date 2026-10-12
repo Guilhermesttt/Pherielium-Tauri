@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   buildDisplayMediaRequest,
   captureNativeScreenShare,
+  describeCaptureSurface,
   planScreenShareAudio,
   isDisplayMediaCancelledError,
   screenShareAudioBarrierConstraints,
@@ -147,6 +148,15 @@ describe("captureNativeScreenShare", () => {
       name: "NotAllowedError",
     });
     expect(getDisplayMedia).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("describeCaptureSurface", () => {
+  it("reports the surface the browser gave, and flags a missing field", () => {
+    expect(describeCaptureSurface({ displaySurface: "window", cursor: "always", width: 1920, height: 1080, frameRate: 60 })).toBe(
+      "displaySurface=window cursor=always 1920x1080@60",
+    );
+    expect(describeCaptureSurface({})).toBe("displaySurface=(ausente) cursor=(ausente) ?x?@?");
   });
 });
 

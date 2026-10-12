@@ -144,6 +144,16 @@ export function discardBrowserAudioTracks(stream: MediaStream): number {
 }
 
 /**
+ * Diagnóstico (flag pherielium_stream_debug): o que o WebView2 informa sobre a superfície escolhida.
+ * Serve para medir se `displaySurface` é confiável antes de decidir o áudio por superfície (docs/backend-audit/10-*.md).
+ */
+export function describeCaptureSurface(settings: MediaTrackSettings & { displaySurface?: string; cursor?: string }): string {
+  const surface = settings.displaySurface ?? "(ausente)";
+  const cursor = settings.cursor ?? "(ausente)";
+  return `displaySurface=${surface} cursor=${cursor} ${settings.width ?? "?"}x${settings.height ?? "?"}@${settings.frameRate ?? "?"}`;
+}
+
+/**
  * Opens exactly one native getDisplayMedia picker (video only; see `planScreenShareAudio`).
  * Cancellation must not trigger a second picker or publish partial tracks.
  */

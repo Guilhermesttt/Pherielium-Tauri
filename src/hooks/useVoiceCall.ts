@@ -86,6 +86,7 @@ import { buildProcessedAudioTrack } from "../services/audio/audioProcessing";
 import { attachKrispToTrack, detachKrispFromTrack } from "../services/audio/krispNoiseFilter";
 import {
   captureNativeScreenShare,
+  describeCaptureSurface,
   planScreenShareAudio,
   isDisplayMediaCancelledError,
   publishScreenShareTracks,
@@ -4351,6 +4352,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
           fps >= 60 ? "motion" : "detail";
 
         const captureSettings = videoTrack.getSettings();
+        streamDebugLog("capture-surface", describeCaptureSurface(captureSettings));
         console.info("[useVoiceCall] Screen capture settings", {
           width: captureSettings.width,
           height: captureSettings.height,
