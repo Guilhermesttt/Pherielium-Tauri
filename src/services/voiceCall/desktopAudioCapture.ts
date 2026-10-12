@@ -1,5 +1,38 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { isStreamDebugEnabled, streamDebugLog } from "./streamDebug";
+
+/**
+ * Acumula o nível do áudio capturado do PC para o diagnóstico (flag pherielium_stream_debug).
+ * Responde, no lado de quem transmite, "o loopback está produzindo som?": se o jogo lançado pelo hub fica
+ * fora da captura, o nível fica em zero mesmo com o jogo tocando (teste P-10).
+ */
+export interface LevelWindow {
+  packets: number;
+  silentPackets: number;
+  sumSquares: number;
+  samples: number;
+  peak: number;
+}
+
+export const emptyLevelWindow = (): LevelWindow => ({ packets: 0, silentPackets: 0, sumSquares: 0, samples: 0, peak: 0 });
+
+export function accumulateLevel(window: LevelWindow, packetPeak: number, packetSumSquares: number, packetSamples: number): void {
+  window.packets += 1;
+  if (packetPeak < 0.0005) window.silentPackets += 1; // ~ -66 dBFS
+  window.sumSquares += packetSumSquares;
+  window.samples += packetSamples;
+  if (packetPeak > window.peak) window.peak = packetPeak;
+}
+
+export function summarizeLevel(window: LevelWindow): { packets: number; silentPackets: number; rms: number; peak: number } {
+  return {
+    packets: window.packets,
+    silentPackets: window.silentPackets,
+    rms: window.samples > 0 ? Number(Math.sqrt(window.sumSquares / window.samples).toFixed(5)) : 0,
+    peak: Number(window.peak.toFixed(5)),
+  };
+}
 
 type DesktopAudioPacket = {
   pcm?: string;
@@ -38,6 +71,10 @@ export async function startDesktopAudioCapture(): Promise<{
   }
 
   const started = await invoke<DesktopAudioStart>("desktop_audio_start");
+  streamDebugLog("desktop-audio-started", started);
+  const debugLevels = isStreamDebugEnabled();
+  let levelWindow = emptyLevelWindow();
+  let levelWindowStartedAt = Date.now();
   const sampleRate = Number(started?.sampleRate) || 48000;
   const channels = Number(started?.channels) || 2;
   const ctx = new AudioContext({ sampleRate });
@@ -53,10 +90,27 @@ export async function startDesktopAudioCapture(): Promise<{
     if (frames <= 0) return;
     const view = new DataView(pcm.buffer, pcm.byteOffset, pcm.byteLength);
     const buffer = ctx.createBuffer(count, frames, rate || ctx.sampleRate);
+    let packetPeak = 0;
+    let packetSumSquares = 0;
     for (let channel = 0; channel < count; channel += 1) {
       const dest = buffer.getChannelData(channel);
       for (let i = 0; i < frames; i += 1) {
-        dest[i] = view.getInt16((i * count + channel) * 2, true) / 32768;
+        const sample = view.getInt16((i * count + channel) * 2, true) / 32768;
+        dest[i] = sample;
+        if (debugLevels) {
+          const magnitude = Math.abs(sample);
+          if (magnitude > packetPeak) packetPeak = magnitude;
+          packetSumSquares += sample * sample;
+        }
+      }
+    }
+    if (debugLevels) {
+      accumulateLevel(levelWindow, packetPeak, packetSumSquares, frames * count);
+      const now = Date.now();
+      if (now - levelWindowStartedAt >= 1000) {
+        streamDebugLog("desktop-audio-level", summarizeLevel(levelWindow));
+        levelWindow = emptyLevelWindow();
+        levelWindowStartedAt = now;
       }
     }
     const source = ctx.createBufferSource();
