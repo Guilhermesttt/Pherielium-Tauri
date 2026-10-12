@@ -306,7 +306,7 @@ Resposta do dono pendente nos pontos que não consegui decidir sozinho (ver §15
 
 ## 15. Decisões do dono (aprovação de 2026-10-12) e alterações ao plano
 
-Este capítulo **tem precedência** sobre os §5 a §7 quando houver conflito.
+Este capítulo **tem precedência** sobre os §5 a §7 quando houver conflito. **Atenção: o §17 (nova prioridade) tem precedência sobre este capítulo.** Itens do §15 que ficam no backlog pelo §17: B1, A2/U/C e o resto da lista 1.0.3 (A1 e D1 já entregues permanecem).
 
 ### 15.1. Decisões
 1. **Ordem aprovada:** A1 → B1 → D1 → F1 no 1.0.3; depois C; depois A2, B2/B3, D2 e E (após a Fatia 0).
@@ -382,3 +382,269 @@ Entregue conforme o §15.2: 3 tentativas (esperas de 1 s e 2 s entre elas, não 
 1. OK para a **F-áudio** (ligar `audio_capture`).
 2. Resultados de **P-1, P-2, P-3**; o **P-10** passa a ser refeito **depois** da F-áudio.
 3. **Item 7**, **Fatia 0** e chave do updater, como em §15.8.
+
+## 17. Mudança de produto e de prioridade (decisão do dono, 2026-10-12)
+
+**Este capítulo tem precedência sobre os §2, §5 a §7, §15 e §16 quando houver conflito.**
+
+### 17.1. Nova ordem (somente estes problemas)
+
+| # | Fatia | Estado |
+| --- | --- | --- |
+| 1 | **F-áudio**: áudio da tela inteira | **FEITA** (`03d78ee`): `audio_capture` ligado a `desktop_audio_start/stop`, caminho antigo removido. Falta o P-10 refeito com 2 contas |
+| 2 | **V**: volume da transmissão | **Diagnóstico entregue** (`09-v-volume-transmissao.md`, `376ea46`); correção proposta, **aguarda OK** (0,5 a 1 dia) |
+| 3 | **I**: convite como mensagem validada no servidor | **Planejada abaixo**; implementação só depois da aprovação do plano **e do schema** |
+| 4 | **R**: canais de voz privados que ficam salvos | **Planejada abaixo**; idem |
+
+**Backlog** (não descartados, fora da fila): A2 (canais Realtime privados), B1, B2/B3 (presença no servidor), C (detecção ambiente), U (updater), E (DM offline), drivers (G), F1 (excluir árvore do WebView2, condicional ao P-10 refeito), P2P/ADR-0004 (sessão de chamada no servidor; ver 17.3.6).
+**A1 já feita permanece** (`pv`, DM sem texto no fast-path, canal global só escuta, filtros em modo `log`). A D1 também permanece.
+
+### 17.2. V: resumo do diagnóstico e da correção proposta
+Detalhes e provas em `09-v-volume-transmissao.md`. A causa é o `<video>` do palco (feed remoto, `muted={feed.isLocal}`) tocando a **mesma** trilha que o `<audio>` controlado pelo slider. A correção é silenciar o `<video>` de feeds remotos quando a mídia é LiveKit (`shouldMuteFeedVideo`), com teste em tabela e conferência pelo inventário (`window.pherieliumAudioInventory()`). O mesmo ajuste corrige a voz tocando em dobro quando o outro liga a câmera.
+
+### 17.3. I: fluxo de convite como mensagem
+
+#### 17.3.1. O que existe hoje [VERIFICADO]
+- **Dois mecanismos paralelos** de convite: (a) o aviso `call:invite` por broadcast (canais `user_calls_{uid}` e `user_inbox_{uid}`), que abre o modal de "atender" (`VoiceCallContext.tsx:278`, `useVoiceCall.ts` `onInvite`/`ringing-in`) e também aparece no notch (`DesktopNotch.tsx:938`); e (b) uma **mensagem de chat** com JSON `{"__type":"call_invite",...}` renderizada como card (`CallInviteCard.tsx`), criada em `ChannelInviteModal.tsx:74-84` junto com o broadcast (`:62-69`).
+- O card é um **retrato** do momento do envio: `isPrivate: Boolean(session.isPrivate)`, `roomName`, `category`, `createdAt` ficam no texto da mensagem (`ChannelInviteModal.tsx:74-82`, `CallInviteCard.tsx:20-37`). Não há validade, não há estado e não há checagem de quem pode entrar além do `join_voice_room`.
+- A senha é pedida no card (`CallInviteCard.tsx`, modal de senha) e verificada no RPC `join_voice_room` (bcrypt via `crypt`, `20261009100200_voice_room_hardening.sql:55-61`). **Não há limite de tentativas**, e uma sala privada **sem senha** só deixa o dono entrar (`elsif v_room.is_private and v_room.host_uid <> v_uid`).
+
+#### 17.3.2. O print: dois cards de "The NERDS" (um "Privada", outro não)
+**Não recebi o print nesta mensagem**, então a causa **não está provada**. O código permite duas explicações; a segunda é a mais provável:
+1. **Duplicação do mesmo convite** (broadcast + Postgres Changes): o par `fast_` + INSERT é reunido pela chave `[senderId, chatId, attachmentPath, text.trim()].join("\0")` (`chat.ts:~640`). Com o texto idêntico o par se junta; só duplicaria se o INSERT falhasse e a mensagem otimista fosse devolvida (`chat.ts:400-418`) e o INSERT chegasse depois. Os **dois cards teriam o mesmo `createdAt` e o mesmo selo**.
+2. **Dois convites diferentes** (mais provável): como o selo é o retrato de `session.isPrivate` no momento do envio, um convite enviado com o canal aberto e outro depois de torná-lo privado (ou com `session.isPrivate` ainda indefinido) mostram selos diferentes para o **mesmo** canal. O **`createdAt` seria diferente**.
+**Como provar (1 minuto):** no SQL Editor: `select id, created_at, text from chat_messages where text like '%call_invite%' and text like '%The NERDS%' order by created_at desc limit 5;`. Dois `id` com `created_at` diferentes e `isPrivate` diferentes dentro do JSON = dois convites (hipótese 2). Um `id` só na tabela e dois cards na tela = duplicação no cliente (hipótese 1). Se o dono me passar o resultado, fecho com `[VERIFICADO]`.
+Em qualquer caso o desenho novo elimina as duas: o card passa a **consultar o estado no servidor** (não é retrato) e o convite tem `id` único gerado no cliente.
+
+#### 17.3.3. Especificação aprovada (resumo)
+- **Convidar = gravar uma mensagem de convite no chat.** `id` gerado no cliente (idempotência), `expires_at` definido **pelo servidor** (padrão 15 min). **Sem modal de atender.** O destinatário recebe uma notificação de mensagem: "[nome] está te convidando para uma call". Offline: o convite fica no histórico.
+- **Entrar = RPC no servidor** que valida: o convite é do usuário, está no prazo e, se privado, a senha. Estados: `pendente`, `aceito`, `expirado`, `cancelado`. Expirado: "convite inválido ou expirado". A contagem regressiva do card é **só visual**; o servidor decide.
+- **Compatibilidade:** o app novo trata o aviso antigo de "tocar" (broadcast do 1.0.2) como **notificação comum, nunca modal**.
+
+#### 17.3.4. Desenho
+- **Uma RPC atômica cria convite e mensagem** (`voice_invite_create`): grava o convite e a linha de `chat_messages` na mesma transação, com o texto montado **no servidor**. Assim o convite e a mensagem nunca divergem e o `p_invite_id` do cliente serve de `client_id` da mensagem (idempotente: reenviar não duplica).
+- **Formato da mensagem** (compatível com o app antigo): o JSON continua começando por `{"__type":"call_invite"` com `chatId` (= id do canal), `roomName`, `category`, `callerName`, `callerAvatar`, `isPrivate`, `createdAt`, **mais** `inviteId` e `v: 2`. O app antigo renderiza o card e entra pelo RPC antigo; o app novo ignora o retrato e consulta `voice_invite_get(inviteId)`.
+- **O card não é retrato**: o estado, o nome, o selo "Privada" e `expires_at` vêm de `voice_invite_get`, que devolve também `server_now`. O cliente calcula a contagem regressiva com `expires_at − server_now` (ajuste de relógio: `offset = server_now − Date.now()` no momento da consulta), então um relógio errado não muda o desfecho.
+- **Notificação:** a mensagem nova chega pelo caminho de mensagens (Postgres Changes, já existente); o texto da notificação vem do tipo `call_invite`. Nenhum modal. Offline: fica no histórico, e ao abrir o chat o card consulta o estado (`pendente`, `expirado`...).
+- **Estados**: `pendente` (`status='pending'` e `now() < expires_at`), `aceito`, `cancelado`, e `expirado` **derivado** (`status='pending'` e `now() >= expires_at`). Sem cron obrigatório; uma limpeza periódica opcional marca `expired` por higiene.
+
+```mermaid
+stateDiagram-v2
+    [*] --> pendente: voice_invite_create (dono; amigo)
+    pendente --> aceito: voice_channel_join valido (convite do usuario, no prazo, senha ok)
+    pendente --> cancelado: voice_invite_cancel (quem convidou)
+    pendente --> expirado: now() >= expires_at (derivado, o servidor decide)
+    expirado --> [*]: "convite invalido ou expirado"
+    aceito --> [*]: (entrar de novo usa a associacao salva, nao o convite)
+    cancelado --> [*]
+```
+
+#### 17.3.5. Mapa do ciclo antigo: o que fica sem uso (remoção em fatia posterior, ADR `0009`)
+Com I no ar e o app antigo em desuso, os caminhos abaixo deixam de ser chamados **para convites de canal e para chamadas iniciadas pelo app novo**. Hoje continuam vivos para o par v1:
+
+| Caminho | Onde | Fica sem uso quando |
+| --- | --- | --- |
+| Estado `ringing-in`, `incomingInvite`, modal de atender | `useVoiceCall.ts` (`onInvite` ~`:2990`), `VoiceCallContext.tsx:237-278`, `DesktopNotch.tsx:938` | convite vira mensagem (I) |
+| Toque do destino e o timer de 35 s ("perdida") | `useVoiceCall.ts:~3012` (`incomingTimeoutTimerRef`) | idem |
+| `answerCall`, `rejectCall` e `call:answer` | `useVoiceCall.ts:~3269`, `:3895`, `inviteTransport.ts:93-122` | "Entrar" passa a ser `voice_channel_join` |
+| `onAnswer` esperando `mediaPendingRef` | `useVoiceCall.ts` (`onAnswer`, D1) | não há mais "atender" |
+| `ringing-out`, `ringoutTimerRef` ("não atendeu") e `call:end` com `timeout/busy/rejected` | `useVoiceCall.ts:~3219-3236` | quem convida entra no canal e espera; não há toque |
+| `sendCallInvite` nos dois canais (`user_calls_`, `user_inbox_`), `subscribeToUserIncomingCalls`, dedupe `lastProcessedInviteKeyRef` | `inviteTransport.ts`, `useVoiceCall.ts` | broadcast antigo só para par v1 |
+| `isLocalTestCall` (simulação/eco) | `useVoiceCall.ts` | depende de testes locais; manter até decidir |
+| Filtros A1 de `call:invite`/`call:answer`/`call:end` | `eventGuards.ts` | junto com os eventos |
+**Regra de convivência:** enquanto houver amigos em 1.0.2, o app novo **ainda envia** o aviso antigo para pares v1 (`peerProtocol` = 1 ou desconhecido) e **só mostra notificação comum** para o aviso recebido. A remoção é uma fatia própria depois do corte do v1, com ADR `0009` (proposto abaixo).
+
+#### 17.3.6. Pergunta de produto que muda o escopo (decisão sua)
+O **"ligar para um amigo" 1:1** também vira convite? Recomendo: **sim**, como um **canal efêmero privado de 2 pessoas** (criado ao convidar, expira sozinho), reaproveitando o mesmo fluxo e eliminando o ciclo "tocar/atender/perdida/ocupado". **Isso substitui a ADR-0004** (sessão autoritativa de chamada), que fica no backlog. Alternativa: I só para canais, e o 1:1 continua com o ciclo antigo (mantém todos os caminhos da tabela acima). **O esboço abaixo assume I para canais e deixa o 1:1 como decisão pendente.**
+
+### 17.4. R: canais de voz privados que ficam salvos
+
+#### 17.4.1. Especificação aprovada (resumo) e padrões
+- Canal privado: só entra com **convite** e pede **senha**. Na **primeira entrada válida** o canal é **salvo** para o usuário e aparece numa lista parecida com servidores do Discord. Modelo enxuto: **dono e membros, sem cargos**.
+- Padrões (você mandou sinalizar discordância): **senha só na primeira entrada**; **só o dono convida**; o dono **troca a senha, expulsa membro e apaga o canal**; **convite vale 15 min**.
+- A senha é verificada **somente no servidor** (hash adequado, limite de tentativas); o **hash nunca vai ao cliente**. Isso fecha o achado `password_hash` via Realtime (`07`, #4).
+- **Não assinar presença de todos os canais salvos**; contagem de online com custo baixo.
+
+#### 17.4.2. Onde concordo e onde discordo dos padrões
+| Padrão | Posição |
+| --- | --- |
+| Senha só na primeira entrada | **Concordo.** Efeito: quem já é membro **não** precisa da senha nova se o dono a trocar. Registrar: trocar a senha **não expulsa** ninguém; para tirar alguém, expulsar. |
+| Só o dono convida | **Concordo como padrão**, mas **sugiro** deixar a regra numa coluna (`invite_policy = 'owner'`) para permitir "membros convidam" depois sem migração. |
+| Convite 15 min | **Concordo.** Valor num parâmetro do servidor. |
+| (Acréscimo meu) o convidado precisa ser **amigo** de quem convida | **Proponho**, para evitar spam de convite a desconhecidos (hoje o `join_voice_room` aceita qualquer UID que saiba o id do canal). |
+| (Acréscimo meu) limite de convites pendentes e de tentativas de senha | **Proponho**: máximo de 20 convites criados por hora por dono; senha: 5 falhas por usuário e canal em 15 min trava por 15 min. |
+| Hash da senha | **bcrypt via `pgcrypto`** (o app já usa, mas com `gen_salt('bf')` no custo padrão **6**, fraco). **Proponho custo 10** e **rehash** no primeiro acerto de um hash antigo. |
+
+#### 17.4.3. Modelo de dados proposto (expand/contract; [INFERIDO] até chegar o schema)
+Base verificada nas migrations: `voice_rooms` (`host_uid`, `room_name`, `category`, `is_private`, `password_hash`, `has_password` gerada, `icon`, `avatar_url`, `theme_color`, `max_participants`, `status` `active|ended`, `description`, `banner_url`), `voice_room_members` (`room_id`, `user_id`, `display_name`, `avatar_url`, `joined_at`, `removed_at`, PK `(room_id, user_id)`), RPCs `create_voice_room`, `join_voice_room`, `update_voice_room`, funções `can_view_voice_room`, `is_voice_room_member`.
+
+```mermaid
+erDiagram
+    voice_rooms ||--o{ voice_channel_members : "salvo por"
+    voice_rooms ||--o{ voice_invites : "convida para"
+    voice_rooms ||--o| voice_room_secrets : "senha (hash)"
+    voice_rooms ||--o{ voice_room_members : "em chamada agora"
+    voice_rooms ||--o{ voice_join_attempts : "tentativas de senha"
+    voice_invites }o--|| chat_messages : "mensagem do convite"
+    voice_rooms { uuid id PK
+      uuid host_uid
+      text room_name
+      bool is_private
+      bool has_password
+      bool invite_only
+      text invite_policy
+      text status }
+    voice_room_secrets { uuid room_id PK
+      text password_hash
+      int hash_cost
+      timestamptz changed_at }
+    voice_channel_members { uuid room_id PK
+      uuid user_id PK
+      timestamptz first_joined_at
+      timestamptz last_joined_at
+      timestamptz kicked_at
+      uuid kicked_by }
+    voice_invites { uuid id PK
+      uuid room_id
+      uuid inviter_id
+      uuid invitee_id
+      text status
+      timestamptz created_at
+      timestamptz expires_at
+      timestamptz accepted_at
+      uuid message_id }
+    voice_join_attempts { uuid room_id PK
+      uuid user_id PK
+      int failed_count
+      timestamptz window_started_at
+      timestamptz locked_until }
+```
+
+| Tabela / mudança | Detalhes |
+| --- | --- |
+| `voice_room_secrets(room_id pk fk, password_hash, hash_cost, changed_at)` | **fora da publicação Realtime** e sem nenhuma policy para `anon`/`authenticated` (só funções `SECURITY DEFINER` leem). Fecha o `password_hash` via Realtime. |
+| `voice_rooms` (expand) | `has_password` deixa de ser coluna gerada de `password_hash` e vira `boolean not null default false` mantida pelas RPCs (mesmo nome e tipo: os clientes que a leem não notam); `invite_only boolean not null default false`; `invite_policy text not null default 'owner'`. **Contract** (release seguinte): `drop column password_hash`. |
+| `voice_channel_members(room_id, user_id, first_joined_at, last_joined_at, kicked_at, kicked_by)` | PK `(room_id, user_id)`. É o "canal salvo". **Separada** de `voice_room_members`, que continua a ser "quem está na chamada agora". Índice `(user_id)` para a lista. Dono = `voice_rooms.host_uid` (sem cargos). |
+| `voice_invites(id uuid pk, room_id, inviter_id, invitee_id, status, created_at, expires_at, accepted_at, message_id)` | `id` **gerado no cliente**; `expires_at` **definido pelo servidor** (`now() + interval '15 minutes'`, parametrizável); `status` em `pending|accepted|canceled` (`expired` é derivado). Índices: `(invitee_id, status, expires_at)`, `(room_id)`, único parcial `(room_id, invitee_id) where status='pending'`. |
+| `voice_join_attempts(room_id, user_id, failed_count, window_started_at, locked_until)` | Limite de tentativas de senha. Só as RPCs escrevem. |
+| `voice_room_members` (expand) | `last_seen_at timestamptz` para a contagem de online sem fantasmas (ver 17.4.5). |
+**RLS:** `voice_invites` e `voice_channel_members` com `SELECT` só para as partes (convidante e convidado; membro do próprio canal) e **nenhum** `INSERT/UPDATE/DELETE` direto; `voice_room_secrets` e `voice_join_attempts` sem policy; tudo muda por RPC `SECURITY DEFINER` com `auth.uid()` e `set search_path`. Todas as tabelas novas **fora** de `supabase_realtime` (exceto o que o dono decidir mostrar em tempo real).
+
+#### 17.4.4. RPCs
+| RPC | Regras |
+| --- | --- |
+| `voice_invite_create(p_invite_id, p_room_id, p_invitee)` | Chamador = dono (`invite_policy`); convidado é **amigo aceito**; limite de convites; trava a sala; **substitui** um convite pendente igual (cancela o anterior); cria o convite e a mensagem de chat na mesma transação (texto montado no servidor); idempotente por `p_invite_id`. Devolve `{invite, message_id, server_now}`. |
+| `voice_invite_get(p_invite_id)` | Só convidante ou convidado. Devolve `{state, roomName, category, isPrivate, hasPassword, expiresAt, inviter, server_now}`. |
+| `voice_invite_cancel(p_invite_id)` | Só quem convidou ou o dono. |
+| `voice_channel_join(p_room_id, p_invite_id default null, p_password default null, p_display_name, p_avatar_url)` | Trava a sala (`for update`). **Membro salvo e não expulso**: entra sem convite nem senha. **Senão, se o canal é privado/`invite_only`**: exige convite `pending`, do próprio usuário e `now() < expires_at`; depois, se tem senha: confere o hash com limite de tentativas; **só então** cria a associação salva, marca o convite `accepted` e registra a presença (como o `join_voice_room` de hoje, incluindo a checagem de capacidade). Segunda chamada com o convite já aceito: **idempotente** (já é membro, devolve o canal). Canal público sem senha: entra e **salva**. |
+| `voice_channel_leave(p_room_id)` | Marca a presença como saída; **não** apaga a associação salva. |
+| `voice_channel_set_password(p_room_id, p_password)` (dono) | Grava o hash (custo 10) em `voice_room_secrets` e atualiza `has_password`; **não expulsa** membros. |
+| `voice_channel_kick(p_room_id, p_user_id)` (dono) | `kicked_at`; encerra a presença; invalida convites pendentes dele; ele não volta sem novo convite do dono. |
+| `voice_channel_delete(p_room_id)` (dono) | `status='ended'` e apaga associações e convites (cascade); expulsa quem está na chamada. |
+| `voice_channels_list()` | Canais salvos do usuário + `online_count` + `max_participants` (ver 17.4.5). |
+| RPCs antigas (`join_voice_room`, `create_voice_room`, `update_voice_room`) | **Mantêm assinatura e comportamento para o app 1.0.2**; por baixo passam a usar `voice_room_secrets` e a manter `has_password`. |
+
+#### 17.4.5. Contagem de online com custo baixo (sem assinar todos os canais)
+- **Sem Realtime por canal salvo.** A lista chama `voice_channels_list()` **ao abrir o painel e a cada 30 a 60 s enquanto ele estiver visível**; devolve a contagem calculada de `voice_room_members` (`removed_at is null` **e** `last_seen_at > now() - interval '90 seconds'`). Custo: 1 consulta por painel aberto, com índice parcial em `(room_id) where removed_at is null`.
+- **Fantasmas** (crash sem sair): quem está em chamada atualiza `last_seen_at` com um RPC leve a cada 30 s **só enquanto está na chamada**; a contagem ignora linhas velhas, sem cron.
+- **Tempo real só do canal aberto:** o cliente assina um único tópico (`v2:room:{id}`, privado, quando existir) **apenas do canal que está na tela**.
+- Estimativa: 100 usuários com o painel aberto e 1 consulta a cada 45 s ≈ 2 consultas/s, trivial para o Postgres; zero mensagens Realtime extras.
+
+#### 17.4.6. Primeira entrada válida (diagrama)
+```mermaid
+sequenceDiagram
+    participant D as Dono
+    participant S as Supabase (RPC)
+    participant M as Membro novo
+    D->>S: voice_invite_create(inviteId, sala, M)
+    S-->>D: convite + mensagem (expires_at = now()+15 min)
+    S-->>M: mensagem no chat (notificacao, sem modal)
+    M->>S: voice_invite_get(inviteId)
+    S-->>M: pendente, privada, tem senha, expires_at, server_now
+    M->>S: voice_channel_join(sala, inviteId, senha)
+    alt convite ok e senha ok
+        S->>S: salva em voice_channel_members; convite = aceito
+        S-->>M: sala + participantes (sem hash)
+        M->>M: lista "Meus canais" ganha o canal
+    else senha errada
+        S->>S: failed_count++ (trava apos 5 em 15 min)
+        S-->>M: senha incorreta
+    else expirado, cancelado ou de outro usuario
+        S-->>M: convite invalido ou expirado
+    end
+    Note over M,S: proximas entradas: voice_channel_join(sala) sem convite nem senha
+```
+
+### 17.5. Migração dos canais e senhas atuais sem perder dados [INFERIDO até o schema]
+1. **Expand (aditivo, idempotente, uma migration por passo):** criar `voice_room_secrets`, `voice_channel_members`, `voice_invites`, `voice_join_attempts`; `voice_rooms.invite_only/invite_policy`; `voice_room_members.last_seen_at`; funções novas.
+2. **Backfill de senhas:** `insert into voice_room_secrets select id, password_hash, 6, now() from voice_rooms where password_hash is not null on conflict do nothing`. Hash com custo 6 continua válido; é regravado com custo 10 no primeiro acerto. **Contagem antes e depois deve bater** (teste).
+3. **Backfill de associações salvas:** para cada sala **ativa**, o **dono** e os membros com `removed_at is null` viram `voice_channel_members`. Quem já saiu **não** é salvo em retrospecto (evita encher a lista de pessoas com salas públicas antigas); entram de novo e salvam.
+4. **Converter `has_password`:** em uma transação, `drop column has_password` (gerada) e `add column has_password boolean not null default false`, preenchida de `voice_room_secrets`; as RPCs passam a mantê-la. O nome e o tipo ficam iguais para o app antigo.
+5. **Trocar os corpos dos RPCs antigos** para ler/gravar em `voice_room_secrets` e manter `password_hash` **nulo** em salas novas; salas antigas ficam com o valor até o contract.
+6. **Contract (release seguinte, depois de confirmar 1.0.2 sem leitura):** `drop column password_hash` em `voice_rooms` (a tabela continua publicada; sem a coluna não há o que vazar). Isso encerra de vez o risco no Realtime. Antes: conferir funções, policies e views que citam `password_hash` (consulta 03).
+7. **Convites antigos:** os cards `call_invite` já gravados continuam como **convite legado** (sem `inviteId`): o app novo os mostra com "convite antigo" e entra pelo RPC antigo (regras antigas). Nada é apagado.
+8. **Rollback:** as migrations são aditivas; reverter é desligar a flag do cliente novo (`pherielium_voice_invites_v2=0`) e deixar as tabelas. O único passo não trivial de reverter é o 4 (a recriação de `has_password`); por isso ele tem um script de volta documentado.
+
+### 17.6. Compatibilidade com o 1.0.2
+| Cenário | Comportamento |
+| --- | --- |
+| Novo convida novo | Fluxo completo (convite no servidor, card consultando estado, sem modal). |
+| Novo convida velho | Grava a mensagem (formato antigo + `inviteId`) **e** envia o aviso antigo (`call:invite`) para o par v1; o velho vê o modal/card antigos e entra pelo RPC antigo (regras antigas: senha para sala com senha). Para canais criados pelo app novo com `invite_only=true`, o RPC **antigo** recusa a entrada ("sala privada"): é a limitação aceita da convivência (documentar no aviso de versão). |
+| Velho convida novo | O app novo recebe o broadcast antigo como **notificação comum** (nunca modal) e o card `call_invite` do chat como **convite legado**; a entrada usa o RPC antigo. |
+| Chamada 1:1 velho↔novo | Depende da decisão 17.3.6. Padrão conservador: o novo continua respondendo ao 1:1 antigo **só como notificação** com ação "ligar de volta"; ligar para velho usa o ciclo antigo. |
+| Corte do v1 | Só então `invite_only` pode ser imposto a todos e o ciclo antigo removido (ADR `0009`). |
+
+### 17.7. Testes (todos novos; pgTAP no projeto de staging, Docker não está instalado)
+| Caso | Esperado |
+| --- | --- |
+| **Expirar no limite** | em `now() = expires_at − 1 ms` entra; em `now() = expires_at` já é "convite inválido ou expirado" (o servidor decide; comparação `now() < expires_at`) |
+| **Aceitar duas vezes** | 1ª cria a associação e marca `accepted`; 2ª é idempotente (já é membro) e **não** duplica linha nem presença |
+| **Convite de outro usuário** | `voice_channel_join` com `invite.invitee_id <> auth.uid()` → "convite inválido ou expirado"; `voice_invite_get` de terceiros → vazio/negado |
+| **Senha errada repetida** | 5 falhas em 15 min travam por 15 min; a 6ª nem confere o hash; acerto zera o contador; trava por usuário e canal |
+| **Relógio desajustado** | cliente com relógio ±10 min: o desfecho (aceito/expirado) não muda; a contagem regressiva usa `server_now`; teste de unidade da função `remainingMs(expiresAt, serverNow, localNowAtFetch)` |
+| Só o dono convida | membro comum: erro; dono: ok |
+| Convidado precisa ser amigo | convite a não amigo é recusado |
+| Expulsão | expulso não volta sem novo convite; convites pendentes dele ficam inválidos |
+| Trocar a senha | membros salvos continuam entrando; novos usam a senha nova |
+| Apagar o canal | convites e associações somem; quem está na chamada é expulso |
+| Capacidade | duas entradas disputando a última vaga: só uma passa (lock `for update`) |
+| Compatibilidade | RPC antigo `join_voice_room` continua funcionando para sala pública e com senha |
+| Migração | contagem de salas, senhas e donos igual antes e depois; reexecutar a migration não duplica nada |
+| RLS e vazamento | o hash nunca aparece em `select`, em `postgres_changes` nem no payload de nenhuma RPC; `voice_room_secrets` não está na publicação |
+Mais: testes unitários dos reducers do card (estados e contagem), do formatador de mensagem de convite e dos erros tipados do cliente.
+
+### 17.8. Insumos indispensáveis (as 8 consultas de `00-fontes.md` §3 e a API)
+| Consulta | Para I e R? | Por quê |
+| --- | --- | --- |
+| **01** colunas das tabelas | **Indispensável** | confirmar colunas e tipos reais de `voice_rooms`, `voice_room_members`, `chat_messages` (inclui `client_id`, `sequence_id`), `friendships`, `profiles` |
+| **02** policies | **Indispensável** | desenhar RLS das tabelas novas sem abrir buraco e ver o que as policies atuais já permitem em `voice_*` e `chat_messages` |
+| **03** funções | **Indispensável** | os corpos **reais** de `create/join/update_voice_room`, `can_view_voice_room`, `is_voice_room_member` e triggers de chat; é o que vou reescrever sem quebrar o app antigo |
+| **04** índices | Desejável | dá para criar com `if not exists`; serve para evitar duplicar |
+| **05** triggers | **Indispensável** | triggers de `chat_messages` (guarda, `sequence_id`) afetam a inserção da mensagem de convite pela RPC |
+| **06** publicações | **Indispensável** | confirmar o que está em `supabase_realtime` (`voice_rooms`, `chat_messages`...) e fechar o vazamento do hash |
+| **07** grants | **Indispensável** | verificar que `password_hash` não é legível por `anon`/`authenticated` e o que as tabelas novas herdarão |
+| **08** migrations aplicadas | **Indispensável** | saber se `20261009120000`, `...140000`, `...150000` e `20261010120000` rodaram em produção |
+**Também indispensável: o código da API do Render.** `/api/voice/rooms*` (create/join/leave/delete) **pode escrever no banco com `service_role` e contornar** os RPCs (limite de tentativas, convite, associação salva). Preciso ver se a API reimplementa a senha ou só chama os RPCs; se reimplementa, as regras novas precisam valer nela ou ela precisa passar a chamar os RPCs.
+Fatia 0 também continua pedindo o plano do Supabase e o projeto de staging.
+
+### 17.9. Fatias, esforço e dependências
+| Fatia | O que entrega | Esforço | Depende de |
+| --- | --- | --- | --- |
+| **V-fix** | `shouldMuteFeedVideo` e props `muted` | 0,5 a 1 dia | OK do dono |
+| **I-1** | RPCs `voice_invite_*` + mensagem atômica + card que consulta estado + notificação sem modal; aviso antigo vira notificação | 7 a 10 dias | **schema**, API |
+| **I-2** | Remoção do ciclo antigo (ADR `0009`) | 4 a 6 dias | I-1 estável + corte do v1 |
+| **R-1** | Tabelas novas, backfill, `voice_channel_join/leave`, lista "Meus canais" (UI), contagem por polling | 9 a 12 dias | schema, API, I-1 |
+| **R-2** | Gestão do dono: trocar senha, expulsar, apagar; limite de tentativas; rehash | 4 a 5 dias | R-1 |
+| **R-3** | Contract do `password_hash` | 1 a 2 dias | R-1 em produção e 1.0.2 sem leitura |
+Total aproximado de I+R: **25 a 35 dias** de um desenvolvedor, **±50%** até o schema e a API chegarem. Menor recorte útil: **V-fix + I-1 (sem remover nada)**.
+
+### 17.10. ADRs novas (propostas)
+`0007-convite-como-mensagem-validado-no-servidor.md`, `0008-canais-de-voz-privados-salvos.md`, `0009-remocao-do-ciclo-de-chamada-antigo.md`. O updater (U) deixa de ocupar o número 0007; reservar `0010`.
+
+### 17.11. Decisões que preciso de você
+1. **Escopo do I:** só canais, ou também o "ligar" 1:1 como canal efêmero (17.3.6)? Recomendo incluir o 1:1.
+2. Confirmar os padrões e os **dois acréscimos meus**: convidado precisa ser **amigo**; limites (20 convites/hora, 5 senhas erradas em 15 min).
+3. Aceitar a limitação de convivência: canais criados pelo app novo com `invite_only` **não** abrem pelo app 1.0.2.
+4. O resultado da consulta do print (17.3.2) e o **print**, se quiser que eu feche a causa dos dois cards como `[VERIFICADO]`.
+5. **Schema** (as 7 consultas indispensáveis), **repositório da API**, plano do Supabase e **staging**.
+6. OK para a **V-fix**.

@@ -19,3 +19,8 @@ Auditoria (`01` a `07`, `RESUMO.md`), revalidação (`REVALIDACAO.md`) e plano a
 
 ## Próximos (ordem aprovada)
 B1 (depois do P-1 a P-3) → D1 (ADR 0006) → F1 (depois do P-3 e P-10) → U (updater, ADR 0007) → C (detecção ambiente, ADR 0003 atualizada) → A2, B2/B3, D2, E (após a Fatia 0).
+
+## Atualização 2026-10-12 (nova prioridade)
+- **Feito:** D1 (`12b9b9c`), F0 (`615c7f9`), **F-áudio** (`03d78ee`), diagnóstico **V** (`376ea46`, `09-v-volume-transmissao.md`), plano **I** e **R** (PLAN §17, ADRs 0007 a 0009 propostos).
+- **Fila:** V-fix (aguarda OK) → I → R. **Backlog:** A2, B1, B2/B3, C, U, E, drivers, F1.
+- **Aguardando o dono:** OK da V-fix; escopo do I (1:1 também?); confirmação dos padrões de R; resultado do P-10 refeito; resultado da consulta do print; **schema (7 consultas indispensáveis), repositório da API, plano do Supabase, staging**.

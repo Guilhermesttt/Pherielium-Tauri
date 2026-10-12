@@ -1,5 +1,13 @@
 # Auditoria do backend: resumo da Fase 1
 
+> ## Atualização 2026-10-12: nova prioridade (decisão do dono)
+> Só estes problemas, nesta ordem: **1) F-áudio** (feita), **2) V** volume da transmissão (diagnóstico entregue, correção aguarda OK), **3) I** convite como mensagem e **4) R** canais de voz privados salvos (planejados no PLAN §17, aguardam aprovação e schema).
+> **Backlog:** A2, B1, B2/B3, C, U, E, drivers, F1 (condicional). A1 e D1 já feitas permanecem.
+> - **Problema 3 (tela inteira sem áudio): causa PROVADA e corrigida.** O caminho antigo de captura nunca iniciava: handler sem `IAgileObject` (`0x8000000E`) e `GetMixFormat` `E_NOTIMPL`; ver `08-f0-audio-ativacao.md`. A hipótese da "árvore excluída do hub" (achado #9 abaixo) vira **condicional**: só se reavalia com o P-10 refeito.
+> - **Novo achado V:** o `<video>` do palco toca a mesma trilha que o `<audio>` do slider (e a voz com câmera toca em dobro); `09-v-volume-transmissao.md`.
+> - **Achado do `password_hash` via Realtime (#10):** o plano R o fecha com `voice_room_secrets` fora da publicação.
+> - Os testes manuais passam a ser: **P-10 refeito** (tela inteira, 3 cenários) e uma chamada com voz durante a transmissão; P-1 a P-3 deixam de bloquear a fila (presença está no backlog).
+
 Data: 2026-10-12. Commit auditado: `e11e04d` (+ arquivos de auditoria). **Somente leitura.**
 Rótulos: `[VERIFICADO]` = li o código/migration (arquivo:linha no documento da área); `[INFERIDO]` = deduzido, falta teste ou insumo.
 
