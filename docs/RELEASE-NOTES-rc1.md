@@ -1,4 +1,4 @@
-# Pherielium 1.0.3-rc.1: notas da versão de teste
+# Pherielium 1.0.3-rc.2: notas da versão de teste
 
 **Versão de teste, não publicada.** Enviada direto aos testadores; os dois lados da conversa precisam do rc. Roteiro: `docs/TESTES-RC1.md`. Procedimento de geração: `docs/release-rc.md`.
 Este build inclui o DevTools (F12) para os testes; o instalador oficial não terá.
@@ -15,7 +15,7 @@ Este build inclui o DevTools (F12) para os testes; o instalador oficial não ter
 | Compatibilidade (A1) | Versão de protocolo (`pv`) nas mensagens de presença e convite; DM entre apps novos sem o texto no canal público; o app novo deixa de publicar no canal global de presença; filtros de eventos de chamada em modo `log` | `docs/protocol-compat.md` |
 | Diagnóstico | Presença (B0), áudio/transmissão, `displaySurface`, falhas de chamada e relatório dos filtros, todos atrás de flags | `docs/presence-diagnostics.md` |
 | Convite de call como notificação (I0 + N-invite) | Convite vira notificação (toast, notch e overlay do jogo), sem toque, com expiração local de 15 min; **desligado por padrão** | `docs/invite-notifications.md` |
-| Instalação | `drivers:fetch` verifica SHA-256 e assinatura Authenticode dos drivers | `docs/release-rc.md` |
+| Instalação | `drivers:fetch` verifica SHA-256 e assinatura Authenticode dos drivers; o instalador agora detecta drivers já instalados (antes sempre achava que faltavam) e usa os switches do Advanced Installer, o que elimina as janelas "Invalid command line" | `docs/release-rc.md`, `docs/backend-audit/12-drivers-invalid-command-line.md` |
 
 ## O que NÃO entra
 

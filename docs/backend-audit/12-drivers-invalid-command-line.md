@@ -2,6 +2,9 @@
 
 Data: 2026-10-12. Nada foi corrigido. Rótulos: `[VERIFICADO: arquivo:linha ou experimento]` / `[INFERIDO]`.
 
+## Estado: itens 1 e 2 corrigidos no rc.2
+O rc.2 corrige a detecção (`ReadRegDWORD`) e os switches (`/exenoui /qn /norestart`) em `hooks.nsh`. Consentimento, código de saída, log e tabela de códigos continuam no backlog. Os switches **não foram executados** contra um bootstrapper (isso instalaria o driver); conferir em máquina sem os drivers.
+
 ## Resumo
 **Duas falhas independentes no mesmo trecho (`src-tauri/windows/hooks.nsh`), que se somam:**
 1. **A checagem "já está instalado?" nunca acerta**: usa `ReadRegStr` num valor `REG_DWORD`, e o NSIS marca erro nesse caso. Resultado: o hook acha que os drivers faltam **mesmo com eles instalados e rodando**, e lança os dois setups em toda instalação.
