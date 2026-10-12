@@ -289,7 +289,7 @@ sequenceDiagram
 `apiFetch` e a camada de refresh de sessão (`api.ts`), o uso do LiveKit como transporte, o módulo `audio_capture` (tabela de modos, sonda; só **ligar**), `store/sessions.rs`, `launch_guard.rs`, a idempotência por `client_id` do chat, a lógica de volume por faixa recém-corrigida, o resto do `useVoiceCall` que não seja timers/sinalização. **Não** trocar o LiveKit nem o Supabase.
 
 ## 13. Backlog (G, drivers: somente auditoria)
-Nada será implementado. Itens para quando você pedir: gerar também o hook no alvo MSI ou remover o alvo `msi`; gravar log do instalador em arquivo; avisar sobre reinício do HidHide; verificar o serviço depois do reinício (ver `02-rust.md` R10).
+Nada será implementado. **Evidência nova (rc.1, 2026-10-12):** duas janelas "Invalid command line"; causa raiz verificada (detecção `ReadRegStr` x `REG_DWORD` sempre falsa + switches de WiX Burn em bootstrappers do Advanced Installer) e correção proposta em `docs/backend-audit/12-drivers-invalid-command-line.md`. Itens para quando você pedir: gerar também o hook no alvo MSI ou remover o alvo `msi`; gravar log do instalador em arquivo; avisar sobre reinício do HidHide; verificar o serviço depois do reinício (ver `02-rust.md` R10).
 
 ## 14. Desafio (the-fool: pré-mortem + red team, modo escolhido por mim)
 

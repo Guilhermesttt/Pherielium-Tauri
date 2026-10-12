@@ -65,6 +65,7 @@ Correção sugerida (fora desta frente): usar `Strategy::ExcludeOwnProcessTree` 
 [VERIFICADO: `store/sessions.rs:34-133`; front `useGamePresence.ts:121-140`]. A suspeita do "relatório anterior" (sessão só persistida ao fim) **não se aplica mais**.
 
 ### R10. Drivers ViGEmBus/HidHide: instalação só pelo instalador NSIS (SÓ AUDITAR)
+> **Atualização 2026-10-12:** a falha em campo (duas janelas "Invalid command line") tem causa verificada: ver `12-drivers-invalid-command-line.md`.
 - O app **não instala** drivers em runtime; só reporta estado (`vigem_status`, `hidhide_status`, `controller_driver_status`)
   [VERIFICADO: `controller_config.rs:162,236`: "Não instala nada"]. A instalação acontece no hook pós-instalação do NSIS
   (`src-tauri/windows/hooks.nsh`) com `ExecShellWait "runas" ... "/install /quiet /norestart" SW_HIDE`.

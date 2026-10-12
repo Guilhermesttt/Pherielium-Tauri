@@ -37,3 +37,6 @@ B1 (depois do P-1 a P-3) → D1 (ADR 0006) → F1 (depois do P-3 e P-10) → U (
 - **Isolamento do notch:** o efeito do convite no mascote está só em `d94f8ad` (uma linha em `DesktopNotch.tsx`); reverter esse commit remove todos os efeitos.
 - **Pendente do dono:** roteiro (d) N-invite; P-1 a P-3 e P-10; as 3 linhas de `displaySurface`; consulta do print; item 7 (usuários simultâneos); schema, API, plano do Supabase e staging.
 - **Pendente de implementação (não iniciar sem OK):** reordenação da captura, B1, F1, I e R, A2, U, C, E.
+
+## Evidência nova: drivers (2026-10-12)
+Instalar o rc mostrou duas janelas "Invalid command line". Diagnóstico somente leitura em `docs/backend-audit/12-drivers-invalid-command-line.md`: detecção de driver instalado quebrada (`ReadRegStr` x `REG_DWORD`) e switches errados para o Advanced Installer. Inofensivo para o app; correção no backlog (G). Para um rc sem esse passo: não rodar `drivers:fetch` e tirar os `.exe` de `src-tauri/windows/drivers/` antes do build.
