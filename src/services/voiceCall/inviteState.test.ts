@@ -78,9 +78,20 @@ describe("reduceInvites", () => {
     const cancelled = reduceInvites(state, { type: "cancelled", chatId: "chat-1", inviterId: "ana", nowMs: 5 });
     expect(cancelled.pending).toHaveLength(0);
     expect(isInviteCancelled(cancelled, "chat-1", 1_000)).toBe(true);
-    expect(isInviteCancelled(cancelled, "chat-1", 1_000 + 5_000)).toBe(true); // cartão criado logo depois do aviso
+    expect(isInviteCancelled(cancelled, "chat-1", 1_000 + 60_000)).toBe(true); // cartão criado até 2 min depois do aviso
     expect(isInviteCancelled(cancelled, "chat-1", 1_000 + INVITE_MATCH_TOLERANCE_MS + 1)).toBe(false); // convite novo
     expect(isInviteCancelled(cancelled, "other", 0)).toBe(false);
+  });
+
+  it("live invites expire from the receipt time, not from the sender clock", () => {
+    // remetente com relógio 1 h atrasado: o timestamp dele já "venceu", mas o convite acabou de chegar
+    const state = reduceInvites(EMPTY_INVITE_STATE, {
+      type: "received",
+      invite: invite({ timestamp: -3_600_000 }),
+      nowMs: 1_000_000,
+    });
+    expect(reduceInvites(state, { type: "prune", nowMs: 1_000_000 + INVITE_TTL_MS - 1 }).pending).toHaveLength(1);
+    expect(reduceInvites(state, { type: "prune", nowMs: 1_000_000 + INVITE_TTL_MS }).pending).toHaveLength(0);
   });
 
   it("prune drops expired invites and old dedupe entries only", () => {

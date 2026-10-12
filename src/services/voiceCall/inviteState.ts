@@ -1,6 +1,10 @@
 /**
- * Estado local de convites de call (fatia I0). NÃO é autoritativo: a expiração vem do relógio de quem convidou
- * (`timestamp`/`createdAt`) e o cancelamento vem de um `call:end` recebido. A versão autoritativa (expiração e cancelamento no
+ * Estado local de convites de call (fatia I0). NÃO é autoritativo.
+ *
+ * Relógios (limitação conhecida): convite AO VIVO expira em (instante de recebimento no relógio do receptor + 15 min), então
+ * não depende do relógio de quem convidou. Cartão HISTÓRICO (mensagem no chat) usa o `created_at` do servidor, com tolerância de
+ * 2 min a favor do usuário (INVITE_CARD_TOLERANCE_MS). Mesmo assim o relógio do receptor ainda decide "agora": um PC com a hora
+ * errada vê convites expirarem cedo ou tarde. A correção real é o `server_now` da fatia I. O cancelamento vem de um `call:end` recebido. A versão autoritativa (expiração e cancelamento no
  * servidor, `server_now`) é a fatia I (docs/backend-audit/PLAN.md §17); até lá isto só evita tocar como ligação e deixa o
  * convite visível como notificação.
  *
@@ -11,6 +15,8 @@ import type { CallInvitePayload } from "./types";
 
 /** Validade de um convite (espelha o valor planejado para o servidor: 15 min). */
 export const INVITE_TTL_MS = 15 * 60 * 1000;
+/** Tolerância (a favor do usuário) para cartões históricos e para casar cartão com aviso ao vivo. */
+export const INVITE_CARD_TOLERANCE_MS = 2 * 60 * 1000;
 /** Janela em que o mesmo convite (mesma chave) é ignorado depois de processado. */
 export const INVITE_DEDUPE_WINDOW_MS = 10_000;
 
@@ -48,6 +54,7 @@ export interface PendingInvite {
 }
 
 export interface InviteStoreState {
+  /** Convites ao vivo: expiram em `receivedAtMs` (relógio do receptor) + 15 min. */
   pending: readonly PendingInvite[];
   /** chave -> quando foi processada (janela anti-duplicata, mesmo depois de aceitar/dispensar). */
   seen: Readonly<Record<string, number>>;
@@ -102,7 +109,7 @@ export function reduceInvites(state: InviteStoreState, action: InviteAction): In
     }
     case "prune": {
       const pending = state.pending.filter(
-        (p) => inviteState({ createdAtMs: p.invite.timestamp, nowMs: action.nowMs }) === "pending",
+        (p) => inviteState({ createdAtMs: p.receivedAtMs, nowMs: action.nowMs }) === "pending",
       );
       const seenEntries = Object.entries(state.seen).filter(([, at]) => action.nowMs - at < INVITE_DEDUPE_WINDOW_MS);
       if (pending.length === state.pending.length && seenEntries.length === Object.keys(state.seen).length) return state;
@@ -115,7 +122,7 @@ export function reduceInvites(state: InviteStoreState, action: InviteAction): In
  * O cartão criado em `createdAtMs` para `chatId` foi cancelado? O cartão (mensagem) e o aviso em tempo real são criados pelo
  * mesmo convidante com alguns instantes de diferença; a tolerância cobre isso sem alcançar um convite novo, reenviado depois.
  */
-export const INVITE_MATCH_TOLERANCE_MS = 30_000;
+export const INVITE_MATCH_TOLERANCE_MS = INVITE_CARD_TOLERANCE_MS;
 export function isInviteCancelled(state: InviteStoreState, chatId: string, createdAtMs: number): boolean {
   const cancelledInviteAt = state.cancelledAt[chatId];
   return cancelledInviteAt !== undefined && createdAtMs <= cancelledInviteAt + INVITE_MATCH_TOLERANCE_MS;

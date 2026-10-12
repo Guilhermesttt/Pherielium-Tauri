@@ -14,6 +14,8 @@ import {
 import type { RoomCategory, CallInviteMeta } from "../../types/voice-governance";
 import { useVoiceCallContext } from "../../context/VoiceCallContext";
 import {
+  INVITE_CARD_TOLERANCE_MS,
+  INVITE_TTL_MS,
   inviteRemainingMs,
   inviteState,
   isInviteCancelled,
@@ -24,8 +26,13 @@ import {
 interface CallInviteCardProps {
   invite: CallInviteMeta;
   isSelf: boolean;
+  /** `created_at` da mensagem (relógio do servidor). Preferido ao `createdAt` do JSON, que vem do relógio de quem convidou. */
+  serverCreatedAt?: string;
   onJoinCall: (invite: CallInviteMeta, password?: string) => void;
 }
+
+/** Cartões do chat: 15 min + tolerância de 2 min para diferença de relógios (inviteState.ts). */
+const CARD_TTL_MS = INVITE_TTL_MS + INVITE_CARD_TOLERANCE_MS;
 
 export const parseCallInviteText = (text: string): CallInviteMeta | null => {
   if (!text || typeof text !== "string" || !text.startsWith('{"__type":"call_invite"')) {
@@ -60,6 +67,7 @@ const categoryIcons: Record<RoomCategory, { label: string; icon: React.ReactNode
 export const CallInviteCard: React.FC<CallInviteCardProps> = ({
   invite,
   isSelf,
+  serverCreatedAt,
   onJoinCall,
 }) => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -72,20 +80,23 @@ export const CallInviteCard: React.FC<CallInviteCardProps> = ({
   // I0 (flag): estado local do convite, não autoritativo. Com a flag desligada o cartão é sempre "pendente", como antes.
   const { inviteStore } = useVoiceCallContext();
   const trackStatus = isInviteNotificationsOn();
+  const serverMs = serverCreatedAt ? Date.parse(serverCreatedAt) : Number.NaN;
+  const createdAtMs = Number.isFinite(serverMs) ? serverMs : invite.createdAt;
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [showInvalidNotice, setShowInvalidNotice] = useState(false);
   useEffect(() => {
     if (!trackStatus) return;
-    const remaining = inviteRemainingMs({ createdAtMs: invite.createdAt, nowMs: Date.now() });
+    const remaining = inviteRemainingMs({ createdAtMs, nowMs: Date.now(), ttlMs: CARD_TTL_MS });
     if (remaining <= 0) return;
     const timer = window.setTimeout(() => setNowMs(Date.now()), remaining + 50);
     return () => window.clearTimeout(timer);
-  }, [trackStatus, invite.createdAt]);
+  }, [trackStatus, createdAtMs]);
   const status: InviteStatus = trackStatus
     ? inviteState({
-        createdAtMs: invite.createdAt,
+        createdAtMs,
         nowMs,
-        cancelled: isInviteCancelled(inviteStore, invite.chatId, invite.createdAt),
+        ttlMs: CARD_TTL_MS,
+        cancelled: isInviteCancelled(inviteStore, invite.chatId, createdAtMs),
       })
     : "pending";
 

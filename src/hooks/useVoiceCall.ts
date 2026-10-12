@@ -3116,11 +3116,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
           const after = dispatchInvite({ type: "received", invite, nowMs });
           const entry = after.pending.find((p) => p.invite === invite);
           if (after === before || !entry) return; // repetido (chave já pendente ou dentro da janela de 10 s)
-          const remainingMs = inviteRemainingMs({ createdAtMs: invite.timestamp, nowMs });
-          if (remainingMs <= 0) {
-            dispatchInvite({ type: "dismissed", key: entry.key });
-            return;
-          }
+          const remainingMs = inviteRemainingMs({ createdAtMs: entry.receivedAtMs, nowMs });
           notify(`${invite.callerName} está te convidando para uma call`, "info", {
             id: `invite:${entry.key}`,
             title: "Convite de call",
@@ -3611,7 +3607,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     const entry = inviteStoreRef.current.pending.find((p) => p.key === key);
     dismissNotification?.(`invite:${key}`);
     dispatchInvite({ type: "dismissed", key });
-    if (!entry || inviteState({ createdAtMs: entry.invite.timestamp, nowMs: Date.now() }) !== "pending") {
+    if (!entry || inviteState({ createdAtMs: entry.receivedAtMs, nowMs: Date.now() }) !== "pending") {
       notify("Convite inválido ou expirado.", "info");
       return;
     }

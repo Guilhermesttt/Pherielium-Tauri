@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useMemo, useState, useEf
 import { Toaster, toast } from "./ui/Shandc/toast";
 import { soundThemes } from "../hooks/useSoundEffects";
 import { useNotchConfig } from "../mascot/useNotchConfig";
+import { toastActionProps } from "./notificationToast";
 
 export type NotificationType =
   | "success"
@@ -203,9 +204,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           type: toastType as any,
           // 0 / Infinity = sticky (same idea as incoming-call)
           timeout: !duration || !Number.isFinite(duration) ? undefined : duration,
-          actionProps: options?.action
-            ? { children: options.action.label, onClick: options.action.onClick }
-            : undefined,
+          actionProps: toastActionProps(options?.action),
         });
       }
     },

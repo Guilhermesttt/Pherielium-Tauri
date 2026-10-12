@@ -466,7 +466,7 @@ const ChatMessageRow: React.FC<{
       <animated.div style={{ ...spring, transformOrigin: bubbleOrigin(isMe) }} className={rowSpacing}>
         <Message align={isMe ? "end" : "start"}>
           <MessageContent>
-            <CallInviteCard invite={inviteMeta} isSelf={isMe} onJoinCall={onJoinCall} />
+            <CallInviteCard invite={inviteMeta} isSelf={isMe} serverCreatedAt={msg.createdAt} onJoinCall={onJoinCall} />
           </MessageContent>
         </Message>
       </animated.div>

@@ -17,7 +17,9 @@ Vale também para pares v1 (1.0.2): **nenhum toque**, mesmo vindo de app antigo.
 Quem já está em chamada continua com o fluxo antigo (auto-aceite de reconexão, resposta `busy`).
 
 ### Estados e validade (`src/services/voiceCall/inviteState.ts`)
-- `pendente` até `timestamp + 15 min` (relógio **de quem convidou**; relógios muito diferentes podem fazer o convite parecer expirado), depois `expirado`.
+- **Convite ao vivo:** `pendente` até (instante em que chegou, no relógio do receptor) + 15 min, depois `expirado`. Não depende do relógio de quem convidou.
+- **Cartão do chat (histórico):** conta a partir do `created_at` da mensagem (servidor), com tolerância de **2 min** a favor do usuário (expira em 17 min) e para casar o cartão com o aviso ao vivo.
+- **Limitação:** quem decide "agora" continua sendo o relógio do receptor. PC com a hora errada vê convites vencerem cedo ou tarde; a correção real é o `server_now` da fatia I.
 - `cancelado` quando chega `call:end` do mesmo convidante para a mesma conversa.
 - Clicar em convite que não está pendente: "Convite inválido ou expirado." (na notificação e no cartão de chat).
 - **Deduplicação:** chave `conversa|convidante|canal` (no 1:1 antigo o canal é a própria conversa) **mais** janela de 10 s. Um convite repetido não gera segunda notificação.
@@ -42,12 +44,18 @@ O receptor é quem tem a flag. O remetente pode ser o **app 1.0.2 ou qualquer bu
 6. Clicar **Entrar** dentro do prazo: entra na chamada como no atender antigo.
 7. Receptor já em chamada: o convidante recebe `busy`, como antes.
 
+## Chamadores de `notify` com `action` (NotificationCenter)
+O campo `action` era ignorado no caminho do toast; agora vira o botão do toast. Busca em `src/` (`action: { label ... }`): **o único chamador é o convite de call (`useVoiceCall.ts`)**. Nenhum outro `notify` passa `action`, então nenhum toast existente muda (teste: `notificationToast.test.ts`, sem `action` não há botão). O caminho do overlay já encaminhava `action` antes.
+
+## Hub oculto (jogo em tela cheia)
+O toast é invisível e só o som toca. Não há notificação nativa do Windows em uso (plugin registrado, permissão concedida, pacote JS já instalado, zero chamadas). Ver `docs/backend-audit/11-notch-overlay-convite-desenho.md`: o overlay do jogo é o caminho principal e a notificação nativa é o plano B (sem dependência nova).
+
 ## Regressões conhecidas (flag ligada)
 
 1. **Notch não mostra mais o convite como ligação.** O notch depende de `callState === "ringing-in"` (`DesktopNotch.tsx:938`, `hubInvite`); com a flag o app nunca entra nesse estado. **Não foi tocado, por decisão.**
    - O notch **já mostra notificações de mensagem** (`NotchEventKind` `message`, 3,8 s, via `announceNotchEvent` em `notchEvent.ts`, e o `NotificationCenter` suprime o toast de `message` quando o notch está ligado). Portanto cabe uma **fatia pequena e separada**: novo tipo `call-invite` no notch (persistente até expirar, botão Entrar), sem mexer em mascote/overlay. Aguarda aprovação.
 2. **O overlay de jogo** (`showNotificationOverlay` `incoming-call`) deixa de ser disparado pelo `VoiceCallContext` (também depende de `ringing-in`). Mesma fatia futura.
-3. **Cartão local para o convite 1:1 antigo (sem mensagem de chat) não foi implementado:** exigiria injetar uma mensagem local na lista do `ChatModal`. Para o 1:1 antigo vale só a notificação. Decisão em aberto.
+3. **Sem cartão local para o convite 1:1 antigo** (sem mensagem de chat). Decidido: vale só a notificação.
 4. Expiração e cancelamento são **locais**: reiniciar o app perde os convites pendentes (a notificação some; o cartão do chat continua calculando pela data da mensagem).
 
 ## Fora do escopo do I0
