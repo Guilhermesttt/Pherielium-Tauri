@@ -28,7 +28,9 @@
   ; Mesmo sinal que o app usa em hidhide_status(). Abrir o device como arquivo
   ; não serve: dá falso negativo com o driver instalado e rodando.
   ClearErrors
-  ReadRegStr $R9 HKLM "SYSTEM\CurrentControlSet\Services\${ServiceName}" "Type"
+  ; ReadRegDWORD, não ReadRegStr: "Type" é REG_DWORD e ReadRegStr marca erro nesse caso, o que fazia
+  ; o hook concluir "não instalado" sempre (docs/backend-audit/12-drivers-invalid-command-line.md).
+  ReadRegDWORD $R9 HKLM "SYSTEM\CurrentControlSet\Services\${ServiceName}" "Type"
   ${If} ${Errors}
     StrCpy ${OutVar} "0"
   ${Else}
@@ -43,9 +45,10 @@
     DetailPrint "${DisplayName}: já instalado, mantendo como está."
   ${ElseIf} ${FileExists} "$INSTDIR\drivers\${ExeName}"
     DetailPrint "Instalando ${DisplayName} (pede permissão de administrador)..."
-    ; "runas" eleva só este processo. Bundles WiX Burn aceitam /install /quiet
-    ; /norestart; o reinício fica a cargo do usuário, nunca da máquina.
-    ExecShellWait "runas" "$INSTDIR\drivers\${ExeName}" "/install /quiet /norestart" SW_HIDE
+    ; "runas" eleva só este processo. Os dois setups são bootstrappers do Advanced Installer (não WiX Burn):
+    ; /exenoui (sem interface do bootstrapper) /qn (MSI silencioso) /norestart; o reinício fica a cargo
+    ; do usuário, nunca da máquina.
+    ExecShellWait "runas" "$INSTDIR\drivers\${ExeName}" "/exenoui /qn /norestart" SW_HIDE
     !insertmacro DriverServiceInstalled "${ServiceName}" $R8
     ${If} $R8 == "1"
       DetailPrint "${DisplayName}: instalado."
