@@ -28,3 +28,11 @@ Antes, cada mensagem era publicada com o **texto completo** em `user_inbox_{uid}
 o broadcast é **pulado** (mensagem nova e atualização/edição/reação) e ele recebe pelo **Postgres Changes** de `chat_messages` (INSERT e UPDATE com RLS), que o app já assinava (`chat.ts`).
 Amigo v1 ou desconhecido continua recebendo o payload completo, porque o app antigo precisa dele.
 **Efeito colateral:** entre dois apps novos a entrega depende do Postgres Changes (um pouco mais lento que o broadcast); a mensagem em si nunca deixa de ser gravada.
+
+## Canal global de presença: o app novo só escuta
+
+`checkpoint_presence_bus` é uma sala pública única; quem faz `track` nela entrega nome, foto e jogo a **todos** os clientes conectados (o filtro por amigos é no cliente).
+O app novo **não publica mais** nesse canal (nem `track`, `untrack` ou broadcast legado) e **continua escutando** para o app antigo.
+A presença instantânea para amigos segue pela caixa de entrada de cada amigo (`user_inbox_{uid}`, `u2u:status`) e pelo polling de `/api/friends/status`.
+Sem `track`, este cliente também deixa de gerar eventos `leave` para quem ainda é app antigo (uma das fontes suspeitas de "offline" falso).
+Flag para reverter: `localStorage.setItem("pherielium_presence_global_bus", "1")`.

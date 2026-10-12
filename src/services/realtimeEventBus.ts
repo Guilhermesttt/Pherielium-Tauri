@@ -4,6 +4,7 @@ import type { ChatMessage } from "../types/domain";
 import type { CallEndPayload, CallInvitePayload } from "./voiceCall/types";
 import { presenceDebugLog, shortUid } from "./presenceDebug";
 import { recordPeerProtocol } from "./peerProtocol";
+import { shouldPublishToGlobalPresenceBus } from "./presenceBusPolicy";
 
 export type UserPresenceStatus = "online" | "playing" | "streaming" | "in_call" | "idle" | "dnd" | "offline";
 
@@ -423,7 +424,9 @@ export const broadcastPresenceStatus = async (
   friendUids?: string[],
 ) => {
   try {
-    if (!presenceChannel) {
+    // O canal global é público e entrega nome/foto/jogo a todos: o app novo não publica nele (ver presenceBusPolicy.ts).
+    const publishToGlobalBus = shouldPublishToGlobalPresenceBus();
+    if (publishToGlobalBus && !presenceChannel) {
       presenceChannel = supabase.channel("checkpoint_presence_bus", {
         config: {
           presence: {
@@ -456,7 +459,7 @@ export const broadcastPresenceStatus = async (
       status: presence.status,
       audience: audience.length,
       hasAudience,
-      action: presence.status === "offline" ? "untrack" : "track",
+      action: publishToGlobalBus ? (presence.status === "offline" ? "untrack" : "track") : "none (global bus off)",
     });
 
     // 1. Fan-out to each friend's personal inbox (capped concurrency)
@@ -469,8 +472,8 @@ export const broadcastPresenceStatus = async (
       }
     }
 
-    // 2. Global broadcast only when no friend audience is available (legacy fallback)
-    if (!hasAudience) {
+    // 2. Global broadcast only when no friend audience is available (legacy fallback; só com a flag ligada)
+    if (publishToGlobalBus && !hasAudience) {
       await presenceChannel.send({
         type: "broadcast",
         event: "presence:status_update",
@@ -478,15 +481,19 @@ export const broadcastPresenceStatus = async (
       });
     }
 
-    // 3. Track/Untrack no estado Presence do canal (join/leave semantics)
-    if (presence.status === "offline") {
-      try {
-        await presenceChannel.untrack();
-      } catch {}
-    } else {
-      await presenceChannel.track({
-        presence,
-      });
+    // 3. Track/Untrack no estado Presence do canal (join/leave semantics; só com a flag ligada)
+    if (publishToGlobalBus) {
+      if (presence.status === "offline") {
+        try {
+          await presenceChannel.untrack();
+        } catch (error) {
+          console.warn("[realtimeEventBus] untrack falhou:", error);
+        }
+      } else {
+        await presenceChannel.track({
+          presence,
+        });
+      }
     }
   } catch (err) {
     presenceDebugLog("presence_broadcast", { status: presence.status, failed: String(err) });
