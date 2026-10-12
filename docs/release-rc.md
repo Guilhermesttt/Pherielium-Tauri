@@ -43,11 +43,11 @@ npm run tauri build -- --features devtools --bundles nsis
 | --- | --- |
 | Versões fixas | **Sim**: ViGEmBus 1.22.0 e HidHide 1.5.230.0, por URL de release do GitHub |
 | SHA-256 | **Sim**: se o arquivo baixado não bater, o script apaga o arquivo e sai com erro; arquivo já baixado só é reaproveitado se o hash bater |
-| Assinatura digital (Authenticode) | **Não verificada pelo script.** O manifesto só pede conferência manual ao atualizar um driver (editora esperada: Nefarius Software Solutions e.U.). Hoje a proteção é o hash fixado |
+| Assinatura digital (Authenticode) | **Sim, no Windows** (`scripts/driverSignature.mjs`, via `Get-AuthenticodeSignature` do PowerShell, sem dependência nova). Exige status `Valid` e CN do certificado **igual** ao campo `signer` do manifesto (Nefarius Software Solutions e.U.). Reprovou, ou o PowerShell falhou: o arquivo é removido e o script sai com erro. **Fora do Windows** não há como verificar: o script avisa "assinatura NÃO verificada" e segue com o SHA-256; com `DRIVERS_REQUIRE_SIGNATURE=1` isso vira erro |
 | Execução do instalador | O instalador NSIS embarca os arquivos; o hook `windows/hooks.nsh` os executa na instalação |
 
-Para conferir a assinatura à mão (PowerShell): `Get-AuthenticodeSignature src-tauri\windows\drivers\*.exe | Format-List Status, SignerCertificate`.
-Melhoria sugerida (não feita): o script chamar essa verificação e falhar se `Status` não for `Valid`.
+Conferência manual, se quiser: `Get-AuthenticodeSignature src-tauri\windows\drivers\*.exe | Format-List Status, SignerCertificate`.
+Testes: `scripts/driverSignature.test.mjs` (decisão pura, falha segura e comportamento fora do Windows).
 
 ## 3. Onde fica o arquivo
 

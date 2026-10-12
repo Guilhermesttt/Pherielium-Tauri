@@ -13,6 +13,7 @@ import { dirname, join, resolve } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { fileURLToPath } from "node:url";
+import { verifyDriverSignature } from "./driverSignature.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const manifest = JSON.parse(readFileSync(join(here, "drivers.manifest.json"), "utf8"));
@@ -22,12 +23,27 @@ mkdirSync(outDir, { recursive: true });
 const sha256Of = async (path) =>
   createHash("sha256").update(await readFile(path)).digest("hex");
 
+// Camada extra ao hash: o instalador precisa estar assinado (Authenticode) pelo editor esperado do manifesto.
+// Falha de forma segura: assinatura inválida ou impossível de verificar no Windows remove o arquivo e reprova.
+// Fora do Windows não há como verificar: avisa e segue (DRIVERS_REQUIRE_SIGNATURE=1 transforma isso em erro).
+const checkSignature = async (driver, target) => {
+  const result = await verifyDriverSignature(target, driver.signer);
+  if (!result.ok) {
+    rmSync(target, { force: true });
+    console.error(`ERRO   ${driver.name}: ${result.reason}. arquivo removido.`);
+    return false;
+  }
+  console.log(`${result.skipped ? "aviso " : "ok    "} ${driver.name}: ${result.reason}`);
+  return true;
+};
+
 let failed = false;
 for (const driver of manifest.drivers) {
   const target = join(outDir, driver.file);
 
   if (existsSync(target) && (await sha256Of(target)) === driver.sha256) {
-    console.log(`ok     ${driver.name} ${driver.version} (ja baixado e verificado)`);
+    console.log(`ok     ${driver.name} ${driver.version} (ja baixado, sha256 confere)`);
+    if (!(await checkSignature(driver, target))) failed = true;
     continue;
   }
 
@@ -50,6 +66,7 @@ for (const driver of manifest.drivers) {
     continue;
   }
   console.log(`ok     ${driver.name} ${driver.version} (sha256 confere)`);
+  if (!(await checkSignature(driver, target))) failed = true;
 }
 
 process.exit(failed ? 1 : 0);
