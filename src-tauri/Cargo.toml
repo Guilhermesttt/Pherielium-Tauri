@@ -98,6 +98,12 @@ vigem-client = "0.1.4"
 # Bateria real de DualSense/DualShock 4 (relatório HID de entrada)
 hidapi = { version = "2", default-features = false, features = ["windows-native"] }
 
+# ── Features opcionais ───────────────────────────────────────────────────────
+[features]
+# Habilita o DevTools (F12) no build de release. Só para builds de teste (rc); o instalador oficial NÃO usa.
+# Uso: npm run tauri build -- --features devtools   (docs/release-rc.md)
+devtools = ["tauri/devtools"]
+
 # ── Build optimizations ──────────────────────────────────────────────────────
 [profile.release]
 codegen-units = 1

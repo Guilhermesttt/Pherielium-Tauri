@@ -56,3 +56,18 @@ Nenhuma competindo com a causa acima; o inventário confirma ou refuta no runtim
 - **Saída de áudio:** `setSinkId` agora vai pelo `applySinkId`, que só chama quando a saída muda e **também para voltar ao padrão** (antes escolher "default" depois de um dispositivo não revertia o elemento). O inventário imprime o `sinkId` de cada elemento e avisa quando um elemento audível não usa a saída escolhida.
 - **Testes:** `feedAudioPolicy.test.ts` cobre a regra, o invariante "no máximo um elemento audível por trilha" (transmissão e voz com câmera) e `applySinkId`; `audioInventory.test.ts` cobre `findSinkMismatches`.
 - **Fora do escopo (issue):** boost acima de 100% (ver `docs/tech-debt/issue-drafts.md`, item 4).
+
+## Aceite manual do V-fix (duas contas, os dois lados no rc)
+Pré-requisito: instalador rc em ambos (`docs/release-rc.md`), `pherielium_stream_debug=1` no lado que ouve, app reiniciado. A = quem transmite, B = quem ouve.
+
+| # | Passo | Esperado |
+| --- | --- | --- |
+| V-1 | A transmite a tela com áudio do PC; B roda `await window.pherieliumAudioInventory()` | Seção "trilhas tocando em mais de um elemento" **vazia**; nenhum `<video>` com `muted=false` sob LiveKit |
+| V-2 | B move o slider da **transmissão** para **0%** | Silêncio total do áudio do PC de A; a voz de A continua igual |
+| V-3 | Slider da transmissão em **50%** e **100%** | Volume proporcional, sem dobro nem eco em 100% |
+| V-4 | Slider da **voz** de A em 0%, 50%, 100% (transmissão em 100%) | Só a voz muda; o áudio da transmissão não se mexe |
+| V-5 | Repetir V-2 a V-4 **com a câmera de A ligada** (palco, miniatura e tela cheia) | Mesmos resultados; a voz de A não toca em dobro |
+| V-6 | B escolhe uma saída de áudio específica e depois **"Padrão"** | O áudio vai para o dispositivo escolhido e **volta** ao padrão do sistema; o inventário não mostra "elemento audível fora da saída escolhida" |
+| V-7 | B muta só a transmissão, depois só a voz de A | Mute independente; ao desmutar volta o volume anterior |
+
+Registrar o relatório do inventário (colado) de V-1 e V-5 no PROGRESSO. Se algum passo falhar, anexar o inventário daquele estado.
