@@ -147,7 +147,7 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
                     className="h-4 w-4 cursor-pointer rounded accent-white"
                   />
                   <Volume2 className="h-3.5 w-3.5 text-white/55" />
-                  <span className="text-xs font-semibold text-white/90">Sons do computador</span>
+                  <span className="text-xs font-semibold text-white/90">Áudio do PC (todos os apps, menos o Pherielium)</span>
                 </label>
               </div>
             </div>
