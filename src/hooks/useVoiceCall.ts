@@ -62,7 +62,16 @@ import {
   canAcceptNewParticipant,
   isPersistentVoiceRoomId,
 } from "../services/voiceCall/limits";
-import { shouldUseP2PFallback } from "../services/voiceCall/transportPolicy";
+import { isP2pFallbackFlagOn, shouldUseP2PFallback } from "../services/voiceCall/transportPolicy";
+import { isFlagOn } from "../lib/featureFlags";
+import {
+  ConnectCancelledError,
+  connectWithRetry,
+  describeLiveKitFailure,
+  LiveKitConnectError,
+} from "../services/voiceCall/livekitConnectPolicy";
+import { installCallFailureReport, logCallFailure } from "../services/voiceCall/callFailureLog";
+import { getAppVersionCached } from "../lib/protocolVersion";
 import { getChatId } from "../services/chat";
 import { getTurnServers } from "../services/turnCredentials";
 import { buildProcessedAudioTrack } from "../services/audio/audioProcessing";
@@ -705,6 +714,10 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   callStateRef.current = callState;
   const lastConnectSfxAtRef = useRef(0);
   const incomingInviteRef = useRef<CallInvitePayload | null>(null);
+  // Chamada 1:1 (D1): conexão de mídia em andamento enquanto o convite já foi enviado, se ela falhou e se a chamada foi encerrada.
+  const mediaPendingRef = useRef<Promise<{ ok: true } | { ok: false; error: unknown }> | null>(null);
+  const mediaFailedRef = useRef(false);
+  const mediaCancelledRef = useRef(false);
   incomingInviteRef.current = incomingInvite;
 
   // Local audio analyzer pipeline
@@ -1724,6 +1737,9 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   }, []);
 
   const cleanUpCall = useCallback(() => {
+    // Interrompe tentativas de conexão do LiveKit que ainda estejam em andamento (D1).
+    mediaCancelledRef.current = true;
+    mediaPendingRef.current = null;
     stopRingtone();
     if (callDurationTimerRef.current) {
       window.clearInterval(callDurationTimerRef.current);
@@ -2432,6 +2448,11 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
       if (screenStreamRef.current) {
         screenStreamRef.current.getTracks().forEach((track) => pc.addTrack(track, screenStreamRef.current!));
       }
+      // Sem nenhuma trilha (microfone não adquirido) a oferta sai sem seção de mídia e, com bundlePolicy "max-bundle",
+      // o setLocalDescription falha ("session description has no BUNDLE group"). Garante ao menos uma seção de áudio.
+      if (pc.getSenders().length === 0) {
+        pc.addTransceiver("audio", { direction: "sendrecv" });
+      }
 
       pc.onicecandidate = (event) => {
         if (event.candidate && user?.uid) {
@@ -2671,6 +2692,13 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           if (audioRingIntervalRef.current) {
             clearInterval(audioRingIntervalRef.current);
             audioRingIntervalRef.current = null;
+          }
+
+          // Convite em paralelo com a mídia (D1): o destino pode atender antes de o LiveKit conectar aqui.
+          // Espera o resultado antes de decidir o transporte; se a mídia falhou, startCall já encerrou a chamada.
+          if (mediaPendingRef.current) {
+            await mediaPendingRef.current;
+            if (mediaFailedRef.current) return;
           }
 
           // If using LiveKit SFU as primary, we don't need P2P mesh offer
@@ -2945,7 +2973,9 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         notify(
           endPayload.reason === "busy"
             ? "O usuário está em outra chamada."
-            : "Chamada encerrada.",
+            : endPayload.reason === "error"
+              ? "A chamada terminou: o outro lado não conseguiu conectar ao servidor de voz."
+              : "Chamada encerrada.",
           "info",
         );
         playRingtone("disconnect");
@@ -2959,6 +2989,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   useEffect(() => {
     if (!user?.uid) return;
     installGuardReport();
+    installCallFailureReport(getAppVersionCached);
 
     const unsubscribe = subscribeToUserIncomingCalls(user.uid, {
       onInvite: (invite) => {
@@ -3030,7 +3061,12 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           return;
         }
 
-        notify("Chamada finalizada.", "info");
+        notify(
+          endPayload?.reason === "error"
+            ? "A chamada terminou: o outro lado não conseguiu conectar ao servidor de voz."
+            : "Chamada finalizada.",
+          "info",
+        );
         playRingtone("disconnect");
         cleanUpCall();
       },
@@ -3050,6 +3086,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
       }
       const friendUid = String(friend.id || "").replace(/^cp-friend:/, "").trim();
       const chatId = getChatId(user.uid, friendUid);
+      const callOutcome = { inviteSent: false };
 
       try {
         setCallState("ringing-out");
@@ -3117,42 +3154,68 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           }
         }
 
-        // ICE Preflight Check + LiveKit SFU connection — run in PARALLEL to reduce setup latency
+        // Convite e mídia em paralelo (D1): o convite sai logo e o LiveKit conecta enquanto o destino toca.
+        // Sem queda silenciosa para P2P: até 3 tentativas com recuo; se esgotar, a chamada termina com motivo claro
+        // (ver livekitConnectPolicy.ts e docs/decisions/0006).
         const displayName = userProfile?.displayName || user.displayName || "Jogador";
         const avatarUrl = userProfile?.photoURL || user.photoURL || undefined;
+        const inviteFirst = isFlagOn("call_invite_first", true);
         let livekitConnected = false;
+        mediaFailedRef.current = false;
+        mediaCancelledRef.current = false;
 
-        const [preflightResult, livekitResult] = await Promise.allSettled([
-          runIcePreflightCheck(),
-          connectLiveKitRoom(chatId, user.uid, displayName, avatarUrl),
-        ]);
+        const mediaConnect = connectWithRetry(
+          () => connectLiveKitRoom(chatId, user.uid, displayName, avatarUrl),
+          {
+            isCancelled: () => mediaCancelledRef.current,
+            onRetry: ({ attempt, reason, waitMs }) =>
+              console.warn(`[LiveKit] tentativa ${attempt} falhou (${reason}); nova tentativa em ${waitMs} ms`),
+          },
+        ).then(
+          () => ({ ok: true as const }),
+          (error: unknown) => ({ ok: false as const, error }),
+        );
+        mediaPendingRef.current = mediaConnect;
 
-        if (preflightResult.status === "fulfilled" && !preflightResult.value.success) {
-          console.warn("[ICE Preflight] Warning:", preflightResult.value.error);
+        // O teste de ICE só importa para o P2P (que fica atrás de flag): não gasta tempo nele no caminho normal.
+        if (isP2pFallbackFlagOn()) {
+          void runIcePreflightCheck().then((preflight) => {
+            if (!preflight.success) console.warn("[ICE Preflight] Warning:", preflight.error);
+          });
         }
 
-        const livekitError =
-          livekitResult.status === "rejected" ? livekitResult.reason : undefined;
-
-        if (livekitResult.status === "fulfilled") {
-          livekitConnected = true;
-          useLiveKitPrimaryRef.current = true;
-          setMediaTransport("livekit");
-        } else if (shouldUseP2PFallback("start-call", livekitError)) {
-          console.warn("[LiveKit] SFU connection failed, falling back to P2P mesh:", livekitError);
-          useLiveKitPrimaryRef.current = false;
-          setMediaTransport("p2p");
-        } else {
-          throw new Error("Não foi possível conectar ao servidor de voz.");
-        }
-
-        // Subscribe to call session for SIGNALING only (call control: mute, hangup, etc.)
+        // Escuta a resposta do destino (call:answer) já antes do convite.
         if (unsubscribeSessionRef.current) unsubscribeSessionRef.current();
         unsubscribeSessionRef.current = subscribeToCallSession(
           chatId,
           user.uid,
           createUnifiedSessionHandlers(chatId),
         );
+
+        /** Espera a mídia. Sucesso: transporte LiveKit. Falha: P2P só se permitido; senão lança LiveKitConnectError. */
+        const settleMedia = async (): Promise<void> => {
+          const outcome = await mediaConnect;
+          mediaPendingRef.current = null;
+          if (outcome.ok) {
+            livekitConnected = true;
+            useLiveKitPrimaryRef.current = true;
+            setMediaTransport("livekit");
+            return;
+          }
+          const failure = outcome.error;
+          const cause = failure instanceof LiveKitConnectError ? failure.cause : failure;
+          if (shouldUseP2PFallback("start-call", cause)) {
+            console.warn("[LiveKit] SFU indisponível; usando P2P (backend desligou o LiveKit ou a flag manual está ligada):", cause);
+            useLiveKitPrimaryRef.current = false;
+            setMediaTransport("p2p");
+            return;
+          }
+          mediaFailedRef.current = true;
+          throw failure;
+        };
+
+        // Ordem antiga (flag call_invite_first desligada): só convida depois da mídia.
+        if (!inviteFirst) await settleMedia();
 
         await sendCallInvite(friendUid, {
           callerId: user.uid,
@@ -3163,29 +3226,9 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           timestamp: Date.now(),
           pv: APP_PROTOCOL_VERSION,
         });
+        callOutcome.inviteSent = true;
 
-        // Notifica a sala caso o participante já esteja nela aguardando
-        await announceMemberJoinedOnce(chatId, {
-          uid: user.uid,
-          name: displayName,
-          avatar: avatarUrl || null,
-          chatId,
-        });
-
-        // If LiveKit failed, fall back to P2P mesh for media
-        if (!livekitConnected) {
-          const pc = await createPeerConnectionForPeer(chatId, friendUid, true);
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-
-          await sendCallSignal(chatId, {
-            senderId: user.uid,
-            chatId,
-            targetUid: friendUid,
-            signal: offer,
-          });
-        }
-
+        // O toque e o cronômetro de "não atendeu" começam no envio do convite, não depois da mídia.
         playRingtone("ringout");
         audioRingIntervalRef.current = window.setInterval(() => {
           playRingtone("ringout");
@@ -3203,9 +3246,43 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
             cleanUpCall();
           }
         }, 35000);
+
+        if (inviteFirst) await settleMedia();
+
+        // Notifica a sala caso o participante já esteja nela aguardando
+        await announceMemberJoinedOnce(chatId, {
+          uid: user.uid,
+          name: displayName,
+          avatar: avatarUrl || null,
+          chatId,
+        });
+
+        // P2P (só com flag manual ou LiveKit desligado pelo backend): troca de oferta
+        if (!livekitConnected) {
+          const pc = await createPeerConnectionForPeer(chatId, friendUid, true);
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+
+          await sendCallSignal(chatId, {
+            senderId: user.uid,
+            chatId,
+            targetUid: friendUid,
+            signal: offer,
+          });
+        }
       } catch (err: any) {
+        if (err instanceof ConnectCancelledError) return; // o usuário desligou: nada a mostrar
         console.error("[useVoiceCall] startCall failed", err);
-        notify(err?.message || "Não foi possível iniciar a chamada.", "error");
+        if (err instanceof LiveKitConnectError) {
+          logCallFailure({ role: "caller", reason: err.reason, attempts: err.attempts, chatId });
+          // O destino já pode estar tocando: avisa que a chamada acabou por falha de mídia.
+          if (callOutcome.inviteSent) {
+            void sendCallEnd(chatId, friendUid, { senderId: user.uid, chatId, reason: "error" });
+          }
+          notify(describeLiveKitFailure(err.reason), "error");
+        } else {
+          notify(err?.message || "Não foi possível iniciar a chamada.", "error");
+        }
         cleanUpCall();
       }
     },
@@ -3300,28 +3377,34 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
           setupVoiceAnalyzer(processed, false, callerId);
         }
       } else {
-        const [preflightResult, livekitResult] = await Promise.allSettled([
-          runIcePreflightCheck(),
-          connectLiveKitRoom(chatId, user.uid, displayName, avatarUrl),
-        ]);
-
-        if (preflightResult.status === "fulfilled" && !preflightResult.value.success) {
-          console.warn("[ICE Preflight] Warning:", preflightResult.value.error);
+        // Até 3 tentativas com recuo; sem queda silenciosa para P2P (ver livekitConnectPolicy.ts e docs/decisions/0006).
+        if (isP2pFallbackFlagOn()) {
+          void runIcePreflightCheck().then((preflight) => {
+            if (!preflight.success) console.warn("[ICE Preflight] Warning:", preflight.error);
+          });
         }
-
-        const livekitError =
-          livekitResult.status === "rejected" ? livekitResult.reason : undefined;
-
-        if (livekitResult.status === "fulfilled") {
+        mediaCancelledRef.current = false;
+        try {
+          await connectWithRetry(
+            () => connectLiveKitRoom(chatId, user.uid, displayName, avatarUrl),
+            {
+              isCancelled: () => mediaCancelledRef.current,
+              onRetry: ({ attempt, reason, waitMs }) =>
+                console.warn(`[LiveKit] tentativa ${attempt} falhou (${reason}); nova tentativa em ${waitMs} ms`),
+            },
+          );
           livekitConnected = true;
           useLiveKitPrimaryRef.current = true;
           setMediaTransport("livekit");
-        } else if (shouldUseP2PFallback("answer-call", livekitError)) {
-          console.warn("[LiveKit] SFU connection failed, falling back to P2P mesh:", livekitError);
-          useLiveKitPrimaryRef.current = false;
-          setMediaTransport("p2p");
-        } else {
-          throw new Error("Não foi possível conectar ao servidor de voz.");
+        } catch (connectError) {
+          const cause = connectError instanceof LiveKitConnectError ? connectError.cause : connectError;
+          if (shouldUseP2PFallback("answer-call", cause)) {
+            console.warn("[LiveKit] SFU indisponível; usando P2P (backend desligou o LiveKit ou a flag manual está ligada):", cause);
+            useLiveKitPrimaryRef.current = false;
+            setMediaTransport("p2p");
+          } else {
+            throw connectError;
+          }
         }
 
         // Subscribe to call session for SIGNALING only (call control: mute, hangup, etc.)
@@ -3367,7 +3450,15 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
 
       setIncomingInvite(null);
     } catch (err) {
-      notify(reportFailure("call:answer", "Erro ao atender chamada.", err), "error");
+      if (err instanceof ConnectCancelledError) return; // o usuário desligou: nada a mostrar
+      if (err instanceof LiveKitConnectError) {
+        logCallFailure({ role: "callee", reason: err.reason, attempts: err.attempts, chatId });
+        // Quem ligou está esperando: avisa que a chamada acabou por falha de mídia.
+        void sendCallEnd(chatId, callerId, { senderId: user.uid, chatId, reason: "error" });
+        notify(describeLiveKitFailure(err.reason), "error");
+      } else {
+        notify(reportFailure("call:answer", "Erro ao atender chamada.", err), "error");
+      }
       cleanUpCall();
     }
   }, [acquireAudioStream, announceMemberJoinedOnce, applyAudioProcessingChain, callState, cleanUpCall, createPeerConnectionForPeer, createUnifiedSessionHandlers, incomingInvite, inputMode, notify, playRingtone, selectedVideoInput, setupVoiceAnalyzer, stopRingtone, user, userProfile]);

@@ -60,3 +60,13 @@ await window.pherieliumGuardReport()
 ```
 Como ler: `would-drop` é o que seria descartado em `enforce`. Em uso legítimo (chamada normal entre amigos, sala, reconexão) o esperado é **zero** `would-drop`.
 Se aparecer, o motivo (`wrong-chat`, `sender-not-peer`, `unknown-host`...) diz o que ajustar antes de ligar o `enforce`.
+
+## Chamada 1:1 (D1): flags e diagnóstico
+
+| Flag | Padrão | Efeito |
+| --- | --- | --- |
+| `p2p_fallback` | desligada | `1` permite cair para P2P quando o LiveKit falha para um lado (o código P2P não foi apagado) |
+| `call_invite_first` | ligada | `0` volta a enviar o convite só depois de a mídia conectar |
+
+Falhas de mídia ficam registradas (razão, papel, tentativas, 4 caracteres da conversa) e saem em texto para colar: `await window.pherieliumCallFailures()`.
+Motivos: `livekit_disabled`, `token_unauthorized`, `token_timeout`, `network`, `room_invalid`, `media_error`. Decisão completa: `docs/decisions/0006-chamada-sem-fallback-p2p-silencioso.md`.
