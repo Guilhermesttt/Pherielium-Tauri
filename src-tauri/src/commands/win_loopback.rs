@@ -16,7 +16,8 @@ use windows::Win32::Media::Audio::{
     AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_LOOPBACK, WAVEFORMATEX, WAVEFORMATEXTENSIBLE,
 };
 use windows::Win32::System::Com::{
-    CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, CLSCTX_ALL,
+    CoCreateInstance, CoGetApartmentType, CoInitializeEx, CoTaskMemFree, CoUninitialize, APTTYPE,
+    APTTYPEQUALIFIER, APTTYPE_MAINSTA, APTTYPE_MTA, APTTYPE_NA, APTTYPE_STA, CLSCTX_ALL,
     COINIT_MULTITHREADED,
 };
 
@@ -27,6 +28,52 @@ const WAVE_FORMAT_IEEE_FLOAT: u16 = 3;
 const WAVE_FORMAT_EXTENSIBLE: u16 = 0xFFFE;
 const AUDCLNT_BUFFERFLAGS_SILENT: u32 = 0x2;
 static DESKTOP_AUDIO_GEN: AtomicU64 = AtomicU64::new(0);
+/// Diagnóstico (flag `pherielium_stream_debug` no front, ligada por `stream_debug_set`). Só observa; nunca muda o comportamento.
+static STREAM_DEBUG: AtomicBool = AtomicBool::new(false);
+
+pub fn set_stream_debug(enabled: bool) {
+    STREAM_DEBUG.store(enabled, Ordering::Relaxed);
+}
+
+/// Emite um passo do diagnóstico para o front (console) e para o stderr. No-op com a flag desligada.
+fn diag(app: &AppHandle, stage: &str, detail: serde_json::Value) {
+    if !STREAM_DEBUG.load(Ordering::Relaxed) {
+        return;
+    }
+    let payload = json!({ "stage": stage, "detail": detail });
+    eprintln!("[desktop-audio-diag] {payload}");
+    if let Err(err) = app.emit_to("main", "stream-debug:desktop-audio", payload) {
+        eprintln!("[desktop-audio-diag] emit falhou: {err}");
+    }
+}
+
+/// Apartamento COM da thread atual, para o diagnóstico.
+fn apartment_name() -> &'static str {
+    let mut apartment = APTTYPE(0);
+    let mut qualifier = APTTYPEQUALIFIER(0);
+    // SAFETY: os dois ponteiros de saída são variáveis locais válidas.
+    match unsafe { CoGetApartmentType(&mut apartment, &mut qualifier) } {
+        Ok(()) => match apartment {
+            APTTYPE_MTA => "MTA",
+            APTTYPE_STA => "STA",
+            APTTYPE_MAINSTA => "MainSTA",
+            APTTYPE_NA => "NA",
+            _ => "other",
+        },
+        Err(_) => "uninitialized",
+    }
+}
+
+/// Extrai o primeiro `0x........` de uma mensagem de erro (os erros desta camada são texto).
+pub(crate) fn hresult_from_message(message: &str) -> Option<String> {
+    let start = message.find("0x")?;
+    let digits: String = message[start + 2..].chars().take_while(|c| c.is_ascii_hexdigit()).collect();
+    if digits.is_empty() {
+        None
+    } else {
+        Some(format!("0x{}", digits.to_ascii_uppercase()))
+    }
+}
 
 const SUBTYPE_IEEE_FLOAT: GUID = GUID::from_values(
     0x0000_0003,
@@ -271,6 +318,18 @@ pub fn stop_excluding_self() {
 /// Captures the render mix except this process tree. Local playback is unchanged.
 pub fn start_excluding_self(app: AppHandle) -> Result<LoopbackInfo, String> {
     let generation = DESKTOP_AUDIO_GEN.fetch_add(1, Ordering::SeqCst) + 1;
+    diag(
+        &app,
+        "start",
+        json!({
+            "path": "legacy win_loopback::start_excluding_self",
+            "mode": "EXCLUDE_TARGET_PROCESS_TREE",
+            "targetPid": std::process::id(),
+            "windowsBuild": crate::commands::audio_capture::win::windows_build(),
+            "generation": generation,
+            "previousGenerationStillRunning": generation > 1,
+        }),
+    );
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::Builder::new()
         .name("desktop-audio-exclude".into())
@@ -290,9 +349,12 @@ fn run_excluding_self(
     generation: u64,
     tx: &std::sync::mpsc::Sender<Result<LoopbackInfo, String>>,
 ) -> Result<(), String> {
-    unsafe {
-        let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
-    }
+    let com_hr = unsafe { CoInitializeEx(None, COINIT_MULTITHREADED) };
+    diag(
+        &app,
+        "com",
+        json!({ "coInitializeEx": format!("{:#010x}", com_hr.0 as u32), "apartment": apartment_name() }),
+    );
     struct ComGuard;
     impl Drop for ComGuard {
         fn drop(&mut self) {
@@ -301,11 +363,27 @@ fn run_excluding_self(
     }
     let _com = ComGuard;
 
-    let client = activate_excluding_self()?;
-    let pwfx = unsafe {
-        client
-            .GetMixFormat()
-            .map_err(|e| format!("GetMixFormat: {e}"))?
+    let client = match activate_excluding_self() {
+        Ok(client) => {
+            diag(&app, "activate", json!({ "ok": true }));
+            client
+        }
+        Err(message) => {
+            diag(
+                &app,
+                "activate",
+                json!({ "ok": false, "error": message, "hresult": hresult_from_message(&message) }),
+            );
+            return Err(message);
+        }
+    };
+    let pwfx = match unsafe { client.GetMixFormat() } {
+        Ok(ptr) => ptr,
+        Err(e) => {
+            // Cliente de process loopback não implementa GetMixFormat (E_NOTIMPL): a captura nunca chegaria a iniciar.
+            diag(&app, "get_mix_format", json!({ "ok": false, "hresult": format!("{:#010x}", e.code().0 as u32) }));
+            return Err(format!("GetMixFormat: {e}"));
+        }
     };
     if pwfx.is_null() {
         return Err("Mix format nulo.".into());
@@ -759,4 +837,47 @@ unsafe fn drain_levels(
         let _ = app.emit("overlay:audio-level", payload);
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extracts_the_hresult_from_an_error_message() {
+        assert_eq!(
+            hresult_from_message("ActivateAudioInterfaceAsync: Um método foi chamado em um horário inesperado. (0x8000000E)"),
+            Some("0x8000000E".to_string())
+        );
+        assert_eq!(hresult_from_message("Timeout ao ativar o loopback por processo."), None);
+        assert_eq!(hresult_from_message("erro 0x"), None);
+    }
+
+    /// DIAGNÓSTICO F0 (somente leitura): ativa o loopback por processo pelo caminho ANTIGO (o que o front usa em
+    /// `desktop_audio_start`) e imprime o HRESULT. Compara com `audio_capture::win::tests::getmixformat_on_process_loopback`,
+    /// que usa o caminho novo (handler com IAgileObject).
+    ///
+    /// `cargo test --lib legacy_activation_hresult -- --ignored --nocapture`
+    #[test]
+    #[ignore = "depende do Windows e do áudio desta máquina; só diagnóstico"]
+    fn legacy_activation_hresult() {
+        unsafe {
+            let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
+        }
+        match activate_excluding_self() {
+            Ok(client) => {
+                println!("legacy activate_excluding_self: OK (ativação aceita)");
+                // O caminho antigo chama GetMixFormat logo em seguida; mostra o que acontece.
+                match unsafe { client.GetMixFormat() } {
+                    Ok(ptr) => {
+                        println!("legacy GetMixFormat: OK");
+                        unsafe { CoTaskMemFree(Some(ptr.cast())) };
+                    }
+                    Err(e) => println!("legacy GetMixFormat: ERRO {:#010x} ({e})", e.code().0 as u32),
+                }
+            }
+            Err(message) => println!("legacy activate_excluding_self: ERRO: {message}"),
+        }
+        unsafe { CoUninitialize() };
+    }
 }

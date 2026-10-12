@@ -349,6 +349,15 @@ pub fn screen_share_status(state: State<'_, ScreenCaptureState>) -> Result<Value
     }))
 }
 
+/// Liga/desliga o diagnóstico do áudio de desktop (flag `pherielium_stream_debug` do front). Só observa; não muda a captura.
+#[tauri::command]
+pub fn stream_debug_set(enabled: bool) {
+    #[cfg(windows)]
+    win_loopback::set_stream_debug(enabled);
+    #[cfg(not(windows))]
+    let _ = enabled;
+}
+
 #[tauri::command]
 pub fn desktop_audio_start(app: AppHandle) -> Result<Value, String> {
     #[cfg(windows)]

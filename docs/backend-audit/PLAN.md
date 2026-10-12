@@ -360,3 +360,25 @@ Ver `docs/tech-debt/dependency-audit.md`. `npm audit` rodou; `cargo audit` não 
 1. **Item 7** (usuários simultâneos) e a **Fatia 0** (schema, repositório da API, plano do Supabase, staging).
 2. Resultados de **P-1, P-2, P-3 e P-10** (liberam B1 e F1).
 3. Chave privada do updater: você gera e guarda (instruções na fatia U).
+
+## 16. Atualizações depois de D1 e F0 (2026-10-12)
+
+### 16.1. F1 passa a ser CONDICIONAL; nova fatia F-áudio
+O diagnóstico F0 (`08-f0-audio-ativacao.md`) **provou** que o áudio da tela inteira não inicia por causa do caminho antigo de captura (`win_loopback.rs`): o handler não responde a `IAgileObject` (erro `0x8000000E` na própria chamada) e, mesmo corrigido isso, `GetMixFormat` devolve `E_NOTIMPL` em process loopback. O módulo novo `audio_capture` já resolve os dois e nunca foi ligado ao front.
+- **Nova fatia F-áudio (antes da F1):** ligar `audio_capture` a `desktop_audio_start`/`desktop_audio_stop`, mesmo payload do evento, mesmo modo (`ExcludeSelf`) para não regredir voz nem recorte do sistema; remover o caminho antigo. Esforço 2 a 3 dias. **Aguarda o OK do dono** (diagnóstico entregue, nada implementado).
+- **F1 (excluir só a árvore do WebView2) fica condicional:** só se o P-10, **refeito com a captura funcionando**, mostrar silêncio para jogo lançado pelo hub. A hipótese R8 de `02-rust.md` nunca foi observável porque a captura não iniciava.
+- No §2 e no §15.2, onde a F1 aparece como item da 1.0.3, leia: **F-áudio entra na 1.0.3 (com o OK); F1 só depois do P-10 refeito**.
+
+### 16.2. D1 concluída (commits `a22a5ee`, `12b9b9c`)
+Entregue conforme o §15.2: 3 tentativas (esperas de 1 s e 2 s entre elas, não 1/2/4), sem fallback silencioso, P2P atrás de `pherielium_p2p_fallback`, convite em paralelo com a mídia, `addTransceiver("audio")`, fallback de salas por status HTTP e ADR `0006`. Detalhes em `docs/protocol-compat.md`.
+
+### 16.3. Achados novos (para o plano; sem correção agora)
+| # | Sev. | Achado | Evidência |
+| --- | --- | --- | --- |
+| N1 | **Média** | **O canal global de presença pode ser criado sem os ouvintes de join/leave/sync.** `broadcastPresenceStatus` cria `checkpoint_presence_bus` quando `presenceChannel` é nulo; `subscribeToGlobalEventBus` só liga os ouvintes quando `presenceChannel` também é nulo. Se o primeiro heartbeat vier antes da assinatura, o canal fica inscrito **sem ouvintes** e o cliente não recebe presença instantânea de ninguém por esse canal | `realtimeEventBus.ts`: criação em `broadcastPresenceStatus` e guarda `if (!presenceChannel)` em `subscribeToGlobalEventBus` [VERIFICADO por leitura; o B0 registra `createdWithoutListeners`]. Mitigação parcial: o app novo já não publica no canal global (A1), o que remove a criação precoce quando a flag está desligada |
+| N2 | Baixa | O nome da pasta de dados é `Phelierium` (grafia); renomear órfã os dados dos usuários | `utils/path.rs` [VERIFICADO] |
+
+### 16.4. Pendências atualizadas
+1. OK para a **F-áudio** (ligar `audio_capture`).
+2. Resultados de **P-1, P-2, P-3**; o **P-10** passa a ser refeito **depois** da F-áudio.
+3. **Item 7**, **Fatia 0** e chave do updater, como em §15.8.

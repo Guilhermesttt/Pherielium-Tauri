@@ -267,6 +267,7 @@ pub fn run() {
             screen_share_stop,
             screen_share_status,
             desktop_audio_start,
+            stream_debug_set,
             desktop_audio_stop,
             capture_target_jpeg,
             // Push-to-Talk

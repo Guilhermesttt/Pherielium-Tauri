@@ -70,9 +70,26 @@ export async function startDesktopAudioCapture(): Promise<{
     throw new Error("Captura de audio de desktop indisponivel.");
   }
 
-  const started = await invoke<DesktopAudioStart>("desktop_audio_start");
-  streamDebugLog("desktop-audio-started", started);
   const debugLevels = isStreamDebugEnabled();
+  // Diagnóstico do lado do Rust (modo, PID alvo, apartamento COM, build, HRESULT). Só observa.
+  let unlistenDiag: UnlistenFn | null = null;
+  if (debugLevels) {
+    await invoke("stream_debug_set", { enabled: true }).catch((error: unknown) => {
+      console.warn("[desktopAudio] stream_debug_set falhou:", error);
+    });
+    unlistenDiag = await listen("stream-debug:desktop-audio", (event) => {
+      streamDebugLog("desktop-audio-rust", event.payload);
+    });
+  }
+  let started: DesktopAudioStart;
+  try {
+    started = await invoke<DesktopAudioStart>("desktop_audio_start");
+  } catch (error) {
+    streamDebugLog("desktop-audio-start-failed", { error: String(error) });
+    if (unlistenDiag) await unlistenDiag();
+    throw error;
+  }
+  streamDebugLog("desktop-audio-started", started);
   let levelWindow = emptyLevelWindow();
   let levelWindowStartedAt = Date.now();
   const sampleRate = Number(started?.sampleRate) || 48000;
@@ -139,6 +156,7 @@ export async function startDesktopAudioCapture(): Promise<{
     if (stopped) return;
     stopped = true;
     try { await unlisten(); } catch { /* ignore */ }
+    try { if (unlistenDiag) await unlistenDiag(); } catch { /* ignore */ }
     try { await invoke("desktop_audio_stop"); } catch { /* ignore */ }
     try { destination.disconnect(); } catch { /* ignore */ }
     void ctx.close().catch(() => undefined);
