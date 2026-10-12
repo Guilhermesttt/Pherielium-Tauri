@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { streamDebugLog } from "@/services/voiceCall/streamDebug";
 import { APP_PROTOCOL_VERSION } from "@/lib/protocolVersion";
+import {
+  cleanUid,
+  evaluateCallAnswer,
+  evaluateCallEnd,
+  evaluateCallInvite,
+  evaluateCallKick,
+  evaluateCallPrivacy,
+  evaluateCallSignal,
+  type GuardContext,
+} from "@/services/voiceCall/eventGuards";
+import { guardEvent, installGuardReport } from "@/services/voiceCall/eventGuardRuntime";
 import { startStreamDiagnostics } from "@/services/voiceCall/streamDiagnostics";
 import {
   effectivePercent,
@@ -2631,9 +2642,30 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   );
 
   // Unified Session Handlers Builder (Elimina duplicação e aplica autorização estrita)
+  // Filtros do receptor (log por padrão nesta release): contam e relatam, e só bloqueiam em modo "enforce".
+  // Ver docs/protocol-compat.md e src/services/voiceCall/eventGuards.ts.
+  const friendUidsRef = useRef<ReadonlySet<string>>(new Set());
+  friendUidsRef.current = new Set(
+    (userProfile?.checkpointFriends ?? []).map((friend) => cleanUid(friend.uid)).filter(Boolean),
+  );
+  const buildGuardContext = useCallback((): GuardContext => {
+    const current = sessionRef.current;
+    const invite = incomingInviteRef.current;
+    const ringingIn = callStateRef.current === "ringing-in" && invite;
+    return {
+      localUid: cleanUid(user?.uid),
+      currentChatId: ringingIn ? invite.chatId : (current?.chatId ?? null),
+      peerUid: ringingIn ? cleanUid(invite.callerId) : (current?.friendUid ? cleanUid(current.friendUid) : null),
+      hostUid: current?.hostUid || current?.adminId ? cleanUid(current.hostUid || current.adminId) : null,
+      participantUids: new Set((current?.participants ?? []).map((p) => cleanUid(p.uid))),
+      friendUids: friendUidsRef.current,
+    };
+  }, [user?.uid]);
+
   const createUnifiedSessionHandlers = useCallback(
     (chatId: string) => ({
       onAnswer: async (answerPayload: CallAnswerPayload) => {
+        if (!guardEvent("call:answer", evaluateCallAnswer(buildGuardContext(), answerPayload), String(answerPayload.responderId ?? ""))) return;
         if (answerPayload.accepted) {
           setCallState("connecting");
           if (audioRingIntervalRef.current) {
@@ -2702,6 +2734,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
       },
       onSignal: async ({ senderId, signal }: CallSignalPayload) => {
         if (!senderId || !signal) return;
+        if (!guardEvent("call:signal", evaluateCallSignal(buildGuardContext(), { senderId, chatId }), senderId)) return;
         const pc = peerConnectionsRef.current.get(senderId) || (await createPeerConnectionForPeer(chatId, senderId, false));
 
         if ("sdp" in signal && signal.type) {
@@ -2865,6 +2898,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         }
       },
       onKicked: (kick: CallKickPayload) => {
+        if (!guardEvent("call:kick", evaluateCallKick(buildGuardContext(), kick), String(kick.adminId ?? ""))) return;
         // Validação de autorização: apenas aceita kick se vier do host registrado
         const currentHost = sessionRef.current?.hostUid || (sessionRef.current?.isInitiator ? user?.uid : sessionRef.current?.friendUid);
         if (kick.adminId === currentHost || !currentHost) {
@@ -2874,6 +2908,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         }
       },
       onPrivacy: (privacy: CallPrivacyPayload) => {
+        if (!guardEvent("call:privacy", evaluateCallPrivacy(buildGuardContext(), privacy), String(privacy.adminId ?? ""))) return;
         setRoomConfig((prev) => ({
           roomName: privacy.roomName || prev?.roomName || "Canal de Voz",
           category: privacy.category || prev?.category || "resenha_games",
@@ -2897,6 +2932,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         );
       },
       onEnd: (endPayload: CallEndPayload) => {
+        if (!guardEvent("call:end", evaluateCallEnd(buildGuardContext(), endPayload), String(endPayload.senderId ?? ""))) return;
         setActiveCallsByFriend((prev) => {
           const next = new Map(prev);
           for (const [fUid, cId] of next.entries()) {
@@ -2916,15 +2952,23 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         cleanUpCall();
       },
     }),
-    [cleanUpCall, createPeerConnectionForPeer, notify, playRingtone, user?.uid],
+    [buildGuardContext, cleanUpCall, createPeerConnectionForPeer, notify, playRingtone, user?.uid],
   );
 
   // Incoming call listener on user_calls_${myUid}
   useEffect(() => {
     if (!user?.uid) return;
+    installGuardReport();
 
     const unsubscribe = subscribeToUserIncomingCalls(user.uid, {
       onInvite: (invite) => {
+        // Simulações locais (eco/teste) não vêm de amigo: não passam pelo filtro.
+        if (
+          !isLocalTestCall(invite.chatId, invite.callerId) &&
+          !guardEvent("call:invite", evaluateCallInvite(buildGuardContext(), invite), String(invite.callerId ?? ""))
+        ) {
+          return;
+        }
         const inviteKey = `${invite.chatId}:${invite.callerId}:${invite.timestamp}`;
         const now = Date.now();
         if (
@@ -2969,6 +3013,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
       },
       onEnd: (endPayload) => {
         if (callStateRef.current === "idle") return;
+        if (!guardEvent("call:end", evaluateCallEnd(buildGuardContext(), endPayload), String(endPayload?.senderId ?? ""))) return;
 
         const currentInvite = incomingInviteRef.current;
         const endChatId = endPayload?.chatId;
@@ -2994,7 +3039,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     return () => {
       unsubscribe();
     };
-  }, [cleanUpCall, notify, playRingtone, stopRingtone, user?.uid]);
+  }, [buildGuardContext, cleanUpCall, notify, playRingtone, stopRingtone, user?.uid]);
 
   // INITIATE CALL (1:1 Friend Call) - LiveKit SFU Primary
   const startCall = useCallback(

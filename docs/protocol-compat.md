@@ -36,3 +36,27 @@ O app novo **não publica mais** nesse canal (nem `track`, `untrack` ou broadcas
 A presença instantânea para amigos segue pela caixa de entrada de cada amigo (`user_inbox_{uid}`, `u2u:status`) e pelo polling de `/api/friends/status`.
 Sem `track`, este cliente também deixa de gerar eventos `leave` para quem ainda é app antigo (uma das fontes suspeitas de "offline" falso).
 Flag para reverter: `localStorage.setItem("pherielium_presence_global_bus", "1")`.
+
+## Filtros do receptor para eventos de chamada (modo "log" nesta release)
+
+O receptor avalia cada evento de chamada que chega por canal público e decide se ele veio de quem deveria (`src/services/voiceCall/eventGuards.ts`):
+
+| Evento | Aceito quando |
+| --- | --- |
+| `call:end`, `call:answer`, `call:signal` | é da conversa atual e o remetente é o par (1:1) ou o host/participante conhecido (sala) |
+| `call:kick` | o alvo sou eu, é da sala atual e o `adminId` é o **host que este cliente conhece** (some o ramo "host desconhecido aceita tudo") |
+| `call:privacy` | é da sala atual e vem do host conhecido |
+| `call:invite` | o convidante é **amigo** (lista ainda não carregada = aceita) |
+
+**Limite honesto:** o remetente vem do próprio payload. Os filtros barram abuso casual, não um atacante que conheça os UIDs envolvidos. O fechamento real é o protocolo v2 (canais privados).
+
+**Modo** (`pherielium_event_guards`): `log` (padrão nesta release: avalia, conta e relata, **não bloqueia**), `enforce` (descarta o rejeitado), `off` (desliga e não conta).
+O plano é virar `enforce` na release seguinte, ~1 semana depois, se o relatório mostrar que não há rejeição de evento legítimo.
+
+**Relatório para colar** (conta por evento e desfecho, motivos e as últimas amostras; UIDs só com 4 caracteres):
+
+```js
+await window.pherieliumGuardReport()
+```
+Como ler: `would-drop` é o que seria descartado em `enforce`. Em uso legítimo (chamada normal entre amigos, sala, reconexão) o esperado é **zero** `would-drop`.
+Se aparecer, o motivo (`wrong-chat`, `sender-not-peer`, `unknown-host`...) diz o que ajustar antes de ligar o `enforce`.
