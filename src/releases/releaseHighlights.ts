@@ -13,35 +13,35 @@ export interface ReleaseHighlights {
 }
 
 export const LATEST_RELEASE: ReleaseHighlights = {
-  version: "1.0.2",
-  title: "Pherielium 1.0.2",
+  version: "1.0.3-rc.2",
+  title: "Pherielium 1.0.3 (versão de teste)",
   description:
-    "Controle completo nas Ajustes, legendas de gamepad em todas as páginas, Home mais fluida e uma Pherie com voz.",
-  releaseUrl: "https://github.com/Guilhermesttt/Pherielium-Tauri/releases/tag/v1.0.2",
+    "Chamadas e transmissão mais confiáveis: volume que obedece, áudio do PC na tela inteira e convites de chamada como notificação.",
+  releaseUrl: "https://github.com/Guilhermesttt/Pherielium-Tauri/releases",
   highlights: [
     {
-      id: "controller",
-      title: "Controle completo nas Ajustes",
+      id: "voice",
+      title: "Volume que obedece",
       description:
-        "Nova aba Controles com visualizador ao vivo, bateria, teste de vibração, drift e circularidade dos sticks, e perfis com zona morta e curvas de resposta (global ou por jogo).",
-    },
-    {
-      id: "ui",
-      title: "Legendas do controle em todo lugar",
-      description:
-        "Home, Amigos, Ajustes e as demais páginas mostram os comandos do gamepad no rodapé. O hero da Home ficou mais limpo, sem os botões Jogar Agora e Detalhes.",
+        "O volume da transmissão e o da voz agora vão de 0 a 100% sem tocar em dobro, também com a câmera ligada, e voltar a saída de áudio para Padrão funciona.",
     },
     {
       id: "stability",
-      title: "Mais fluido, sem engasgos",
+      title: "Áudio do PC na tela inteira",
       description:
-        "O vídeo de fundo congela enquanto você navega e sai de cena sozinho em PCs mais fracos. O analógico direito rola Mods e Troféus direito, e o controle fica travado durante a animação de lançamento.",
+        "A transmissão passa a levar o som do computador (todos os apps, menos o Pherielium) sem a voz da chamada voltar em eco. Se o áudio não puder ser capturado, você é avisado.",
     },
     {
-      id: "voice",
-      title: "Pherie com voz e notch em chamada",
+      id: "platforms",
+      title: "Chamadas sem surpresas",
       description:
-        "A Pherie ganhou gorjeios fofos para susto, sono, alegria e cutucadas. Em chamada, o notch expandido mostra as abas (inclusive Controle) e some quando outra janela está em foco.",
+        "Até 3 tentativas de conectar e uma mensagem clara quando não der, em vez de cair em silêncio para um modo pior. O convite chega mais rápido.",
+    },
+    {
+      id: "security",
+      title: "Convites como notificação (opcional)",
+      description:
+        "Em teste, desligado por padrão: o convite de chamada aparece no notch e no overlay do jogo, sem tocar como ligação, e vale por 15 minutos.",
     },
   ],
 };
