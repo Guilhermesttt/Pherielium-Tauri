@@ -20,6 +20,8 @@ export interface NotificationOptions {
   imageUrl?: string;
   duration?: number;
   sound?: boolean;
+  /** Som a tocar no lugar do padrão do tipo (ex.: convite de call usa o de mensagem sem ser do tipo "message"). */
+  soundKey?: keyof (typeof soundThemes)["default"];
   action?: {
     label: string;
     onClick: () => void;
@@ -58,6 +60,8 @@ interface NotificationContextValue {
   preferences: NotificationPreferences;
   updatePreferences: (prefs: Partial<NotificationPreferences>) => void;
   dismissAll: () => void;
+  /** Fecha uma notificação em toast pelo `id` usado em `notify`. */
+  dismiss: (id: string | number) => void;
 }
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -162,7 +166,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
             let soundKey: keyof typeof soundThemes.default = "notification";
 
-            if (type === "achievement") {
+            if (options?.soundKey) {
+              soundKey = options.soundKey;
+            } else if (type === "achievement") {
               const rawTier = String(options?.metadata?.tier || "").toLowerCase();
               const isPlatinum = rawTier === "platinum" || rawTier === "platina";
               const isGold = rawTier === "gold" || rawTier === "ouro";
@@ -197,6 +203,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
           type: toastType as any,
           // 0 / Infinity = sticky (same idea as incoming-call)
           timeout: !duration || !Number.isFinite(duration) ? undefined : duration,
+          actionProps: options?.action
+            ? { children: options.action.label, onClick: options.action.onClick }
+            : undefined,
         });
       }
     },
@@ -217,12 +226,14 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   }, []);
 
-  const value = useMemo<NotificationContextValue>(() => ({ notify, preferences, updatePreferences, dismissAll }), [
-    notify,
-    preferences,
-    updatePreferences,
-    dismissAll,
-  ]);
+  const dismiss = useCallback((id: string | number) => {
+    toast.close(String(id));
+  }, []);
+
+  const value = useMemo<NotificationContextValue>(
+    () => ({ notify, preferences, updatePreferences, dismissAll, dismiss }),
+    [notify, preferences, updatePreferences, dismissAll, dismiss],
+  );
 
   return (
     <NotificationContext.Provider value={value}>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Radio,
   PhoneCall,
@@ -12,6 +12,14 @@ import {
   Check,
 } from "lucide-react";
 import type { RoomCategory, CallInviteMeta } from "../../types/voice-governance";
+import { useVoiceCallContext } from "../../context/VoiceCallContext";
+import {
+  inviteRemainingMs,
+  inviteState,
+  isInviteCancelled,
+  isInviteNotificationsOn,
+  type InviteStatus,
+} from "../../services/voiceCall/inviteState";
 
 interface CallInviteCardProps {
   invite: CallInviteMeta;
@@ -61,7 +69,31 @@ export const CallInviteCard: React.FC<CallInviteCardProps> = ({
   const categoryInfo =
     categoryIcons[invite.category] || categoryIcons.resenha_games;
 
+  // I0 (flag): estado local do convite, não autoritativo. Com a flag desligada o cartão é sempre "pendente", como antes.
+  const { inviteStore } = useVoiceCallContext();
+  const trackStatus = isInviteNotificationsOn();
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [showInvalidNotice, setShowInvalidNotice] = useState(false);
+  useEffect(() => {
+    if (!trackStatus) return;
+    const remaining = inviteRemainingMs({ createdAtMs: invite.createdAt, nowMs: Date.now() });
+    if (remaining <= 0) return;
+    const timer = window.setTimeout(() => setNowMs(Date.now()), remaining + 50);
+    return () => window.clearTimeout(timer);
+  }, [trackStatus, invite.createdAt]);
+  const status: InviteStatus = trackStatus
+    ? inviteState({
+        createdAtMs: invite.createdAt,
+        nowMs,
+        cancelled: isInviteCancelled(inviteStore, invite.chatId, invite.createdAt),
+      })
+    : "pending";
+
   const handleJoinClick = () => {
+    if (status !== "pending") {
+      setShowInvalidNotice(true);
+      return;
+    }
     if (invite.isPrivate) {
       setIsPasswordModalOpen(true);
       return;
@@ -134,11 +166,16 @@ export const CallInviteCard: React.FC<CallInviteCardProps> = ({
         <button
           type="button"
           onClick={handleJoinClick}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white text-black font-black text-xs hover:bg-white/90 shadow-[0_4px_20px_rgba(255,255,255,0.15)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer"
+          className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white text-black font-black text-xs hover:bg-white/90 shadow-[0_4px_20px_rgba(255,255,255,0.15)] hover:scale-[1.02] active:scale-[0.98] transition cursor-pointer${status === "pending" ? "" : " opacity-50"}`}
         >
           <PhoneCall className="h-4 w-4" />
-          <span>Entrar na Chamada</span>
+          <span>
+            {status === "expired" ? "Convite expirado" : status === "cancelled" ? "Convite cancelado" : "Entrar na Chamada"}
+          </span>
         </button>
+        {showInvalidNotice && status !== "pending" && (
+          <p className="text-[11px] text-rose-400 font-medium">Convite inválido ou expirado.</p>
+        )}
       </div>
 
       {/* Password Modal (when room is private) */}

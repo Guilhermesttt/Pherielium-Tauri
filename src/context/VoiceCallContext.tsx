@@ -4,7 +4,8 @@ import { PhoneCall, X } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import { useNotification } from "../components/NotificationCenter";
 import { usePreferences } from "./PreferencesContext";
-import { useVoiceCall } from "../hooks/useVoiceCall";
+import { useVoiceCall, type UseVoiceCallNotify } from "../hooks/useVoiceCall";
+import { EMPTY_INVITE_STATE } from "../services/voiceCall/inviteState";
 import { IncomingCallModal } from "../components/voice/IncomingCallModal";
 import { VoiceCallWindow } from "../components/voice/VoiceCallWindow";
 import { ScreenPickerModal } from "../components/voice/ScreenPickerModal";
@@ -23,14 +24,13 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { user, userProfile } = useAuth();
-  let notify: (
-    msg: string,
-    type: "success" | "error" | "info",
-  ) => void = () => {};
+  let notify: UseVoiceCallNotify = () => {};
+  let dismissNotification: (id: string) => void = () => {};
   try {
     const notificationContext = useNotification();
     if (notificationContext?.notify) {
       notify = notificationContext.notify;
+      dismissNotification = notificationContext.dismiss;
     }
   } catch {
     // In unit tests without full notification center
@@ -41,6 +41,7 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({
     user,
     userProfile,
     notify,
+    dismissNotification,
     voiceSfxVolume: effectsVolume / 100,
   });
 
@@ -533,6 +534,7 @@ const safeFallbackVoiceCallContext: Partial<VoiceCallContextType> = {
   startCall: async () => {},
   startTestCall: async () => {},
   answerCall: async () => {},
+  inviteStore: EMPTY_INVITE_STATE,
   rejectCall: async () => {},
   hangUp: async () => {},
   endCallForEveryone: async () => {},

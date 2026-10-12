@@ -96,6 +96,16 @@ import {
   type ScreenShareOptions,
 } from "../services/voiceCall/screenShare";
 import { startDesktopAudioCapture } from "../services/voiceCall/desktopAudioCapture";
+import type { NotificationOptions } from "../components/NotificationCenter";
+import {
+  EMPTY_INVITE_STATE,
+  inviteRemainingMs,
+  inviteState,
+  isInviteNotificationsOn,
+  reduceInvites,
+  type InviteAction,
+  type InviteStoreState,
+} from "../services/voiceCall/inviteState";
 import { reportFailure } from "../services/devError";
 import { publishVoiceLevel } from "../services/voiceCall/voiceLevelBridge";
 import { emptyCallMediaStats, summarizeRtcStats, type ByteSample, type CallMediaStats } from "../services/voiceCall/mediaStats";
@@ -240,15 +250,23 @@ const destroyAudioPipeline = (pipeline: AudioPipeline) => {
   }
 };
 
+export type UseVoiceCallNotify = (
+  msg: string,
+  type?: "success" | "error" | "info",
+  options?: NotificationOptions,
+) => void;
+
 interface UseVoiceCallProps {
   user: AuthUser | null;
   userProfile: UserProfile | null;
-  notify: (msg: string, type: "success" | "error" | "info") => void;
+  notify: UseVoiceCallNotify;
+  /** Fecha uma notificação já exibida (convites cancelados/aceitos). */
+  dismissNotification?: (id: string) => void;
   /** 0–1 scale from launcher effects volume preference */
   voiceSfxVolume?: number;
 }
 
-export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: UseVoiceCallProps) => {
+export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, voiceSfxVolume = 1 }: UseVoiceCallProps) => {
   const [callState, setCallState] = useState<CallState>("idle");
   const [session, setSession] = useState<VoiceCallSession | null>(null);
   const [incomingInvite, setIncomingInvite] = useState<CallInvitePayload | null>(null);
@@ -728,6 +746,19 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   const mediaFailedRef = useRef(false);
   const mediaCancelledRef = useRef(false);
   incomingInviteRef.current = incomingInvite;
+
+  // I0: convites recebidos como notificação (flag `invite_notifications`). Estado local, não autoritativo (inviteState.ts).
+  const [inviteStore, setInviteStore] = useState<InviteStoreState>(EMPTY_INVITE_STATE);
+  const inviteStoreRef = useRef<InviteStoreState>(EMPTY_INVITE_STATE);
+  const dispatchInvite = useCallback((action: InviteAction): InviteStoreState => {
+    const next = reduceInvites(inviteStoreRef.current, action);
+    if (next !== inviteStoreRef.current) {
+      inviteStoreRef.current = next;
+      setInviteStore(next);
+    }
+    return next;
+  }, []);
+  const acceptPendingInviteRef = useRef<((key: string) => void) | null>(null);
 
   // Local audio analyzer pipeline
   const localPipelineRef = useRef<AudioPipeline>(createEmptyPipeline());
@@ -3076,6 +3107,29 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         ) {
           return;
         }
+        if (isInviteNotificationsOn() && callStateRef.current === "idle") {
+          // I0: sem toque e sem modal; vira notificação até expirar ou ser dispensada. Ocupado/reconexão seguem o fluxo abaixo.
+          const nowMs = Date.now();
+          dispatchInvite({ type: "prune", nowMs });
+          const before = inviteStoreRef.current;
+          const after = dispatchInvite({ type: "received", invite, nowMs });
+          const entry = after.pending.find((p) => p.invite === invite);
+          if (after === before || !entry) return; // repetido (chave já pendente ou dentro da janela de 10 s)
+          const remainingMs = inviteRemainingMs({ createdAtMs: invite.timestamp, nowMs });
+          if (remainingMs <= 0) {
+            dispatchInvite({ type: "dismissed", key: entry.key });
+            return;
+          }
+          notify(`${invite.callerName} está te convidando para uma call`, "info", {
+            id: `invite:${entry.key}`,
+            title: "Convite de call",
+            duration: remainingMs,
+            sound: true,
+            soundKey: "chatReceived",
+            action: { label: "Entrar", onClick: () => acceptPendingInviteRef.current?.(entry.key) },
+          });
+          return;
+        }
         const inviteKey = `${invite.chatId}:${invite.callerId}:${invite.timestamp}`;
         const now = Date.now();
         if (
@@ -3119,6 +3173,16 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
         }
       },
       onEnd: (endPayload) => {
+        if (isInviteNotificationsOn() && endPayload?.chatId && endPayload.senderId) {
+          // I0: o convidante encerrou antes de eu entrar: o convite pendente (se houver) é cancelado e a notificação some.
+          const cancelled = inviteStoreRef.current.pending.filter(
+            (p) => p.invite.chatId === endPayload.chatId && p.invite.callerId === endPayload.senderId,
+          );
+          if (cancelled.length > 0) {
+            dispatchInvite({ type: "cancelled", chatId: endPayload.chatId, inviterId: endPayload.senderId, nowMs: Date.now() });
+            cancelled.forEach((p) => dismissNotification?.(`invite:${p.key}`));
+          }
+        }
         if (callStateRef.current === "idle") return;
         if (!guardEvent("call:end", evaluateCallEnd(buildGuardContext(), endPayload), String(endPayload?.senderId ?? ""))) return;
 
@@ -3151,7 +3215,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     return () => {
       unsubscribe();
     };
-  }, [buildGuardContext, cleanUpCall, notify, playRingtone, stopRingtone, user?.uid]);
+  }, [buildGuardContext, cleanUpCall, dismissNotification, dispatchInvite, notify, playRingtone, stopRingtone, user?.uid]);
 
   // INITIATE CALL (1:1 Friend Call) - LiveKit SFU Primary
   const startCall = useCallback(
@@ -3366,13 +3430,15 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
   );
 
   // ANSWER CALL (Callee 1:1) - LiveKit SFU Primary
-  const answerCall = useCallback(async () => {
+  const answerCall = useCallback(async (inviteOverride?: CallInvitePayload) => {
     stopRingtone();
     if (callDurationTimerRef.current) {
       window.clearInterval(callDurationTimerRef.current);
       callDurationTimerRef.current = null;
     }
-    const invite = incomingInvite || incomingInviteRef.current;
+    // O botão do modal chama `onAccept` sem argumento útil; só um convite de verdade (I0) substitui o do estado.
+    const override = typeof inviteOverride?.chatId === "string" && typeof inviteOverride.callerId === "string" ? inviteOverride : null;
+    const invite = override || incomingInvite || incomingInviteRef.current;
     const currentState = callStateRef.current || callState;
     if (!user?.uid || !invite) {
       console.warn("[useVoiceCall] answerCall canceled: missing user or invite", { uid: user?.uid, invite, currentState });
@@ -3538,6 +3604,22 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
       cleanUpCall();
     }
   }, [acquireAudioStream, announceMemberJoinedOnce, applyAudioProcessingChain, callState, cleanUpCall, createPeerConnectionForPeer, createUnifiedSessionHandlers, incomingInvite, inputMode, notify, playRingtone, selectedVideoInput, setupVoiceAnalyzer, stopRingtone, user, userProfile]);
+
+  // I0: entrar a partir da notificação de convite. Revalida a validade na hora do clique (a notificação pode ter ficado aberta).
+  acceptPendingInviteRef.current = (key: string) => {
+    const entry = inviteStoreRef.current.pending.find((p) => p.key === key);
+    dismissNotification?.(`invite:${key}`);
+    dispatchInvite({ type: "dismissed", key });
+    if (!entry || inviteState({ createdAtMs: entry.invite.timestamp, nowMs: Date.now() }) !== "pending") {
+      notify("Convite inválido ou expirado.", "info");
+      return;
+    }
+    if (callStateRef.current !== "idle") {
+      notify("Você já está em uma chamada.", "info");
+      return;
+    }
+    void answerCall(entry.invite);
+  };
 
   // JOIN ROOM (Persistente / Multi-Participante)
   const joinRoom = useCallback(
@@ -4950,6 +5032,7 @@ export const useVoiceCall = ({ user, userProfile, notify, voiceSfxVolume = 1 }: 
     session,
     roomConfig,
     incomingInvite,
+    inviteStore,
     localStream,
     remoteStream,
     remoteStreams,
