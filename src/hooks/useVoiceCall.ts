@@ -349,6 +349,10 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
   const [isVoiceWindowOpen, setIsVoiceWindowOpen] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const rejoinEpochRef = useRef(0);
+  const connectLiveKitRoomRef = useRef<
+    ((roomName: string, identity: string, displayName: string, avatarUrl?: string) => Promise<unknown>) | null
+  >(null);
   const [linkQuality, setLinkQuality] = useState<LinkQuality>("unknown");
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [iceConnectionState, setIceConnectionState] = useState("new");
@@ -1811,6 +1815,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     // Interrompe tentativas de conexão do LiveKit que ainda estejam em andamento (D1).
     mediaCancelledRef.current = true;
     mediaPendingRef.current = null;
+    rejoinEpochRef.current += 1; // aborta tentativas de religar a sala em andamento
     stopRingtone();
     if (callDurationTimerRef.current) {
       window.clearInterval(callDurationTimerRef.current);
@@ -2347,8 +2352,33 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
           const plan = planOnDisconnect(typeof reason === "number" ? reason : undefined);
           if (plan.action === "ignore") return;
           console.warn("[LiveKit] desconectado pelo servidor/rede, motivo:", reason);
-          notify(plan.message, "error");
-          cleanUpCall();
+          if (plan.action === "end-call") {
+            notify(plan.message, "error");
+            cleanUpCall();
+            return;
+          }
+          // Queda por rede/servidor: religa a mesma sala sozinho (a mídia local é reaproveitada). `rejoinEpochRef` muda quando a
+          // chamada é encerrada (cleanUpCall), o que aborta as tentativas.
+          const epoch = rejoinEpochRef.current;
+          setIsReconnecting(true);
+          void (async () => {
+            for (const delayMs of plan.delaysMs) {
+              await new Promise<void>((resolve) => window.setTimeout(resolve, delayMs));
+              if (rejoinEpochRef.current !== epoch) return;
+              try {
+                await connectLiveKitRoomRef.current?.(roomName, identity, displayName, avatarUrl);
+                if (rejoinEpochRef.current !== epoch) return;
+                setIsReconnecting(false);
+                notify("Reconectado à chamada.", "success");
+                return;
+              } catch (err) {
+                console.warn("[LiveKit] tentativa de religar falhou:", err);
+              }
+            }
+            if (rejoinEpochRef.current !== epoch) return;
+            notify(plan.message, "error");
+            cleanUpCall();
+          })();
         });
 
         await room.connect(serverUrl, token);
@@ -2456,6 +2486,8 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     },
     [selectedAudioOutput, setupVoiceAnalyzer, notify, applyAudioProcessingChain, replaceActiveMicrophoneTrack, cleanUpCall],
   );
+
+  connectLiveKitRoomRef.current = connectLiveKitRoom;
 
   // ICE Preflight Connectivity Check com cache de 10 min e timeout rápido
   const lastIcePreflightRef = useRef<{ timestamp: number; result: { success: boolean; error?: string } }>({

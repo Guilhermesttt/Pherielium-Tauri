@@ -26,11 +26,20 @@ const REASON_PARTICIPANT_REMOVED = 4;
 const REASON_ROOM_DELETED = 5;
 const REASON_ROOM_CLOSED = 10;
 
-export type DisconnectPlan = { action: "ignore" } | { action: "end-call"; message: string };
+/** Esperas (ms) antes de cada tentativa de religar a sala depois de uma queda definitiva: 2 s, 5 s e 10 s. */
+export const REJOIN_DELAYS_MS: readonly number[] = [2000, 5000, 10000];
+
+export type DisconnectPlan =
+  | { action: "ignore" }
+  /** Queda por rede ou servidor: tenta religar sozinho; se todas falharem, encerra com `message`. */
+  | { action: "rejoin"; delaysMs: readonly number[]; message: string }
+  /** O servidor tirou você de propósito (removido, sala fechada, outro dispositivo): não adianta religar. */
+  | { action: "end-call"; message: string };
 
 /**
  * Decide o que fazer quando a sala desconecta. `CLIENT_INITIATED` é o próprio app desligando (desligar, trocar de sala): ignora.
- * Qualquer outro motivo encerra a chamada com uma mensagem clara, em vez de deixá-la "ativa" sem som.
+ * Motivos em que o servidor encerrou de propósito terminam a chamada com mensagem específica; os demais (rede, servidor
+ * reiniciando, motivo desconhecido) tentam religar sozinhos, como o Discord faz.
  */
 export function planOnDisconnect(reason: number | undefined): DisconnectPlan {
   switch (reason) {
@@ -38,14 +47,14 @@ export function planOnDisconnect(reason: number | undefined): DisconnectPlan {
       return { action: "ignore" };
     case REASON_DUPLICATE_IDENTITY:
       return { action: "end-call", message: "Você entrou nesta chamada em outro lugar." };
-    case REASON_SERVER_SHUTDOWN:
-      return { action: "end-call", message: "O servidor de voz foi reiniciado. Entre na chamada de novo." };
     case REASON_PARTICIPANT_REMOVED:
       return { action: "end-call", message: "Você foi removido da chamada." };
     case REASON_ROOM_DELETED:
     case REASON_ROOM_CLOSED:
       return { action: "end-call", message: "A chamada foi encerrada." };
+    case REASON_SERVER_SHUTDOWN:
+      return { action: "rejoin", delaysMs: REJOIN_DELAYS_MS, message: "O servidor de voz foi reiniciado. Entre na chamada de novo." };
     default:
-      return { action: "end-call", message: "A conexão com o servidor de voz foi perdida." };
+      return { action: "rejoin", delaysMs: REJOIN_DELAYS_MS, message: "A conexão com o servidor de voz foi perdida." };
   }
 }

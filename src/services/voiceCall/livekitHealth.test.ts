@@ -23,18 +23,23 @@ describe("planOnDisconnect", () => {
 
   it.each([
     [2, "outro lugar"],
-    [3, "reiniciado"],
     [4, "removido"],
     [5, "encerrada"],
     [10, "encerrada"],
-  ])("reason %s ends the call with a specific message", (reason, fragment) => {
+  ])("reason %s is deliberate: ends the call, no rejoin", (reason, fragment) => {
     const plan = planOnDisconnect(reason);
     expect(plan.action).toBe("end-call");
     expect(plan.action === "end-call" && plan.message).toContain(fragment);
   });
 
-  it.each([[undefined], [0], [6], [99]])("any other or missing reason (%s) ends the call as a lost connection", (reason) => {
+  it.each([[3], [undefined], [0], [6], [8], [9], [99]])("network/server reason %s tries to rejoin 3 times (2 s, 5 s, 10 s)", (reason) => {
     const plan = planOnDisconnect(reason);
-    expect(plan).toEqual({ action: "end-call", message: "A conexão com o servidor de voz foi perdida." });
+    expect(plan.action).toBe("rejoin");
+    expect(plan.action === "rejoin" && plan.delaysMs).toEqual([2000, 5000, 10000]);
+  });
+
+  it("the final message when every rejoin fails names the cause", () => {
+    expect(planOnDisconnect(undefined)).toMatchObject({ message: "A conexão com o servidor de voz foi perdida." });
+    expect(planOnDisconnect(3)).toMatchObject({ message: expect.stringContaining("reiniciado") });
   });
 });
