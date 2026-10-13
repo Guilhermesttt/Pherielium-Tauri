@@ -9,6 +9,10 @@ import "@fontsource/archivo-black/400.css";
 import "@fontsource/stix-two-text/400.css";
 import "@fontsource/stix-two-text/700.css";
 import "./index.css";
+import { applyUiStyle, readUiStyle } from "./lib/uiStyle";
+
+// Estilo visual (refinado por padrão); antes da primeira pintura para não piscar o visual antigo.
+applyUiStyle(document.documentElement, readUiStyle());
 
 // Só a janela principal: o canvas nunca fica branco (faixa inferior ao alternar tela
 // cheia no WebView2). Não pode ir no index.css: o overlay (transparente) o importa também.
