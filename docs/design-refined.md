@@ -35,17 +35,20 @@ Três camadas, nessa ordem, para não editar 250 arquivos à mão:
 | --- | --- |
 | **Login** | Redesenhada e capturada |
 | **Configurações** | Redesenhada e capturada (`#/design-lab/settings?tab=general`, `personalization`, `voice`…) |
+| **Troféus** | Redesenhada e capturada (`#/design-lab/trophies`) |
+| **Mods** | Redesenhada e capturada (`#/design-lab/mods`) |
 | **Modal de transmissão** | Redesenhado |
-| Gaveta lateral, barra de título, modais, toasts, abas, interruptores | Redesenhados (peças compartilhadas) |
-| Todo o resto (Início, Biblioteca, detalhe do jogo, Troféus, Mods, Amigos/Chat, janela de chamada, demais modais) | Tokens e regras globais aplicados; estrutura ainda a revisar com capturas logadas |
+| Gaveta lateral, barra de título, modais, toasts, abas, interruptores, seletores (`GhostSelect`), legenda do controle | Redesenhados (peças compartilhadas) |
+| Todo o resto (Início, Biblioteca, detalhe do jogo, Amigos/Chat, janela de chamada, demais modais) | Tokens e regras globais aplicados; estrutura ainda a revisar com capturas logadas |
 
 ## Laboratório (só em desenvolvimento)
 - `#/design-lab`: as peças com conteúdo de exemplo; `?modal=stream` abre o modal real.
 - `#/design-lab/settings?tab=<aba>`: a tela **real** de Configurações, com os provedores da App, sem conta e com ações vazias.
+- `#/design-lab/trophies` e `#/design-lab/mods`: as páginas **reais** com jogos de exemplo (capas do CDN público da Steam).
 
 ## O que falta
-- Botões secundários com contorno fino (ex.: "Testar", "Visualizar câmera") e selos com borda: trocar um a um por `RefinedButton` tonal. Não dá para fazer no CSS global sem quebrar as miniaturas de tema, que usam a borda para mostrar a seleção.
-- **Bordas finas** (~770 `border-white/…`): ficaram. Tirar todas às cegas pode sumir com cartões que só têm borda; decidir com capturas.
+- Botões com contorno fino **sem estado** e cartões com linha de 5–10% **com fundo próprio** já viram tonais pelo CSS. Ficam as bordas de seleção (20% ou mais, `aria-*`, cor inline) e as linhas em elementos sem fundo, que precisam de captura para decidir.
+- Mods: os botões grade/lista continuam sem trocar a visualização (pendência anterior ao redesign).
 - Camadas (`z-index`): continuam os valores antigos; normalizar para `--z-*` exige revisar quem fica por cima de quem.
 - Telas logadas: preciso de capturas (ou de uma conta de teste) para revisar a estrutura de cada uma.
 
