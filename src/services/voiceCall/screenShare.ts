@@ -6,6 +6,8 @@ export interface ScreenShareOptions {
   sourceId?: string;
   resolution?: "720p" | "1080p" | "source";
   fps?: 30 | 60;
+  /** Bitrate de vídeo escolhido pelo usuário, em Mbps; ausente ou "auto" usa a tabela por resolução e fps. */
+  bitrateMbps?: number | "auto";
   withAudio?: boolean;
   /** @deprecated Spectral filtering was removed; isolation uses display-media constraints. */
   callAudioBarrier?: boolean;
@@ -33,12 +35,36 @@ export interface ScreenShareAudioTrackConstraints extends MediaTrackConstraints 
   restrictOwnAudio?: boolean;
 }
 
+/** Opções do seletor de bitrate (Mbps). "auto" usa `SCREEN_SHARE_BITRATE`. */
+export const BITRATE_CHOICES_MBPS = ["auto", 4, 6, 8, 12, 16, 20] as const;
+export const MIN_SCREEN_SHARE_BITRATE_MBPS = 2;
+export const MAX_SCREEN_SHARE_BITRATE_MBPS = 30;
+
+/** Bitrate em bits/s: a escolha do usuário (limitada a 2 a 30 Mbps) ou a tabela quando é "auto"/inválida. */
+export const resolveScreenShareBitrate = (
+  resolution: "720p" | "1080p",
+  fps: 30 | 60,
+  choice?: number | "auto",
+): number => {
+  if (typeof choice === "number" && Number.isFinite(choice)) {
+    const mbps = Math.min(MAX_SCREEN_SHARE_BITRATE_MBPS, Math.max(MIN_SCREEN_SHARE_BITRATE_MBPS, choice));
+    return Math.round(mbps * 1_000_000);
+  }
+  return SCREEN_SHARE_BITRATE[resolution][fps];
+};
+
+/**
+ * O fps escolhido é o que o usuário quer: o encoder reduz resolução e não quadros quando falta banda ou CPU.
+ * Antes, em 30 fps era "balanced", que deixava o fps cair.
+ */
+export const screenShareDegradationPreference = (): "maintain-framerate" => "maintain-framerate";
+
 export const screenShareProfile = (options: ScreenShareOptions) => {
   const fps: 30 | 60 = options.fps === 30 ? 30 : 60;
   const resolution: "720p" | "1080p" = options.resolution === "720p" ? "720p" : "1080p";
   const width = resolution === "720p" ? 1280 : 1920;
   const height = resolution === "720p" ? 720 : 1080;
-  const bitrate = SCREEN_SHARE_BITRATE[resolution][fps];
+  const bitrate = resolveScreenShareBitrate(resolution, fps, options.bitrateMbps);
   return { fps, resolution, width, height, bitrate };
 };
 
@@ -204,7 +230,7 @@ export async function publishScreenShareTracks(
     name: "screen",
     source: Track.Source.ScreenShare,
     simulcast: false,
-    degradationPreference: options.fps >= 60 ? "maintain-framerate" : "balanced",
+    degradationPreference: screenShareDegradationPreference(),
     videoCodec: "h264",
     videoEncoding: {
       maxBitrate: options.bitrate,

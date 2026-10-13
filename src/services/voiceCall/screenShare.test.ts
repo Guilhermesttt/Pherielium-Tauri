@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import {
   buildDisplayMediaRequest,
   captureNativeScreenShare,
+  resolveScreenShareBitrate,
+  screenShareDegradationPreference,
   describeCaptureSurface,
   planScreenShareAudio,
   isDisplayMediaCancelledError,
@@ -165,5 +167,30 @@ describe("isDisplayMediaCancelledError", () => {
     expect(isDisplayMediaCancelledError(Object.assign(new Error("x"), { name: "NotAllowedError" }))).toBe(true);
     expect(isDisplayMediaCancelledError(Object.assign(new Error("x"), { name: "AbortError" }))).toBe(true);
     expect(isDisplayMediaCancelledError(new Error("fail"))).toBe(false);
+  });
+});
+
+describe("bitrate selection", () => {
+  it.each([
+    ["720p", 30, undefined, 4_500_000],
+    ["720p", 60, "auto", 6_500_000],
+    ["1080p", 30, "auto", 8_000_000],
+    ["1080p", 60, undefined, 12_000_000],
+    ["1080p", 60, 16, 16_000_000],
+    ["720p", 30, 6, 6_000_000],
+    ["1080p", 60, 1, 2_000_000], // abaixo do mínimo
+    ["1080p", 60, 99, 30_000_000], // acima do máximo
+    ["1080p", 60, Number.NaN, 12_000_000], // inválido volta à tabela
+  ] as const)("%s %sfps choice=%s -> %s bps", (resolution, fps, choice, expected) => {
+    expect(resolveScreenShareBitrate(resolution, fps, choice as number | "auto" | undefined)).toBe(expected);
+  });
+
+  it("the profile carries the chosen bitrate", () => {
+    expect(screenShareProfile({ resolution: "1080p", fps: 60, bitrateMbps: 20 }).bitrate).toBe(20_000_000);
+    expect(screenShareProfile({ resolution: "720p", fps: 30 }).bitrate).toBe(4_500_000);
+  });
+
+  it("keeps the chosen frame rate for both 30 and 60 (regression: 30 fps used 'balanced')", () => {
+    expect(screenShareDegradationPreference()).toBe("maintain-framerate");
   });
 });

@@ -92,6 +92,7 @@ import {
   isDisplayMediaCancelledError,
   publishScreenShareTracks,
   releaseScreenCaptureStream,
+  screenShareDegradationPreference,
   screenShareProfile,
   screenShareVideoConstraints,
   SCREEN_SHARE_BITRATE,
@@ -4513,7 +4514,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
                 const params = videoSender.getParameters();
                 if (params.encodings && params.encodings.length > 0) {
                   params.encodings[0].maxBitrate = targetBitrate;
-                  (params as any).degradationPreference = fps >= 60 ? "maintain-framerate" : "balanced";
+                  (params as any).degradationPreference = screenShareDegradationPreference();
                   await videoSender.setParameters(params);
                 }
               }

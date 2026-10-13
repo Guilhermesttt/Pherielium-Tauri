@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MonitorSmartphone, Radio, Volume2, X } from "lucide-react";
 import type { ScreenShareOptions } from "../../hooks/useVoiceCall";
+import { BITRATE_CHOICES_MBPS } from "../../services/voiceCall/screenShare";
 
 interface ScreenPickerModalProps {
   isOpen: boolean;
@@ -14,18 +15,21 @@ const springTransition = { type: "spring" as const, bounce: 0, duration: 0.4 };
 
 const STORAGE_KEY = "pherielium_screen_share_prefs";
 
-function readStoredPrefs(): Pick<ScreenShareOptions, "resolution" | "fps" | "withAudio"> {
+function readStoredPrefs(): Pick<ScreenShareOptions, "resolution" | "fps" | "withAudio" | "bitrateMbps"> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { resolution: "1080p", fps: 60, withAudio: true };
+    if (!raw) return { resolution: "1080p", fps: 60, withAudio: true, bitrateMbps: "auto" };
     const parsed = JSON.parse(raw) as ScreenShareOptions;
     return {
       resolution: parsed.resolution === "720p" ? "720p" : "1080p",
       fps: parsed.fps === 30 ? 30 : 60,
       withAudio: parsed.withAudio !== false,
+      bitrateMbps: (BITRATE_CHOICES_MBPS as readonly (number | "auto")[]).includes(parsed.bitrateMbps as number | "auto")
+        ? (parsed.bitrateMbps as number | "auto")
+        : "auto",
     };
   } catch {
-    return { resolution: "1080p", fps: 60, withAudio: true };
+    return { resolution: "1080p", fps: 60, withAudio: true, bitrateMbps: "auto" };
   }
 }
 
@@ -37,6 +41,7 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
   const [resolution, setResolution] = useState<"720p" | "1080p">("1080p");
   const [fps, setFps] = useState<30 | 60>(60);
   const [withAudio, setWithAudio] = useState(true);
+  const [bitrateMbps, setBitrateMbps] = useState<number | "auto">("auto");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -44,6 +49,7 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
     setResolution(stored.resolution === "720p" ? "720p" : "1080p");
     setFps(stored.fps === 30 ? 30 : 60);
     setWithAudio(stored.withAudio !== false);
+    setBitrateMbps(stored.bitrateMbps ?? "auto");
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -53,6 +59,7 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
       resolution,
       fps,
       withAudio,
+      bitrateMbps,
     };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(options));
@@ -150,6 +157,27 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
                   <span className="text-xs font-semibold text-white/90">Áudio do PC (todos os apps, menos o Pherielium)</span>
                 </label>
               </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[11px] font-semibold tracking-wide text-white/45">Bitrate do vídeo</span>
+              <div className="grid grid-cols-7 gap-1 rounded-[14px] border border-[#161616] bg-white/[0.04] p-1">
+                {BITRATE_CHOICES_MBPS.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setBitrateMbps(value)}
+                    className={`cursor-pointer rounded-[10px] py-1.5 text-xs font-semibold transition ${
+                      bitrateMbps === value ? "bg-white text-black" : "text-white/50 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    {value === "auto" ? "Auto" : `${value}M`}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] leading-relaxed text-white/40">
+                Auto escolhe pela qualidade e pela taxa de quadros. Mais bitrate melhora a imagem em movimento, mas exige mais internet de quem transmite e de quem assiste.
+              </p>
             </div>
 
             <p className="rounded-[14px] border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] leading-relaxed text-white/45">
