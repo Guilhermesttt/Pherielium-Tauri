@@ -21,11 +21,38 @@ import ModGameDetailPanel, {
   type InstalledModEntry,
 } from "../components/mods/ModGameDetailPanel";
 import { GhostSelect } from "../components/ui/GhostSelect";
+import {
+  ALL_CATEGORIES,
+  MODS_SORT_OPTIONS,
+  MODS_STATUS_OPTIONS,
+  asSortOrder,
+  asStatusFilter,
+  distinctCategories,
+  filterAndSortMods,
+  type ModsSortOrder,
+  type ModsStatusFilter,
+} from "../services/modsListing";
 
 interface ModsPageProps {
   uid: string;
   games: Game[];
 }
+
+const MODS_PREFS_KEY = "pherielium:mods:filters:v1";
+
+/** Filtros guardados da última vez; qualquer valor inválido volta ao padrão. */
+const readModsPrefs = (): { category: string; status: ModsStatusFilter; sort: ModsSortOrder } => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(MODS_PREFS_KEY) || "{}") as Record<string, unknown>;
+    return {
+      category: typeof raw.category === "string" && raw.category ? raw.category : ALL_CATEGORIES,
+      status: asStatusFilter(raw.status),
+      sort: asSortOrder(raw.sort),
+    };
+  } catch {
+    return { category: ALL_CATEGORIES, status: "ALL", sort: "AZ" };
+  }
+};
 
 const storageKeys = {
   folders: (uid: string) => `checkpoint_mod_game_folders_${uid}`,
@@ -226,9 +253,9 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
   );
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("ALL");
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [sortOrder, setSortOrder] = useState<"AZ" | "ZA" | "MODS">("AZ");
+  const [categoryFilter, setCategoryFilter] = useState<string>(() => readModsPrefs().category);
+  const [statusFilter, setStatusFilter] = useState<ModsStatusFilter>(() => readModsPrefs().status);
+  const [sortOrder, setSortOrder] = useState<ModsSortOrder>(() => readModsPrefs().sort);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -378,31 +405,36 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
     });
   }, [games, installedByGame, gameFolders]);
 
-  const filteredGames = useMemo(() => {
-    let list = [...enrichedGames];
-    const query = searchTerm.trim().toLowerCase();
-    if (query) {
-      list = list.filter(({ game }) =>
-        [game.title, game.category, game.launcherType]
-          .join(" ")
-          .toLowerCase()
-          .includes(query),
-      );
+  const categoryOptions = useMemo(
+    () => [
+      { value: ALL_CATEGORIES, label: "Todas as Categorias" },
+      ...distinctCategories(enrichedGames).map((category) => ({ value: category, label: category })),
+    ],
+    [enrichedGames],
+  );
+
+  // Uma categoria guardada que não existe mais (jogo removido) não pode esvaziar a lista.
+  const activeCategory = categoryOptions.some((option) => option.value === categoryFilter) ? categoryFilter : ALL_CATEGORIES;
+
+  const filteredGames = useMemo(
+    () =>
+      filterAndSortMods(enrichedGames, {
+        query: searchTerm,
+        status: statusFilter,
+        category: activeCategory,
+        sort: sortOrder,
+      }),
+    [enrichedGames, searchTerm, statusFilter, activeCategory, sortOrder],
+  );
+
+  // Lembra os filtros entre aberturas da janela (preferência local, só deste PC).
+  useEffect(() => {
+    try {
+      localStorage.setItem(MODS_PREFS_KEY, JSON.stringify({ category: categoryFilter, status: statusFilter, sort: sortOrder }));
+    } catch (error) {
+      console.warn("[ModsPage] não foi possível guardar os filtros:", error);
     }
-    if (statusFilter === "WITH_MODS") {
-      list = list.filter((item) => item.gameModsCount > 0);
-    } else if (statusFilter === "WITH_FOLDER") {
-      list = list.filter((item) => item.hasFolder);
-    }
-    if (sortOrder === "AZ") {
-      list.sort((a, b) => a.game.title.localeCompare(b.game.title));
-    } else if (sortOrder === "ZA") {
-      list.sort((a, b) => b.game.title.localeCompare(a.game.title));
-    } else if (sortOrder === "MODS") {
-      list.sort((a, b) => b.gameModsCount - a.gameModsCount);
-    }
-    return list;
-  }, [enrichedGames, searchTerm, statusFilter, sortOrder]);
+  }, [categoryFilter, statusFilter, sortOrder]);
 
   const configuredGames = useMemo(
     () => games.filter((game) => Boolean(gameFolders[game.id])).length,
@@ -501,9 +533,9 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
               <div className="flex items-center gap-2 flex-wrap z-50">
                 <div className="relative z-[52]">
                   <GhostSelect
-                    value={categoryFilter}
+                    value={activeCategory}
                     onChange={(val) => setCategoryFilter(val)}
-                    options={[{ value: "ALL", label: "Todas as Categorias" }]}
+                    options={categoryOptions}
                     className="w-44"
                   />
                 </div>
@@ -511,12 +543,8 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
                 <div className="relative z-[51]">
                   <GhostSelect
                     value={statusFilter}
-                    onChange={(val) => setStatusFilter(val)}
-                    options={[
-                      { value: "ALL", label: "Todos os Jogos" },
-                      { value: "WITH_FOLDER", label: "Com Pasta Vinculada" },
-                      { value: "WITH_MODS", label: "Com Mods" },
-                    ]}
+                    onChange={(val) => setStatusFilter(asStatusFilter(val))}
+                    options={MODS_STATUS_OPTIONS}
                     className="w-40"
                   />
                 </div>
@@ -524,12 +552,8 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
                 <div className="relative z-[50]">
                   <GhostSelect
                     value={sortOrder}
-                    onChange={(val) => setSortOrder(val as any)}
-                    options={[
-                      { value: "AZ", label: "Ordenar: A - Z" },
-                      { value: "ZA", label: "Ordenar: Z - A" },
-                      { value: "MODS", label: "Mais Mods" },
-                    ]}
+                    onChange={(val) => setSortOrder(asSortOrder(val))}
+                    options={MODS_SORT_OPTIONS}
                     className="w-44"
                   />
                 </div>
