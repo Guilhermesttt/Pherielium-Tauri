@@ -26,8 +26,8 @@ Fontes: **Sora** (títulos, `--font-display`), **Inter** (interface) e Unbounded
 ## Como o hub inteiro foi migrado
 Três camadas, nessa ordem, para não editar 250 arquivos à mão:
 
-1. **Script de migração** ([scripts/migrate-refined-tokens.mjs](../scripts/migrate-refined-tokens.mjs), com teste, idempotente). Troca nas classes: `text-white/NN` pela tinta (`--ink`, `--ink-muted`, `--ink-faint`, pela opacidade), `text-[10–40px]` pelos passos (piso de 13 px; contadores de 9 px ficam), cinzas de fundo `bg-[#…]` pelos tons, cinzas de texto pela tinta e `rounded-[10–40px]` pelos três cantos. Ficam de fora o overlay do jogo, o notch, o mascote, o módulo de controle e a landing.
-2. **Regras globais** (`src/index.css`, só com `data-ui-style="refined"`): sem sombra em repouso (os anéis de foco continuam), sem `backdrop-filter`, texto em gradiente vira tinta, `text-xs` vira 13 px, `rounded-xl/2xl/3xl` viram os cantos, sem caixa-alta espaçada nem monoespaçada, anel de foco em tinta, modais entram com a mola e sem borda, abas, dicas e toasts nos tokens.
+1. **Script de migração** ([scripts/migrate-refined-tokens.mjs](../scripts/migrate-refined-tokens.mjs), com teste, idempotente). Troca nas classes: `text-white/NN` pela tinta (`--ink`, `--ink-muted`, `--ink-faint`, pela opacidade), `text-[10–40px]` pelos passos (piso de 13 px; contadores de 9 px ficam), cinzas de fundo `bg-[#…]` pelos tons, cinzas de texto pela tinta e `rounded-[10–40px]` pelos três cantos. Depois, os rótulos de 8–9 px também foram ao piso (o contador do `ContactCard` ficou) e as bolinhas verdes de estado passaram ao acento `--live`. Ficam de fora o overlay do jogo, o notch, o mascote, o módulo de controle e a landing.
+2. **Regras globais** (`src/index.css`, só com `data-ui-style="refined"`): sem brilho em gradiente branco (os degradês escuros sobre imagem ficam), sem sombra em repouso (os anéis de foco continuam), sem `backdrop-filter`, texto em gradiente vira tinta, `text-xs` vira 13 px, `rounded-xl/2xl/3xl` viram os cantos, sem caixa-alta espaçada nem monoespaçada, anel de foco em tinta, modais entram com a mola e sem borda, abas, dicas e toasts nos tokens.
 3. **Peças compartilhadas redesenhadas**: `ModalShell` (fundo sem blur), gaveta lateral (`Sidebar`), barra de título, `Switch` (52×32, igual ao `Toggle`), toasts, e a tela de Configurações (painéis por tom, menu em pílula, linhas sem divisória, títulos em Sora, seletores em pílula).
 
 ## Telas já no novo visual
@@ -37,9 +37,11 @@ Três camadas, nessa ordem, para não editar 250 arquivos à mão:
 | **Configurações** | Redesenhada e capturada (`#/design-lab/settings?tab=general`, `personalization`, `voice`…) |
 | **Troféus** | Redesenhada e capturada (`#/design-lab/trophies`) |
 | **Mods** | Redesenhada e capturada (`#/design-lab/mods`) |
+| **Início e Biblioteca** | Barra do topo, abas, cartões de jogo e destaque redesenhados (sem captura: precisa de conta) |
+| **Detalhe do jogo** | Selos e estado "rodando" no sistema; o resto pelas regras globais |
 | **Modal de transmissão** | Redesenhado |
 | Gaveta lateral, barra de título, modais, toasts, abas, interruptores, seletores (`GhostSelect`), legenda do controle | Redesenhados (peças compartilhadas) |
-| Todo o resto (Início, Biblioteca, detalhe do jogo, Amigos/Chat, janela de chamada, demais modais) | Tokens e regras globais aplicados; estrutura ainda a revisar com capturas logadas |
+| Todo o resto (Amigos/Chat, janela de chamada, perfil, demais modais) | Tokens e regras globais aplicados; estrutura ainda a revisar com capturas logadas |
 
 ## Laboratório (só em desenvolvimento)
 - `#/design-lab`: as peças com conteúdo de exemplo; `?modal=stream` abre o modal real.
