@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNotchConfig } from '../mascot/useNotchConfig';
+import { messageNotificationPreview } from "../services/voiceCall/inviteMessage";
 import { announceNotchEvent } from '../components/notch/notchEvent';
 import type { AuthUser } from "../auth/AuthProvider";
 import type {
@@ -142,7 +143,7 @@ export function useFriendsSystem({
           const isActiveChat = Boolean(cleanActiveId && cleanSenderId && cleanActiveId === cleanSenderId);
 
           if (!isActiveChat) {
-            const displayContent = isImage ? "📷 Enviou uma imagem" : msg.text;
+            const displayContent = messageNotificationPreview(msg.text, isImage);
 
             if (notchEnabledRef.current) {
               announceNotchEvent({
