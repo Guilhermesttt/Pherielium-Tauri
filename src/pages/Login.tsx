@@ -503,12 +503,12 @@ const FloatInput: React.FC<FloatInputProps> = ({ id, type, label, value, onChang
         onBlur={() => setFocused(false)}
         required={required}
         placeholder={lifted ? (placeholder ?? "") : ""}
-        className={`w-full bg-white/[0.05] border rounded-2xl px-4 pt-5 pb-2.5 ${
+        className={`w-full h-14 rounded-[var(--corner-md)] px-4 pt-5 pb-2 ${
           rightSlot ? "pr-11" : ""
-        } text-sm font-body text-white placeholder:text-white/25 outline-none transition-[border-color,box-shadow] duration-200 ${
+        } text-[length:var(--step-1)] font-body text-[var(--ink)] placeholder:text-[var(--ink-faint)] outline-none transition-[background-color,box-shadow] duration-[var(--dur-2)] ease-[var(--spring)] ${
           focused
-            ? "border-white/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.25)]"
-            : "border-white/[0.18] hover:border-white/35"
+            ? "bg-[var(--tone-3)] shadow-[inset_0_0_0_1.5px_var(--ink)]"
+            : "bg-[var(--tone-2)] hover:bg-[var(--tone-3)]"
         }`}
       />
       <motion.label
@@ -516,7 +516,7 @@ const FloatInput: React.FC<FloatInputProps> = ({ id, type, label, value, onChang
         animate={lifted ? { y: -10, scale: 0.78, color: focused ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.45)" } : { y: 0, scale: 1, color: "rgba(255,255,255,0.4)" }}
         transition={{ type: "spring", bounce: 0, duration: 0.28 }}
         style={{ originX: 0 }}
-        className="absolute left-4 top-[50%] -translate-y-1/2 text-sm font-body pointer-events-none"
+        className="absolute left-4 top-[50%] -translate-y-1/2 text-[length:var(--step-1)] font-body pointer-events-none"
       >
         {label}
       </motion.label>
@@ -784,10 +784,10 @@ const LoginContent: React.FC = () => {
         className="absolute top-8 left-8 md:top-12 md:left-14 z-20 flex items-center gap-1.5 select-none"
         title="Pherielium Hub"
       >
-        <span className="font-display font-semibold text-xl md:text-xl tracking-tight bg-gradient-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent">
+        <span className="font-display text-[length:var(--step-3)] font-semibold tracking-[-0.03em] text-[var(--ink)]">
           Pherielium
         </span>
-        <span className="text-[30px] text-white/40 font-mono align-top">®</span>
+        <span className="self-start text-[length:var(--step-0)] text-[var(--ink-faint)]">®</span>
       </motion.div>
 
       {/* BOTTOM LEFT COPYRIGHT (Inter) */}
@@ -795,7 +795,7 @@ const LoginContent: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="absolute bottom-8 left-8 md:bottom-12 md:left-14 z-20 text-[11px] text-white/35 font-body tracking-wide"
+        className="absolute bottom-8 left-8 md:bottom-12 md:left-14 z-20 text-[length:var(--step-0)] text-[var(--ink-faint)] font-body"
       >
         © Pherielium 2026. Todos os direitos reservados.
       </motion.div>
@@ -825,7 +825,7 @@ const LoginContent: React.FC = () => {
           initial={{ opacity: 0, x: 25, scale: 0.98 }}
           animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
           transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-md bg-[#0A0B0F]/90 backdrop-blur-3xl border border-white/20 rounded-[36px] p-8 md:p-12 shadow-[0_30px_90px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.18),0_0_0_1px_rgba(255,255,255,0.06)] relative flex flex-col justify-between"
+          className="w-full max-w-md bg-[var(--tone-1)] rounded-[var(--corner-lg)] p-8 md:p-12 relative flex flex-col justify-between"
         >
           {/* Header — AnimatePresence for smooth mode switch */}
           <div className="space-y-2 mb-8 overflow-hidden">
@@ -837,10 +837,10 @@ const LoginContent: React.FC = () => {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ type: "spring", bounce: 0, duration: 0.32 }}
               >
-                <h1 className="text-3xl md:text-4xl font-display font-semibold tracking-tight bg-gradient-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent">
+                <h1 className="font-display text-[length:var(--step-4)] md:text-[2.75rem] font-semibold leading-[1.02] tracking-[-0.035em] text-[var(--ink)]">
                   {mode === "login" ? "Entrar" : "Criar conta"}
                 </h1>
-                <p className="mt-1.5 text-xs md:text-sm font-body text-white/45 leading-relaxed">
+                <p className="mt-3 text-[length:var(--step-1)] font-body text-[var(--ink-muted)] leading-relaxed">
                   {mode === "login"
                     ? "Acesse seu hub universal de jogos e mods."
                     : "Crie sua conta Pherielium e sincronize sua biblioteca."}
@@ -910,7 +910,7 @@ const LoginContent: React.FC = () => {
             <motion.div variants={formItemVariants} className="flex items-center justify-between pt-1">
               <label
                 onClick={() => setRememberMe(!rememberMe)}
-                className="flex items-center gap-2.5 cursor-pointer text-white/65 hover:text-white select-none transition-colors group"
+                className="flex items-center gap-2.5 cursor-pointer text-[var(--ink-muted)] hover:text-[var(--ink)] select-none transition-colors group"
               >
                 <div
                   className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${rememberMe
@@ -920,7 +920,7 @@ const LoginContent: React.FC = () => {
                 >
                   {rememberMe && <Check size={10} strokeWidth={3.5} />}
                 </div>
-                <span className="text-xs font-body">
+                <span className="text-[length:var(--step-0)] font-body">
                   {mode === "login" ? "Lembrar-me" : "Concordo com os Termos e a Política de Privacidade"}
                 </span>
               </label>
@@ -929,7 +929,7 @@ const LoginContent: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => alert("Recuperação de senha: entre em contato com o suporte ou entre via Google.")}
-                  className="text-xs font-body text-white/45 hover:text-white transition-colors"
+                  className="text-[length:var(--step-0)] font-body text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors"
                 >
                   Esqueceu?
                 </button>
@@ -962,15 +962,12 @@ const LoginContent: React.FC = () => {
             {/* Main Action Button */}
             <motion.div variants={formItemVariants} className="pt-2">
               <motion.button
-                whileHover={{
-                  scale: 1.012,
-                  boxShadow: "0 0 30px rgba(255,255,255,0.22), 0 10px 30px rgba(255,255,255,0.15)",
-                }}
+                whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.965 }}
                 transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
                 type="submit"
                 disabled={isLoading || isGoogleLoading || authLoading}
-                className="w-full bg-white text-black font-body font-semibold text-sm rounded-2xl py-3.5 flex items-center justify-center gap-2 shadow-[0_10px_30px_rgba(255,255,255,0.15)] hover:bg-white/95 cursor-pointer disabled:opacity-50"
+                className="w-full bg-[var(--ink)] text-[var(--tone-0)] font-body font-semibold text-[length:var(--step-2)] rounded-[var(--node)] h-14 flex items-center justify-center gap-2 hover:bg-white cursor-pointer disabled:opacity-50"
               >
                 <AnimatePresence mode="wait" initial={false}>
                   {isLoading ? (
@@ -1004,12 +1001,10 @@ const LoginContent: React.FC = () => {
             </motion.div>
 
             {/* Divider */}
-            <motion.div variants={formItemVariants} className="relative flex py-2 items-center">
-              <div className="flex-grow border-t border-white/[0.14]" />
-              <span className="flex-shrink mx-3 text-white/35 text-[11px] font-body">
+            <motion.div variants={formItemVariants} className="py-1 text-center">
+              <span className="text-[length:var(--step-0)] text-[var(--ink-faint)] font-body">
                 {mode === "login" ? "ou entre com" : "ou cadastre-se com"}
               </span>
-              <div className="flex-grow border-t border-white/[0.14]" />
             </motion.div>
 
             {/* Social Login Button */}
@@ -1033,10 +1028,10 @@ const LoginContent: React.FC = () => {
                   type="button"
                   onClick={handleGoogleLogin}
                   disabled={isLoading || authLoading}
-                  whileHover={{ scale: 1.012, borderColor: "rgba(255,255,255,0.35)" }}
+                  whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.965 }}
                   transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
-                  className="w-full flex items-center justify-center gap-2.5 py-3 px-4 bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.18] text-white/85 hover:text-white rounded-2xl text-xs font-body font-medium disabled:opacity-50 cursor-pointer shadow-sm"
+                  className="w-full flex items-center justify-center gap-2.5 h-12 px-4 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--ink)] rounded-[var(--node)] text-[length:var(--step-1)] font-body font-medium disabled:opacity-50 cursor-pointer shadow-sm"
                 >
                   <GoogleIcon />
                   <span>Google</span>
@@ -1053,7 +1048,7 @@ const LoginContent: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ type: "spring", bounce: 0, duration: 0.28 }}
-                  className="text-xs font-body text-white/45"
+                  className="text-[length:var(--step-0)] font-body text-[var(--ink-muted)]"
                 >
                   {mode === "login" ? (
                     <>
