@@ -24,7 +24,7 @@ export const ModsSummaryBanner: React.FC<ModsSummaryBannerProps> = ({
               <h4 className="text-xs font-bold uppercase tracking-wider text-white">
                 Resumo de Mods do Jogo
               </h4>
-              <span className="flex items-center gap-1 rounded-md border border-white/10 bg-white/10 px-2 py-0.5 text-[9px] font-black text-[var(--ink-muted)]">
+              <span className="flex items-center gap-1 rounded-md border border-white/10 bg-white/10 px-2 py-0.5 text-[length:var(--step-0)] font-black text-[var(--ink-muted)]">
                 <Info className="h-3 w-3" /> Atalho Rápido
               </span>
             </div>

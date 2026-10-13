@@ -213,7 +213,7 @@ const PlatinumCard: React.FC<{
               {isPt ? "Conclusão da Coleção" : "Collection Completion"}
             </span>
             {!hasNative && (
-              <span className="text-[9px] font-bold text-[var(--ink-faint)] border border-white/10 rounded px-1.5 py-0.2 uppercase tracking-wider">
+              <span className="text-[length:var(--step-0)] font-bold text-[var(--ink-faint)] border border-white/10 rounded px-1.5 py-0.2 uppercase tracking-wider">
                 Virtual
               </span>
             )}
@@ -373,7 +373,7 @@ const AchievementCard: React.FC<{
           </h4>
           {isUltraRare && isAchieved && (
             <span
-              className="shrink-0 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md"
+              className="shrink-0 text-[length:var(--step-0)] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md"
               style={{
                 background: "rgba(251,191,36,0.12)",
                 color: "#fbbf24",

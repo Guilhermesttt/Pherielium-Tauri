@@ -392,7 +392,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                       {room.participants.map((p, i) => (
                         <div
                           key={p.uid || i}
-                          className="h-6 w-6 rounded-full border border-black bg-white/10 flex items-center justify-center text-[9px] font-bold text-white"
+                          className="h-6 w-6 rounded-full border border-black bg-white/10 flex items-center justify-center text-[length:var(--step-0)] font-bold text-white"
                           title={p.name}
                         >
                           {p.avatar ? (
@@ -484,7 +484,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                     </div>
 
                     {isFull && (
-                      <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[9px] font-bold shrink-0">
+                      <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[length:var(--step-0)] font-bold shrink-0">
                         Lotada
                       </span>
                     )}
@@ -509,7 +509,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                     {room.participants.slice(0, 4).map((p, i) => (
                       <div
                         key={p.uid || i}
-                        className="h-6 w-6 rounded-full border border-black bg-white/10 flex items-center justify-center text-[9px] font-bold text-white"
+                        className="h-6 w-6 rounded-full border border-black bg-white/10 flex items-center justify-center text-[length:var(--step-0)] font-bold text-white"
                         title={p.name}
                       >
                         {p.avatar ? (

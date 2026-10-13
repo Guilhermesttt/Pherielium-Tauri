@@ -108,7 +108,7 @@ export const HudModRow: React.FC<HudModRowProps> = ({
             )}
             {status && (
               <span
-                className={`rounded-full px-2 py-0.2 text-[9px] font-medium tracking-wide uppercase ${
+                className={`rounded-full px-2 py-0.2 text-[length:var(--step-0)] font-medium tracking-wide uppercase ${
                   status === "active" || status === "installed"
                     ? "bg-white/10 text-white"
                     : status === "error"

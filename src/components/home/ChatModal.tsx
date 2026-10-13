@@ -826,7 +826,7 @@ export const ChatComposer: React.FC<{
             >
               <X className="h-3.5 w-3.5" />
             </button>
-            <span className="mt-1.5 block max-w-56 truncate px-1 text-[9px] text-[var(--ink-faint)]">{pendingImage.file.name}</span>
+            <span className="mt-1.5 block max-w-56 truncate px-1 text-[length:var(--step-0)] text-[var(--ink-faint)]">{pendingImage.file.name}</span>
           </div>
         ) : null}
 

@@ -49,14 +49,14 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
         {/* Source badge on top-left of thumbnail */}
         <div className="absolute left-3 top-3 flex items-center gap-2">
-          <span className="rounded-md border border-white/15 bg-black/75 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-[var(--ink)] backdrop-blur-md">
+          <span className="rounded-md border border-white/15 bg-black/75 px-2 py-0.5 font-mono text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[var(--ink)] backdrop-blur-md">
             {source}
           </span>
         </div>
 
         {/* Timestamp on top-right */}
         <div className="absolute right-3 top-3">
-          <span className="rounded-md bg-black/60 px-2 py-0.5 font-mono text-[9px] text-[var(--ink-muted)] backdrop-blur-md">
+          <span className="rounded-md bg-black/60 px-2 py-0.5 font-mono text-[length:var(--step-0)] text-[var(--ink-muted)] backdrop-blur-md">
             {publishedAt}
           </span>
         </div>

@@ -84,7 +84,7 @@ const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ release, onClose }) => {
                 className="w-14 h-14 rounded-2xl object-cover shadow-[0_8px_24px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.15)] border border-white/10"
                 draggable={false}
               />
-              <span className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-full bg-emerald-500 text-[9px] font-bold text-black font-mono uppercase tracking-wider">
+              <span className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-full bg-emerald-500 text-[length:var(--step-0)] font-bold text-black font-mono uppercase tracking-wider">
                 v{release.version}
               </span>
             </div>

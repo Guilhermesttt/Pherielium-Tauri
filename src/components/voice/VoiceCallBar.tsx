@@ -150,7 +150,7 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-black/60 text-[9px] font-bold text-white backdrop-blur-sm">
+                <div className="flex h-full w-full items-center justify-center bg-black/60 text-[length:var(--step-0)] font-bold text-white backdrop-blur-sm">
                   {displayName.slice(0, 2).toUpperCase()}
                 </div>
               )}

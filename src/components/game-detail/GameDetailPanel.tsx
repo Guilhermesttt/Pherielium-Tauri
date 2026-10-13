@@ -486,7 +486,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                   <div className="w-full">
                     <h3 className="text-[length:var(--step-0)] font-black tracking-[0.28em] text-[var(--ink-faint)] uppercase mb-4 flex items-center gap-2">
                       <Camera className="w-3.5 h-3.5" /> {copy.photoWall}
-                      <span className="ml-1 px-2 py-0.5 rounded-md bg-[var(--tone-1)] border border-[#161616] text-[9px] font-black text-[var(--ink-faint)]">
+                      <span className="ml-1 px-2 py-0.5 rounded-md bg-[var(--tone-1)] border border-[#161616] text-[length:var(--step-0)] font-black text-[var(--ink-faint)]">
                         {galleryItems.length}
                       </span>
                     </h3>

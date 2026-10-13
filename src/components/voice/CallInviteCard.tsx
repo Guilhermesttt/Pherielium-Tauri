@@ -164,7 +164,7 @@ export const CallInviteCard: React.FC<CallInviteCardProps> = ({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-[9px] font-bold text-white">
+              <div className="flex h-full w-full items-center justify-center text-[length:var(--step-0)] font-bold text-white">
                 {invite.callerName.slice(0, 2).toUpperCase()}
               </div>
             )}

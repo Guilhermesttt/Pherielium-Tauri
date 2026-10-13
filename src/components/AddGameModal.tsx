@@ -2189,7 +2189,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-4">
-                  <span className="mb-1.5 inline-flex rounded-md border border-white/12 bg-black/60 px-2 py-0.5 text-[9px] font-bold text-[var(--ink-muted)]">
+                  <span className="mb-1.5 inline-flex rounded-md border border-white/12 bg-black/60 px-2 py-0.5 text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
                     {CATEGORIES.find((cat) => cat.id === formData.category)?.label || copy.category}
                   </span>
                   <h3 className="line-clamp-2 text-base font-black leading-tight tracking-tight text-white">

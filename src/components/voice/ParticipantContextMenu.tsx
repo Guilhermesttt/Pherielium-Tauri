@@ -140,7 +140,7 @@ export const ParticipantContextMenu: React.FC<ParticipantContextMenuProps> = ({
             className="w-full accent-white cursor-pointer h-1.5 outline-none focus-visible:ring-1 focus-visible:ring-white/50"
           />
 
-          <div className="flex justify-between text-[9px] font-semibold text-[var(--ink-muted)]">
+          <div className="flex justify-between text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]">
             <span onClick={() => onVolumeChange(0)} className="cursor-pointer hover:text-white">
               0%
             </span>

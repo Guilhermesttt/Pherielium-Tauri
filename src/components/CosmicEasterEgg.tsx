@@ -944,7 +944,7 @@ const FakeBanScreen: React.FC<{
           <div className="w-20 h-20 rounded-2xl bg-red-600/15 border-2 border-red-500 flex items-center justify-center text-red-500 shadow-[0_0_45px_rgba(239,68,68,0.55)]">
             <ShieldAlert size={44} strokeWidth={2} />
           </div>
-          <div className="absolute -top-1 -right-2 px-2.5 py-0.5 rounded-full bg-red-600 text-white font-mono text-[9px] font-extrabold tracking-widest uppercase shadow-md animate-pulse">
+          <div className="absolute -top-1 -right-2 px-2.5 py-0.5 rounded-full bg-red-600 text-white font-mono text-[length:var(--step-0)] font-extrabold tracking-widest uppercase shadow-md animate-pulse">
             HWID BLACKLIST
           </div>
         </div>
