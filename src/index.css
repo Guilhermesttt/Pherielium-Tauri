@@ -2227,3 +2227,62 @@ html[data-ui-style="refined"]:is(:not([data-launcher-theme]), [data-launcher-the
     scale: 1;
   }
 }
+
+
+/* ========================================================
+   Pherielium Refined: sistema do novo visual (branch design/hub-refined)
+   Ideia: o nó do logo (círculo ligado por uma haste) vira a forma do sistema:
+   botões em pílula, pontos de estado com anel, o anel de foco.
+   Regras: tinta cheia para o que se lê, piso de 13px, superfícies separadas por tom
+   (sem borda), uma cor de acento só para "ao vivo", movimento com a mola do iOS.
+   ======================================================== */
+html[data-ui-style="refined"] {
+  --font-display: 'Sora Variable', 'Inter Variable', system-ui, sans-serif;
+  --font-heading: 'Sora Variable', 'Inter Variable', system-ui, sans-serif;
+  --font-title: 'Sora Variable', 'Inter Variable', system-ui, sans-serif;
+}
+
+/* Tokens do sistema: sempre definidos (as peças em components/ui/refined funcionam também no estilo clássico). */
+:root {
+  /* tinta (contraste sobre --tone-0: 18:1, 8:1, 4.6:1) */
+  --ink: #f5f5f7;
+  --ink-muted: #a1a1a6;
+  --ink-faint: #7c7c82;
+
+  /* tons: cada superfície é um degrau acima da anterior */
+  --tone-0: #050505;
+  --tone-1: #0e0e10;
+  --tone-2: #17171a;
+  --tone-3: #212125;
+  --tone-4: #2c2c31;
+
+  /* passos de tipo: piso de 13px, um tamanho grande por tela */
+  --step-0: 0.8125rem;
+  --step-1: 0.9375rem;
+  --step-2: 1.0625rem;
+  --step-3: 1.375rem;
+  --step-4: 2rem;
+  --step-5: clamp(2.75rem, 4vw, 4.5rem);
+
+  /* forma: o nó (pílula) e dois cantos */
+  --node: 999px;
+  --corner-sm: 12px;
+  --corner-md: 20px;
+  --corner-lg: 28px;
+
+  /* camadas nomeadas no lugar de z-index soltos */
+  --z-bar: 40;
+  --z-panel: 60;
+  --z-modal: 80;
+  --z-toast: 90;
+  --z-system: 100;
+
+  /* movimento */
+  --spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-1: 160ms;
+  --dur-2: 260ms;
+  --dur-3: 420ms;
+
+  /* o único acento de cor: "ao vivo" (online, falando, transmitindo) */
+  --live: #30d158;
+}
