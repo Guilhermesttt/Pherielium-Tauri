@@ -101,6 +101,7 @@ import {
 import { startDesktopAudioCapture } from "../services/voiceCall/desktopAudioCapture";
 import type { NotificationOptions } from "../components/NotificationCenter";
 import { planOnDisconnect, toLinkQuality, type LinkQuality } from "../services/voiceCall/livekitHealth";
+import { countScreenViewers } from "../services/voiceCall/screenViewers";
 import {
   inviteHandling,
   inviteNotificationId,
@@ -355,6 +356,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
   >(null);
   const [linkQuality, setLinkQuality] = useState<LinkQuality>("unknown");
   const [peerLinkQuality, setPeerLinkQuality] = useState<Record<string, LinkQuality>>({});
+  const isWatchingScreenRef = useRef(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [iceConnectionState, setIceConnectionState] = useState("new");
   const [peerConnectionCount, setPeerConnectionCount] = useState(0);
@@ -1834,6 +1836,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     setIsReconnecting(false);
     setLinkQuality("unknown");
     setPeerLinkQuality({});
+    isWatchingScreenRef.current = false;
     setIsDisconnecting(false);
     setIceConnectionState("new");
     setPeerConnectionCount(0);
@@ -4267,6 +4270,18 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     });
   }, [broadcastLocalCallState, setOutgoingMicEnabled]);
 
+  // Aviso de "estou assistindo": a janela diz se estou vendo a tela de alguém; quem transmite conta (call:state.isWatchingScreen).
+  const setWatchingScreen = useCallback(
+    (watching: boolean) => {
+      if (isWatchingScreenRef.current === watching) return;
+      isWatchingScreenRef.current = watching;
+      const chatId = sessionRef.current?.chatId;
+      if (!chatId || !user?.uid) return;
+      void sendCallState(chatId, { senderId: user.uid, chatId, isWatchingScreen: watching });
+    },
+    [user?.uid],
+  );
+
   // TOGGLE CAMERA
   const toggleCamera = useCallback(async () => {
     if (!session?.chatId) return;
@@ -5156,6 +5171,14 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     };
   }, [callState]);
 
+  const screenViewerCount = countScreenViewers(
+    remoteStatesMap,
+    user?.uid,
+    new Set(
+      [...(session?.participants ?? []).map((p) => p.uid), session?.friendUid].filter((uid): uid is string => Boolean(uid)),
+    ),
+  );
+
   const connectionPhase =
     isDisconnecting && callState !== "idle"
       ? "disconnecting"
@@ -5215,6 +5238,9 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     linkQuality,
     /** Qualidade do enlace de cada participante remoto (por identity). */
     peerLinkQuality,
+    setWatchingScreen,
+    /** Quantas pessoas assistem à minha transmissão agora. */
+    screenViewerCount,
     inputMode,
     setInputMode,
     pushToTalkKey,

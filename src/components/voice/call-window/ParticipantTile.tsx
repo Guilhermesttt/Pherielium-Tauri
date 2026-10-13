@@ -4,6 +4,8 @@ import { MicOff, VolumeX, Camera, Monitor, Pin, WifiOff } from "lucide-react";
 import type { CallFeed } from "../VoiceCallWindow";
 import { VideoRenderer } from "./VideoRenderer";
 import { usePeerLinkQuality } from "./PeerQualityContext";
+import { useScreenViewers } from "./ScreenViewersContext";
+import { viewersLabel } from "../../../services/voiceCall/screenViewers";
 import { linkQualityPresentation } from "../../../services/voiceCall/livekitHealth";
 
 interface ParticipantTileProps {
@@ -23,6 +25,7 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
 }) => {
   const isSpeaking = Boolean(feed.isSpeaking);
   const quality = linkQualityPresentation(usePeerLinkQuality(feed));
+  const viewers = viewersLabel(useScreenViewers());
 
   return (
     <motion.div
@@ -101,7 +104,7 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
           {isPresenting ? (
             <span className="flex items-center gap-1 text-sky-300 font-medium">
               <Monitor className="h-2.5 w-2.5" aria-hidden="true" />
-              <span>Transmitindo</span>
+              <span>{feed.isLocal && viewers ? `Transmitindo · ${viewers}` : "Transmitindo"}</span>
             </span>
           ) : feed.isDeafened ? (
             <span className="flex items-center gap-1 text-rose-400">

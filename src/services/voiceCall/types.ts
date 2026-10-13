@@ -58,6 +58,8 @@ export interface CallStatePayload {
   isSpeaking?: boolean;
   isSharingScreen?: boolean;
   isCameraOn?: boolean;
+  /** Estou assistindo à transmissão de tela de alguém (quem transmite conta os espectadores). */
+  isWatchingScreen?: boolean;
 }
 
 export interface CallPrivacyPayload {

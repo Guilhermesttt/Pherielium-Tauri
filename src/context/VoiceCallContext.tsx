@@ -368,6 +368,8 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({
         mediaTransport={voiceCall.mediaTransport}
         linkQuality={voiceCall.linkQuality}
         peerLinkQuality={voiceCall.peerLinkQuality}
+        screenViewerCount={voiceCall.screenViewerCount}
+        onWatchingScreenChange={voiceCall.setWatchingScreen}
         inputMode={voiceCall.inputMode}
         setInputMode={voiceCall.setInputMode}
         pushToTalkKey={voiceCall.pushToTalkKey}
@@ -562,6 +564,8 @@ const safeFallbackVoiceCallContext: Partial<VoiceCallContextType> = {
   inviteStore: EMPTY_INVITE_STATE,
   linkQuality: "unknown" as const,
   peerLinkQuality: {} as Record<string, never>,
+  setWatchingScreen: () => {},
+  screenViewerCount: 0,
   pendingInvite: null,
   acceptPendingInvite: () => {},
   dismissPendingInvite: () => {},

@@ -71,3 +71,6 @@ Se aparecer, o motivo (`wrong-chat`, `sender-not-peer`, `unknown-host`...) diz o
 
 Falhas de mídia ficam registradas (razão, papel, tentativas, 4 caracteres da conversa) e saem em texto para colar: `await window.pherieliumCallFailures()`.
 Motivos: `livekit_disabled`, `token_unauthorized`, `token_timeout`, `network`, `room_invalid`, `media_error`. Decisão completa: `docs/decisions/0006-chamada-sem-fallback-p2p-silencioso.md`.
+
+## `call:state.isWatchingScreen` (R7)
+O aviso de "estou assistindo à transmissão" é um campo novo e opcional do `call:state`. Apps antigos ignoram campos que não conhecem, então nada quebra; só quem tem o rc.6 conta espectadores.
