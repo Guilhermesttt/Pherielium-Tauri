@@ -177,16 +177,16 @@ const GameSearchDropdown: React.FC<{
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 10 }}
-        className="absolute left-0 right-0 top-full mt-2 z-50 bg-[#121216] border border-white/10 rounded-2xl overflow-hidden shadow-2xl max-h-60 overflow-y-auto no-scrollbar"
+        className="absolute left-0 right-0 top-full mt-2 z-50 bg-[var(--tone-2)] border border-white/10 rounded-2xl overflow-hidden shadow-2xl max-h-60 overflow-y-auto no-scrollbar"
       >
         {isSearching && (
-          <div className="flex items-center gap-3 p-4 text-white/40">
+          <div className="flex items-center gap-3 p-4 text-[var(--ink-faint)]">
             <RefreshCw size={14} className="animate-spin" />
             <span className="text-xs">Buscando...</span>
           </div>
         )}
         {!isSearching && showEmptyState && (
-          <div className="p-4 text-xs text-white/40">{noResultsLabel}</div>
+          <div className="p-4 text-xs text-[var(--ink-faint)]">{noResultsLabel}</div>
         )}
         {!isSearching &&
           results.map((g) => (
@@ -207,7 +207,7 @@ const GameSearchDropdown: React.FC<{
               ) : (
                 <div className="w-12 h-6 bg-white/5 rounded" />
               )}
-              <span className="text-sm text-white/70 group-hover:text-white">
+              <span className="text-sm text-[var(--ink-muted)] group-hover:text-white">
                 {g.name}
               </span>
             </button>
@@ -1493,12 +1493,12 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
     PLATFORM_OPTIONS.find((opt) => opt.id === formData.launcherType) || PLATFORM_OPTIONS[0];
 
   const epicInstallPathSection = (
-    <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[#141416] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+    <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[var(--tone-2)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
       <div>
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-white">{copy.epicInstallPath}</h3>
           {isEpicInstallPath(formData.executablePath) && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+            <span className="inline-flex items-center gap-1 text-[length:var(--step-0)] font-semibold text-emerald-400">
               <CheckCircle2 size={13} />
               {epicPathAutoDetected
                 ? (copy.epicInstallPathAutoDetected || "Detectado automaticamente")
@@ -1506,7 +1506,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
             </span>
           )}
         </div>
-        <p className="text-[12px] text-white/45 mt-1 leading-relaxed">
+        <p className="text-[length:var(--step-0)] text-[var(--ink-faint)] mt-1 leading-relaxed">
           {copy.epicInstallPathHint}
         </p>
       </div>
@@ -1515,19 +1515,19 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
         <button
           type="button"
           onClick={() => void handleChooseEpicFolder()}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white/[0.08] px-4 py-3 text-[12px] font-bold text-white transition-all hover:bg-white/[0.14] active:scale-[0.98]"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white/[0.08] px-4 py-3 text-[length:var(--step-0)] font-bold text-white transition-all hover:bg-white/[0.14] active:scale-[0.98]"
         >
           <FolderOpen size={15} /> {copy.epicSelectInstallFolder}
         </button>
         <button
           type="button"
           onClick={() => void handleChooseEpicExecutable()}
-          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[12px] font-bold text-white transition-all hover:bg-white/[0.08] active:scale-[0.98]"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[length:var(--step-0)] font-bold text-white transition-all hover:bg-white/[0.08] active:scale-[0.98]"
         >
           <FileSearch size={15} /> {copy.epicSelectExecutable}
         </button>
         <div className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/40 px-4 py-3">
-          <p className="truncate text-[12px] font-mono text-white/70">
+          <p className="truncate text-[length:var(--step-0)] font-mono text-[var(--ink-muted)]">
             {formData.executablePath || copy.epicInstallPathMissing}
           </p>
         </div>
@@ -1545,16 +1545,16 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
     >
       <div
         aria-busy={isSaving || loading}
-        className="relative flex h-[calc(100dvh-2rem)] max-h-[860px] w-full flex-col overflow-hidden rounded-2xl border border-white/10 shadow-[0_32px_64px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] md:h-[calc(100dvh-4rem)] text-white bg-[#0F0F0F]"
+        className="relative flex h-[calc(100dvh-2rem)] max-h-[860px] w-full flex-col overflow-hidden rounded-2xl border border-white/10 shadow-[0_32px_64px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] md:h-[calc(100dvh-4rem)] text-white bg-[var(--tone-1)]"
       >
         {/* Header: Pherielium branding + single close button (duplicate 3/3 widget removed) */}
         <header className="relative flex shrink-0 items-center justify-between gap-4 border-b border-white/[0.07] px-5 py-4 md:px-7 md:py-5">
           <div className="flex min-w-0 items-center gap-4">
             <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/12 bg-white/[0.06]">
-              <LibraryBig size={20} className="text-white/80" />
+              <LibraryBig size={20} className="text-[var(--ink)]" />
             </div>
             <div className="min-w-0">
-              <p className="mb-0.5 text-xs font-semibold uppercase tracking-wider text-white/50">
+              <p className="mb-0.5 text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
                 {copy.libraryKicker}
               </p>
               <h2 className="truncate text-xl font-black tracking-[-0.035em] text-white md:text-2xl">
@@ -1566,7 +1566,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
             type="button"
             onClick={() => handleClose()}
             aria-label={copy.cancel}
-            className="grid h-10 w-10 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-white/50 transition-all hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+            className="grid h-10 w-10 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.025] text-[var(--ink-muted)] transition-all hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
           >
             <X size={18} />
           </button>
@@ -1576,7 +1576,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
         <div className="add-game-scrollbar grid min-h-0 flex-1 grid-cols-1 overflow-y-auto overscroll-contain lg:grid-cols-[minmax(0,1fr)_340px] lg:overflow-hidden">
           <div className="flex flex-col min-h-0 lg:border-r border-white/[0.07]">
             {/* Sequência de etapas fixa logo abaixo do cabeçalho */}
-            <div className="shrink-0 border-b border-white/[0.06] bg-[#0F0F0F] px-5 pt-4 pb-1 md:px-7">
+            <div className="shrink-0 border-b border-white/[0.06] bg-[var(--tone-1)] px-5 pt-4 pb-1 md:px-7">
               <AddGameWizardSteps
                 currentStep={step}
                 onStepClick={(targetStep) => {
@@ -1620,14 +1620,14 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                   >
                     <div>
                       <div className="mb-2">
-                        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
+                        <p className="text-[length:var(--step-0)] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)]">
                           {copy.platform}
                         </p>
                       </div>
 
                       {/* Plataforma: resumo compacto pós-escolha ou grade expandida */}
                       {isPlatformCompact ? (
-                        <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/[0.08] bg-[#141416] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                        <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/[0.08] bg-[var(--tone-2)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                           <div className="flex items-center gap-3.5 min-w-0">
                             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/[0.08] text-white">
                               {selectedPlatformOption ? selectedPlatformOption.icon(false) : <HardDrive size={18} />}
@@ -1637,11 +1637,11 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                                 <p className="truncate text-sm font-bold text-white">
                                   {selectedPlatformOption?.label || copy.local}
                                 </p>
-                                <span className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[10px] font-semibold text-white/60">
+                                <span className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]">
                                   Ativa
                                 </span>
                               </div>
-                              <p className="truncate text-[11px] text-white/40 mt-0.5">
+                              <p className="truncate text-[length:var(--step-0)] text-[var(--ink-faint)] mt-0.5">
                                 {formData.launcherType === "local"
                                   ? copy.localDescription
                                   : formData.launcherType === "steam"
@@ -1655,21 +1655,21 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                           <button
                             type="button"
                             onClick={() => setIsPlatformCompact(false)}
-                            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 text-[12px] font-bold text-white/80 transition-all hover:bg-white/[0.08] hover:text-white"
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2 text-[length:var(--step-0)] font-bold text-[var(--ink)] transition-all hover:bg-white/[0.08] hover:text-white"
                           >
                             Alterar
                           </button>
                         </div>
                       ) : (
-                        <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[#141416] p-4">
+                        <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[var(--tone-2)] p-4">
                           <div className="flex items-center justify-between">
-                            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/40">
+                            <p className="text-[length:var(--step-0)] font-bold uppercase tracking-[0.12em] text-[var(--ink-faint)]">
                               Selecione uma plataforma
                             </p>
                             <button
                               type="button"
                               onClick={() => setIsPlatformCompact(true)}
-                              className="text-[11px] font-semibold text-white/40 hover:text-white transition-colors"
+                              className="text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)] hover:text-white transition-colors"
                             >
                               Fechar
                             </button>
@@ -1691,10 +1691,10 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                                     ? "border-white bg-white text-black shadow-[0_0_16px_rgba(255,255,255,0.2)]"
                                     : "border-white/10 bg-transparent text-white hover:border-white/25 hover:bg-white/[0.04]")}
                                 >
-                                  <span className={"grid h-6 w-6 shrink-0 place-items-center rounded-lg " + (selected ? "text-black" : "text-white/60")}>
+                                  <span className={"grid h-6 w-6 shrink-0 place-items-center rounded-lg " + (selected ? "text-black" : "text-[var(--ink-muted)]")}>
                                     {option.icon(selected)}
                                   </span>
-                                  <strong className="truncate text-[11px] font-bold">{option.label}</strong>
+                                  <strong className="truncate text-[length:var(--step-0)] font-bold">{option.label}</strong>
                                   {selected && <CheckCircle2 size={13} className="ml-auto shrink-0 text-black" />}
                                 </button>
                               );
@@ -1708,17 +1708,17 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                     {formData.launcherType === "epic" && epicInstallPathSection}
 
                     {formData.launcherType === "local" && (
-                      <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[#141416] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                      <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[var(--tone-2)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                         <div>
                           <div className="flex items-center justify-between">
                             <h3 className="text-sm font-bold text-white">{copy.executable}</h3>
                             {formData.executablePath && (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+                              <span className="inline-flex items-center gap-1 text-[length:var(--step-0)] font-semibold text-emerald-400">
                                 <CheckCircle2 size={13} /> Selecionado
                               </span>
                             )}
                           </div>
-                          <p className="text-[12px] text-white/45 mt-1 leading-relaxed">
+                          <p className="text-[length:var(--step-0)] text-[var(--ink-faint)] mt-1 leading-relaxed">
                             Selecione o executável principal (.exe). O Pherielium tentará identificar o jogo e sugerir os dados na próxima etapa.
                           </p>
                         </div>
@@ -1735,13 +1735,13 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                           <button
                             type="button"
                             onClick={() => void handleChooseExecutable("local")}
-                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white/[0.08] px-4 py-3 text-[12px] font-bold text-white transition-all hover:bg-white/[0.14] active:scale-[0.98]"
+                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-white/[0.08] px-4 py-3 text-[length:var(--step-0)] font-bold text-white transition-all hover:bg-white/[0.14] active:scale-[0.98]"
                           >
                             <FolderOpen size={15} /> {formData.executablePath ? "Trocar executável" : copy.chooseExe}
                           </button>
 
                           <div className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/40 px-4 py-3">
-                            <p className="truncate text-[12px] font-mono text-white/70">
+                            <p className="truncate text-[length:var(--step-0)] font-mono text-[var(--ink-muted)]">
                               {formData.executablePath || copy.noExecutable}
                             </p>
                           </div>
@@ -1762,16 +1762,16 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                     className="space-y-6"
                   >
                     {/* Busca Automática no Catálogo */}
-                    <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[#141416] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                    <div className="space-y-3 rounded-2xl border border-white/[0.08] bg-[var(--tone-2)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="text-sm font-bold text-white">{copy.automaticFill}</h3>
-                          <p className="text-[12px] text-white/45 mt-0.5">
+                          <p className="text-[length:var(--step-0)] text-[var(--ink-faint)] mt-0.5">
                             {copy.automaticFillHint}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          {loading && <RefreshCw size={14} className="animate-spin text-white/45" />}
+                          {loading && <RefreshCw size={14} className="animate-spin text-[var(--ink-faint)]" />}
                           <div className="flex items-center gap-1 rounded-xl bg-white/[0.04] p-0.5 border border-white/[0.06] text-xs">
                             <button
                               type="button"
@@ -1779,10 +1779,10 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                                 setSearchSource("steam");
                                 resetSearch();
                               }}
-                              className={`px-3 py-1 rounded-lg transition-all font-bold flex items-center gap-1.5 text-[10px] uppercase tracking-wider ${
+                              className={`px-3 py-1 rounded-lg transition-all font-bold flex items-center gap-1.5 text-[length:var(--step-0)] uppercase tracking-wider ${
                                 searchSource === "steam"
                                   ? "bg-white/10 text-white shadow-sm"
-                                  : "text-white/40 hover:text-white/70"
+                                  : "text-[var(--ink-faint)] hover:text-[var(--ink-muted)]"
                               }`}
                             >
                               <SteamBrandIcon className="w-3.5 h-3.5" style={{ color: searchSource === "steam" ? "#fff" : "currentColor" }} /> Steam
@@ -1793,10 +1793,10 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                                 setSearchSource("epic");
                                 resetSearch();
                               }}
-                              className={`px-3 py-1 rounded-lg transition-all font-bold flex items-center gap-1.5 text-[10px] uppercase tracking-wider ${
+                              className={`px-3 py-1 rounded-lg transition-all font-bold flex items-center gap-1.5 text-[length:var(--step-0)] uppercase tracking-wider ${
                                 searchSource === "epic"
                                   ? "bg-white/10 text-white shadow-sm"
-                                  : "text-white/40 hover:text-white/70"
+                                  : "text-[var(--ink-faint)] hover:text-[var(--ink-muted)]"
                               }`}
                             >
                               <EpicBrandIcon className="w-3.5 h-3.5" style={{ color: searchSource === "epic" ? "#fff" : "currentColor" }} /> Epic
@@ -1806,7 +1806,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                       </div>
 
                       <div className="relative pt-1">
-                        <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                        <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--ink-faint)]" />
                         <input
                           id="game-metadata-search"
                           role="combobox"
@@ -1817,10 +1817,10 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                           value={searchQuery}
                           onChange={(event) => scheduleSearch(event.target.value, searchSource)}
                           placeholder={searchSource === "epic" ? copy.epicSearch : copy.steamSearch}
-                          className="w-full rounded-xl border border-white/10 bg-black/40 py-3.5 pl-11 pr-11 text-[13px] text-white outline-none transition-all placeholder:text-white/25 focus:border-white/25"
+                          className="w-full rounded-xl border border-white/10 bg-black/40 py-3.5 pl-11 pr-11 text-[length:var(--step-0)] text-white outline-none transition-all placeholder:text-[var(--ink-faint)] focus:border-white/25"
                         />
                         {isSearching && (
-                          <RefreshCw size={14} className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-white/40" />
+                          <RefreshCw size={14} className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-[var(--ink-faint)]" />
                         )}
                         <GameSearchDropdown
                           id="game-search-results"
@@ -1837,7 +1837,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                           href={formData.epicStoreUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-2 text-[11px] font-bold text-white/45 transition-colors hover:text-white/80"
+                          className="inline-flex items-center gap-2 text-[length:var(--step-0)] font-bold text-[var(--ink-faint)] transition-colors hover:text-[var(--ink)]"
                         >
                           <EpicIcon className="h-3.5 w-3.5 opacity-60" /> {copy.viewOnEpicStore}
                         </a>
@@ -1854,13 +1854,13 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                           className={`mt-2 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all ${
                             formData.hasGame
                               ? "border-white bg-white text-black"
-                              : "border-white/10 bg-transparent text-white/50 hover:border-white/25 hover:bg-white/[0.04]"
+                              : "border-white/10 bg-transparent text-[var(--ink-muted)] hover:border-white/25 hover:bg-white/[0.04]"
                           }`}
                         >
                           <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg border ${formData.hasGame ? "border-black/10 bg-black/[0.06]" : "border-white/10"}`}>
                             <Check size={13} strokeWidth={3} />
                           </span>
-                          <strong className="text-[12px] font-bold">
+                          <strong className="text-[length:var(--step-0)] font-bold">
                             {formData.hasGame ? copy.ownGameConfirmed : copy.ownGameConfirm}
                           </strong>
                         </button>
@@ -1870,17 +1870,17 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                     {formData.launcherType === "epic" && epicInstallPathSection}
 
                     {/* Confirmação e Edição de Título e Categoria */}
-                    <div className="space-y-4 rounded-2xl border border-white/[0.08] bg-[#141416] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                    <div className="space-y-4 rounded-2xl border border-white/[0.08] bg-[var(--tone-2)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                       <div>
                         <h3 className="text-sm font-bold text-white">{copy.gameDetails}</h3>
-                        <p className="text-[12px] text-white/45 mt-0.5">
+                        <p className="text-[length:var(--step-0)] text-[var(--ink-faint)] mt-0.5">
                           {copy.gameDetailsHint}
                         </p>
                       </div>
 
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 pt-1">
                         <div className="space-y-2">
-                          <label htmlFor="game-title" className="text-[11px] font-bold text-white/50">
+                          <label htmlFor="game-title" className="text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
                             {copy.title} *
                           </label>
                           <input
@@ -1888,12 +1888,12 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                             placeholder={copy.titlePlaceholder}
-                            className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[13px] text-white outline-none transition-all placeholder:text-white/25 focus:border-white/25"
+                            className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[length:var(--step-0)] text-white outline-none transition-all placeholder:text-[var(--ink-faint)] focus:border-white/25"
                           />
                         </div>
 
                         <div className="space-y-2">
-                          <label htmlFor="game-category" className="text-[11px] font-bold text-white/50">
+                          <label htmlFor="game-category" className="text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
                             {copy.category}
                           </label>
                           <div className="relative">
@@ -1927,9 +1927,9 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                     className="space-y-6"
                   >
                     {/* Capa Vertical (3:4 Poster) */}
-                    <div className="rounded-2xl border border-white/[0.08] bg-[#141416] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                    <div className="rounded-2xl border border-white/[0.08] bg-[var(--tone-2)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                       <div className="flex flex-col sm:flex-row items-start gap-5">
-                        <div className="relative w-32 sm:w-40 aspect-[3/4] shrink-0 rounded-2xl border border-white/10 bg-[#101014] overflow-hidden shadow-lg">
+                        <div className="relative w-32 sm:w-40 aspect-[3/4] shrink-0 rounded-2xl border border-white/10 bg-[var(--tone-1)] overflow-hidden shadow-lg">
                           {formData.cardImage || formData.image ? (
                             <img
                               src={formData.cardImage || formData.image}
@@ -1938,8 +1938,8 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                             />
                           ) : (
                             <div className="flex h-full w-full flex-col items-center justify-center p-4 text-center">
-                              <Gamepad2 size={32} className="text-white/20 mb-2" />
-                              <span className="text-[11px] text-white/40">Sem capa</span>
+                              <Gamepad2 size={32} className="text-[var(--ink-faint)] mb-2" />
+                              <span className="text-[length:var(--step-0)] text-[var(--ink-faint)]">Sem capa</span>
                             </div>
                           )}
                         </div>
@@ -1947,7 +1947,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                         <div className="flex flex-1 flex-col justify-center gap-3">
                           <div>
                             <h4 className="text-sm font-bold text-white">{copy.cover} (3:4 Poster)</h4>
-                            <p className="text-[12px] text-white/45 mt-0.5">
+                            <p className="text-[length:var(--step-0)] text-[var(--ink-faint)] mt-0.5">
                               Enquadramento vertical padrão da sua biblioteca, correspondente ao card final.
                             </p>
                           </div>
@@ -1963,7 +1963,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                             <button
                               type="button"
                               onClick={() => coverInputRef.current?.click()}
-                              className="inline-flex items-center gap-2 rounded-xl bg-white/[0.08] px-3.5 py-2.5 text-[12px] font-bold text-white transition-all hover:bg-white/[0.14]"
+                              className="inline-flex items-center gap-2 rounded-xl bg-white/[0.08] px-3.5 py-2.5 text-[length:var(--step-0)] font-bold text-white transition-all hover:bg-white/[0.14]"
                             >
                               <Upload size={14} /> {copy.changeImage || "Trocar imagem"}
                             </button>
@@ -1971,7 +1971,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                             <button
                               type="button"
                               onClick={() => setShowCoverUrl((prev) => !prev)}
-                              className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3.5 py-2.5 text-[12px] font-bold text-white/70 transition-all hover:bg-white/[0.06] hover:text-white"
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3.5 py-2.5 text-[length:var(--step-0)] font-bold text-[var(--ink-muted)] transition-all hover:bg-white/[0.06] hover:text-white"
                             >
                               <Globe size={14} /> {showCoverUrl ? (copy.hideLink || "Ocultar link") : (copy.useLink || "Usar link")}
                             </button>
@@ -1980,7 +1980,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => setFormData((prev) => ({ ...prev, cardImage: "", image: "" }))}
-                                className="rounded-xl border border-white/10 px-3 py-2.5 text-[11px] font-semibold text-white/40 hover:text-red-400 hover:border-red-400/30 transition-colors"
+                                className="rounded-xl border border-white/10 px-3 py-2.5 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)] hover:text-red-400 hover:border-red-400/30 transition-colors"
                               >
                                 Remover
                               </button>
@@ -1994,7 +1994,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                                 value={formData.cardImage}
                                 onChange={(e) => setFormData({ ...formData, cardImage: e.target.value })}
                                 placeholder="https://... URL da capa"
-                                className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-[12px] text-white outline-none placeholder:text-white/20 focus:border-white/25"
+                                className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-[length:var(--step-0)] text-white outline-none placeholder:text-[var(--ink-faint)] focus:border-white/25"
                               />
                             </div>
                           )}
@@ -2003,9 +2003,9 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                     </div>
 
                     {/* Fundo Panorâmico (Wallpaper 16:9) */}
-                    <div className="rounded-2xl border border-white/[0.08] bg-[#141416] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                    <div className="rounded-2xl border border-white/[0.08] bg-[var(--tone-2)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                       <div className="flex flex-col sm:flex-row items-start gap-5">
-                        <div className="relative w-full sm:w-56 aspect-video shrink-0 rounded-2xl border border-white/10 bg-[#101014] overflow-hidden shadow-lg">
+                        <div className="relative w-full sm:w-56 aspect-video shrink-0 rounded-2xl border border-white/10 bg-[var(--tone-1)] overflow-hidden shadow-lg">
                           {formData.backgroundImage ? (
                             <img
                               src={formData.backgroundImage}
@@ -2014,8 +2014,8 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                             />
                           ) : (
                             <div className="flex h-full w-full flex-col items-center justify-center p-4 text-center">
-                              <Gamepad2 size={26} className="text-white/20 mb-1" />
-                              <span className="text-[11px] text-white/40">Sem fundo</span>
+                              <Gamepad2 size={26} className="text-[var(--ink-faint)] mb-1" />
+                              <span className="text-[length:var(--step-0)] text-[var(--ink-faint)]">Sem fundo</span>
                             </div>
                           )}
                         </div>
@@ -2023,7 +2023,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                         <div className="flex flex-1 flex-col justify-center gap-3">
                           <div>
                             <h4 className="text-sm font-bold text-white">{copy.wallpaper} (16:9)</h4>
-                            <p className="text-[12px] text-white/45 mt-0.5">
+                            <p className="text-[length:var(--step-0)] text-[var(--ink-faint)] mt-0.5">
                               Arte panorâmica usada nos cabeçalhos e na tela de detalhes do jogo.
                             </p>
                           </div>
@@ -2039,7 +2039,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                             <button
                               type="button"
                               onClick={() => wallpaperInputRef.current?.click()}
-                              className="inline-flex items-center gap-2 rounded-xl bg-white/[0.08] px-3.5 py-2.5 text-[12px] font-bold text-white transition-all hover:bg-white/[0.14]"
+                              className="inline-flex items-center gap-2 rounded-xl bg-white/[0.08] px-3.5 py-2.5 text-[length:var(--step-0)] font-bold text-white transition-all hover:bg-white/[0.14]"
                             >
                               <Upload size={14} /> {copy.changeImage || "Trocar imagem"}
                             </button>
@@ -2047,7 +2047,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                             <button
                               type="button"
                               onClick={() => setShowWallpaperUrl((prev) => !prev)}
-                              className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3.5 py-2.5 text-[12px] font-bold text-white/70 transition-all hover:bg-white/[0.06] hover:text-white"
+                              className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3.5 py-2.5 text-[length:var(--step-0)] font-bold text-[var(--ink-muted)] transition-all hover:bg-white/[0.06] hover:text-white"
                             >
                               <Globe size={14} /> {showWallpaperUrl ? (copy.hideLink || "Ocultar link") : (copy.useLink || "Usar link")}
                             </button>
@@ -2056,7 +2056,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => setFormData((prev) => ({ ...prev, backgroundImage: "" }))}
-                                className="rounded-xl border border-white/10 px-3 py-2.5 text-[11px] font-semibold text-white/40 hover:text-red-400 hover:border-red-400/30 transition-colors"
+                                className="rounded-xl border border-white/10 px-3 py-2.5 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)] hover:text-red-400 hover:border-red-400/30 transition-colors"
                               >
                                 Remover
                               </button>
@@ -2070,7 +2070,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                                 value={formData.backgroundImage}
                                 onChange={(e) => setFormData({ ...formData, backgroundImage: e.target.value })}
                                 placeholder="https://... URL do fundo"
-                                className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-[12px] text-white outline-none placeholder:text-white/20 focus:border-white/25"
+                                className="w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-[length:var(--step-0)] text-white outline-none placeholder:text-[var(--ink-faint)] focus:border-white/25"
                               />
                             </div>
                           )}
@@ -2079,7 +2079,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                     </div>
 
                     {/* Detalhes Opcionais Recolhidos por Padrão */}
-                    <div className="rounded-2xl border border-white/[0.08] bg-[#141416] p-4 transition-all">
+                    <div className="rounded-2xl border border-white/[0.08] bg-[var(--tone-2)] p-4 transition-all">
                       <button
                         type="button"
                         onClick={() => setShowAdvancedDetails((prev) => !prev)}
@@ -2088,16 +2088,16 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                         <div className="flex items-center gap-2.5">
                           <ChevronDown
                             size={16}
-                            className={`text-white/50 transition-transform duration-200 ${
+                            className={`text-[var(--ink-muted)] transition-transform duration-200 ${
                               showAdvancedDetails ? "rotate-180" : ""
                             }`}
                           />
                           <div>
-                            <p className="text-[13px] font-bold text-white">{copy.optionalDetails}</p>
-                            <p className="text-[11px] text-white/40">{copy.optionalDetailsHint}</p>
+                            <p className="text-[length:var(--step-0)] font-bold text-white">{copy.optionalDetails}</p>
+                            <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">{copy.optionalDetailsHint}</p>
                           </div>
                         </div>
-                        <span className="text-[11px] font-semibold text-white/45">
+                        <span className="text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)]">
                           {showAdvancedDetails ? "Recolher" : "Expandir"}
                         </span>
                       </button>
@@ -2105,7 +2105,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                       {showAdvancedDetails && (
                         <div className="mt-4 space-y-4 pt-4 border-t border-white/[0.06]">
                           <div>
-                            <label htmlFor="game-description" className="block text-[11px] font-bold text-white/50 mb-1.5">
+                            <label htmlFor="game-description" className="block text-[length:var(--step-0)] font-bold text-[var(--ink-muted)] mb-1.5">
                               {copy.description}
                             </label>
                             <textarea
@@ -2114,13 +2114,13 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                               value={formData.description}
                               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                               placeholder={copy.descriptionPlaceholder}
-                              className="w-full resize-none rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[12px] leading-relaxed text-white/80 outline-none placeholder:text-white/20 focus:border-white/25"
+                              className="w-full resize-none rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-[length:var(--step-0)] leading-relaxed text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-white/25"
                             />
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                              <label htmlFor="game-size" className="block text-[11px] font-bold text-white/50 mb-1.5">
+                              <label htmlFor="game-size" className="block text-[length:var(--step-0)] font-bold text-[var(--ink-muted)] mb-1.5">
                                 {copy.sizeGB}
                               </label>
                               <input
@@ -2135,7 +2135,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                                   })
                                 }
                                 placeholder={copy.sizePlaceholder}
-                                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[12px] text-white outline-none placeholder:text-white/20 focus:border-white/25"
+                                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-2.5 text-[length:var(--step-0)] text-white outline-none placeholder:text-[var(--ink-faint)] focus:border-white/25"
                               />
                             </div>
                           </div>
@@ -2151,13 +2151,13 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
           {/* ─── PAINEL LATERAL: NA SUA BIBLIOTECA ────────────────────────── */}
           <aside
             aria-label={copy.previewPanel}
-            className="relative flex min-h-[480px] flex-col overflow-hidden bg-[#111113] p-5 lg:min-h-0 lg:p-6"
+            className="relative flex min-h-[480px] flex-col overflow-hidden bg-[var(--tone-1)] p-5 lg:min-h-0 lg:p-6"
           >
             <div className="relative flex items-center justify-between gap-3">
-              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-white/40">
+              <p className="text-[length:var(--step-0)] font-bold uppercase tracking-[0.14em] text-[var(--ink-faint)]">
                 {copy.previewPanel}
               </p>
-              <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[10px] font-bold text-white/70">
+              <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1 text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
                 <Globe size={11} /> {platformLabel}
               </span>
             </div>
@@ -2175,7 +2175,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                 />
               )}
 
-              <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-white/14 bg-[#101014] shadow-2xl">
+              <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-white/14 bg-[var(--tone-1)] shadow-2xl">
                 {previewImage ? (
                   <img
                     src={previewImage}
@@ -2183,19 +2183,19 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="grid h-full w-full place-items-center bg-[#0d0d10]">
-                    <Gamepad2 size={36} strokeWidth={1.4} className="text-white/20" />
+                  <div className="grid h-full w-full place-items-center bg-[var(--tone-1)]">
+                    <Gamepad2 size={36} strokeWidth={1.4} className="text-[var(--ink-faint)]" />
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-4">
-                  <span className="mb-1.5 inline-flex rounded-md border border-white/12 bg-black/60 px-2 py-0.5 text-[9px] font-bold text-white/60">
+                  <span className="mb-1.5 inline-flex rounded-md border border-white/12 bg-black/60 px-2 py-0.5 text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
                     {CATEGORIES.find((cat) => cat.id === formData.category)?.label || copy.category}
                   </span>
                   <h3 className="line-clamp-2 text-base font-black leading-tight tracking-tight text-white">
                     {formData.title.trim() || copy.titlePlaceholder}
                   </h3>
-                  <p className="mt-1 text-[10px] font-semibold text-white/40">
+                  <p className="mt-1 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)]">
                     {platformLabel}
                   </p>
                 </div>
@@ -2207,17 +2207,17 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
               {/* Executável */}
               <div className="flex items-center gap-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04] p-2.5">
                 <div className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg ${
-                  formData.executablePath ? "bg-white/10 text-white" : "bg-white/[0.03] text-white/30"
+                  formData.executablePath ? "bg-white/10 text-white" : "bg-white/[0.03] text-[var(--ink-faint)]"
                 }`}>
                   {formData.executablePath ? <Check size={12} strokeWidth={3} /> : <HardDrive size={12} />}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-bold text-white/80">
+                  <p className="text-[length:var(--step-0)] font-bold text-[var(--ink)]">
                     {formData.launcherType === "epic"
                       ? copy.epicInstallPath
                       : (formData.executablePath ? "Executável selecionado" : "Executável")}
                   </p>
-                  <p className="truncate text-[10px] text-white/40">
+                  <p className="truncate text-[length:var(--step-0)] text-[var(--ink-faint)]">
                     {formData.executablePath
                       ? formData.executablePath.split(/[/\\]+/).pop()
                       : (formData.launcherType === "local"
@@ -2241,14 +2241,14 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-bold text-white/80">
+                  <p className="text-[length:var(--step-0)] font-bold text-[var(--ink)]">
                     {formData.steamAppId
                       ? `Steam App ID: ${formData.steamAppId}`
                       : formData.epicCatalogId
                         ? "Catálogo Epic Games"
                         : `Plataforma: ${platformLabel}`}
                   </p>
-                  <p className="truncate text-[10px] text-white/40">
+                  <p className="truncate text-[length:var(--step-0)] text-[var(--ink-faint)]">
                     {formData.title.trim() ? "Identificação concluída" : "Aguardando identificação"}
                   </p>
                 </div>
@@ -2261,8 +2261,8 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                     <HardDrive size={12} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-bold text-white/80">Espaço em disco</p>
-                    <p className="text-[10px] text-white/40">{formData.sizeGB} GB estimado</p>
+                    <p className="text-[length:var(--step-0)] font-bold text-[var(--ink)]">Espaço em disco</p>
+                    <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">{formData.sizeGB} GB estimado</p>
                   </div>
                 </div>
               )}
@@ -2271,11 +2271,11 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
         </div>
 
         {/* ─── RODAPÉ: CANCELAR | VOLTAR | CONTINUAR / ADICIONAR ────────────── */}
-        <footer className="flex shrink-0 items-center justify-between border-t border-white/[0.08] bg-[#0d0d0f] px-5 py-4 md:px-7">
+        <footer className="flex shrink-0 items-center justify-between border-t border-white/[0.08] bg-[var(--tone-1)] px-5 py-4 md:px-7">
           <button
             type="button"
             onClick={() => handleClose()}
-            className="rounded-xl border border-white/10 px-4 py-2.5 text-[12px] font-semibold text-white/50 transition-all hover:bg-white/[0.06] hover:text-white"
+            className="rounded-xl border border-white/10 px-4 py-2.5 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition-all hover:bg-white/[0.06] hover:text-white"
           >
             {copy.cancel}
           </button>
@@ -2285,7 +2285,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
               <button
                 type="button"
                 onClick={() => setStep((prev) => (prev - 1) as 1 | 2 | 3)}
-                className="rounded-xl border border-white/10 px-4 py-2.5 text-[12px] font-bold text-white/70 transition-all hover:bg-white/[0.06] hover:text-white"
+                className="rounded-xl border border-white/10 px-4 py-2.5 text-[length:var(--step-0)] font-bold text-[var(--ink-muted)] transition-all hover:bg-white/[0.06] hover:text-white"
               >
                 {copy.back || "Voltar"}
               </button>
@@ -2301,7 +2301,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                   }
                   setStep((prev) => (prev + 1) as 1 | 2 | 3);
                 }}
-                className="inline-flex min-w-28 items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-[12px] font-bold text-black transition-all hover:bg-white/90 active:scale-[0.98]"
+                className="inline-flex min-w-28 items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-[length:var(--step-0)] font-bold text-black transition-all hover:bg-white/90 active:scale-[0.98]"
               >
                 {copy.continue || "Continuar"}
               </button>
@@ -2310,7 +2310,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                 type="submit"
                 form="add-game-form"
                 disabled={isSaving || loading || !isFormValid()}
-                className="inline-flex min-w-44 items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-[12px] font-bold text-black transition-all hover:bg-white/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-black/50"
+                className="inline-flex min-w-44 items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-[length:var(--step-0)] font-bold text-black transition-all hover:bg-white/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-white/25 disabled:text-black/50"
               >
                 {isSaving ? (
                   <LoadingState label={copy.saving} variant="working" dark size="sm" showTimer={false} />

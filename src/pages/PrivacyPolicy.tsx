@@ -4,11 +4,11 @@ const updatedAt = "July 3, 2026";
 
 export default function PrivacyPolicy() {
   return (
-    <main className="min-h-screen bg-[#050507] text-white">
+    <main className="min-h-screen bg-[var(--tone-0)] text-white">
       <section className="mx-auto flex w-full max-w-4xl flex-col gap-10 px-6 py-16 sm:px-8 lg:px-10">
         <div className="flex items-center gap-3">
           <img src={PHERIELIUM_LOGO_PATH} alt="Pherielium" className="h-10 w-10 object-contain" />
-          <span className="text-lg font-heading font-bold tracking-[0.18em] text-white/90">
+          <span className="text-lg font-heading font-bold tracking-[0.18em] text-[var(--ink)]">
             PHERIELIUM
           </span>
         </div>
@@ -20,14 +20,14 @@ export default function PrivacyPolicy() {
           <h1 className="text-4xl font-heading font-bold tracking-tight sm:text-5xl">
             Pherielium Privacy Policy
           </h1>
-          <p className="max-w-2xl text-base leading-7 text-white/65 font-body">
+          <p className="max-w-2xl text-base leading-7 text-[var(--ink-muted)] font-body">
             Last updated: {updatedAt}. This policy explains how Pherielium
             handles information when you use our platform, game hub, and account
             linking features.
           </p>
         </header>
 
-        <div className="space-y-8 text-sm leading-7 text-white/70">
+        <div className="space-y-8 text-sm leading-7 text-[var(--ink-muted)]">
           <section className="space-y-3">
             <h2 className="text-xl font-semibold text-white">Who We Are</h2>
             <p>
@@ -118,7 +118,7 @@ export default function PrivacyPolicy() {
           </section>
         </div>
 
-        <a className="inline-flex w-fit rounded-md border border-white/15 px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/10" href="/">
+        <a className="inline-flex w-fit rounded-md border border-white/15 px-4 py-2 text-sm font-medium text-[var(--ink)] hover:bg-white/10" href="/">
           Back to Phelierium
         </a>
       </section>

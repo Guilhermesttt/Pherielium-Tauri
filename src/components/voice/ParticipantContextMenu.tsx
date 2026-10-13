@@ -96,7 +96,7 @@ export const ParticipantContextMenu: React.FC<ParticipantContextMenuProps> = ({
         visibility: measured ? 'visible' : 'hidden',
         cornerShape: 'squircle',
       } as React.CSSProperties}
-      className="fixed z-9999999 w-64 p-3 rounded-2xl border border-[#161616] bg-[#0F0F0F]/95 shadow-[0_24px_70px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl text-white space-y-2.5 select-none"
+      className="fixed z-9999999 w-64 p-3 rounded-2xl border border-[#161616] bg-[var(--tone-1)]/95 shadow-[0_24px_70px_rgba(0,0,0,0.95),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl text-white space-y-2.5 select-none"
     >
       {/* Header Info */}
       <div className="px-2 py-1 border-b border-[#161616] flex items-center justify-between">
@@ -104,7 +104,7 @@ export const ParticipantContextMenu: React.FC<ParticipantContextMenuProps> = ({
           <div className="h-2 w-2 rounded-full bg-white" />
           <span className="text-xs font-semibold truncate">{feed.title}</span>
         </div>
-        <span className="text-[10px] font-mono tabular-nums text-white/80 bg-white/[0.06] border border-[#161616] px-1.5 py-0.5 rounded">
+        <span className="text-[length:var(--step-0)] font-mono tabular-nums text-[var(--ink)] bg-white/[0.06] border border-[#161616] px-1.5 py-0.5 rounded">
           {isLocallyMuted ? 'MUDO' : `${volume}%`}
         </span>
       </div>
@@ -112,7 +112,7 @@ export const ParticipantContextMenu: React.FC<ParticipantContextMenuProps> = ({
       {/* Volume Control Slider (0 - 200%) */}
       {!feed.isLocal && (
         <div className="p-3 space-y-2 bg-white/[0.03] rounded-xl border border-[#161616]">
-          <div className="flex items-center justify-between text-[11px] font-medium text-white/80">
+          <div className="flex items-center justify-between text-[length:var(--step-0)] font-medium text-[var(--ink)]">
             <span className="flex items-center gap-1.5">
               {isLocallyMuted || volume === 0 ? (
                 <VolumeX className="h-3.5 w-3.5 text-rose-400" aria-hidden="true" />
@@ -140,7 +140,7 @@ export const ParticipantContextMenu: React.FC<ParticipantContextMenuProps> = ({
             className="w-full accent-white cursor-pointer h-1.5 outline-none focus-visible:ring-1 focus-visible:ring-white/50"
           />
 
-          <div className="flex justify-between text-[9px] font-semibold text-white/50">
+          <div className="flex justify-between text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]">
             <span onClick={() => onVolumeChange(0)} className="cursor-pointer hover:text-white">
               0%
             </span>

@@ -41,7 +41,7 @@ const COVER_LEFT = 14;
 const TEXT_OFFSET = COVER_LEFT + COVER_WIDTH + 14; // reserved space so text never sits under the cover
 
 const getPlatformInfo = (launcherType?: string) => {
-  const iconClass = "h-3.5 w-3.5 text-white/78";
+  const iconClass = "h-3.5 w-3.5 text-[var(--ink-muted)]";
 
   switch (launcherType?.toLowerCase()) {
     case "steam":
@@ -164,7 +164,7 @@ const ContinueCard = React.memo<ContinueCardProps>(({
         }}
       >
         <motion.div
-          className="pointer-events-none absolute -inset-px rounded-[22px] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          className="pointer-events-none absolute -inset-px rounded-[var(--corner-md)] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
           style={{
             background: useMotionTemplate`
               radial-gradient(
@@ -182,10 +182,10 @@ const ContinueCard = React.memo<ContinueCardProps>(({
         className="absolute bottom-0 right-4 flex flex-col justify-center gap-1 overflow-hidden"
         style={{ height: CARD_HEIGHT, left: TEXT_OFFSET }}
       >
-        <h3 className="truncate text-[length:var(--fs-title)] font-semibold leading-tight tracking-tight text-white/90 drop-shadow-sm transition-colors group-hover:text-white">
+        <h3 className="truncate text-[length:var(--fs-title)] font-semibold leading-tight tracking-tight text-[var(--ink)] drop-shadow-sm transition-colors group-hover:text-white">
           {game.title}
         </h3>
-        <p className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[length:var(--fs-label)] font-medium text-white/50">
+        <p className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[length:var(--fs-label)] font-medium text-[var(--ink-muted)]">
           <span className="shrink-0">{hours > 0 ? `${formatPlayedHours(hours)}h` : "Recente"}</span>
           <span className="h-1 w-1 shrink-0 rounded-full bg-white/20" />
           <span className="flex shrink-0 items-center gap-1 truncate max-w-[80px]">{platform.label}</span>
@@ -208,7 +208,7 @@ const ContinueCard = React.memo<ContinueCardProps>(({
           <img src={coverArt} alt="" className="h-full w-full object-cover" draggable={false} />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <Gamepad2 className="h-7 w-7 text-white/20" />
+            <Gamepad2 className="h-7 w-7 text-[var(--ink-faint)]" />
           </div>
         )}
       </motion.div>
@@ -300,14 +300,14 @@ export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> =
   return (
     <section aria-label="Continuar jogando" className="px-[var(--safe-x)] pt-[var(--gap-section)] relative group/section">
       <div className="mb-3 flex flex-col">
-        <p className="text-[length:var(--fs-label)] font-medium text-white/45">
+        <p className="text-[length:var(--fs-label)] font-medium text-[var(--ink-faint)]">
           Retomar
         </p>
         <div className="mt-1 flex items-baseline gap-3">
-          <h2 className="text-[length:var(--fs-heading)] font-semibold leading-[1.1] tracking-[-0.02em] text-white/88">
+          <h2 className="text-[length:var(--fs-heading)] font-semibold leading-[1.1] tracking-[-0.02em] text-[var(--ink)]">
             Continuar jogando
           </h2>
-          <span className="text-[length:var(--fs-label)] font-medium text-white/34">
+          <span className="text-[length:var(--fs-label)] font-medium text-[var(--ink-faint)]">
             {continuePlayingGames.length} {continuePlayingGames.length === 1 ? "jogo" : "jogos"}
           </span>
         </div>

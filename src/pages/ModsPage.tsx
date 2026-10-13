@@ -152,78 +152,66 @@ const ModGameCard = React.memo<ModGameCardProps>(
         aria-label={`Gerenciar mods de ${game.title}`}
         onClick={handleCardClick}
         onKeyDown={handleKeyDown}
-        className="group relative rounded-2xl bg-[#0C0D10] hover:bg-[#101217] border border-white/10 hover:border-white/20 p-3.5 transition duration-200 hover:-translate-y-0.5 shadow-[0_8px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.06)] flex flex-col justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 cursor-pointer text-left"
+        className="group relative flex cursor-pointer flex-col justify-between rounded-[var(--corner-md)] bg-[var(--tone-1)] p-3 text-left transition-colors duration-[var(--dur-2)] hover:bg-[var(--tone-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
       >
         <div>
-          {/* Game Artwork Thumbnail */}
-          <div className="relative h-28 w-full rounded-xl overflow-hidden bg-white/[0.04] mb-3 border border-white/10">
+          <div className="relative mb-4 aspect-[460/215] w-full overflow-hidden rounded-[var(--corner-sm)] bg-[var(--tone-3)]">
             {artwork ? (
               <img
                 src={artwork}
-                alt={game.title}
+                alt=""
                 loading="lazy"
                 decoding="async"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                className="h-full w-full object-cover transition-transform duration-[var(--dur-3)] ease-[var(--spring)] group-hover:scale-105"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white/40 px-2 text-center">
+              <div className="flex h-full w-full items-center justify-center px-2 text-center text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)]">
                 {game.title}
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-            <div
-              aria-hidden="true"
-              className="absolute top-2 right-2 h-7 w-7 rounded-lg bg-black/60 text-white/70 flex items-center justify-center backdrop-blur-md pointer-events-none"
-            >
-              <MoreVertical className="w-3.5 h-3.5" />
-            </div>
           </div>
 
-          {/* Title */}
-          <h3 className="text-sm font-display font-semibold text-white/95 truncate group-hover:text-white">
-            {game.title}
-          </h3>
-
-          {/* Status do Jogo / Mods */}
-          <div className="flex items-center gap-1.5 mt-2 flex-wrap text-xs">
-            {hasFolder ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-semibold text-emerald-400">
-                <CheckCircle2 className="w-3 h-3 shrink-0" />
-                Pasta vinculada
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/10 text-[10px] font-medium text-white/40">
-                Sem pasta vinculada
-              </span>
-            )}
-
-            {gameModsCount > 0 && (
-              <span className="text-[11px] font-medium text-white/60">
-                {activeModsCount > 0 ? `${activeModsCount}/${gameModsCount} ativos` : `${gameModsCount} mods`}
-              </span>
-            )}
+          <div className="px-1">
+            <h3 className="truncate text-[length:var(--step-1)] font-semibold text-[var(--ink)]">{game.title}</h3>
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[length:var(--step-0)] text-[var(--ink-muted)]">
+              {hasFolder ? (
+                <span className="inline-flex items-center gap-1.5 text-[var(--ink)]">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  Pasta vinculada
+                </span>
+              ) : (
+                <span>Sem pasta vinculada</span>
+              )}
+              {gameModsCount > 0 && (
+                <>
+                  <span aria-hidden="true" className="text-[var(--ink-faint)]">·</span>
+                  <span className="tabular-nums">
+                    {activeModsCount > 0 ? `${activeModsCount} de ${gameModsCount} ativos` : `${gameModsCount} mods`}
+                  </span>
+                </>
+              )}
+            </p>
           </div>
         </div>
 
-        {/* Manage Action Button */}
-        <div className="mt-4 pt-2.5 border-t border-white/[0.06]">
-          <div
-            className="w-full h-9 rounded-xl border border-white/10 bg-white/[0.05] group-hover:bg-white/[0.12] active:scale-98 text-white text-xs font-semibold transition duration-150 flex items-center justify-center gap-1.5 shadow-sm pointer-events-none"
-          >
-            {!hasFolder ? (
-              <>
-                <FolderPlus className="w-3.5 h-3.5 text-white/60" />
-                <span>Vincular pasta</span>
-              </>
-            ) : gameModsCount === 0 ? (
-              <>
-                <PackageOpen className="w-3.5 h-3.5 text-white/60" />
-                <span>Explorar mods</span>
-              </>
-            ) : (
-              <span>Gerenciar ({gameModsCount})</span>
-            )}
-          </div>
+        {/* Ação: a pílula tonal do sistema (o cartão inteiro é o botão; isto só diz o que acontece) */}
+        <div
+          aria-hidden="true"
+          className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-[var(--node)] bg-[var(--tone-3)] text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors group-hover:bg-[var(--tone-4)]"
+        >
+          {!hasFolder ? (
+            <>
+              <FolderPlus className="h-4 w-4 text-[var(--ink-muted)]" />
+              <span>Vincular pasta</span>
+            </>
+          ) : gameModsCount === 0 ? (
+            <>
+              <PackageOpen className="h-4 w-4 text-[var(--ink-muted)]" />
+              <span>Explorar mods</span>
+            </>
+          ) : (
+            <span>Gerenciar ({gameModsCount})</span>
+          )}
         </div>
       </div>
     );
@@ -477,36 +465,31 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", bounce: 0, duration: 0.4 }}
       className="flex flex-col min-h-0 flex-1 overflow-y-auto thin-scrollbar hub-scroll"
-      style={{ padding: "32px 40px 64px", contain: "layout paint", transform: "translate3d(0,0,0)", willChange: "transform" }}
+      style={{ padding: "40px 40px 64px", contain: "layout paint", transform: "translate3d(0,0,0)", willChange: "transform" }}
     >
-      <div className="mx-auto w-full max-w-7xl space-y-6">
-        {/* Single Focused Editorial Header */}
-        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-white/[0.06]">
+      <div className="mx-auto w-full max-w-7xl space-y-8">
+        <header className="flex flex-col gap-6 pb-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 text-xs font-medium text-white/50 mb-1.5">
-              <PackageOpen className="h-3.5 w-3.5 text-white/70" />
-              <span>Gerenciador de Mods</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight text-white">
+            <h1 className="font-display text-[length:var(--step-5)] font-semibold leading-[1.02] tracking-[-0.04em] text-[var(--ink)]">
               Mods
             </h1>
-            <p className="mt-1 text-xs sm:text-sm font-normal text-white/60 max-w-xl">
-              Gerencie arquivos, vincule diretórios e ative modificações da comunidade para seus jogos instalados.
+            <p className="mt-3 max-w-xl text-[length:var(--step-1)] leading-relaxed text-[var(--ink-muted)]">
+              Vincule a pasta de cada jogo e ative os mods da comunidade sem sair do hub.
             </p>
           </div>
 
-          {/* Discreet Metrics Line */}
-          <div className="flex items-center gap-2.5 text-xs text-white/50 flex-wrap self-start sm:self-auto">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-white/70 font-medium">
-              <span className="font-semibold text-white">{games.length}</span> na biblioteca
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-white/70 font-medium">
-              <span className="font-semibold text-emerald-400">{configuredGames}</span> pastas vinculadas
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-white/70 font-medium">
-              <span className="font-semibold text-white">{activeInstalledMods}</span> de {totalInstalledMods} mods ativos
-            </span>
-          </div>
+          <dl className="flex flex-wrap gap-x-8 gap-y-3">
+            {[
+              { value: games.length, label: "na biblioteca" },
+              { value: configuredGames, label: "pastas vinculadas" },
+              { value: `${activeInstalledMods} de ${totalInstalledMods}`, label: "mods ativos" },
+            ].map((metric) => (
+              <div key={metric.label} className="flex flex-col-reverse">
+                <dt className="mt-1 text-[length:var(--step-0)] text-[var(--ink-muted)]">{metric.label}</dt>
+                <dd className="text-[length:var(--step-3)] font-semibold tabular-nums leading-none text-[var(--ink)]">{metric.value}</dd>
+              </div>
+            ))}
+          </dl>
         </header>
 
         {/* Content Tabs / Main Layout */}
@@ -514,18 +497,18 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
           {/* Main Grid View */}
           <div className="space-y-6">
             {/* Filter and Search Bar */}
-            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-2 rounded-2xl bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl">
+            <div className="flex flex-col items-stretch justify-between gap-3 md:flex-row md:items-center">
               {/* Search Field */}
               <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-faint)]" aria-hidden="true" />
                 <input
                   id="mods-search-input"
-                  type="text"
+                  type="search"
                   aria-label="Pesquisar jogos com suporte a mods"
-                  placeholder="Pesquisar jogos com suporte a mods..."
+                  placeholder="Pesquisar jogos"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs font-body text-white placeholder-white/40 focus:outline-none focus:border-white/20 transition-colors"
+                  className="h-11 w-full rounded-[var(--node)] bg-[var(--tone-2)] pl-11 pr-4 text-[length:var(--step-0)] text-[var(--ink)] placeholder:text-[var(--ink-faint)] outline-none transition-colors focus:bg-[var(--tone-3)] focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
                 />
               </div>
 
@@ -559,25 +542,28 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+              {/* Grade/lista: os botões ainda não trocam a visualização (pendência anterior ao redesign). */}
+              <div className="flex items-center rounded-[var(--node)] bg-[var(--tone-2)] p-1">
                 <button
                   type="button"
                   title="Visualização em Grade"
-                  className="p-1.5 rounded-lg bg-white/10 text-white"
+                  aria-label="Visualização em grade"
+                  className="flex h-9 w-9 items-center justify-center rounded-[var(--node)] bg-[var(--tone-4)] text-[var(--ink)]"
                 >
-                  <LayoutGrid className="w-4 h-4" />
+                  <LayoutGrid className="h-4 w-4" aria-hidden="true" />
                 </button>
                 <button
                   type="button"
                   title="Visualização em Lista"
-                  className="p-1.5 rounded-lg text-white/40 hover:text-white"
+                  aria-label="Visualização em lista"
+                  className="flex h-9 w-9 items-center justify-center rounded-[var(--node)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
                 >
-                  <ListFilter className="w-4 h-4" />
+                  <ListFilter className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
             </div>
             {/* Games Grid Memoizado */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {filteredGames.map(({ game, gameModsCount, activeModsCount, hasFolder, artwork }, index) => (
                 <ModGameCard
                   key={game.id}
@@ -594,18 +580,17 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
               ))}
             </div>
 
-            {/* Bottom Discovery Banner */}
-            <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] p-5 flex flex-col sm:flex-row items-center justify-between gap-4 backdrop-blur-xl shadow-xl">
-              <div className="flex items-center gap-3.5">
-                <div className="h-10 w-10 rounded-xl bg-white/[0.08] border border-white/20 flex items-center justify-center text-white shrink-0">
-                  <Sparkles className="w-5 h-5 animate-pulse" />
+            <section className="flex flex-col items-start justify-between gap-5 rounded-[var(--corner-lg)] bg-[var(--tone-1)] p-6 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--node)] bg-[var(--tone-3)] text-[var(--ink)]">
+                  <Sparkles className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-display font-bold text-white">
+                  <h2 className="text-[length:var(--step-2)] font-semibold text-[var(--ink)]">
                     Descubra novos mods para seus jogos favoritos
-                  </h4>
-                  <p className="text-xs font-body text-white/50">
-                    Navegue por milhares de mods incríveis disponíveis no Nexus Mods.
+                  </h2>
+                  <p className="mt-1 text-[length:var(--step-0)] text-[var(--ink-muted)]">
+                    Milhares de mods da comunidade no Nexus Mods.
                   </p>
                 </div>
               </div>
@@ -615,12 +600,12 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
                 target="_blank"
                 rel="noreferrer"
                 onMouseEnter={() => playSound?.("hover")}
-                className="cursor-pointer shrink-0 px-5 py-2.5 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 text-white text-xs font-body font-bold uppercase tracking-wider flex items-center gap-2 transition active:scale-95"
+                className="inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 rounded-[var(--node)] bg-[var(--ink)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--tone-1)]"
               >
-                <span>EXPLORAR NEXUS MODS</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
+                <span>Explorar o Nexus Mods</span>
+                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
               </a>
-            </div>
+            </section>
           </div>
         </div>
       </div>

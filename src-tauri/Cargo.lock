@@ -3318,7 +3318,7 @@ dependencies = [
 
 [[package]]
 name = "pherielium"
-version = "1.0.3-rc.6"
+version = "1.0.3"
 dependencies = [
  "anyhow",
  "base64 0.22.1",

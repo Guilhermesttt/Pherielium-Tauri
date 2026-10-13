@@ -106,8 +106,8 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
         exit={{ y: 50, opacity: 0 }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}        className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[9990] flex items-center gap-4 rounded-2xl border px-4 py-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.85)] backdrop-blur-2xl transition-colors duration-200 ${
           isReconnecting
-            ? "border-[#2A2A2A] bg-[#0F0F0F]/90"
-            : "border-[#161616] bg-[#0F0F0F]/90"
+            ? "border-[#2A2A2A] bg-[var(--tone-1)]/90"
+            : "border-[#161616] bg-[var(--tone-1)]/90"
         }`}
       >
         {/* Connection Status & Friend / Speaker */}
@@ -150,7 +150,7 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-black/60 text-[9px] font-bold text-white backdrop-blur-sm">
+                <div className="flex h-full w-full items-center justify-center bg-black/60 text-[length:var(--step-0)] font-bold text-white backdrop-blur-sm">
                   {displayName.slice(0, 2).toUpperCase()}
                 </div>
               )}
@@ -185,7 +185,7 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
                     : "bg-white shadow-[0_0_6px_rgba(255,255,255,0.7)]"
                 }`}
               />
-              <span className="text-xs font-semibold uppercase tracking-[0.06em] text-white/90">
+              <span className="text-xs font-semibold uppercase tracking-[0.06em] text-[var(--ink)]">
                 {isReconnecting
                   ? "Reconectando..."
                   : isRingingOut
@@ -199,10 +199,10 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
 
               {inputMode === "push-to-talk" && (
                 <span
-                  className={`text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
+                  className={`text-[length:var(--step-0)] font-mono font-semibold px-1.5 py-0.5 rounded border uppercase tracking-wider ${
                     isPttPressed
                       ? "bg-white/20 text-white border-white/40 animate-pulse"
-                      : "bg-white/5 text-white/60 border-white/10"
+                      : "bg-white/5 text-[var(--ink-muted)] border-white/10"
                   }`}
                 >
                   PTT [{pushToTalkKey}]
@@ -210,15 +210,15 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
               )}
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-[#D2D2D2] group-hover:text-white transition-colors truncate max-w-[130px]">
+              <span className="text-xs font-semibold text-[var(--ink-muted)] group-hover:text-white transition-colors truncate max-w-[130px]">
                 {displayName}
               </span>
               {isRemoteDeafened ? (
-                <span className="flex items-center gap-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white/80 border border-white/15">
+                <span className="flex items-center gap-1 rounded bg-white/10 px-1.5 py-0.5 text-[length:var(--step-0)] font-semibold uppercase text-[var(--ink)] border border-white/15">
                   <VolumeX className="h-2.5 w-2.5" /> Mutou tudo
                 </span>
               ) : isRemoteMuted ? (
-                <span className="flex items-center gap-1 rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-white/80 border border-white/15">
+                <span className="flex items-center gap-1 rounded bg-white/10 px-1.5 py-0.5 text-[length:var(--step-0)] font-semibold uppercase text-[var(--ink)] border border-white/15">
                   <MicOff className="h-2.5 w-2.5" /> Mutado
                 </span>
               ) : null}
@@ -229,7 +229,7 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
                   <span className="w-0.5 h-1.5 bg-white rounded-full animate-pulse" />
                 </div>
               )}
-              <span className="text-xs font-mono text-[#6C6C6C] shrink-0">
+              <span className="text-xs font-mono text-[var(--ink-faint)] shrink-0">
                 • {formatDuration(duration)}
               </span>
             </div>
@@ -237,7 +237,7 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
         </div>
 
         {/* Divider */}
-        <div className="h-7 w-[1px] bg-[#2A2A2A]" />
+        <div className="h-7 w-[1px] bg-[var(--tone-4)]" />
 
         {/* Call Controls */}
         <div className="flex items-center gap-1.5">
@@ -247,7 +247,7 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
             onClick={onToggleMute}
             className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-160 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
               isMuted
-                ? "bg-white text-[#030405] font-bold shadow-sm scale-105"
+                ? "bg-white text-[var(--tone-0)] font-bold shadow-sm scale-105"
                 : "bg-white/[0.06] text-white hover:bg-white/[0.12] border border-white/[0.08]"
             }`}
             title={isMuted ? "Desmutar microfone" : "Mutar microfone"}
@@ -261,7 +261,7 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
             onClick={onToggleDeafen}
             className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-160 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
               isDeafened
-                ? "bg-white text-[#030405] font-bold shadow-sm scale-105"
+                ? "bg-white text-[var(--tone-0)] font-bold shadow-sm scale-105"
                 : "bg-white/[0.06] text-white hover:bg-white/[0.12] border border-white/[0.08]"
             }`}
             title={isDeafened ? "Desmutar áudio" : "Silenciar áudio"}
@@ -275,7 +275,7 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
             onClick={onToggleScreenShare}
             className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-160 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
               isSharingScreen
-                ? "bg-white text-[#030405] shadow-md scale-105 hover:bg-white/90"
+                ? "bg-white text-[var(--tone-0)] shadow-md scale-105 hover:bg-white/90"
                 : "bg-white/[0.06] text-white hover:bg-white/[0.12] border border-white/[0.08]"
             }`}
             title={isSharingScreen ? "Parar compartilhamento" : "Compartilhar tela"}

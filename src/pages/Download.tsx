@@ -8,26 +8,26 @@ import {
 
 const DownloadPage = () => {
   return (
-    <main className="min-h-screen bg-[#050507] text-white">
+    <main className="min-h-screen bg-[var(--tone-0)] text-white">
       <section className="relative overflow-hidden px-6 py-24 lg:px-12 lg:py-32">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_20%,rgba(56,189,248,0.14),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_70%,rgba(255,255,255,0.08),transparent_55%)]" />
 
         <div className="relative mx-auto max-w-5xl">
-          <a href="/" className="text-sm text-white/45 transition hover:text-white/75">
+          <a href="/" className="text-sm text-[var(--ink-faint)] transition hover:text-[var(--ink-muted)]">
             Voltar para o site
           </a>
 
           <div className="mt-10 grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
             <div>
-              <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/35 font-ui">
+              <p className="mb-4 text-[length:var(--step-0)] font-semibold uppercase tracking-[0.28em] text-[var(--ink-faint)] font-ui">
                 Download • Versão {CURRENT_LAUNCHER_VERSION}
               </p>
               <h1 className="max-w-3xl text-5xl font-heading font-black tracking-tight text-white lg:text-7xl">
                 Baixe o Pherielium para Windows.
               </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/55 font-body">
-                Acesse a página oficial de lançamentos no GitHub para baixar o instalador oficial (<code className="text-white/80">.exe</code>) da versão v{CURRENT_LAUNCHER_VERSION}, conferir notas de atualização e versões anteriores.
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--ink-muted)] font-body">
+                Acesse a página oficial de lançamentos no GitHub para baixar o instalador oficial (<code className="text-[var(--ink)]">.exe</code>) da versão v{CURRENT_LAUNCHER_VERSION}, conferir notas de atualização e versões anteriores.
               </p>
 
               <div className="mt-10 flex flex-wrap gap-4">
@@ -47,32 +47,32 @@ const DownloadPage = () => {
                   href={GITHUB_RELEASES_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center rounded-full border border-white/15 px-7 py-4 text-sm font-bold text-white/75 transition hover:border-white/30 hover:text-white"
+                  className="inline-flex items-center rounded-full border border-white/15 px-7 py-4 text-sm font-bold text-[var(--ink-muted)] transition hover:border-white/30 hover:text-white"
                 >
                   Ver todas as versões
                 </a>
               </div>
             </div>
 
-            <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-2xl">
+            <div className="rounded-[var(--corner-lg)] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-2xl">
               <div className="space-y-5">
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10">
-                    <ShieldCheck className="h-5 w-5 text-white/75" />
+                    <ShieldCheck className="h-5 w-5 text-[var(--ink-muted)]" />
                   </div>
                   <div>
                     <h2 className="text-sm font-bold text-white">Distribuição Oficial via GitHub</h2>
-                    <p className="mt-1 text-sm text-white/45">
+                    <p className="mt-1 text-sm text-[var(--ink-faint)]">
                       Instaladores assinados, código aberto e histórico de versões disponíveis no GitHub Releases.
                     </p>
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-black/30 p-4 space-y-2">
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-white/35">
+                  <p className="text-[length:var(--step-0)] font-black uppercase tracking-[0.22em] text-[var(--ink-faint)]">
                     Arquivo do instalador
                   </p>
-                  <p className="text-sm font-mono text-white/75">{LAUNCHER_EXE_FILENAME}</p>
+                  <p className="text-sm font-mono text-[var(--ink-muted)]">{LAUNCHER_EXE_FILENAME}</p>
                 </div>
               </div>
             </div>

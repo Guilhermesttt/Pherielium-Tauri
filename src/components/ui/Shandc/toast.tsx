@@ -42,9 +42,9 @@ function Toast({ className, ...props }: ToastPrimitive.Root.Props) {
         <ToastPrimitive.Root
             data-slot="toast"
             className={cn(
-                "group/toast pointer-events-auto absolute right-0 bottom-0 z-[calc(1000-var(--toast-index))] w-full origin-bottom rounded-2xl border border-white/[0.08] bg-[#1C1C1E]/75 backdrop-blur-[40px] text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] outline-none select-none focus-visible:border-white/40 focus-visible:ring-2 focus-visible:ring-white/20 antialiased",
+                "group/toast pointer-events-auto absolute right-0 bottom-0 z-[calc(1000-var(--toast-index))] w-full origin-bottom rounded-[var(--corner-md)] bg-[var(--tone-3)] text-[var(--ink)] outline-none select-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] antialiased",
                 "[--gap:0.75rem] [--height:var(--toast-frontmost-height,var(--toast-height))] [--offset-y:calc(var(--toast-offset-y)*-1+calc(var(--toast-index)*var(--gap)*-1)+var(--toast-swipe-movement-y))] [--peek:0.75rem] [--scale:calc(max(0,1-(var(--toast-index)*0.1)))] [--shrink:calc(1-var(--scale))]",
-                "h-(--height) [transform:translateX(var(--toast-swipe-movement-x))_translateY(calc(var(--toast-swipe-movement-y)-(var(--toast-index)*var(--peek))-(var(--shrink)*var(--height))))_scale(var(--scale))] [transition:transform_400ms_cubic-bezier(0.16,1,0.3,1),opacity_300ms,height_150ms]",
+                "h-(--height) [transform:translateX(var(--toast-swipe-movement-x))_translateY(calc(var(--toast-swipe-movement-y)-(var(--toast-index)*var(--peek))-(var(--shrink)*var(--height))))_scale(var(--scale))] [transition:transform_var(--dur-3)_var(--spring),opacity_var(--dur-2),height_var(--dur-1)]",
                 "after:absolute after:top-full after:left-0 after:h-[calc(var(--gap)+1px)] after:w-full after:content-['']",
                 "data-expanded:h-(--toast-height) data-expanded:[transform:translateX(var(--toast-swipe-movement-x))_translateY(var(--offset-y))]",
                 "data-limited:opacity-0 data-starting-style:[transform:translateY(150%)]",
@@ -81,7 +81,7 @@ function ToastTitle({ className, ...props }: ToastPrimitive.Title.Props) {
     return (
         <ToastPrimitive.Title
             data-slot="toast-title"
-            className={cn("text-[14px] font-semibold text-white tracking-tight leading-tight", className)}
+            className={cn("text-[length:var(--step-1)] font-semibold text-[var(--ink)] tracking-tight leading-tight", className)}
             {...props}
         />
     )
@@ -94,7 +94,7 @@ function ToastDescription({
     return (
         <ToastPrimitive.Description
             data-slot="toast-description"
-            className={cn("text-[13px] font-medium text-white/60 leading-snug antialiased", className)}
+            className={cn("text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] leading-snug antialiased", className)}
             {...props}
         />
     )
@@ -102,7 +102,7 @@ function ToastDescription({
 
 function ToastAction({
     className,
-    render = <Button variant="outline" size="sm" className="h-7 px-2.5 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 border-white/10 text-white" />,
+    render = <Button variant="outline" size="sm" className="h-8 px-3.5 rounded-[var(--node)] border-0 text-[length:var(--step-0)] font-semibold bg-[var(--ink)] hover:bg-white text-[var(--tone-0)]" />,
     ...props
 }: ToastPrimitive.Action.Props) {
     return (
@@ -118,7 +118,7 @@ function ToastAction({
 function ToastClose({
     className,
     children,
-    render = <button type="button" className="h-7 w-7 rounded-lg text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors" />,
+    render = <button type="button" aria-label="Fechar aviso" className="h-8 w-8 rounded-[var(--node)] text-[var(--ink-faint)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)] flex items-center justify-center transition-colors" />,
     ...props
 }: ToastPrimitive.Close.Props) {
     return (
@@ -127,7 +127,7 @@ function ToastClose({
             aria-label="Close toast"
             render={render}
             className={cn(
-                "relative shrink-0 text-white/40 hover:text-white cursor-pointer transition-colors",
+                "relative shrink-0 text-[var(--ink-faint)] hover:text-white cursor-pointer transition-colors",
                 className
             )}
             {...props}
@@ -139,31 +139,31 @@ function ToastClose({
 
 function ToastIcon({ type }: { type: string | undefined }) {
     let icon: React.ReactNode = null
-    let colorClass = "bg-white/10 text-white/80 border-white/15"
+    let colorClass = "bg-[var(--tone-4)] text-[var(--ink)]"
 
     if (type === "success") {
         icon = <CircleCheckIcon className="h-5 w-5" aria-hidden="true" />
-        colorClass = "bg-white/10 text-white border border-white/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+        colorClass = "bg-[var(--tone-4)] text-[var(--ink)]"
     }
 
     if (type === "info") {
         icon = <InfoIcon className="h-5 w-5" aria-hidden="true" />
-        colorClass = "bg-sky-500/15 text-sky-400 border border-sky-500/25 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+        colorClass = "bg-[var(--tone-4)] text-[var(--ink)]"
     }
 
     if (type === "warning") {
         icon = <TriangleAlertIcon className="h-5 w-5" aria-hidden="true" />
-        colorClass = "bg-amber-500/15 text-amber-400 border border-amber-500/25 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+        colorClass = "bg-amber-500/15 text-amber-400"
     }
 
     if (type === "error") {
         icon = <OctagonXIcon className="h-5 w-5" aria-hidden="true" />
-        colorClass = "bg-[#FF453A]/15 text-[#FF453A] border border-[#FF453A]/25 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+        colorClass = "bg-[#FF453A]/15 text-[#FF453A]"
     }
 
     if (type === "loading") {
-        icon = <Loader2Icon className="h-5 w-5 animate-spin text-white/70" aria-hidden="true" />
-        colorClass = "bg-white/10 text-white/70 border border-white/15 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+        icon = <Loader2Icon className="h-5 w-5 animate-spin text-[var(--ink-muted)]" aria-hidden="true" />
+        colorClass = "bg-[var(--tone-4)] text-[var(--ink-muted)]"
     }
 
     if (!icon) {
@@ -174,7 +174,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
         <span
             data-slot="toast-icon"
             className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] shadow-sm transition-colors",
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--node)] transition-colors",
                 colorClass
             )}
         >

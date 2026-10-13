@@ -77,14 +77,14 @@ export const GameControllerPanel: React.FC<GameControllerPanelProps> = ({
     >
       <header className="flex items-start justify-between gap-[var(--gap-inline)] px-[var(--space-6)] pt-[var(--space-6)] pb-[var(--space-4)]">
         <div className="flex min-w-0 items-center gap-[var(--gap-inline)]">
-          <Gamepad2 className="h-5 w-5 shrink-0 text-white/70" />
+          <Gamepad2 className="h-5 w-5 shrink-0 text-[var(--ink-muted)]" />
           <div className="min-w-0">
             <h2 className="truncate text-[length:var(--fs-title)] font-semibold">Controle</h2>
-            <p className="truncate text-[length:var(--fs-label)] text-white/50">{gameTitle}</p>
+            <p className="truncate text-[length:var(--fs-label)] text-[var(--ink-muted)]">{gameTitle}</p>
           </div>
         </div>
         <span
-          className="shrink-0 rounded-[var(--radius-badge)] border border-[color:var(--edge-subtle)] px-2 py-1 text-[length:var(--fs-label)] text-white/60"
+          className="shrink-0 rounded-[var(--radius-badge)] border border-[color:var(--edge-subtle)] px-2 py-1 text-[length:var(--fs-label)] text-[var(--ink-muted)]"
           title={
             usesGameProfile
               ? "Este jogo tem ajustes próprios."
@@ -97,7 +97,7 @@ export const GameControllerPanel: React.FC<GameControllerPanelProps> = ({
 
       <div className="min-h-0 flex-1 overflow-y-auto thin-scrollbar px-[var(--space-6)] pb-[var(--space-4)]">
         {loading ? (
-          <p className="py-[var(--space-8)] text-center text-[length:var(--fs-caption)] text-white/50">
+          <p className="py-[var(--space-8)] text-center text-[length:var(--fs-caption)] text-[var(--ink-muted)]">
             Carregando perfil…
           </p>
         ) : (
@@ -118,7 +118,7 @@ export const GameControllerPanel: React.FC<GameControllerPanelProps> = ({
                     className={`cursor-pointer rounded-[var(--radius-control)] border px-3 py-1.5 text-[length:var(--fs-label)] font-medium transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] ${
                       active
                         ? "border-[color:var(--edge-selected)] bg-[color:var(--selection-bg)] text-white"
-                        : "border-[color:var(--edge-subtle)] text-white/70 hover:border-[color:var(--edge-strong)] hover:text-white"
+                        : "border-[color:var(--edge-subtle)] text-[var(--ink-muted)] hover:border-[color:var(--edge-strong)] hover:text-white"
                     }`}
                   >
                     {PRESET_LABELS[name]}
@@ -189,16 +189,16 @@ export const GameControllerPanel: React.FC<GameControllerPanelProps> = ({
 
             {missingDriver && (
               <div className="mt-[var(--space-4)] flex items-start gap-[var(--gap-inline)] rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] bg-white/[0.03] p-[var(--space-3)]">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-white/60" />
-                <div className="min-w-0 text-[length:var(--fs-label)] text-white/60">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--ink-muted)]" />
+                <div className="min-w-0 text-[length:var(--fs-label)] text-[var(--ink-muted)]">
                   <p>
-                    Sem o <strong className="text-white/80">{missingDriver.name}</strong> o jogo lê o
+                    Sem o <strong className="text-[var(--ink)]">{missingDriver.name}</strong> o jogo lê o
                     controle físico e o virtual ao mesmo tempo, e a entrada chega duplicada.
                   </p>
                   <button
                     type="button"
                     onClick={() => void openExternal(missingDriver.url)}
-                    className="mt-1 inline-flex cursor-pointer items-center gap-1 text-white/80 underline underline-offset-2 hover:text-white"
+                    className="mt-1 inline-flex cursor-pointer items-center gap-1 text-[var(--ink)] underline underline-offset-2 hover:text-white"
                   >
                     Baixar {missingDriver.name}
                     <ExternalLink className="h-3 w-3" />
@@ -215,7 +215,7 @@ export const GameControllerPanel: React.FC<GameControllerPanelProps> = ({
       </div>
 
       <footer className="flex items-center justify-between gap-[var(--gap-inline)] border-t border-[color:var(--edge-subtle)] px-[var(--space-6)] py-[var(--space-4)]">
-        <span className="text-[length:var(--fs-label)] text-white/40">
+        <span className="text-[length:var(--fs-label)] text-[var(--ink-faint)]">
           {saving ? "Salvando…" : "Salvo automaticamente"}
         </span>
         <div className="flex items-center gap-[var(--gap-inline)]">
@@ -226,7 +226,7 @@ export const GameControllerPanel: React.FC<GameControllerPanelProps> = ({
                 playSound?.("back");
                 void resetToGlobal();
               }}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] px-3 py-1.5 text-[length:var(--fs-label)] text-white/70 transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:border-[color:var(--edge-strong)] hover:text-white"
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] px-3 py-1.5 text-[length:var(--fs-label)] text-[var(--ink-muted)] transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:border-[color:var(--edge-strong)] hover:text-white"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Usar global
@@ -239,7 +239,7 @@ export const GameControllerPanel: React.FC<GameControllerPanelProps> = ({
                 playSound?.("select");
                 onOpenAdvanced();
               }}
-              className="cursor-pointer rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] px-3 py-1.5 text-[length:var(--fs-label)] text-white/70 transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:border-[color:var(--edge-strong)] hover:text-white"
+              className="cursor-pointer rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] px-3 py-1.5 text-[length:var(--fs-label)] text-[var(--ink-muted)] transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:border-[color:var(--edge-strong)] hover:text-white"
             >
               Configurações avançadas
             </button>

@@ -47,18 +47,18 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
       style={{
         cornerShape: "squircle",
       } as React.CSSProperties}
-      className={`group relative flex items-center gap-2.5 px-3 py-2 rounded-[18px] select-none cursor-pointer transition-colors duration-200 shrink-0 min-w-[130px] max-w-[190px] h-[52px] outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
+      className={`group relative flex items-center gap-2.5 px-3 py-2 rounded-[var(--corner-md)] select-none cursor-pointer transition-colors duration-200 shrink-0 min-w-[130px] max-w-[190px] h-[52px] outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
         isFocused
           ? "bg-white/[0.12] text-white border border-white/40 shadow-[0_4px_16px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)]"
           : isPresenting
-          ? "bg-[#0F0F0F]/90 text-white border border-sky-400/50 shadow-[0_2px_12px_rgba(56,189,248,0.18),inset_0_1px_0_rgba(255,255,255,0.08)]"
+          ? "bg-[var(--tone-1)]/90 text-white border border-sky-400/50 shadow-[0_2px_12px_rgba(56,189,248,0.18),inset_0_1px_0_rgba(255,255,255,0.08)]"
           : isSpeaking
-          ? "bg-[#151515] text-white border border-white/20 shadow-[0_2px_12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] -translate-y-0.5"
-          : "bg-[#0F0F0F]/80 text-white/85 hover:bg-[#151515]/90 hover:text-white border border-[#161616] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+          ? "bg-[var(--tone-2)] text-white border border-white/20 shadow-[0_2px_12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] -translate-y-0.5"
+          : "bg-[var(--tone-1)]/80 text-[var(--ink)] hover:bg-[var(--tone-2)]/90 hover:text-white border border-[#161616] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
       }`}
     >
       {/* Avatar / Camera Thumbnail */}
-      <div className="relative h-8 w-8 rounded-full overflow-hidden shrink-0 bg-[#141414] border border-[#161616] flex items-center justify-center">
+      <div className="relative h-8 w-8 rounded-full overflow-hidden shrink-0 bg-[var(--tone-2)] border border-[#161616] flex items-center justify-center">
         {feed.cameraStream ? (
           <VideoRenderer
             stream={feed.cameraStream}
@@ -73,7 +73,7 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
             className="h-full w-full object-cover rounded-full"
           />
         ) : (
-          <span className="text-[11px] font-bold text-white/80 font-mono">
+          <span className="text-[length:var(--step-0)] font-bold text-[var(--ink)] font-mono">
             {feed.title.slice(0, 2).toUpperCase()}
           </span>
         )}
@@ -100,7 +100,7 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
         </div>
 
         {/* Status secundário em linha discreta */}
-        <div className="flex items-center gap-1.5 text-[10px] text-white/60">
+        <div className="flex items-center gap-1.5 text-[length:var(--step-0)] text-[var(--ink-muted)]">
           {isPresenting ? (
             <span className="flex items-center gap-1 text-sky-300 font-medium">
               <Monitor className="h-2.5 w-2.5" aria-hidden="true" />
@@ -112,14 +112,14 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
               <span>Surdo</span>
             </span>
           ) : feed.isMuted ? (
-            <span className="flex items-center gap-1 text-white/50">
+            <span className="flex items-center gap-1 text-[var(--ink-muted)]">
               <MicOff className="h-2.5 w-2.5" aria-hidden="true" />
               <span>Mudo</span>
             </span>
           ) : isSpeaking ? (
-            <span className="text-white/80 font-medium">Falando</span>
+            <span className="text-[var(--ink)] font-medium">Falando</span>
           ) : (
-            <span className="text-white/50">Conectado</span>
+            <span className="text-[var(--ink-muted)]">Conectado</span>
           )}
 
           {quality.show && (
@@ -133,7 +133,7 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
           )}
 
           {feed.isCamera && !feed.cameraStream && (
-            <Camera className="h-2.5 w-2.5 text-white/50 shrink-0" aria-hidden="true" />
+            <Camera className="h-2.5 w-2.5 text-[var(--ink-muted)] shrink-0" aria-hidden="true" />
           )}
         </div>
       </div>
@@ -146,7 +146,7 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
           onSelect?.();
         }}
         className={`ml-auto shrink-0 flex h-6 w-6 items-center justify-center rounded-full transition-opacity outline-none focus-visible:ring-1 focus-visible:ring-white/40 ${
-          isFocused ? "opacity-100 text-white" : "opacity-0 group-hover:opacity-100 text-white/40 hover:text-white"
+          isFocused ? "opacity-100 text-white" : "opacity-0 group-hover:opacity-100 text-[var(--ink-faint)] hover:text-white"
         }`}
         title={isFocused ? "Desafixar este participante" : "Fixar este participante"}
         aria-label={isFocused ? "Desafixar este participante" : "Fixar este participante"}

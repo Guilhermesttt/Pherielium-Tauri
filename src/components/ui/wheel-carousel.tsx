@@ -585,7 +585,7 @@ export function WheelCarousel({
                     "transition-all duration-150",
                     selected
                       ? "font-bold text-white tracking-tight scale-[1.03]"
-                      : "font-medium text-white/40 group-hover:text-white/70",
+                      : "font-medium text-[var(--ink-faint)] group-hover:text-[var(--ink-muted)]",
                   )}
                 >
                   {item.label}
@@ -596,7 +596,7 @@ export function WheelCarousel({
                       "text-xs px-2.5 py-0.5 rounded-full font-normal transition-colors duration-150",
                       selected
                         ? "bg-white/15 text-white shadow-xs"
-                        : "bg-white/5 text-white/40 group-hover:text-white/60",
+                        : "bg-white/5 text-[var(--ink-faint)] group-hover:text-[var(--ink-muted)]",
                     )}
                   >
                     {item.count}

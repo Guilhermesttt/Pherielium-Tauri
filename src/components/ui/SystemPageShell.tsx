@@ -39,7 +39,7 @@ export const SystemPageShell: React.FC<SystemPageShellProps> = React.memo(
           <div className="mx-auto mb-8 w-full max-w-5xl">
             {eyebrow && (
               <div
-                className="inline-flex items-center gap-2 mb-4 rounded-xl border border-white/[0.08] text-[11px] font-mono font-semibold tracking-wider text-white/70 uppercase"
+                className="inline-flex items-center gap-2 mb-4 rounded-xl border border-white/[0.08] text-[length:var(--step-0)] font-mono font-semibold tracking-wider text-[var(--ink-muted)] uppercase"
                 style={{
                   padding: "6px 12px",
                   background: "rgba(255,255,255,0.04)",
@@ -47,7 +47,7 @@ export const SystemPageShell: React.FC<SystemPageShellProps> = React.memo(
                   WebkitBackdropFilter: "blur(20px)",
                 }}
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--live)] shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                 <span>{eyebrow}</span>
               </div>
             )}
@@ -58,7 +58,7 @@ export const SystemPageShell: React.FC<SystemPageShellProps> = React.memo(
               {title}
             </h1>
             {description && (
-              <p className="mt-2 max-w-2xl text-sm font-body leading-relaxed text-white/50">
+              <p className="mt-2 max-w-2xl text-sm font-body leading-relaxed text-[var(--ink-muted)]">
                 {description}
               </p>
             )}

@@ -139,8 +139,8 @@ export const GameLaunchIntro: React.FC<GameLaunchIntroProps> = ({
         <h2 className="mb-3 font-display text-3xl font-light uppercase tracking-[0.25em] text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.4)] md:text-4xl">
           {title}
         </h2>
-        <p className="animate-pulse text-[10px] font-bold uppercase tracking-[0.4em] text-white/40">{launchingLabel}</p>
-        <p className="mt-8 text-[10px] uppercase tracking-[0.3em] text-white/25">Clique para pular</p>
+        <p className="animate-pulse text-[length:var(--step-0)] font-bold uppercase tracking-[0.4em] text-[var(--ink-faint)]">{launchingLabel}</p>
+        <p className="mt-8 text-[length:var(--step-0)] uppercase tracking-[0.3em] text-[var(--ink-faint)]">Clique para pular</p>
       </div>
     </motion.div>
   );

@@ -90,7 +90,7 @@ export function ProfileDropdown({
           >
             <div className="flex flex-col items-end pl-2 whitespace-nowrap">
               <div className="flex items-center gap-1.5">
-                <span className="text-[length:var(--fs-label)] leading-tight font-black uppercase tracking-widest text-white/55 group-hover:text-white/75 transition-colors">
+                <span className="text-[length:var(--fs-label)] leading-tight font-black uppercase tracking-widest text-[var(--ink-muted)] group-hover:text-[var(--ink-muted)] transition-colors">
                   {copy.identity}
                 </span>
                 {levelNum != null && (
@@ -107,7 +107,7 @@ export function ProfileDropdown({
               {avatarUrl ? (
                 <img src={avatarUrl} alt={userDisplay} className="h-full w-full object-cover object-center aspect-square" />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-xs font-black text-white/70">
+                <div className="flex h-full w-full items-center justify-center text-xs font-black text-[var(--ink-muted)]">
                   {initials}
                 </div>
               )}
@@ -142,10 +142,10 @@ export function ProfileDropdown({
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex flex-col min-w-0 flex-1">
                         <span className="text-sm font-black text-white truncate">{userDisplay}</span>
-                        {email && <span className="text-xs font-medium text-white/40 truncate">{email}</span>}
+                        {email && <span className="text-xs font-medium text-[var(--ink-faint)] truncate">{email}</span>}
                       </div>
                       {levelNum != null && (
-                        <span className={`shrink-0 rounded-lg px-2 py-0.5 text-[10px] font-black uppercase tracking-wider border ${tierInfo.bgClass} ${tierInfo.borderClass} ${tierInfo.color}`}>
+                        <span className={`shrink-0 rounded-lg px-2 py-0.5 text-[length:var(--step-0)] font-black uppercase tracking-wider border ${tierInfo.bgClass} ${tierInfo.borderClass} ${tierInfo.color}`}>
                           Nv. {levelNum}
                         </span>
                       )}
@@ -153,11 +153,11 @@ export function ProfileDropdown({
 
                     {levelInfo && (
                       <div className="rounded-xl border border-white/8 bg-white/3 p-2.5 space-y-1.5 mt-0.5">
-                        <div className="flex items-center justify-between text-[11px]">
+                        <div className="flex items-center justify-between text-[length:var(--step-0)]">
                           <span className={`font-bold ${tierInfo.color}`}>
                             {tierInfo.name}
                           </span>
-                          <span className="font-mono text-[10px] text-white/60 font-semibold">
+                          <span className="font-mono text-[length:var(--step-0)] text-[var(--ink-muted)] font-semibold">
                             {levelInfo.currentLevelXp} / {levelInfo.xpForNextLevel} XP
                           </span>
                         </div>
@@ -181,7 +181,7 @@ export function ProfileDropdown({
                       glideId="profile"
                       onClick={onOpenProfile}
                       onPointerEnter={() => playSound("hover")}
-                      className="flex cursor-pointer items-center gap-3 rounded-xl p-3 text-xs font-semibold text-white/70 transition-colors hover:bg-white/8 focus:bg-white/10 focus:text-white"
+                      className="flex cursor-pointer items-center gap-3 rounded-xl p-3 text-xs font-semibold text-[var(--ink-muted)] transition-colors hover:bg-white/8 focus:bg-white/10 focus:text-white"
                     >
                       <User className="h-4 w-4" />
                       {copy.profile}
@@ -192,7 +192,7 @@ export function ProfileDropdown({
                       glideId="settings"
                       onClick={onOpenSettings}
                       onPointerEnter={() => playSound("hover")}
-                      className="flex cursor-pointer items-center gap-3 rounded-xl p-3 text-xs font-semibold text-white/70 transition-colors hover:bg-white/8 focus:bg-white/10 focus:text-white"
+                      className="flex cursor-pointer items-center gap-3 rounded-xl p-3 text-xs font-semibold text-[var(--ink-muted)] transition-colors hover:bg-white/8 focus:bg-white/10 focus:text-white"
                     >
                       <Settings className="h-4 w-4" />
                       {copy.settings}

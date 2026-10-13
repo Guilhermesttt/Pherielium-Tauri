@@ -27,6 +27,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useGamepadNavigation } from "../hooks/useGamepadNavigation";
 import { useGamepadButton } from "../context/GamepadContext";
 import InputHints from "./ui/InputHints";
+import { Segmented } from "./ui/refined";
 import PherieliumLogoBronze from "../assets/Pherielium_Logo_Bronze.png";
 import PherieliumLogoSilver from "../assets/Pherielium_Logo_Prata.png";
 import PherieliumLogoGold from "../assets/Pherielium_Logo_Ouro.png";
@@ -58,76 +59,59 @@ const getAchievementPercentsForGame = (
 // 1. SUBCOMPONENTES VISUAIS ALTAMENTE OTIMIZADOS E MEMOIZADOS
 // ============================================================
 
+/**
+ * Metais do Pherielium Refined. A cor do metal só aparece onde informa (o emblema e a barra de progresso);
+ * o texto fica em tinta. Sem brilho nem drop-shadow: a imagem do emblema já carrega o metal.
+ */
 const TIER_VISUAL_STYLES = {
   bronze: {
     trophyImage: PherieliumLogoBronze,
     tierImage: PherieliumTierBronze,
     image: PherieliumTierBronze,
-    glow: "drop-shadow(0 0 4px rgba(205,127,50,0.35))",
-    filter: "contrast(1.02) brightness(0.95)",
-    textColor: "text-[#cd7f32]",
-    borderColor: "border-[#cd7f32]/60",
-    bgActive: "bg-[#cd7f32]/12",
-    ringActive: "ring-1 ring-[#cd7f32]/40 shadow-[0_0_18px_rgba(205,127,50,0.22)]",
+    hex: "#cd7f32",
+    label: "Bronze",
   },
   silver: {
     trophyImage: PherieliumLogoSilver,
     tierImage: PherieliumTierSilver,
     image: PherieliumTierSilver,
-    glow: "drop-shadow(0 0 8px rgba(226,232,240,0.45))",
-    filter: "contrast(1.08) brightness(1.05)",
-    textColor: "text-slate-200",
-    borderColor: "border-slate-300/60",
-    bgActive: "bg-slate-300/12",
-    ringActive: "ring-1 ring-slate-300/40 shadow-[0_0_18px_rgba(226,232,240,0.22)]",
+    hex: "#cbd5e1",
+    label: "Prata",
   },
   gold: {
     trophyImage: PherieliumLogoGold,
     tierImage: PherieliumTierGold,
     image: PherieliumTierGold,
-    glow: "drop-shadow(0 0 14px rgba(251,191,36,0.65)) drop-shadow(0 0 3px rgba(255,255,255,0.4))",
-    filter: "contrast(1.14) brightness(1.12)",
-    textColor: "text-amber-400",
-    borderColor: "border-amber-400/60",
-    bgActive: "bg-amber-400/12",
-    ringActive: "ring-1 ring-amber-400/40 shadow-[0_0_20px_rgba(251,191,36,0.25)]",
+    hex: "#fbbf24",
+    label: "Ouro",
   },
   platinum: {
     trophyImage: PherieliumLogoPlatinum,
     tierImage: PherieliumTierPlatinum,
     image: PherieliumTierPlatinum,
-    glow: "drop-shadow(0 0 18px rgba(56,189,248,0.85)) drop-shadow(0 0 6px rgba(2, 148, 245, 0.95))",
-    filter: "contrast(1.22) brightness(1.2)",
-    textColor: "text-[#38bdf8]",
-    borderColor: "border-[#38bdf8]/60",
-    bgActive: "bg-[#38bdf8]/12",
-    ringActive: "ring-1 ring-[#38bdf8]/40 shadow-[0_0_22px_rgba(56,189,248,0.32)]",
+    hex: "#38bdf8",
+    label: "Platina",
   },
 };
 
 const PSNTrophyIcon = React.memo<{
   type: "platinum" | "gold" | "silver" | "bronze";
   size?: number;
-  glow?: boolean;
+  dimmed?: boolean;
   className?: string;
-}>(({ type, size = 32, glow = false, className = "" }) => {
+}>(({ type, size = 32, dimmed = false, className = "" }) => {
   const config = TIER_VISUAL_STYLES[type] || TIER_VISUAL_STYLES.bronze;
 
   return (
-    <div className={`relative inline-flex items-center justify-center shrink-0 ${className}`}>
-      <img
-        src={config.trophyImage || config.image}
-        alt={type}
-        width={size}
-        height={size}
-        className="object-contain shrink-0 transition-transform duration-200"
-        style={{
-          width: size,
-          height: size,
-          filter: glow ? `${config.glow} ${config.filter}` : config.filter,
-        }}
-      />
-    </div>
+    <img
+      src={config.trophyImage || config.image}
+      alt=""
+      aria-hidden="true"
+      width={size}
+      height={size}
+      className={`object-contain shrink-0 transition-opacity duration-[var(--dur-2)] ${dimmed ? "opacity-40 grayscale" : ""} ${className}`}
+      style={{ width: size, height: size }}
+    />
   );
 });
 
@@ -158,108 +142,56 @@ const PSNTierBadge = React.memo<{
   }, [playSound]);
 
   return (
-    <div className="relative flex flex-col items-center justify-center shrink-0 group select-none">
-      {/* Luz ambiente suave e controlada atrás do emblema 3D com pulso no clique */}
-      <motion.div
-        className="absolute -inset-3 rounded-full blur-2xl pointer-events-none opacity-40 transition-opacity duration-300 group-hover:opacity-80"
-        style={{ background: `radial-gradient(circle, ${tierInfo.gradientFrom} 0%, transparent 70%)` }}
-        animate={isClicked ? { scale: [1, 1.45, 1], opacity: [0.4, 0.95, 0.4] } : {}}
-        transition={{ duration: 0.35, ease: "easeOut" }}
+    <motion.button
+      type="button"
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
+      whileHover={{ scale: 1.04 }}
+      whileTap={{ scale: 0.9 }}
+      animate={isClicked ? { scale: [0.9, 1.06, 1] } : {}}
+      transition={{ type: "spring", bounce: 0.35, duration: 0.42 }}
+      className="relative flex shrink-0 cursor-pointer flex-col items-center rounded-[var(--corner-lg)] p-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
+      aria-label={`Patente ${tierInfo.name}, nível ${level}`}
+    >
+      <img
+        src={config.tierImage}
+        alt=""
+        aria-hidden="true"
+        width={112}
+        height={112}
+        className="pointer-events-none select-none object-contain"
+        style={{ width: 112, height: 112 }}
       />
-
-      {/* Emblema 3D Hero interativo: flutuação contínua suave no hover e contração com retorno elástico no clique */}
-      <motion.div
-        role="button"
-        tabIndex={0}
-        onClick={handleClick}
-        onMouseEnter={handleMouseEnter}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleClick();
-          }
-        }}
-        whileHover={{
-          scale: 1.08,
-          y: [0, -7, 0],
-          transition: {
-            y: {
-              repeat: Infinity,
-              duration: 2.2,
-              ease: "easeInOut",
-            },
-            scale: { type: "spring", stiffness: 400, damping: 20 },
-          },
-        }}
-        whileTap={{
-          scale: 0.86,
-          transition: { type: "spring", stiffness: 700, damping: 14 },
-        }}
-        animate={isClicked ? { scale: [0.86, 1.12, 1] } : {}}
-        transition={{ type: "spring", stiffness: 500, damping: 16 }}
-        className="relative z-10 flex flex-col items-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-2xl p-1.5"
-        title="Patente do jogador (Clique para interagir)"
-      >
-        <img
-          src={config.tierImage}
-          alt={tierInfo.name}
-          width={88}
-          height={88}
-          className="object-contain shrink-0 select-none drop-shadow-2xl pointer-events-none"
-          style={{
-            width: 88,
-            height: 88,
-            filter: `${config.glow} ${config.filter}`,
-          }}
-        />
-
-        {/* Efeito sutil de onda de energia ao clicar */}
-        {isClicked && (
-          <motion.div
-            initial={{ scale: 0.7, opacity: 0.9 }}
-            animate={{ scale: 1.6, opacity: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="absolute inset-0 rounded-full border-2 pointer-events-none"
-            style={{ borderColor: tierInfo.hexColor }}
-          />
-        )}
-
-        {/* Pedestal / Badge discreto de Nível integrado */}
-        <div className="mt-1 flex items-center gap-1 rounded-full bg-black/60 border border-white/10 px-2.5 py-0.5 backdrop-blur-md shadow-lg group-hover:border-white/25 transition-colors">
-          <span className="text-[9px] font-black uppercase tracking-wider text-white/50">LV</span>
-          <span className="text-xs font-black text-white leading-none tracking-tight">{level}</span>
-        </div>
-      </motion.div>
-    </div>
+      <span className="mt-2 inline-flex items-baseline gap-1 rounded-[var(--node)] bg-[var(--tone-3)] px-3 py-1">
+        <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)]">Nível</span>
+        <span className="text-[length:var(--step-1)] font-semibold tabular-nums text-[var(--ink)]">{level}</span>
+      </span>
+    </motion.button>
   );
 });
 
 const RankProgressionRail = React.memo<{
   completionPct: number;
   currentTier: "platinum" | "gold" | "silver" | "bronze";
-}>(({ completionPct, currentTier }) => {
-  const tierColor = useMemo(() => {
-    switch (currentTier) {
-      case "platinum": return "#38bdf8";
-      case "gold": return "#fbbf24";
-      case "silver": return "#cbd5e1";
-      case "bronze":
-      default: return "#cd7f32";
-    }
-  }, [currentTier]);
-
+  label: string;
+}>(({ completionPct, currentTier, label }) => {
+  const value = Math.max(0, Math.min(100, completionPct));
   return (
-    <div className="relative pt-1 pb-0.5">
-      {/* Linha de progresso sutil focada no metal alcançado */}
-      <div className="relative h-1 w-full rounded-full bg-white/[0.06] overflow-hidden">
-        <motion.div
-          className="h-full rounded-full"
-          initial={{ width: 0 }}
-          animate={{ width: `${Math.max(0, Math.min(100, completionPct))}%` }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          style={{ backgroundColor: tierColor }}
-        />
-      </div>
+    <div
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={value}
+      className="relative h-1.5 w-full overflow-hidden rounded-[var(--node)] bg-[var(--tone-3)]"
+    >
+      <motion.div
+        className="h-full rounded-[var(--node)]"
+        initial={{ width: 0 }}
+        animate={{ width: `${value}%` }}
+        transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
+        style={{ backgroundColor: TIER_VISUAL_STYLES[currentTier].hex }}
+      />
     </div>
   );
 });
@@ -302,22 +234,11 @@ interface GameRowProps {
 
 const GameRow = React.memo<GameRowProps>(
   ({ game, trophyCounts, completionPct, onOpen, playSound }) => {
-    const hasPlatinum = trophyCounts.platinum > 0 || completionPct >= 100;
     const hours = useMemo(() => getGamePlayedHours(game), [game]);
 
     const handleClick = useCallback(() => {
       onOpen?.(game);
     }, [onOpen, game]);
-
-    const handleKeyDown = useCallback(
-      (e: React.KeyboardEvent) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpen?.(game);
-        }
-      },
-      [onOpen, game],
-    );
 
     const handleMouseEnter = useCallback(() => {
       playSound?.("hover");
@@ -338,225 +259,74 @@ const GameRow = React.memo<GameRowProps>(
     }, [completionPct]);
 
     const tierStyle = TIER_VISUAL_STYLES[gameTier];
-
-    const tierName = useMemo(() => {
-      switch (gameTier) {
-        case "platinum":
-          return "PLATINA";
-        case "gold":
-          return "OURO";
-        case "silver":
-          return "PRATA";
-        case "bronze":
-        default:
-          return "BRONZE";
-      }
-    }, [gameTier]);
-
-    // Gradiente dinâmico com feixes de laser perimetrais duplos sincronizados (Dual Laser Beam)
-    const borderBeamGradient = useMemo(() => {
-      switch (gameTier) {
-        case "platinum":
-          return "conic-gradient(from 0deg, transparent 0deg, transparent 40deg, rgba(56,189,248,0.2) 65deg, #0284c7 85deg, #38bdf8 100deg, #ffffff 110deg, #38bdf8 120deg, transparent 135deg, transparent 220deg, rgba(56,189,248,0.2) 245deg, #0284c7 265deg, #38bdf8 280deg, #ffffff 290deg, #38bdf8 300deg, transparent 315deg, transparent 360deg)";
-        case "gold":
-          return "conic-gradient(from 0deg, transparent 0deg, transparent 40deg, rgba(251,191,36,0.2) 65deg, #d97706 85deg, #fbbf24 100deg, #ffffff 110deg, #fbbf24 120deg, transparent 135deg, transparent 220deg, rgba(251,191,36,0.2) 245deg, #d97706 265deg, #fbbf24 280deg, #ffffff 290deg, #fbbf24 300deg, transparent 315deg, transparent 360deg)";
-        case "silver":
-          return "conic-gradient(from 0deg, transparent 0deg, transparent 40deg, rgba(203,213,225,0.2) 65deg, #64748b 85deg, #cbd5e1 100deg, #ffffff 110deg, #cbd5e1 120deg, transparent 135deg, transparent 220deg, rgba(226,232,240,0.2) 245deg, #64748b 265deg, #cbd5e1 280deg, #ffffff 290deg, #cbd5e1 300deg, transparent 315deg, transparent 360deg)";
-        case "bronze":
-        default:
-          return "conic-gradient(from 0deg, transparent 0deg, transparent 40deg, rgba(205,127,50,0.2) 65deg, #9a3412 85deg, #cd7f32 100deg, #ffedd5 110deg, #cd7f32 120deg, transparent 135deg, transparent 220deg, rgba(205,127,50,0.2) 245deg, #9a3412 265deg, #cd7f32 280deg, #ffedd5 290deg, #cd7f32 300deg, transparent 315deg, transparent 360deg)";
-      }
-    }, [gameTier]);
+    const cover = game.cardImage || game.image;
+    // 0% não é Bronze conquistado: o emblema fica apagado e o rótulo diz o que é.
+    const notStarted = trophyCounts.completed === 0;
+    const statusLabel = notStarted ? "Não iniciado" : tierStyle.label;
 
     return (
-      <motion.div
-        whileHover={{ y: -3, scale: 1.004 }}
+      <motion.button
+        type="button"
         whileTap={{ scale: 0.99 }}
-        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        tabIndex={0}
+        transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
         onClick={handleClick}
-        onKeyDown={handleKeyDown}
         onMouseEnter={handleMouseEnter}
-        className="group relative flex flex-col gap-3 rounded-2xl p-4 sm:p-5 transition duration-300 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+        aria-label={`${game.title}: ${statusLabel}, ${completionPct}% concluído`}
+        className="group flex w-full cursor-pointer items-center gap-5 rounded-[var(--corner-md)] bg-[var(--tone-1)] p-4 text-left outline-none transition-colors duration-[var(--dur-2)] hover:bg-[var(--tone-2)] focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
       >
-        {/* Glow ambiente externo expansivo e suave no card inteiro */}
-        <div
-          className="absolute -inset-1.5 sm:-inset-2 rounded-3xl blur-2xl opacity-0 group-hover:opacity-75 transition duration-500 pointer-events-none z-0"
-          style={{
-            background:
-              gameTier === "platinum"
-                ? "radial-gradient(ellipse at 80% 50%, rgba(56,189,248,0.38) 0%, rgba(2,132,199,0.12) 55%, transparent 75%)"
-                : gameTier === "gold"
-                  ? "radial-gradient(ellipse at 80% 50%, rgba(251,191,36,0.35) 0%, rgba(217,119,6,0.12) 55%, transparent 75%)"
-                  : gameTier === "silver"
-                    ? "radial-gradient(ellipse at 80% 50%, rgba(226,232,240,0.25) 0%, rgba(100,116,139,0.1) 55%, transparent 75%)"
-                    : "radial-gradient(ellipse at 80% 50%, rgba(205,127,50,0.28) 0%, rgba(154,52,18,0.1) 55%, transparent 75%)",
-          }}
-        />
-
-        {/* Halo neon exterior da borda animada (duplicado com blur de 8px para emitir rastro neon luminoso) */}
-        <div className="absolute -inset-[2.5px] rounded-2xl overflow-hidden pointer-events-none opacity-0 group-hover:opacity-100 blur-[8px] transition-opacity duration-500 z-0">
-          <div
-            className="absolute -inset-[200%] animate-spin"
-            style={{
-              animationDuration: "3.5s",
-              background: borderBeamGradient,
-            }}
-          />
-        </div>
-
-        {/* Borda Animada Luminous Nítida (1.5px) */}
-        <div className="absolute -inset-[1.5px] rounded-2xl overflow-hidden pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0">
-          <div
-            className="absolute -inset-[200%] animate-spin"
-            style={{
-              animationDuration: "3.5s",
-              background: borderBeamGradient,
-            }}
-          />
-        </div>
-
-        {/* Borda estática base sutil em repouso */}
-        <div className="absolute inset-0 rounded-2xl border border-white/[0.08] group-hover:border-transparent transition-colors duration-300 pointer-events-none z-0" />
-
-        {/* Superfície interna do Card (mantém fundo sólido conforme DIRETRIZES DA APPLE, deixando borda de 1.5px visível) */}
-        <div className="absolute inset-[1.5px] rounded-[14.5px] bg-[#0C0D10] group-hover:bg-[#101217] transition-colors duration-300 pointer-events-none z-0 overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-          {/* Efeito Sheen transversal dinâmico com brilho vívido passando no hover */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
-
-          {/* Gradiente sutil no topo do card dando profundidade */}
-          <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
-        </div>
-
-        {/* Highlight lateral sutil na cor da patente (exclusivo para troféus raros: Platina e Ouro) */}
-        {hasPlatinum ? (
-          <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-[#38bdf8]/90 via-[#38bdf8]/40 to-transparent rounded-l-2xl pointer-events-none z-0" />
-        ) : gameTier === "gold" ? (
-          <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-amber-400/80 via-amber-400/30 to-transparent rounded-l-2xl pointer-events-none z-0" />
-        ) : null}
-
-        {/* Linha Superior: Cover + Info no lado esquerdo | Patente 3D Hero no lado direito */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-          {/* LADO ESQUERDO: Mini-Poster + Metadados limpos */}
-          <div className="flex items-center gap-4 min-w-0 flex-1">
-            <div className="relative shrink-0 group/cover">
-              {/* Luz ambiente suave atrás da capa */}
-              <div
-                className="absolute -inset-1 rounded-xl blur-md opacity-25 group-hover/cover:opacity-50 transition-opacity pointer-events-none"
-                style={{
-                  background: hasPlatinum
-                    ? "radial-gradient(circle, rgba(56,189,248,0.45) 0%, transparent 70%)"
-                    : gameTier === "gold"
-                      ? "radial-gradient(circle, rgba(251,191,36,0.35) 0%, transparent 70%)"
-                      : "radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%)",
-                }}
-              />
-              <div className="relative w-14 h-20 sm:w-16 sm:h-[86px] rounded-xl overflow-hidden border border-white/10 bg-neutral-900 shadow-md">
-                {game.cardImage || game.image ? (
-                  <img
-                    src={game.cardImage || game.image}
-                    alt=""
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center bg-neutral-800 text-white/30 text-xs font-bold">
-                    {game.title?.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
-                <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-xl pointer-events-none" />
-              </div>
+        <div className="relative h-[88px] w-16 shrink-0 overflow-hidden rounded-[var(--corner-sm)] bg-[var(--tone-3)]">
+          {cover ? (
+            <img
+              src={cover}
+              alt=""
+              className="h-full w-full object-cover transition-transform duration-[var(--dur-3)] ease-[var(--spring)] group-hover:scale-105"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)]">
+              {game.title?.slice(0, 2).toUpperCase()}
             </div>
+          )}
+        </div>
 
-            <div className="min-w-0 flex-1 space-y-1">
-              <h3
-                className={`truncate text-sm sm:text-base font-bold transition-colors ${
-                  hasPlatinum
-                    ? "text-white group-hover:text-[#7dd3fc]"
-                    : gameTier === "gold"
-                      ? "text-white group-hover:text-amber-200"
-                      : "text-white/90 group-hover:text-white"
-                }`}
-              >
-                {game.title}
-              </h3>
-
-              {/* Metadados elegantes sem ruído */}
-              <div className="flex items-center gap-2 text-xs text-white/45 flex-wrap">
-                <span className="font-semibold text-white/70">{launcherLabel}</span>
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 space-y-1">
+              <h3 className="truncate text-[length:var(--step-2)] font-semibold text-[var(--ink)]">{game.title}</h3>
+              <div className="flex flex-wrap items-center gap-x-2 text-[length:var(--step-0)] text-[var(--ink-muted)]">
+                <span>{launcherLabel}</span>
                 {hours > 0 && (
                   <>
-                    <span className="text-white/20">•</span>
-                    <span className="flex items-center gap-1 font-medium text-white/60">
-                      <Clock className="h-3 w-3 text-white/40" /> {formatPlayedHours(hours)}h
+                    <span aria-hidden="true" className="text-[var(--ink-faint)]">·</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5 text-[var(--ink-faint)]" aria-hidden="true" /> {formatPlayedHours(hours)}h
                     </span>
                   </>
                 )}
-                <span className="text-white/20">•</span>
-                <span className="font-medium text-white/60">
-                  {trophyCounts.completed} de {trophyCounts.total} marcos
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* LADO DIREITO: Único Destaque Heroico — Insígnia Metálica 3D + Status */}
-          <div className="flex items-center justify-between sm:justify-end gap-5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
-            <div className="flex items-center gap-3.5">
-              {/* Emblema 3D com a marca Pherielium nos 4 metais nobres */}
-              <div className="relative flex items-center justify-center shrink-0">
-                <div
-                  className="absolute -inset-3 rounded-full blur-xl pointer-events-none opacity-40 group-hover:opacity-95 group-hover:scale-125 transition duration-500"
-                  style={{
-                    background:
-                      gameTier === "platinum"
-                        ? "radial-gradient(circle, rgba(56,189,248,0.55) 0%, rgba(2,132,199,0.2) 60%, transparent 80%)"
-                        : gameTier === "gold"
-                          ? "radial-gradient(circle, rgba(251,191,36,0.5) 0%, rgba(217,119,6,0.2) 60%, transparent 80%)"
-                          : gameTier === "silver"
-                            ? "radial-gradient(circle, rgba(226,232,240,0.35) 0%, rgba(100,116,139,0.15) 60%, transparent 80%)"
-                            : "radial-gradient(circle, rgba(205,127,50,0.4) 0%, rgba(154,52,18,0.15) 60%, transparent 80%)",
-                  }}
-                />
-                <img
-                  src={tierStyle.trophyImage}
-                  alt={tierName}
-                  width={52}
-                  height={52}
-                  className="object-contain shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-0.5 select-none drop-shadow-lg"
-                  style={{
-                    width: 52,
-                    height: 52,
-                    filter: `${tierStyle.glow} ${tierStyle.filter}`,
-                  }}
-                />
-              </div>
-
-              {/* Status da Patente */}
-              <div className="flex flex-col items-start min-w-[95px]">
-                <span className={`text-[11px] font-bold tracking-wider uppercase ${tierStyle.textColor}`}>
-                  {tierName}
-                </span>
-                <span className={`text-sm font-semibold tracking-tight ${hasPlatinum ? "text-[#38bdf8]" : "text-white/95"}`}>
-                  {completionPct === 100 ? "100%" : `${completionPct}%`}
+                <span aria-hidden="true" className="text-[var(--ink-faint)]">·</span>
+                <span className="tabular-nums">
+                  {trophyCounts.completed} de {trophyCounts.total} conquistas
                 </span>
               </div>
             </div>
 
-            <ChevronRight
-              className={`h-4 w-4 transition-transform duration-200 group-hover:translate-x-1 ${
-                hasPlatinum ? "text-[#38bdf8]" : "text-white/30 group-hover:text-white"
-              }`}
-            />
+            <div className="flex shrink-0 items-center gap-3">
+              <PSNTrophyIcon type={gameTier} size={40} dimmed={notStarted} />
+              <div className="min-w-[72px] text-right">
+                <div className="text-[length:var(--step-2)] font-semibold tabular-nums text-[var(--ink)]">{completionPct}%</div>
+                <div className="text-[length:var(--step-0)] text-[var(--ink-muted)]">{statusLabel}</div>
+              </div>
+              <ChevronRight
+                className="h-4 w-4 text-[var(--ink-faint)] transition-transform duration-[var(--dur-2)] ease-[var(--spring)] group-hover:translate-x-1 group-hover:text-[var(--ink)]"
+                aria-hidden="true"
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Linha Inferior: Trilha Visual de Progressão Limpa */}
-        <div className="relative z-10 pt-1">
-          <RankProgressionRail completionPct={completionPct} currentTier={gameTier} />
+          <RankProgressionRail completionPct={completionPct} currentTier={gameTier} label={`Progresso em ${game.title}`} />
         </div>
-      </motion.div>
+      </motion.button>
     );
   },
   (prev, next) => {
@@ -790,102 +560,90 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
     playSound?.("select");
   });
 
+  const tierStyle = TIER_VISUAL_STYLES[levelInfo.tier] || TIER_VISUAL_STYLES.bronze;
+  const selectedSortLabel = sortOptions.find((opt) => opt.value === sortBy)?.label || "Maior %";
+  const selectedPlatformLabel = platformOptions.find((opt) => opt.value === filterByPlat)?.label || "Todas as Plataformas";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-      className="relative flex min-h-0 flex-1 flex-col text-white font-sans"
+      className="relative flex min-h-0 flex-1 flex-col text-[var(--ink)] font-sans"
       style={{ contain: "layout paint", transform: "translate3d(0,0,0)", willChange: "transform" }}
     >
       <div
         ref={scrollRef}
         data-system-page="trophies"
-        className="min-h-0 flex-1 overflow-y-auto thin-scrollbar px-10 pb-8 pt-8"
+        className="min-h-0 flex-1 overflow-y-auto thin-scrollbar px-10 pb-10 pt-10"
       >
-      <div className="mx-auto mb-8 w-full max-w-5xl">
-        <h1
-          className="font-display font-black bg-gradient-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent leading-[1.08]"
-          style={{ fontSize: "clamp(28px, 4vw, 40px)", letterSpacing: "-0.02em" }}
-        >
+      <div className="mx-auto mb-10 w-full max-w-5xl">
+        <h1 className="font-display text-[length:var(--step-5)] font-semibold leading-[1.02] tracking-[-0.04em] text-[var(--ink)]">
           Troféus
         </h1>
-        <p className="mt-2 max-w-2xl text-sm font-body leading-relaxed text-white/50">
-          Gerencie suas conquistas e monitore o seu progresso rumo à platina.
+        <p className="mt-3 max-w-2xl text-[length:var(--step-1)] leading-relaxed text-[var(--ink-muted)]">
+          Suas conquistas de todas as lojas num lugar só, e o caminho até a próxima patente.
         </p>
       </div>
 
-      <div className="mx-auto max-w-5xl space-y-7">
-        {/* Banner PlayStation PSN Level */}
-        <section className="relative rounded-3xl border border-white/[0.08] p-6 sm:p-8 shadow-[0_32px_64px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] overflow-hidden bg-[#0B0B0B]">
-
-          <div
-            className="absolute -top-32 -left-32 w-80 h-80 rounded-full blur-[100px] opacity-25 pointer-events-none transition duration-700"
-            style={{ background: tierInfo.gradientFrom }}
-          />
-
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
-            {/* Patente & Progresso (Unidade Hero) */}
-            <div className="flex items-center gap-6 min-w-0">
+      <div className="mx-auto max-w-5xl space-y-8">
+        {/* Patente do jogador: o emblema é o único destaque; um degrau de tom separa, sem borda nem brilho */}
+        <section aria-label="Sua patente" className="rounded-[var(--corner-lg)] bg-[var(--tone-1)] p-8">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-6">
               <PSNTierBadge
                 tier={levelInfo.tier}
                 subTier={levelInfo.subTier}
                 level={levelInfo.level}
                 playSound={playSound}
               />
-              <div className="min-w-0 flex-1 space-y-2.5">
-                <div className="flex items-center gap-3">
-                  <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${tierInfo.color}`}>
+              <div className="min-w-0 flex-1 space-y-4">
+                <div>
+                  <p className="text-[length:var(--step-0)] text-[var(--ink-muted)]">Patente atual</p>
+                  <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                     {levelInfo.tierName}
                   </h2>
-                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-neutral-300">
-                    PATENTE ATUAL
-                  </span>
                 </div>
 
-                <div className="space-y-1.5 max-w-sm">
-                  <div className="flex items-center justify-between text-xs font-semibold">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-white font-bold">{levelInfo.currentLevelXp} / {levelInfo.xpForNextLevel} XP</span>
-                      {levelInfo.level < 999 && (
-                        <>
-                          <span className="text-neutral-500 font-normal">•</span>
-                          <span className="text-amber-400 font-bold truncate">
-                            Faltam {nextGoal}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <span className={`font-black ml-2 shrink-0 ${tierInfo.color}`}>{levelInfo.progress}%</span>
+                <div className="max-w-sm space-y-2">
+                  <div className="flex items-baseline justify-between gap-3 text-[length:var(--step-0)]">
+                    <span className="font-semibold tabular-nums text-[var(--ink)]">
+                      {levelInfo.currentLevelXp} / {levelInfo.xpForNextLevel} XP
+                    </span>
+                    <span className="font-semibold tabular-nums text-[var(--ink)]">{levelInfo.progress}%</span>
                   </div>
-
-                  <div className="relative h-2 w-full rounded-full bg-neutral-800/80 overflow-hidden border border-white/5 shadow-inner">
+                  <div
+                    role="progressbar"
+                    aria-label="Progresso até o próximo nível"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={levelInfo.progress}
+                    className="relative h-2 w-full overflow-hidden rounded-[var(--node)] bg-[var(--tone-3)]"
+                  >
                     <motion.div
-                      className="absolute inset-y-0 left-0 rounded-full"
-                      style={{
-                        background: `linear-gradient(90deg, ${tierInfo.gradientFrom}, ${tierInfo.gradientTo})`,
-                        boxShadow: `0 0 10px ${tierInfo.gradientFrom}`,
-                      }}
+                      className="absolute inset-y-0 left-0 rounded-[var(--node)]"
+                      style={{ backgroundColor: tierStyle.hex }}
                       initial={{ width: 0 }}
                       animate={{ width: `${levelInfo.progress}%` }}
-                      transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                      transition={{ duration: 1, ease: [0.32, 0.72, 0, 1] }}
                     />
                   </div>
+                  {levelInfo.level < 999 && (
+                    <p className="text-[length:var(--step-0)] text-[var(--ink-muted)]">Faltam {nextGoal}</p>
+                  )}
                 </div>
 
-                {/* Total Acumulado e contexto de XP */}
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2 text-[11px] font-medium text-white/50 flex-wrap">
-                    <span>XP do Hub:</span>
-                    <span className="text-white/90 font-semibold flex items-center gap-1">
-                      <Zap className="h-3 w-3 text-amber-400" />
-                      {levelInfo.xp.toLocaleString()} XP
+                <div className="space-y-1">
+                  <p className="flex flex-wrap items-center gap-x-2 text-[length:var(--step-0)] text-[var(--ink-muted)]">
+                    <span className="inline-flex items-center gap-1 font-semibold text-[var(--ink)]">
+                      <Zap className="h-3.5 w-3.5" aria-hidden="true" />
+                      {levelInfo.xp.toLocaleString()} XP do hub
                     </span>
-                    <span className="text-white/20">•</span>
-                    <span className="text-white/60">{totalStats.unlocked} troféus sincronizados</span>
-                  </div>
+                    <span aria-hidden="true" className="text-[var(--ink-faint)]">·</span>
+                    <span>{totalStats.unlocked} troféus sincronizados</span>
+                  </p>
                   {levelInfo.xp === 0 && totalStats.unlocked > 0 && (
-                    <p className="text-[10px] text-white/40 leading-snug">
+                    <p className="text-[length:var(--step-0)] leading-snug text-[var(--ink-faint)]">
                       Troféus sincronizados alimentam sua vitrine. Ganhe XP em sessões pelo hub e completando missões.
                     </p>
                   )}
@@ -893,109 +651,87 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
               </div>
             </div>
 
-            {/* Progression Ladder (Escalada de Troféus por Patente) */}
-            <div className="flex flex-col gap-2.5 rounded-3xl border border-white/[0.08] p-3.5 sm:p-4 shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] bg-[#0B0B0B]">
-
-              <div className="flex items-center justify-between px-1 text-[10px] font-extrabold uppercase tracking-widest text-neutral-400">
-                <span>Escalada de Troféus</span>
-                <span className="text-neutral-500 font-medium">Total: {totalStats.unlocked} troféus</span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {/* Escalada: quantos troféus de cada metal, e quanto XP cada um vale */}
+            <div className="shrink-0">
+              <p className="mb-3 text-[length:var(--step-0)] text-[var(--ink-muted)]">
+                Escalada de troféus · {totalStats.unlocked} no total
+              </p>
+              <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {[
-                  { type: "bronze" as const, label: "Bronze", xp: 15, count: totalStats.bronze },
-                  { type: "silver" as const, label: "Prata", xp: 30, count: totalStats.silver },
-                  { type: "gold" as const, label: "Ouro", xp: 90, count: totalStats.gold },
-                  { type: "platinum" as const, label: "Platina", xp: 300, count: totalStats.platinum },
+                  { type: "bronze" as const, xp: 15, count: totalStats.bronze },
+                  { type: "silver" as const, xp: 30, count: totalStats.silver },
+                  { type: "gold" as const, xp: 90, count: totalStats.gold },
+                  { type: "platinum" as const, xp: 300, count: totalStats.platinum },
                 ].map((item) => {
                   const isCurrentTier = levelInfo.tier === item.type;
                   const style = TIER_VISUAL_STYLES[item.type];
-
                   return (
-                    <div
+                    <li
                       key={item.type}
-                      className={`relative flex flex-col items-center justify-center p-3 rounded-xl transition group min-w-[78px] ${isCurrentTier
-                        ? `${style.borderColor} ${style.bgActive} ${style.ringActive}`
-                        : "border border-white/5 bg-white/[0.02] opacity-75 hover:opacity-100 hover:border-white/15"
-                        }`}
+                      aria-current={isCurrentTier ? "true" : undefined}
+                      className={`flex min-w-[96px] flex-col items-center rounded-[var(--corner-md)] px-3 py-4 ${
+                        isCurrentTier ? "bg-[var(--tone-3)]" : "bg-[var(--tone-2)]"
+                      }`}
                     >
-                      {isCurrentTier && (
-                        <span className="absolute -top-2 rounded-full bg-amber-400 text-black px-1.5 py-0.2 text-[8px] font-black uppercase tracking-wider shadow-sm">
-                          Atual
-                        </span>
-                      )}
-
-                      <PSNTrophyIcon type={item.type} size={36} glow={isCurrentTier || item.count > 0} />
-                      <div className="mt-1.5 flex items-baseline gap-1">
-                        <span className={`text-lg font-black tabular-nums ${style.textColor}`}>
-                          {item.count}
-                        </span>
-                        <span className="text-[10px] font-semibold text-neutral-400">troféus</span>
-                      </div>
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-white/40 group-hover:text-white/70 transition-colors text-center">
-                        {item.label} ({item.xp})
+                      <PSNTrophyIcon type={item.type} size={40} dimmed={item.count === 0} />
+                      <span className="mt-2 text-[length:var(--step-3)] font-semibold tabular-nums leading-none text-[var(--ink)]">
+                        {item.count}
                       </span>
-                    </div>
+                      <span className="mt-1 text-[length:var(--step-0)] text-[var(--ink-muted)]">
+                        {style.label} · {item.xp} XP
+                      </span>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             </div>
           </div>
         </section>
 
-        {/* Controles de Filtros e Busca */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-1">
-          <div className="flex items-center gap-1.5 p-1 rounded-3xl border border-white/[0.08] overflow-x-auto shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] bg-[#0B0B0B]">
+        {/* Filtros e busca */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <Segmented
+            label="Filtrar troféus"
+            options={filterTabs.map((f) => ({ value: f.id, label: `${f.label} ${f.count}` }))}
+            value={filter}
+            onChange={handleFilterSelect}
+            className="max-w-full overflow-x-auto [scrollbar-width:none]"
+          />
 
-            {filterTabs.map((f) => (
-              <motion.button
-                key={f.id}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleFilterSelect(f.id)}
-                onMouseEnter={() => playSound?.("hover")}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer whitespace-nowrap focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${filter === f.id
-                  ? "bg-white text-black shadow-md"
-                  : "bg-transparent text-neutral-400 hover:text-white hover:bg-white/5"
-                  }`}
-              >
-                <span>{f.label}</span>
-                <span
-                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ${filter === f.id ? "bg-black/10 text-black" : "bg-white/10 text-white/60"
-                    }`}
-                >
-                  {f.count}
-                </span>
-              </motion.button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Filtro de Ordenação */}
+          <div className="flex items-center gap-2">
+            {/* Ordenação */}
             <div className="relative" ref={sortRef}>
               <button
+                type="button"
                 onClick={() => setIsSortOpen((prev) => !prev)}
                 onMouseEnter={() => playSound?.("hover")}
-                className="flex items-center gap-2 rounded-2xl border border-white/10 bg-neutral-900/60 px-3.5 py-2 text-xs font-bold text-neutral-300 transition hover:border-white/20 hover:text-white cursor-pointer"
-                title="Ordenar jogos"
+                aria-haspopup="listbox"
+                aria-expanded={isSortOpen}
+                aria-label={`Ordenar: ${selectedSortLabel}`}
+                className="flex h-11 cursor-pointer items-center gap-2 rounded-[var(--node)] bg-[var(--tone-2)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--tone-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
               >
-                <ArrowUpDown className="h-3.5 w-3.5 text-neutral-400" />
-                <span>{sortOptions.find((opt) => opt.value === sortBy)?.label || "Maior %"}</span>
+                <ArrowUpDown className="h-4 w-4 text-[var(--ink-muted)]" aria-hidden="true" />
+                <span>{selectedSortLabel}</span>
               </button>
 
               {isSortOpen && (
-                <div className="absolute right-0 top-full mt-2 w-44 rounded-2xl border border-white/10 bg-[#0B0B0B] shadow-xl overflow-hidden z-20">
+                <div role="listbox" aria-label="Ordenar jogos" className="absolute right-0 top-full z-20 mt-2 w-48 overflow-hidden rounded-[var(--corner-md)] bg-[var(--tone-3)] p-1.5">
                   {sortOptions.map((opt) => (
                     <button
                       key={opt.value}
+                      type="button"
+                      role="option"
+                      aria-selected={sortBy === opt.value}
                       onClick={() => {
                         playSound?.("select");
                         setSortBy(opt.value);
                         setIsSortOpen(false);
                       }}
-                      className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors cursor-pointer ${sortBy === opt.value
-                        ? "bg-white/10 text-white font-bold"
-                        : "text-neutral-400 hover:bg-white/5 hover:text-white"
-                        }`}
+                      className={`flex h-10 w-full cursor-pointer items-center rounded-[var(--node)] px-3.5 text-left text-[length:var(--step-0)] transition-colors ${
+                        sortBy === opt.value
+                          ? "bg-[var(--tone-4)] font-semibold text-[var(--ink)]"
+                          : "text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
+                      }`}
                     >
                       {opt.label}
                     </button>
@@ -1004,37 +740,43 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
               )}
             </div>
 
-            {/* Filtro por Plataforma */}
+            {/* Plataforma */}
             <div className="relative" ref={platFilterRef}>
               <button
+                type="button"
                 onClick={() => setIsPlatformFilterOpen((prev) => !prev)}
                 onMouseEnter={() => playSound?.("hover")}
-                className={`flex items-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-bold transition cursor-pointer ${filterByPlat !== "all"
-                  ? "border-[#38bdf8]/40 bg-[#38bdf8]/10 text-[#38bdf8]"
-                  : "border-white/10 bg-neutral-900/60 text-neutral-300 hover:border-white/20 hover:text-white"
-                  }`}
-                title="Filtrar por plataforma"
+                aria-haspopup="listbox"
+                aria-expanded={isPlataformFilterOpen}
+                aria-label={`Plataforma: ${selectedPlatformLabel}`}
+                className={`flex h-11 cursor-pointer items-center gap-2 rounded-[var(--node)] px-4 text-[length:var(--step-0)] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] ${
+                  filterByPlat !== "all"
+                    ? "bg-[var(--ink)] text-[var(--tone-0)]"
+                    : "bg-[var(--tone-2)] text-[var(--ink)] hover:bg-[var(--tone-3)]"
+                }`}
               >
-                <Filter className="h-3.5 w-3.5" />
-                {filterByPlat !== "all" && (
-                  <span className="rounded-full bg-[#38bdf8]/20 px-1.5 text-[10px]">1</span>
-                )}
+                <Filter className="h-4 w-4" aria-hidden="true" />
+                <span>{filterByPlat === "all" ? "Plataforma" : selectedPlatformLabel}</span>
               </button>
 
               {isPlataformFilterOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl border border-white/10 bg-[#0B0B0B] shadow-xl overflow-hidden z-20">
+                <div role="listbox" aria-label="Filtrar por plataforma" className="absolute right-0 top-full z-20 mt-2 w-52 overflow-hidden rounded-[var(--corner-md)] bg-[var(--tone-3)] p-1.5">
                   {platformOptions.map((opt) => (
                     <button
                       key={opt.value}
+                      type="button"
+                      role="option"
+                      aria-selected={filterByPlat === opt.value}
                       onClick={() => {
                         playSound?.("select");
                         setFilterByPlat(opt.value);
                         setIsPlatformFilterOpen(false);
                       }}
-                      className={`w-full text-left px-4 py-2.5 text-xs font-semibold transition-colors cursor-pointer ${filterByPlat === opt.value
-                        ? "bg-white/10 text-white font-bold"
-                        : "text-neutral-400 hover:bg-white/5 hover:text-white"
-                        }`}
+                      className={`flex h-10 w-full cursor-pointer items-center rounded-[var(--node)] px-3.5 text-left text-[length:var(--step-0)] transition-colors ${
+                        filterByPlat === opt.value
+                          ? "bg-[var(--tone-4)] font-semibold text-[var(--ink)]"
+                          : "text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
+                      }`}
                     >
                       {opt.label}
                     </button>
@@ -1042,42 +784,46 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                 </div>
               )}
             </div>
-            <div className="relative group">
-              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500 transition-colors group-focus-within:text-white" />
+
+            {/* Busca */}
+            <div className="group relative">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-faint)] transition-colors group-focus-within:text-[var(--ink)]" aria-hidden="true" />
               <input
-                type="text"
+                type="search"
                 value={searchTerm}
                 onChange={handleSearchChange}
-                placeholder="Buscar jogos..."
-                className="h-10 w-56 sm:w-64 rounded-2xl border border-white/10 bg-neutral-900/60 pl-10 pr-8 text-xs font-medium text-white placeholder:text-neutral-500 outline-none transition focus:border-white/30"
+                placeholder="Buscar jogos"
+                aria-label="Buscar jogos"
+                className="h-11 w-56 rounded-[var(--node)] bg-[var(--tone-2)] pl-11 pr-9 text-[length:var(--step-0)] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--ink-faint)] focus:bg-[var(--tone-3)] focus-visible:ring-2 focus-visible:ring-[var(--ink)] sm:w-64 [&::-webkit-search-cancel-button]:hidden"
               />
               {searchTerm && (
                 <button
+                  type="button"
                   onClick={handleClearSearch}
                   aria-label="Limpar busca"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white p-0.5 transition-colors cursor-pointer"
+                  className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[var(--node)] text-[var(--ink-faint)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               )}
             </div>
           </div>
         </div>
 
-        {/* Lista de Jogos Memoizada */}
-        <div className="space-y-3">
+        {/* Lista de jogos */}
+        <div className="space-y-2">
           {renderedGameRows}
 
           {filteredGames.length === 0 && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex flex-col items-center justify-center py-24 text-center rounded-3xl border border-white/5 bg-black/20"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center justify-center rounded-[var(--corner-lg)] bg-[var(--tone-1)] px-6 py-20 text-center"
             >
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5 mb-4">
-                <Trophy className="h-8 w-8 text-neutral-500" strokeWidth={1.5} />
+              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-[var(--node)] bg-[var(--tone-3)]">
+                <Trophy className="h-7 w-7 text-[var(--ink-muted)]" strokeWidth={1.5} aria-hidden="true" />
               </div>
-              <h3 className="text-base font-bold text-neutral-300">
+              <h3 className="text-[length:var(--step-2)] font-semibold text-[var(--ink)]">
                 {filter === "platinum"
                   ? "Nenhum jogo platinado ainda"
                   : filter === "in-progress"
@@ -1086,7 +832,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                       ? "Você já iniciou todos os seus jogos!"
                       : "Nenhum jogo encontrado"}
               </h3>
-              <p className="text-xs text-neutral-500 mt-1 max-w-sm">
+              <p className="mt-2 max-w-sm text-[length:var(--step-0)] text-[var(--ink-muted)]">
                 {filter === "platinum"
                   ? "Complete 100% das conquistas de um jogo para conquistar seu troféu de Platina!"
                   : "Tente alterar os filtros de busca para ver seus outros jogos e troféus."}
@@ -1097,7 +843,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
       </div>
       </div>
       {/* Legenda fixa no rodapé da página (fora da rolagem), como nas demais. */}
-      <div className="flex shrink-0 justify-end border-t border-[color:var(--edge-subtle)] px-10 py-2.5">
+      <div className="flex shrink-0 justify-end px-10 py-3">
         <InputHints
           hints={[
             { button: "L1_R1", label: "Filtrar" },

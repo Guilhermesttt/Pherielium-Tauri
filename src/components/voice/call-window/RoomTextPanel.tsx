@@ -82,14 +82,14 @@ export const RoomTextPanel: React.FC<{
   };
 
   return (
-    <aside className="flex h-full w-72 shrink-0 flex-col border-l border-[#161616] bg-[#0c0c0c]">
+    <aside className="flex h-full w-72 shrink-0 flex-col border-l border-[#161616] bg-[var(--tone-1)]">
       <div className="border-b border-[#161616] px-4 py-3 text-xs font-semibold text-white">Texto da sala</div>
       <div className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
-        {error ? <p className="text-[11px] text-amber-300/80">{error}</p> : null}
+        {error ? <p className="text-[length:var(--step-0)] text-amber-300/80">{error}</p> : null}
         {messages.map((message) => (
           <div key={message.id} className={message.mine ? "text-right" : "text-left"}>
-            <p className="text-[10px] text-white/35">{message.senderName}</p>
-            <p className="text-xs text-white/85">{message.deletedAt ? "Mensagem apagada" : message.text}</p>
+            <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">{message.senderName}</p>
+            <p className="text-xs text-[var(--ink)]">{message.deletedAt ? "Mensagem apagada" : message.text}</p>
           </div>
         ))}
       </div>

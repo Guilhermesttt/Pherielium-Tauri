@@ -5,9 +5,10 @@ import "./lib/tauriAPI";
 
 import { StrictMode, Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
-import "@fontsource/archivo-black/400.css";
-import "@fontsource/stix-two-text/400.css";
-import "@fontsource/stix-two-text/700.css";
+// Fontes embutidas (antes vinham do Google Fonts a cada abertura; Archivo Black e STIX não eram usadas por nenhuma tela).
+import "@fontsource-variable/inter/opsz.css";
+import "@fontsource-variable/sora";
+import "@fontsource-variable/unbounded";
 import "./index.css";
 import { applyUiStyle, readUiStyle } from "./lib/uiStyle";
 
@@ -26,12 +27,17 @@ const Login = lazy(() => import("./pages/Login"));
 const DesktopAuth = lazy(() => import("./pages/DesktopAuth"));
 const AppRoot = lazy(() => import("./App"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+// Laboratório de design: só em desenvolvimento (não entra no instalador).
+const DesignLab = import.meta.env.DEV ? lazy(() => import("./pages/DesignLab")) : null;
+const DesignLabSettings = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabSettings")) : null;
+const DesignLabTrophies = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabTrophies")) : null;
+const DesignLabMods = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabMods")) : null;
 
 // In Tauri, we are always in desktop mode
 const isDesktopRuntime = true;
 
 const routeFallback = (
-  <div className="flex min-h-screen items-center justify-center bg-[#030405] text-white">
+  <div className="flex min-h-screen items-center justify-center bg-[var(--tone-0)] text-white">
     <LoadingState label="Iniciando Pherielium" variant="working" />
   </div>
 );
@@ -94,6 +100,42 @@ const desktopRoutes = [
           </Suspense>
         ),
       },
+      ...(DesignLab && DesignLabSettings && DesignLabTrophies && DesignLabMods
+        ? [
+            {
+              path: "design-lab",
+              element: (
+                <Suspense fallback={routeFallback}>
+                  <DesignLab />
+                </Suspense>
+              ),
+            },
+            {
+              path: "design-lab/settings",
+              element: (
+                <Suspense fallback={routeFallback}>
+                  <DesignLabSettings />
+                </Suspense>
+              ),
+            },
+            {
+              path: "design-lab/trophies",
+              element: (
+                <Suspense fallback={routeFallback}>
+                  <DesignLabTrophies />
+                </Suspense>
+              ),
+            },
+            {
+              path: "design-lab/mods",
+              element: (
+                <Suspense fallback={routeFallback}>
+                  <DesignLabMods />
+                </Suspense>
+              ),
+            },
+          ]
+        : []),
       {
         path: "*",
         element: <Navigate to="/login" replace />,

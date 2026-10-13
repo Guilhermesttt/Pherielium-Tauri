@@ -323,7 +323,7 @@ const TitleReveal = React.memo(function TitleReveal({
             : { opacity: 0, letterSpacing: "0px", filter: "blur(15px)", y: 15 }
       }
       className="relative flex flex-col items-center select-none pointer-events-none mt-2"
-      style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+      style={{ fontFamily: "var(--font-display)" }}
     >
       <span
         className="font-bold text-3xl sm:text-4xl md:text-5xl uppercase tracking-[inherit]"
@@ -340,7 +340,7 @@ const TitleReveal = React.memo(function TitleReveal({
         initial={{ opacity: 0 }}
         animate={isComplete && !isExiting ? { opacity: 1 } : { opacity: 0 }}
         transition={{ duration: 1.2, delay: 0.3 }}
-        className="mt-3 text-[10px] sm:text-[11px] font-mono tracking-[0.38em] text-white/50 uppercase"
+        className="mt-3 text-[length:var(--step-0)] sm:text-[length:var(--step-0)] font-mono tracking-[0.38em] text-[var(--ink-muted)] uppercase"
       >
         UNIVERSAL GAME HUB · DESKTOP RUNTIME
       </motion.span>
@@ -370,12 +370,12 @@ const SkipHint = React.memo(function SkipHint({
           <button
             type="button"
             onClick={onSkip}
-            className="group flex items-center gap-2.5 px-4 py-2 rounded-[10px] border border-white/20 bg-white/4 hover:bg-white/10 hover:border-white/40 transition-all duration-200 cursor-pointer backdrop-blur-md active:scale-95"
+            className="group flex items-center gap-2.5 px-4 py-2 rounded-[var(--corner-sm)] border border-white/20 bg-white/4 hover:bg-white/10 hover:border-white/40 transition-all duration-200 cursor-pointer backdrop-blur-md active:scale-95"
           >
-            <span className="text-[11px] font-mono tracking-[0.16em] uppercase text-white/70 group-hover:text-white transition-colors">
+            <span className="text-[length:var(--step-0)] font-mono tracking-[0.16em] uppercase text-[var(--ink-muted)] group-hover:text-white transition-colors">
               Pular Introdução
             </span>
-            <span className="text-xs text-white/50 group-hover:text-white transition-transform group-hover:translate-x-0.5">
+            <span className="text-xs text-[var(--ink-muted)] group-hover:text-white transition-transform group-hover:translate-x-0.5">
               →
             </span>
           </button>

@@ -40,7 +40,7 @@ export interface InputHintProps {
 }
 
 const KeyboardHint: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <kbd className="min-w-6 rounded-md border border-white/20 px-1.5 py-0.5 text-center font-sans text-[10px] font-bold">
+  <kbd className="min-w-7 rounded-[var(--node)] bg-[var(--tone-3)] px-2 py-0.5 text-center font-sans text-[length:var(--step-0)] font-semibold text-[var(--ink)]">
     {children}
   </kbd>
 );
@@ -97,12 +97,12 @@ const getPCHint = (button: string) => {
     case "SHARE":
       return <UserPlus className="h-3.5 w-3.5" />;
     case "DPAD":
-      return <span className="text-[12px] font-bold">{"\u2190 \u2192"}</span>;
+      return <span className="text-[length:var(--step-0)] font-bold">{"\u2190 \u2192"}</span>;
     case "SCROLL":
       return (
         <span className="flex items-center gap-1">
           <Mouse className="h-3.5 w-3.5" />
-          <span className="text-[12px] font-bold">{"\u2195"}</span>
+          <span className="text-[length:var(--step-0)] font-bold">{"\u2195"}</span>
         </span>
       );
     case "CONTEXT":
@@ -239,13 +239,11 @@ const InputHints: React.FC<InputHintProps> = ({ hints }) => {
         >
           {hints.map((hint, idx) => (
             <div key={`${hint.button}-${idx}`} className="flex items-center gap-2">
-              <span style={{ color: "rgba(255,255,255,0.4)" }} className="flex items-center">
+              <span className="flex items-center text-[var(--ink-muted)]">
                 {renderHint(hint.button)}
               </span>
-              <span
-                className="text-[9px] font-black uppercase tracking-[0.2em]"
-                style={{ color: "rgba(255,255,255,0.18)" }}
-              >
+              {/* 13px em tinta secundária: a legenda é lida, não é enfeite (antes 9px a 18% de opacidade). */}
+              <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)]">
                 {hint.label}
               </span>
             </div>

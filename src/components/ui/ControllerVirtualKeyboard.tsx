@@ -50,20 +50,20 @@ const ControllerVirtualKeyboard: React.FC = () => {
       zIndexClassName="z-[300]"
       containerClassName="items-end justify-center p-2 md:items-center md:justify-end md:p-3"
       backdropClassName="pointer-events-none bg-transparent backdrop-blur-none"
-      className="rounded-[22px] border border-white/12 bg-[#08080b] p-6 shadow-2xl"
+      className="rounded-[var(--corner-md)] border border-white/12 bg-[var(--tone-1)] p-6 shadow-2xl"
       ariaLabel="Teclado virtual do controle"
       gamepadPriority={200}
     >
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-white/60">Entrada pelo controle</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Entrada pelo controle</p>
           <h2 className="mt-1 text-2xl font-black text-white">Teclado virtual</h2>
         </div>
-        <p className="text-xs font-medium text-white/60">X seleciona · O conclui</p>
+        <p className="text-xs font-medium text-[var(--ink-muted)]">X seleciona · O conclui</p>
       </div>
 
       <div className="mb-5 min-h-14 overflow-hidden rounded-2xl border border-white/10 bg-black/50 px-5 py-4 text-lg font-bold text-white">
-        {target?.type === "password" ? "•".repeat(value.length) : value || <span className="text-white/20">Digite usando o controle...</span>}
+        {target?.type === "password" ? "•".repeat(value.length) : value || <span className="text-[var(--ink-faint)]">Digite usando o controle...</span>}
       </div>
 
       <div className="space-y-2">

@@ -58,17 +58,17 @@ export const GameDetailHeader: React.FC<GameDetailHeaderProps> = React.memo(({
               {game.title}
             </h1>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/[0.06] border border-white/10 text-[10px] font-semibold tracking-wider text-white/80 uppercase shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/[0.06] border border-white/10 text-[length:var(--step-0)] font-semibold tracking-wider text-[var(--ink)] uppercase shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                 {platformLabel}
               </span>
               {localizedCategory && localizedCategory.toUpperCase() !== platformLabel.toUpperCase() && (
-                <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-[10px] font-semibold tracking-wider text-white/50 uppercase shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-[length:var(--step-0)] font-semibold tracking-wider text-[var(--ink-muted)] uppercase shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
                   {localizedCategory}
                 </span>
               )}
               {isRunning && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-semibold tracking-wider text-emerald-400 uppercase">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--tone-3)] text-[length:var(--step-0)] font-semibold text-[var(--ink)]">
+                  <span aria-hidden="true" className="w-2 h-2 rounded-full bg-[var(--live)] motion-safe:animate-pulse" />
                   {copy.running}
                 </span>
               )}
@@ -91,7 +91,7 @@ export const GameDetailHeader: React.FC<GameDetailHeaderProps> = React.memo(({
             playSound("navigate");
           }}
           className="!bg-transparent !p-0 gap-1 sm:gap-2 mb-2"
-          tabClassName="relative px-4 py-2 rounded-full text-[12px] font-semibold tracking-wide uppercase transition-all shrink-0 !h-auto"
+          tabClassName="relative px-4 py-2 rounded-full text-[length:var(--step-0)] font-semibold tracking-wide uppercase transition-all shrink-0 !h-auto"
           tabs={tabs.map(tabKey => {
             const isActive = activeTab === tabKey;
             return {

@@ -90,7 +90,7 @@ export const LiveControllerCard: React.FC<LiveControllerCardProps> = React.memo(
             className={`shrink-0 cursor-pointer rounded-[var(--radius-control)] border px-3 py-1.5 text-[length:var(--fs-label)] font-medium transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] ${
               testMode
                 ? "border-[color:var(--edge-selected)] bg-[color:var(--selection-bg)] text-white"
-                : "border-[color:var(--edge-subtle)] text-white/70 hover:border-[color:var(--edge-strong)] hover:text-white"
+                : "border-[color:var(--edge-subtle)] text-[var(--ink-muted)] hover:border-[color:var(--edge-strong)] hover:text-white"
             }`}
           >
             {testMode ? "Sair do modo teste" : "Modo teste"}
@@ -101,13 +101,13 @@ export const LiveControllerCard: React.FC<LiveControllerCardProps> = React.memo(
           <p
             role="status"
             data-test-mode="on"
-            className="mb-[var(--space-4)] rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] px-3 py-2 text-[length:var(--fs-label)] text-white/70"
+            className="mb-[var(--space-4)] rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] px-3 py-2 text-[length:var(--fs-label)] text-[var(--ink-muted)]"
           >
             A navegação do launcher está pausada: pode apertar tudo. Para sair, aperte Esc ou segure
             Share + Options por 1 segundo.
           </p>
         ) : (
-          <p className="mb-[var(--space-4)] text-[length:var(--fs-label)] text-white/45">
+          <p className="mb-[var(--space-4)] text-[length:var(--fs-label)] text-[var(--ink-faint)]">
             Apertar botões aqui também move o launcher. Ligue o Modo teste para testar sem ele reagir.
           </p>
         )}
@@ -124,7 +124,7 @@ export const LiveControllerCard: React.FC<LiveControllerCardProps> = React.memo(
 
           <div className="min-w-[220px] flex-1 space-y-[var(--space-4)]">
             <div>
-              <p className="text-[length:var(--fs-label)] uppercase tracking-[var(--tracking-label)] text-white/40">
+              <p className="text-[length:var(--fs-label)] uppercase tracking-[var(--tracking-label)] text-[var(--ink-faint)]">
                 Pressionando
               </p>
               <p
@@ -133,14 +133,14 @@ export const LiveControllerCard: React.FC<LiveControllerCardProps> = React.memo(
                 aria-live="polite"
               >
                 {pressedText || (
-                  <span className="font-normal text-white/35">
+                  <span className="font-normal text-[var(--ink-faint)]">
                     {snapshot.lastPressed ? `último: ${snapshot.lastPressed.label}` : "—"}
                   </span>
                 )}
               </p>
             </div>
 
-            <dl className="grid grid-cols-2 gap-x-[var(--space-4)] gap-y-1 text-[length:var(--fs-label)] tabular-nums text-white/60">
+            <dl className="grid grid-cols-2 gap-x-[var(--space-4)] gap-y-1 text-[length:var(--fs-label)] tabular-nums text-[var(--ink-muted)]">
               <dt>Stick esquerdo</dt>
               <dd data-readout="left">
                 {axisText(left.x)}, {axisText(left.y)}
@@ -177,14 +177,14 @@ export const LiveControllerCard: React.FC<LiveControllerCardProps> = React.memo(
                           <span className="block truncate text-[length:var(--fs-caption)] font-medium text-white">
                             {d.info.name}
                           </span>
-                          <span className="block text-[length:var(--fs-label)] text-white/50">
+                          <span className="block text-[length:var(--fs-label)] text-[var(--ink-muted)]">
                             {KIND_LABEL[d.info.kind]}
                             {d.info.vendor && d.info.product ? ` · ${d.info.vendor}:${d.info.product}` : ""}
                             {!d.info.standardMapping ? " · mapeamento não padrão" : ""}
                           </span>
                         </span>
                         {showBattery && (
-                          <span className="shrink-0 text-[length:var(--fs-label)] tabular-nums text-white/70">
+                          <span className="shrink-0 text-[length:var(--fs-label)] tabular-nums text-[var(--ink-muted)]">
                             {gamepad.batteryApproximate ? "≈ " : ""}
                             {gamepad.batteryLevel}%{gamepad.batteryCharging ? " ⚡" : ""}
                           </span>

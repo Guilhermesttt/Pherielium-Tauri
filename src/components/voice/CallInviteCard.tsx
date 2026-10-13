@@ -127,13 +127,13 @@ export const CallInviteCard: React.FC<CallInviteCardProps> = ({
       <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-gradient-to-b from-[#1c1d28]/95 via-[#13141c]/95 to-[#0b0c10] p-4 shadow-xl select-none max-w-sm w-full space-y-3.5">
         {/* Top Header Badge */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-black uppercase text-white tracking-wider">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[length:var(--step-0)] font-black uppercase text-white tracking-wider">
+            <span className="h-2 w-2 rounded-full bg-[var(--live)] animate-pulse" />
             <span>Canal de Voz</span>
           </div>
 
           {invite.isPrivate && (
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-[10px] font-bold text-amber-300">
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-[length:var(--step-0)] font-bold text-amber-300">
               <Lock className="h-3 w-3" />
               <span>Privada</span>
             </div>
@@ -143,19 +143,19 @@ export const CallInviteCard: React.FC<CallInviteCardProps> = ({
         {/* Room Info */}
         <div className="space-y-1">
           <h4 className="text-base font-black text-white tracking-tight flex items-center gap-2">
-            <Radio className="h-4 w-4 text-white/80 shrink-0" />
+            <Radio className="h-4 w-4 text-[var(--ink)] shrink-0" />
             <span className="truncate">{invite.roomName}</span>
           </h4>
 
           {/* Category badge */}
-          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-white/5 border border-white/8 text-[11px] font-bold text-white/70">
+          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-white/5 border border-white/8 text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
             {categoryInfo.icon}
             <span>{categoryInfo.label}</span>
           </div>
         </div>
 
         {/* Caller Info */}
-        <div className="flex items-center gap-2.5 pt-1 border-t border-white/6 text-xs text-white/60">
+        <div className="flex items-center gap-2.5 pt-1 border-t border-white/6 text-xs text-[var(--ink-muted)]">
           <div className="h-6 w-6 rounded-full overflow-hidden border border-white/10 bg-white/10 shrink-0">
             {invite.callerAvatar ? (
               <img
@@ -164,7 +164,7 @@ export const CallInviteCard: React.FC<CallInviteCardProps> = ({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-[9px] font-bold text-white">
+              <div className="flex h-full w-full items-center justify-center text-[length:var(--step-0)] font-bold text-white">
                 {invite.callerName.slice(0, 2).toUpperCase()}
               </div>
             )}
@@ -186,14 +186,14 @@ export const CallInviteCard: React.FC<CallInviteCardProps> = ({
           </span>
         </button>
         {showInvalidNotice && status !== "pending" && (
-          <p className="text-[11px] text-rose-400 font-medium">Convite inválido ou expirado.</p>
+          <p className="text-[length:var(--step-0)] text-rose-400 font-medium">Convite inválido ou expirado.</p>
         )}
       </div>
 
       {/* Password Modal (when room is private) */}
       {isPasswordModalOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
-          <div className="relative w-full max-w-xs rounded-2xl bg-[#161722] border border-white/15 p-5 shadow-2xl space-y-4">
+          <div className="relative w-full max-w-xs rounded-2xl bg-[var(--tone-2)] border border-white/15 p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-white font-bold text-sm">
                 <KeyRound className="h-4 w-4 text-amber-400" />
@@ -202,13 +202,13 @@ export const CallInviteCard: React.FC<CallInviteCardProps> = ({
               <button
                 type="button"
                 onClick={() => setIsPasswordModalOpen(false)}
-                className="text-white/40 hover:text-white"
+                className="text-[var(--ink-faint)] hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <p className="text-xs text-white/60">
+            <p className="text-xs text-[var(--ink-muted)]">
               Esta chamada é privada. Digite a senha para entrar:
             </p>
 
@@ -228,7 +228,7 @@ export const CallInviteCard: React.FC<CallInviteCardProps> = ({
             />
 
             {passwordError && (
-              <p className="text-[11px] text-rose-400 font-medium">{passwordError}</p>
+              <p className="text-[length:var(--step-0)] text-rose-400 font-medium">{passwordError}</p>
             )}
 
             <div className="flex gap-2">

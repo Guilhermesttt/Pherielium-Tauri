@@ -3371,7 +3371,7 @@ const Home: React.FC = () => {
         onWheel={handleGameRailWheel}
       >
         <div className="px-[var(--safe-x)] flex items-center justify-between">
-          <h2 className="text-[length:var(--fs-title)] font-semibold text-white/75 font-display">
+          <h2 className="text-[length:var(--fs-title)] font-semibold text-[var(--ink-muted)] font-display">
             {activeCategory === "ALL"
               ? "Biblioteca"
               : activePlatformConfig.label}
@@ -3385,7 +3385,7 @@ const Home: React.FC = () => {
                 }}
               />
             )}
-            <span className="text-[length:var(--fs-caption)] font-medium text-white/55">
+            <span className="text-[length:var(--fs-caption)] font-medium text-[var(--ink-muted)]">
               {displayGames.length}{" "}
               {displayGames.length === 1 ? "jogo" : "jogos"}
             </span>
@@ -4311,7 +4311,7 @@ const Home: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-210 flex flex-col items-center justify-center overflow-hidden bg-[#030405]"
+            className="fixed inset-0 z-210 flex flex-col items-center justify-center overflow-hidden bg-[var(--tone-0)]"
           >
             {/* Onda de luz expandindo */}
             <motion.div
@@ -4361,7 +4361,7 @@ const Home: React.FC = () => {
               <h3 className="text-2xl md:text-3xl font-display font-semibold text-white tracking-tight mb-2">
                 Encerrando Sessão
               </h3>
-              <p className="text-xs font-body tracking-wider text-white/40">
+              <p className="text-xs font-body tracking-wider text-[var(--ink-faint)]">
                 Até logo
               </p>
             </motion.div>
@@ -4526,7 +4526,7 @@ const Home: React.FC = () => {
                       />
                     )}
                   </motion.div>
-                  <div className="absolute -bottom-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-black bg-white px-1 text-[10px] font-black text-black">
+                  <div className="absolute -bottom-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-black bg-white px-1 text-[length:var(--step-0)] font-black text-black">
                     Lv{(levelUpData as any)?.prevLevel ?? ""}→
                     {levelUpData.level}
                   </div>
@@ -4534,7 +4534,7 @@ const Home: React.FC = () => {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">
+                      <p className="text-[length:var(--step-0)] font-black uppercase tracking-[0.2em] text-[var(--ink-muted)]">
                         Nível Alcançado
                       </p>
                       <div className="flex items-baseline gap-2">
@@ -4558,16 +4558,16 @@ const Home: React.FC = () => {
                     </div>
                     <button
                       onClick={() => setShowLevelUp(false)}
-                      className="rounded-full p-1 text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                      className="rounded-full p-1 text-[var(--ink-faint)] hover:text-white hover:bg-white/10 transition-colors"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  <div className="mt-2 flex items-center gap-2 text-[11px] font-semibold text-white/60">
-                    <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+                  <div className="mt-2 flex items-center gap-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[length:var(--step-0)] font-bold text-amber-300">
                       +{(levelUpData as any)?.xp?.toLocaleString?.() ?? ""} XP
                     </span>
-                    <span className="text-white/30">•</span>
+                    <span className="text-[var(--ink-faint)]">•</span>
                     <span>
                       {(levelUpData as any)?.progress ?? 0}% para próximo nível
                     </span>
@@ -4586,7 +4586,7 @@ const Home: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setShowLevelUp(false)}
-                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-white/70 hover:bg-white/10"
+                      className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold text-[var(--ink-muted)] hover:bg-white/10"
                     >
                       Fechar
                     </button>
@@ -4619,14 +4619,14 @@ const Home: React.FC = () => {
             playSound("select");
             setIsQuestsModalOpen(true);
           }}
-          className="fixed bottom-6 right-6 z-120 flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#0D0E15]/90 hover:bg-[#161824] border border-amber-500/40 hover:border-amber-500/80 shadow-[0_10px_30px_rgba(0,0,0,0.7),0_0_20px_rgba(245,158,11,0.2)] text-white text-xs font-bold transition-all duration-200 backdrop-blur-xl group hover:scale-105 cursor-pointer"
+          className="fixed bottom-6 right-6 z-120 flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[var(--tone-1)]/90 hover:bg-[#161824] border border-amber-500/40 hover:border-amber-500/80 shadow-[0_10px_30px_rgba(0,0,0,0.7),0_0_20px_rgba(245,158,11,0.2)] text-white text-xs font-bold transition-all duration-200 backdrop-blur-xl group hover:scale-105 cursor-pointer"
           title="Abrir Guia de Missões"
         >
           <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 group-hover:bg-amber-500/30">
             <Compass className="h-3.5 w-3.5 animate-[spin_20s_linear_infinite]" />
           </div>
           <span className="tracking-wide">Missões</span>
-          <span className="rounded-full bg-amber-500/25 px-2 py-0.5 font-mono text-[10px] font-extrabold text-amber-400">
+          <span className="rounded-full bg-amber-500/25 px-2 py-0.5 font-mono text-[length:var(--step-0)] font-extrabold text-amber-400">
             {questsStatus.completed}/{questsStatus.total}
           </span>
         </button>

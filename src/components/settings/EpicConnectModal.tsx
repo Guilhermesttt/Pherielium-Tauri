@@ -255,7 +255,7 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                       <div className="flex items-center justify-between gap-2.5 pb-1">
                         <div className="flex items-center gap-2.5">
                           <ThinkingOrbLoader size={20} preset={operationState?.status === "syncing" ? "sync" : "connecting"} />
-                          <p className="text-[12px] font-semibold text-white/70">
+                          <p className="text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]">
                             <span className="t-shimmer" data-text={busyLabel}>{busyLabel}</span>
                           </p>
                         </div>
@@ -263,7 +263,7 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                           <button
                             type="button"
                             onClick={() => setWaitingBrowser(false)}
-                            className="text-[11px] text-white/50 hover:text-white underline cursor-pointer"
+                            className="text-[length:var(--step-0)] text-[var(--ink-muted)] hover:text-white underline cursor-pointer"
                           >
                             Cancelar espera
                           </button>
@@ -282,7 +282,7 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                         <p className="text-xs font-bold text-white truncate">
                           {currentAccount.displayName || "Conta Conectada"}
                         </p>
-                        <p className="text-[10px] text-neutral-400">Conta atualmente vinculada</p>
+                        <p className="text-[length:var(--step-0)] text-neutral-400">Conta atualmente vinculada</p>
                       </div>
                     </div>
                     <button
@@ -312,10 +312,10 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                 <div className="p-4 rounded-3xl bg-white/3 border border-white/6 space-y-3">
                   <div className="space-y-1">
                     <p className="text-xs font-bold text-white flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      <span className="w-2 h-2 rounded-full bg-[var(--live)]" />
                       Login Automático com 1 Clique
                     </p>
-                    <p className="text-[11px] text-neutral-400 leading-relaxed">
+                    <p className="text-[length:var(--step-0)] text-neutral-400 leading-relaxed">
                       Abre uma janela segura da Epic Games. Ao fazer login, seu código é detectado e validado automaticamente sem precisar copiar nada.
                     </p>
                   </div>
@@ -333,10 +333,10 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                 {/* Opção 2: Manual via Navegador */}
                 <div className="p-4 rounded-3xl bg-white/10 border border-white/4 space-y-3">
                   <div className="space-y-1">
-                    <p className="text-xs font-bold text-white/70">
+                    <p className="text-xs font-bold text-[var(--ink-muted)]">
                       Entrada Manual (Código ou JSON)
                     </p>
-                    <p className="text-[11px] text-neutral-400 leading-relaxed">
+                    <p className="text-[length:var(--step-0)] text-neutral-400 leading-relaxed">
                       Se preferir usar o navegador externo, faça login e cole o código ou o JSON completo aqui embaixo:
                     </p>
                   </div>
@@ -346,7 +346,7 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                       type="button"
                       onClick={handleOpenAuthUrl}
                       disabled={isBusy}
-                      className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-white/4 hover:bg-white/8 text-white/70 hover:text-white text-xs font-medium rounded-xl border border-white/6 transition-colors cursor-pointer"
+                      className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-white/4 hover:bg-white/8 text-[var(--ink-muted)] hover:text-white text-xs font-medium rounded-xl border border-white/6 transition-colors cursor-pointer"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                       Abrir no Navegador Externo

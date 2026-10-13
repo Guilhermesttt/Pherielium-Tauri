@@ -42,14 +42,14 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       {/* Glow & Icon Halo */}
       <div className="relative mb-4 flex items-center justify-center">
         <div className="absolute inset-0 rounded-full bg-white/10 blur-xl scale-150 animate-pulse" />
-        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/12 bg-white/[0.06] text-white/80 shadow-inner">
+        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/12 bg-white/[0.06] text-[var(--ink)] shadow-inner">
           <Icon className="h-7 w-7 text-white" />
         </div>
       </div>
 
       {/* Typography */}
       <h3 className="text-base font-bold text-white tracking-wide">{title}</h3>
-      <p className="mt-1.5 max-w-sm text-xs font-normal leading-relaxed text-white/50">
+      <p className="mt-1.5 max-w-sm text-xs font-normal leading-relaxed text-[var(--ink-muted)]">
         {description}
       </p>
 
@@ -73,7 +73,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
               type="button"
               data-gamepad-id={secondaryAction.gamepadId || "empty-state-secondary"}
               onClick={secondaryAction.onClick}
-              className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-medium text-white/80 backdrop-blur-md transition-all duration-200 hover:bg-white/10 hover:text-white active:scale-95"
+              className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-medium text-[var(--ink)] backdrop-blur-md transition-all duration-200 hover:bg-white/10 hover:text-white active:scale-95"
             >
               {secondaryAction.icon && <secondaryAction.icon className="h-4 w-4" />}
               <span>{secondaryAction.label}</span>

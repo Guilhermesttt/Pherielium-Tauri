@@ -32,8 +32,8 @@ const Row: React.FC<{
   <div className={cn("py-3.5", hasBorder && "border-b border-[var(--border-subtle)]", disabled && "opacity-45")}>
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-h-[38px]">
       <div className="min-w-0 flex-1">
-        <div className="text-[13px] font-medium text-white/90 tracking-wide">{title}</div>
-        {description && <p className="text-[11.5px] leading-relaxed text-white/45 mt-0.5">{description}</p>}
+        <div className="text-[length:var(--step-0)] font-medium text-[var(--ink)] tracking-wide">{title}</div>
+        {description && <p className="text-[length:var(--step-0)] leading-relaxed text-[var(--ink-faint)] mt-0.5">{description}</p>}
       </div>
       {action && <div className="shrink-0 flex items-center gap-2.5">{action}</div>}
     </div>
@@ -43,8 +43,8 @@ const Row: React.FC<{
 
 const Card: React.FC<{ title: string; hint?: string; children: React.ReactNode }> = ({ title, hint, children }) => (
   <div className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6">
-    <h3 className="text-white text-[14px] font-semibold">{title}</h3>
-    {hint && <p className="text-[12px] text-white/50 leading-relaxed mt-1">{hint}</p>}
+    <h3 className="text-white text-[length:var(--step-1)] font-semibold">{title}</h3>
+    {hint && <p className="text-[length:var(--step-0)] text-[var(--ink-muted)] leading-relaxed mt-1">{hint}</p>}
     <div className="mt-3">{children}</div>
   </div>
 );
@@ -63,17 +63,17 @@ const HoverMascot: React.FC<React.ComponentProps<typeof PherieMascot>> = (props)
 const NotchPreview: React.FC<{ config: NotchConfig; mood: MascotMood }> = ({ config, mood }) => (
   <div className="relative h-[64px] w-[210px]">
     {config.enabled ? (
-      <div className="absolute left-1/2 top-0 flex h-10 w-[178px] -translate-x-1/2 items-center rounded-b-[14px] bg-black px-3">
+      <div className="absolute left-1/2 top-0 flex h-10 w-[178px] -translate-x-1/2 items-center rounded-b-[var(--corner-sm)] bg-black px-3">
         <div className="flex flex-1 items-center">
           {config.showMascot && (
             <PherieMascot size={26} mood={mood} bodyColor={config.bodyColor} shape={config.shape} />
           )}
         </div>
-        <span className="text-[13px] font-semibold tabular-nums text-white">{config.showClock ? "17:30" : ""}</span>
+        <span className="text-[length:var(--step-0)] font-semibold tabular-nums text-white">{config.showClock ? "17:30" : ""}</span>
         <div className="flex-1" />
       </div>
     ) : (
-      <div className="absolute inset-x-0 top-3 text-center text-[11px] text-white/40">Notch desativado</div>
+      <div className="absolute inset-x-0 top-3 text-center text-[length:var(--step-0)] text-[var(--ink-faint)]">Notch desativado</div>
     )}
   </div>
 );
@@ -134,25 +134,25 @@ export const NotchSettingsTab: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-300">
       <section>
         <div className="flex items-center gap-2.5 mb-4">
-          <Sparkles className="h-4 w-4 text-white/70 shrink-0" />
-          <h2 className="text-[17px] font-semibold text-white tracking-wide">Mascote e Notch</h2>
+          <Sparkles className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
+          <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">Mascote e Notch</h2>
         </div>
 
         {/* Prévia + interruptor mestre */}
         <div className="mb-6 rounded-2xl border border-white/[0.08] bg-white/[0.025] overflow-hidden">
           <div className="flex flex-col md:flex-row">
             <div className="p-6 md:w-1/2 border-b md:border-b-0 md:border-r border-white/[0.06]">
-              <h3 className="text-white text-[14px] font-semibold mb-2">Notch do overlay</h3>
-              <p className="text-[12px] text-white/50 leading-relaxed mb-3">
+              <h3 className="text-white text-[length:var(--step-1)] font-semibold mb-2">Notch do overlay</h3>
+              <p className="text-[length:var(--step-0)] text-[var(--ink-muted)] leading-relaxed mb-3">
                 A barra no topo da tela com a Pherie, o relógio, a música do PC e os controles de chamada. Personalize
                 tudo ou desative.
               </p>
               <div className="flex items-center gap-3">
                 <Switch checked={draft.enabled} onCheckedChange={toggle("enabled")} />
-                <span className="text-[12px] text-white/60">{draft.enabled ? "Ativado" : "Desativado"}</span>
+                <span className="text-[length:var(--step-0)] text-[var(--ink-muted)]">{draft.enabled ? "Ativado" : "Desativado"}</span>
               </div>
               {off && (
-                <p className="mt-3 text-[11.5px] leading-relaxed text-amber-200/70">
+                <p className="mt-3 text-[length:var(--step-0)] leading-relaxed text-amber-200/70">
                   Com o notch desativado, uma pílula mínima de chamada (mutar, silenciar, desconectar) continua
                   aparecendo durante as chamadas. Toasts e o atalho do overlay não mudam.
                 </p>
@@ -276,7 +276,7 @@ export const NotchSettingsTab: React.FC = () => {
           />
 
           <div className="mt-5">
-            <div className="text-[13px] font-medium text-white/90 mb-2.5">Cor do corpo</div>
+            <div className="text-[length:var(--step-0)] font-medium text-[var(--ink)] mb-2.5">Cor do corpo</div>
             <div className="flex items-center gap-2.5 flex-wrap">
               {NOTCH_BODY_PRESETS.map(({ hex, label }) => {
                 const selected = draft.bodyColor === hex;
@@ -325,10 +325,10 @@ export const NotchSettingsTab: React.FC = () => {
                   if (hex) update({ bodyColor: hex });
                   else if (text.trim() === "") update({ bodyColor: null });
                 }}
-                className="h-8 w-[96px] rounded-lg border border-white/10 bg-white/[0.04] px-2.5 font-mono text-[12px] text-white/80 outline-none focus:border-white/30"
+                className="h-8 w-[96px] rounded-lg border border-white/10 bg-white/[0.04] px-2.5 font-mono text-[length:var(--step-0)] text-[var(--ink)] outline-none focus:border-white/30"
               />
             </div>
-            <p className="mt-2 text-[11.5px] text-white/40">
+            <p className="mt-2 text-[length:var(--step-0)] text-[var(--ink-faint)]">
               O rosto e o fone se ajustam sozinhos para continuar legíveis em qualquer cor.
             </p>
           </div>
@@ -355,7 +355,7 @@ export const NotchSettingsTab: React.FC = () => {
               title="Automático"
             >
               <span className="text-lg leading-none">✨</span>
-              <span className="text-[10px] font-medium text-white/60 leading-none">Automático</span>
+              <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] leading-none">Automático</span>
             </button>
             {MASCOT_MOODS.map(({ id, label }) => (
               <button
@@ -375,7 +375,7 @@ export const NotchSettingsTab: React.FC = () => {
                 title={label}
               >
                 <HoverMascot size={40} mood={id} bodyColor={draft.bodyColor} shape={draft.shape} />
-                <span className="text-[10px] font-medium text-white/60 leading-none">{label}</span>
+                <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] leading-none">{label}</span>
               </button>
             ))}
           </div>
@@ -394,7 +394,7 @@ export const NotchSettingsTab: React.FC = () => {
               setAppliedMood(null);
               playSound("hover");
             }}
-            className="text-[12px] bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-xl text-white font-medium transition-colors"
+            className="text-[length:var(--step-0)] bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-xl text-white font-medium transition-colors"
           >
             Restaurar padrão
           </button>

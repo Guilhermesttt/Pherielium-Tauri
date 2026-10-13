@@ -16,7 +16,7 @@ export const ModsSummaryBanner: React.FC<ModsSummaryBannerProps> = ({
     <div className="mb-6 rounded-3xl border border-white/[0.08] p-4.5 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_8px_30px_rgba(0,0,0,0.5)]" style={{ background: "rgba(255, 255, 255, 0.02)" }}>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-white/80 shadow-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/10 text-[var(--ink)] shadow-sm">
             <Package className="h-5 w-5" />
           </div>
           <div>
@@ -24,11 +24,11 @@ export const ModsSummaryBanner: React.FC<ModsSummaryBannerProps> = ({
               <h4 className="text-xs font-bold uppercase tracking-wider text-white">
                 Resumo de Mods do Jogo
               </h4>
-              <span className="flex items-center gap-1 rounded-md border border-white/10 bg-white/10 px-2 py-0.5 text-[9px] font-black text-white/70">
+              <span className="flex items-center gap-1 rounded-md border border-white/10 bg-white/10 px-2 py-0.5 text-[length:var(--step-0)] font-black text-[var(--ink-muted)]">
                 <Info className="h-3 w-3" /> Atalho Rápido
               </span>
             </div>
-            <p className="mt-0.5 text-xs font-medium text-white/60">
+            <p className="mt-0.5 text-xs font-medium text-[var(--ink-muted)]">
               {activeModsCount} mod{activeModsCount === 1 ? "" : "s"} ativo{activeModsCount === 1 ? "" : "s"} de {installedModsCount} instalado{installedModsCount === 1 ? "" : "s"}. Para baixar ou gerenciar a coleção completa, use o Gerenciador de Mods Geral.
             </p>
           </div>

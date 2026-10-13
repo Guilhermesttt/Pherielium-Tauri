@@ -334,16 +334,12 @@ const RailButton: React.FC<NavButtonProps> = ({
   };
 
   const iconStyle = active
-    ? {
-        color: "var(--selection-text, rgb(var(--launcher-accent)))",
-        filter: "drop-shadow(0 0 10px rgb(var(--launcher-accent) / 0.7))",
-        transition: "color 0.3s ease, filter 0.3s ease",
-      }
-    : { transition: "color 0.3s ease, filter 0.3s ease" };
+    ? { color: "var(--ink)", transition: "color var(--dur-2) var(--spring)" }
+    : { transition: "color var(--dur-2) var(--spring)" };
 
   const inactiveIconClass = active
     ? ""
-    : "text-[#6C6C6C] group-hover:text-white";
+    : "text-[var(--ink-faint)] group-hover:text-white";
 
   const showGlide = Boolean(!reducedMotion && !active && isHovered);
 
@@ -365,18 +361,10 @@ const RailButton: React.FC<NavButtonProps> = ({
       data-sidebar-item={id}
       whileTap={{ scale: 0.95 }}
       transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
-      className="relative group flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-[12px] border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)]"
+      className="relative group flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--node)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
       style={{
-        background: active
-          ? "var(--selection-bg, rgb(var(--launcher-accent) / 0.14))"
-          : "transparent",
-        borderColor: active
-          ? "var(--selection-border, transparent)"
-          : "transparent",
-        color: active ? "var(--selection-text, inherit)" : undefined,
-        boxShadow: active
-          ? "0 4px 12px rgba(0, 0, 0, 0.2), var(--surface-chamfer, inset 0 1px 0 rgba(255, 255, 255, 0.15))"
-          : "none",
+        background: active ? "var(--tone-3)" : "transparent",
+        color: active ? "var(--ink)" : undefined,
       }}
     >
       {showGlide && (
@@ -384,7 +372,7 @@ const RailButton: React.FC<NavButtonProps> = ({
           aria-hidden
           layoutId="sidebar-rail-glide"
           transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
-          className="absolute inset-0 rounded-[12px] bg-white/8 shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]"
+          className="absolute inset-0 rounded-[var(--node)] bg-[var(--tone-2)]"
         />
       )}
 
@@ -413,11 +401,8 @@ const RailButton: React.FC<NavButtonProps> = ({
 
       {hasNotifications && (
         <span
-          className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full"
-          style={{
-            background: "rgb(var(--launcher-accent))",
-            boxShadow: "0 0 8px rgb(var(--launcher-accent) / 1)",
-          }}
+          aria-hidden="true"
+          className="absolute top-1.5 right-1.5 h-2 w-2 rounded-[var(--node)] bg-[var(--ink)] ring-2 ring-[var(--tone-0)]"
         />
       )}
     </motion.button>
@@ -432,7 +417,7 @@ const RailButton: React.FC<NavButtonProps> = ({
         side="right"
         align="center"
         sideOffset={16}
-        className="border border-[#161616] bg-[#0F0F0F]/90 px-3 py-1.5 text-xs text-[#D2D2D2] tracking-wide backdrop-blur-2xl rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+        className="rounded-[var(--node)] bg-[var(--tone-3)] px-3 py-1.5 text-[length:var(--step-0)] font-medium text-[var(--ink)]"
       >
         {label}
       </TooltipContent>
@@ -480,16 +465,12 @@ const OverlayButton: React.FC<NavButtonProps> = ({
   }, [isFocused]);
 
   const iconStyle = active
-    ? {
-        color: "var(--selection-text, rgb(var(--launcher-accent)))",
-        filter: "drop-shadow(0 0 10px rgb(var(--launcher-accent) / 0.7))",
-        transition: "color 0.3s ease, filter 0.3s ease",
-      }
-    : { transition: "color 0.3s ease, filter 0.3s ease" };
+    ? { color: "var(--ink)", transition: "color var(--dur-2) var(--spring)" }
+    : { transition: "color var(--dur-2) var(--spring)" };
 
   const inactiveIconClass = active
     ? ""
-    : "text-[#6C6C6C] group-hover:text-white";
+    : "text-[var(--ink-faint)] group-hover:text-white";
 
   const showGlide = Boolean(isFocused || (!reducedMotion && !active && isHovered));
 
@@ -511,12 +492,10 @@ const OverlayButton: React.FC<NavButtonProps> = ({
       data-sidebar-item={id}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
-      className={`relative group flex h-11 w-full cursor-pointer items-center gap-3 px-3 rounded-[12px] border border-transparent text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)] ${
-        isFocused ? "ring-2 ring-white/70 bg-white/10" : ""
+      className={`relative group flex h-11 w-full cursor-pointer items-center gap-3 px-4 rounded-[var(--node)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] ${
+        isFocused ? "ring-2 ring-[var(--ink)]" : ""
       }`}
-      style={{
-        color: active ? "var(--selection-text, inherit)" : undefined,
-      }}
+      style={{ color: active ? "var(--ink)" : undefined }}
     >
       {/* Smooth Active Selection Pill (Glides between items) */}
       {active && (
@@ -524,11 +503,7 @@ const OverlayButton: React.FC<NavButtonProps> = ({
           aria-hidden
           layoutId="sidebar-active-pill"
           transition={{ type: "spring", bounce: 0.18, duration: 0.35 }}
-          className="absolute inset-0 rounded-[12px] border shadow-[0_4px_16px_rgba(0,0,0,0.35),var(--surface-chamfer,inset_0_1px_0_rgba(255,255,255,0.18))]"
-          style={{
-            background: "var(--selection-bg, rgb(var(--launcher-accent) / 0.16))",
-            borderColor: "var(--selection-border, rgba(255, 255, 255, 0.12))",
-          }}
+          className="absolute inset-0 rounded-[var(--node)] bg-[var(--tone-3)]"
         />
       )}
 
@@ -538,7 +513,7 @@ const OverlayButton: React.FC<NavButtonProps> = ({
           aria-hidden
           layoutId="sidebar-hover-glide"
           transition={{ type: "spring", bounce: 0.15, duration: 0.25 }}
-          className="absolute inset-0 rounded-[12px] bg-white/[0.07] border border-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+          className="absolute inset-0 rounded-[var(--node)] bg-[var(--tone-2)]"
         />
       )}
 
@@ -567,19 +542,11 @@ const OverlayButton: React.FC<NavButtonProps> = ({
 
       <div className="relative z-10 flex flex-1 items-center justify-between min-w-0">
         <span
-          className={`truncate font-body text-sm tracking-[0.015em] ${
+          className={`truncate font-body text-[length:var(--step-1)] ${
             active
-              ? "font-semibold"
-              : "text-[#6C6C6C] group-hover:text-white"
+              ? "font-semibold text-[var(--ink)]"
+              : "font-medium text-[var(--ink-muted)] group-hover:text-[var(--ink)]"
           }`}
-          style={
-            active
-              ? {
-                  color: "var(--selection-text, rgb(var(--launcher-accent)))",
-                  textShadow: "0 0 8px rgb(var(--launcher-accent) / 0.5)",
-                }
-              : undefined
-          }
         >
           {label}
         </span>
@@ -587,11 +554,7 @@ const OverlayButton: React.FC<NavButtonProps> = ({
         {hasNotifications && (
           <div className="relative flex items-center justify-center shrink-0">
             <span
-              className="flex h-5 min-w-5 items-center justify-center rounded-md border px-1.5 text-[10px] font-bold text-black shadow-[0_0_12px_rgb(var(--launcher-accent)/0.3)] backdrop-blur-md"
-              style={{
-                background: "rgb(var(--launcher-accent))",
-                borderColor: "rgb(var(--launcher-accent) / 0.4)",
-              }}
+              className="flex h-6 min-w-6 items-center justify-center rounded-[var(--node)] bg-[var(--ink)] px-2 text-[length:var(--step-0)] font-semibold tabular-nums text-[var(--tone-0)]"
             >
               {notificationCount > 99 ? "99+" : notificationCount}
             </span>
@@ -1037,7 +1000,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               transition={{ type: "spring", bounce: 0, duration: 0.35 }}
               onMouseEnter={handleOpenSidebar}
               onMouseLeave={handleCloseSidebar}
-              className="fixed left-0 top-0 bottom-0 w-[260px] z-50 bg-[#0D0D0D] border-r border-white/[0.08] shadow-[24px_0_60px_rgba(0,0,0,0.85)] p-4 flex flex-col select-none overflow-y-auto no-scrollbar"
+              className="fixed left-0 top-0 bottom-0 w-[280px] z-50 bg-[var(--tone-1)] p-4 flex flex-col select-none overflow-y-auto no-scrollbar"
               aria-label="Menu de navegação"
             >
               {/* Header: Logo + Pherielium Brand */}
@@ -1047,7 +1010,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 tabIndex={0}
                 className="relative mb-6 flex cursor-pointer items-center gap-3 px-1 group"
               >
-                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#161616] shadow-[0_4px_16px_rgba(0,0,0,0.2)] transition-colors group-hover:bg-[#1E1E1E]">
+                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--node)] bg-[var(--tone-2)] transition-colors group-hover:bg-[var(--tone-3)]">
                   <img
                     src={PHERIELIUM_LOGO_PATH}
                     alt="Pherielium"
@@ -1056,9 +1019,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
 
                 <div className="flex items-center min-w-0">
-                  <span className="font-display font-bold text-[22px] bg-linear-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent tracking-tight flex items-start gap-0.5">
+                  <span className="font-display font-semibold text-[length:var(--step-3)] text-[var(--ink)] tracking-[-0.03em] flex items-start gap-0.5">
                     Pherielium
-                    <span className="text-white/40 text-[13px] font-semibold translate-y-0.5">
+                    <span className="text-[var(--ink-faint)] text-[length:var(--step-0)] font-semibold translate-y-0.5">
                       &reg;
                     </span>
                   </span>
@@ -1070,7 +1033,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {overlaySections.map((section, sIndex) => (
                   <div key={section.key} role="group" className="flex flex-col">
                     <span
-                      className={`text-[11px] font-semibold tracking-wide text-[#6C6C6C] font-body uppercase px-3 mb-2 ${
+                      className={`text-[length:var(--step-0)] font-medium text-[var(--ink-faint)] font-body px-4 mb-2 ${
                         sIndex > 0 ? "mt-6" : ""
                       }`}
                     >
@@ -1104,12 +1067,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Controller Navigation Hint in Sidebar Footer */}
               {isGamepadConnected && (
-                <div className="mt-auto pt-3 border-t border-white/[0.08] flex items-center justify-between text-[11px] text-white/60 select-none">
+                <div className="mt-auto pt-4 flex items-center justify-between text-[length:var(--step-0)] text-[var(--ink-faint)] select-none">
                   <div className="flex items-center gap-1.5">
                     <ControllerButtonGlyph button="DPAD" gamepadFamily={gamepadFamily} size={15} />
                     <span>Navegar</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-white/90">
+                  <div className="flex items-center gap-1.5 text-[var(--ink)]">
                     <ControllerButtonGlyph button="A" gamepadFamily={gamepadFamily} size={15} />
                     <span className="font-semibold text-white">Selecionar</span>
                   </div>

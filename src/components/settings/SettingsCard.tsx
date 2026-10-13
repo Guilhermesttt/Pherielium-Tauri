@@ -11,7 +11,7 @@ export const SettingsCard: React.FC<{ title: string; hint?: string; children: Re
     <header className="mb-[var(--space-3)] flex items-start justify-between gap-[var(--gap-inline)]">
       <div className="min-w-0">
         <h3 className="text-[length:var(--fs-heading)] font-semibold text-white">{title}</h3>
-        {hint && <p className="mt-0.5 text-[length:var(--fs-label)] text-white/50">{hint}</p>}
+        {hint && <p className="mt-0.5 text-[length:var(--fs-label)] text-[var(--ink-muted)]">{hint}</p>}
       </div>
       {action}
     </header>

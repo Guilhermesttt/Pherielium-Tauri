@@ -96,7 +96,7 @@ const Avatar: React.FC<{ friend: SocialFriend; size: number; ring?: boolean }> =
           className="h-full w-full object-cover"
         />
       ) : (
-        <span className="flex h-full w-full items-center justify-center text-white/45">
+        <span className="flex h-full w-full items-center justify-center text-[var(--ink-faint)]">
           <User style={{ width: size * 0.5, height: size * 0.5 }} />
         </span>
       )}
@@ -134,9 +134,9 @@ export interface FriendsRosterProps {
 
 const SectionTitle: React.FC<{ children: React.ReactNode; count?: number; hint?: string }> = ({ children, count, hint }) => (
   <div className="mb-3 flex items-baseline gap-2.5 px-1">
-    <h3 className="font-display text-[20px] font-semibold leading-none text-white">{children}</h3>
-    {count !== undefined && <span className="text-[14px] tabular-nums text-white/40">{count}</span>}
-    {hint && <span className="text-[13px] text-white/35">{hint}</span>}
+    <h3 className="font-display text-[length:var(--step-3)] font-semibold leading-none text-white">{children}</h3>
+    {count !== undefined && <span className="text-[length:var(--step-1)] tabular-nums text-[var(--ink-faint)]">{count}</span>}
+    {hint && <span className="text-[length:var(--step-0)] text-[var(--ink-faint)]">{hint}</span>}
   </div>
 );
 
@@ -197,14 +197,14 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
       <div className="min-w-0">
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <div className="relative min-w-[220px] flex-1">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-faint)]" />
             <input
               id="friends-search-input"
               aria-label="Buscar amigos"
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Buscar por nome ou jogo"
-              className="h-11 w-full rounded-full bg-[var(--surface-raised)] pl-11 pr-4 text-[14px] text-white outline-none ring-1 ring-[color:var(--border-subtle)] placeholder:text-white/35 focus:ring-2 focus:ring-white/30"
+              className="h-11 w-full rounded-full bg-[var(--surface-raised)] pl-11 pr-4 text-[length:var(--step-1)] text-white outline-none ring-1 ring-[color:var(--border-subtle)] placeholder:text-[var(--ink-faint)] focus:ring-2 focus:ring-white/30"
             />
           </div>
           <div role="tablist" aria-label="Filtrar por presença" className="flex gap-1.5">
@@ -218,8 +218,8 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
                   playSound?.("select");
                   onFilterChange(x.id);
                 }}
-                className={`h-11 rounded-full px-5 text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-white/40 ${
-                  filter === x.id ? "bg-white text-black" : "bg-[var(--surface-raised)] text-white/65 ring-1 ring-[color:var(--border-subtle)] hover:text-white"
+                className={`h-11 rounded-full px-5 text-[length:var(--step-0)] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-white/40 ${
+                  filter === x.id ? "bg-white text-black" : "bg-[var(--surface-raised)] text-[var(--ink-muted)] ring-1 ring-[color:var(--border-subtle)] hover:text-white"
                 }`}
               >
                 {x.label}
@@ -229,7 +229,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
         </div>
 
         {visible.length === 0 ? (
-          <p className="rounded-[24px] bg-[var(--surface-raised)] px-6 py-14 text-center text-[14px] text-white/45 border border-white/[0.10]">
+          <p className="rounded-[var(--corner-lg)] bg-[var(--surface-raised)] px-6 py-14 text-center text-[length:var(--step-1)] text-[var(--ink-faint)] border border-white/[0.10]">
             Ninguém por aqui com esse filtro. Tente outro nome ou volte para Todos.
           </p>
         ) : (
@@ -256,20 +256,20 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
                         aria-current={f.id === selectedId}
                         onMouseEnter={() => playSound?.("hover")}
                         onClick={() => pick(f)}
-                        className={`flex w-full items-center gap-3.5 rounded-[20px] p-3 text-left ring-1 transition-colors focus-visible:ring-2 focus-visible:ring-white/50 ${
+                        className={`flex w-full items-center gap-3.5 rounded-[var(--corner-md)] p-3 text-left ring-1 transition-colors focus-visible:ring-2 focus-visible:ring-white/50 ${
                           f.id === selectedId ? "bg-[var(--surface-overlay)] ring-white/30" : "bg-[var(--surface-raised)] ring-[color:var(--border-subtle)] hover:bg-[var(--surface-overlay)]"
                         }`}
                       >
                         <Avatar friend={f} size={48} />
                         <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-2 text-[15px] font-semibold text-white">
+                          <span className="flex items-center gap-2 text-[length:var(--step-1)] font-semibold text-white">
                             <PresenceDot friend={f} />
                             <span className="truncate">{f.name}</span>
                           </span>
-                          <span className="block truncate text-[13px] text-white/50">{statusLine(f)}</span>
+                          <span className="block truncate text-[length:var(--step-0)] text-[var(--ink-muted)]">{statusLine(f)}</span>
                         </span>
                         {unread(f) > 0 && (
-                          <span className="min-w-6 rounded-full bg-white px-2 text-center text-[12px] font-bold leading-6 text-black">{unread(f)}</span>
+                          <span className="min-w-6 rounded-full bg-white px-2 text-center text-[length:var(--step-0)] font-bold leading-6 text-black">{unread(f)}</span>
                         )}
                       </button>
                     </li>
@@ -294,11 +294,11 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
                         }`}
                       >
                         <Avatar friend={f} size={36} />
-                        <span className="flex min-w-0 flex-1 items-center gap-2 text-[14px] text-white/85">
+                        <span className="flex min-w-0 flex-1 items-center gap-2 text-[length:var(--step-1)] text-[var(--ink)]">
                           <PresenceDot friend={f} />
                           <span className="truncate">{f.name}</span>
                         </span>
-                        <span className="shrink-0 text-[12px] text-white/35">{formatLastSeen(f.lastSeen)}</span>
+                        <span className="shrink-0 text-[length:var(--step-0)] text-[var(--ink-faint)]">{formatLastSeen(f.lastSeen)}</span>
                       </button>
                     </li>
                   ))}
@@ -309,8 +309,8 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
         )}
 
         {discord && (
-          <div className="mt-8 flex items-center justify-between gap-3 rounded-[20px] bg-[var(--surface-raised)] px-5 py-3.5 text-[14px] border border-white/[0.10]">
-            <span className="flex items-center gap-2.5 text-white/60">
+          <div className="mt-8 flex items-center justify-between gap-3 rounded-[var(--corner-md)] bg-[var(--surface-raised)] px-5 py-3.5 text-[length:var(--step-1)] border border-white/[0.10]">
+            <span className="flex items-center gap-2.5 text-[var(--ink-muted)]">
               <FontAwesomeIcon icon={faDiscord} className="h-[18px] w-[18px] shrink-0 text-[#8c9eff]" aria-hidden />
               {discord.connected ? "Discord conectado" : "Veja seus amigos do Discord aqui"}
             </span>
@@ -318,7 +318,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
               <button
                 type="button"
                 onClick={discord.onConnect}
-                className="rounded-full bg-white px-4 py-1.5 text-[13px] font-semibold text-black active:scale-95 focus-visible:ring-2 focus-visible:ring-white/50"
+                className="rounded-full bg-white px-4 py-1.5 text-[length:var(--step-0)] font-semibold text-black active:scale-95 focus-visible:ring-2 focus-visible:ring-white/50"
               >
                 Conectar
               </button>
@@ -344,7 +344,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
             playSound={playSound}
           />
         ) : (
-          <div className="flex min-h-[18rem] items-center justify-center rounded-[28px] bg-[var(--surface-raised)] px-8 text-center text-[14px] text-white/45 border border-white/[0.10]">
+          <div className="flex min-h-[18rem] items-center justify-center rounded-[var(--corner-lg)] bg-[var(--surface-raised)] px-8 text-center text-[length:var(--step-1)] text-[var(--ink-faint)] border border-white/[0.10]">
             Selecione um amigo para conversar, ligar ou ver o perfil.
           </div>
         )}
@@ -361,7 +361,7 @@ const GameBlock: React.FC<{
   unread: (f: SocialFriend) => number;
 }> = ({ group, selectedId, onPick, unread }) => {
   return (
-    <article className="overflow-hidden rounded-[26px] bg-[var(--surface-raised)] border border-white/[0.10]">
+    <article className="overflow-hidden rounded-[var(--corner-lg)] bg-[var(--surface-raised)] border border-white/[0.10]">
       <div
         className="relative h-[120px] overflow-hidden"
         style={{ background: "linear-gradient(120deg, var(--surface-overlay), var(--surface-raised))" }}
@@ -374,8 +374,8 @@ const GameBlock: React.FC<{
           style={{ background: "linear-gradient(90deg, var(--surface-raised) 0%, color-mix(in srgb, var(--surface-raised) 78%, transparent) 38%, transparent 100%)" }}
         />
         <div className="absolute inset-x-6 bottom-4">
-          <h4 className="truncate font-display text-[28px] font-bold leading-none text-white">{group.title}</h4>
-          <p className="mt-1.5 flex items-center gap-1.5 text-[14px] text-[rgb(var(--launcher-accent))]">
+          <h4 className="truncate font-display text-[length:var(--step-4)] font-bold leading-none text-white">{group.title}</h4>
+          <p className="mt-1.5 flex items-center gap-1.5 text-[length:var(--step-1)] text-[rgb(var(--launcher-accent))]">
             <Gamepad2 className="h-4 w-4" />
             {group.friends.length === 1 ? "1 amigo jogando" : `${group.friends.length} amigos jogando`}
           </p>
@@ -394,8 +394,8 @@ const GameBlock: React.FC<{
             >
               <Avatar friend={f} size={32} />
               <PresenceDot friend={f} />
-              <span className="text-[14px] font-semibold">{f.name}</span>
-              {unread(f) > 0 && <span className="rounded-full bg-[rgb(var(--launcher-accent))] px-1.5 text-[11px] font-bold text-black">{unread(f)}</span>}
+              <span className="text-[length:var(--step-1)] font-semibold">{f.name}</span>
+              {unread(f) > 0 && <span className="rounded-full bg-[rgb(var(--launcher-accent))] px-1.5 text-[length:var(--step-0)] font-bold text-black">{unread(f)}</span>}
             </button>
           </li>
         ))}
@@ -422,10 +422,10 @@ const FriendDrawer: React.FC<{
   const playing = friend.status === "playing";
   const seen = !isFriendOnline(friend) ? formatLastSeen(friend.lastSeen) : "";
   const small =
-    "inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-white/[0.09] px-4 text-[13px] font-semibold text-white transition hover:bg-white/[0.16] active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-white/50";
+    "inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-white/[0.09] px-4 text-[length:var(--step-0)] font-semibold text-white transition hover:bg-white/[0.16] active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-white/50";
 
   return (
-    <div className="overflow-hidden rounded-[28px] bg-[var(--surface-raised)] border border-white/[0.10]">
+    <div className="overflow-hidden rounded-[var(--corner-lg)] bg-[var(--surface-raised)] border border-white/[0.10]">
       {/* Capa: avatar e nome ficam juntos na base, alinhados pelo centro */}
       <div className="relative h-[168px] overflow-hidden bg-[var(--surface-overlay)]">
         {banner ? (
@@ -446,11 +446,11 @@ const FriendDrawer: React.FC<{
             )}
           </span>
           <div className="min-w-0">
-            <h2 className="flex items-center gap-2.5 font-display text-[26px] font-bold leading-tight text-white">
+            <h2 className="flex items-center gap-2.5 font-display text-[length:var(--step-3)] font-bold leading-tight text-white">
               <PresenceDot friend={friend} size={11} />
               <span className="truncate">{friend.name}</span>
             </h2>
-            <p className={`flex items-center gap-1.5 text-[14px] ${playing ? "font-semibold text-[rgb(var(--launcher-accent))]" : "text-white/60"}`}>
+            <p className={`flex items-center gap-1.5 text-[length:var(--step-1)] ${playing ? "font-semibold text-[rgb(var(--launcher-accent))]" : "text-[var(--ink-muted)]"}`}>
               {playing && <Gamepad2 className="h-4 w-4 shrink-0" />}
               <span className="truncate">{statusLine(friend)}</span>
             </p>
@@ -465,11 +465,11 @@ const FriendDrawer: React.FC<{
             playSound?.("select");
             onOpenChat(friend);
           }}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white text-[14px] font-semibold text-black transition active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-white/60"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white text-[length:var(--step-1)] font-semibold text-black transition active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-white/60"
         >
           <MessageSquare className="h-4 w-4" />
           Conversar
-          {unread > 0 && <span className="rounded-full bg-black px-2 text-[11px] text-white">{unread}</span>}
+          {unread > 0 && <span className="rounded-full bg-black px-2 text-[length:var(--step-0)] text-white">{unread}</span>}
         </button>
         <div className="flex gap-2">
           {onStartVoiceCall && (
@@ -501,14 +501,14 @@ const FriendDrawer: React.FC<{
         </div>
 
         {/* Nível: o número é o destaque, o rank dá a cor */}
-        <div className="rounded-[20px] bg-[var(--surface-base)] p-4">
+        <div className="rounded-[var(--corner-md)] bg-[var(--surface-base)] p-4">
           <div className="flex items-end justify-between gap-3">
             <div>
-              <p className="text-[13px] text-white/45">Nível</p>
+              <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">Nível</p>
               <p className="font-display text-[44px] font-bold leading-none tabular-nums text-white">{level ? level.level : "—"}</p>
             </div>
             {level && (
-              <p className="pb-1 text-[15px] font-semibold" style={{ color: level.rankColor }}>
+              <p className="pb-1 text-[length:var(--step-1)] font-semibold" style={{ color: level.rankColor }}>
                 {level.rank}
               </p>
             )}
@@ -518,23 +518,23 @@ const FriendDrawer: React.FC<{
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
                 <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.max(0, level.progress))}%`, background: level.rankColor }} />
               </div>
-              <p className="mt-1.5 text-[12px] text-white/40">{Math.round(level.progress)}% para o próximo nível</p>
+              <p className="mt-1.5 text-[length:var(--step-0)] text-[var(--ink-faint)]">{Math.round(level.progress)}% para o próximo nível</p>
             </>
           ) : (
-            !level && <p className="mt-2 text-[12px] text-white/40">O nível aparece quando o perfil do amigo carregar.</p>
+            !level && <p className="mt-2 text-[length:var(--step-0)] text-[var(--ink-faint)]">O nível aparece quando o perfil do amigo carregar.</p>
           )}
         </div>
 
-        <dl className="flex flex-wrap gap-x-8 gap-y-2 text-[13px]">
+        <dl className="flex flex-wrap gap-x-8 gap-y-2 text-[length:var(--step-0)]">
           <div>
-            <dt className="text-white/40">Origem</dt>
+            <dt className="text-[var(--ink-faint)]">Origem</dt>
             <dd className="font-semibold text-white">
               {friend.source === "checkpoint" ? "Pherielium" : friend.source?.startsWith("discord") ? "Discord" : "Local"}
             </dd>
           </div>
           {seen && (
             <div>
-              <dt className="text-white/40">Última vez online</dt>
+              <dt className="text-[var(--ink-faint)]">Última vez online</dt>
               <dd className="font-semibold text-white">{seen}</dd>
             </div>
           )}
@@ -542,17 +542,17 @@ const FriendDrawer: React.FC<{
 
         <div className="border-t border-white/[0.07] pt-4">
           {confirmRemove ? (
-            <div className="flex flex-wrap items-center gap-3 text-[13px]">
-              <span className="text-white/70">Remover {friend.name} dos amigos?</span>
+            <div className="flex flex-wrap items-center gap-3 text-[length:var(--step-0)]">
+              <span className="text-[var(--ink-muted)]">Remover {friend.name} dos amigos?</span>
               <button type="button" onClick={() => onRemoveFriend(friend)} className="rounded-full bg-rose-500/90 px-4 py-1.5 font-semibold text-white hover:bg-rose-500">
                 Remover
               </button>
-              <button type="button" onClick={() => setConfirmRemove(false)} className="text-white/55 hover:text-white">
+              <button type="button" onClick={() => setConfirmRemove(false)} className="text-[var(--ink-muted)] hover:text-white">
                 Cancelar
               </button>
             </div>
           ) : (
-            <button type="button" onClick={() => setConfirmRemove(true)} className="inline-flex items-center gap-2 text-[13px] text-white/45 hover:text-rose-300">
+            <button type="button" onClick={() => setConfirmRemove(true)} className="inline-flex items-center gap-2 text-[length:var(--step-0)] text-[var(--ink-faint)] hover:text-rose-300">
               <UserMinus className="h-4 w-4" />
               Remover amigo
             </button>

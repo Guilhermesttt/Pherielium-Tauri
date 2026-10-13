@@ -60,38 +60,38 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
               onClick={handleDetailsClick}
               title={game.title}
               style={{ fontSize: titleFontSize }}
-              className="min-w-0 flex-1 cursor-pointer tracking-tight font-display font-black bg-gradient-to-b from-[color:var(--color-text-main)] to-[color:var(--color-text-sub)] bg-clip-text text-transparent leading-[1.1] whitespace-nowrap truncate drop-shadow-[0_8px_30px_var(--elev-shadow-color)] hover:opacity-95 transition-opacity"
+              className="min-w-0 flex-1 cursor-pointer tracking-[-0.04em] font-display font-semibold text-[var(--ink)] leading-[1.05] whitespace-nowrap truncate drop-shadow-[0_8px_30px_var(--elev-shadow-color)] hover:opacity-95 transition-opacity"
             >
               {game.title}
             </h1>
           </div>
 
           {/* 2. Estatísticas e plataforma */}
-          <div className="flex items-center gap-[var(--gap-inline)] flex-wrap text-[length:var(--fs-caption)] text-white/80 font-medium">
+          <div className="flex items-center gap-[var(--gap-inline)] flex-wrap text-[length:var(--fs-caption)] text-[var(--ink)] font-medium">
             {isRunning && (
-              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3.5 text-emerald-200 backdrop-blur-xl shadow-sm">
+              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-1)_88%,transparent)] px-4 text-[var(--ink)]">
                 <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--live)] opacity-60 motion-reduce:hidden" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--live)]" />
                 </span>
                 <span className="font-semibold">{runningLabel}</span>
               </span>
             )}
 
             {platformInfo && (
-              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--edge-subtle)] bg-[color-mix(in_srgb,var(--surface-base)_55%,transparent)] px-3.5 backdrop-blur-xl shadow-sm">
-                <platformInfo.icon className="w-3.5 h-3.5 text-white/90 shrink-0" />
-                <span className="font-semibold text-white/90">{platformInfo.label}</span>
+              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-1)_88%,transparent)] px-4">
+                <platformInfo.icon className="w-3.5 h-3.5 text-[var(--ink)] shrink-0" />
+                <span className="font-semibold text-[var(--ink)]">{platformInfo.label}</span>
               </span>
             )}
 
-            <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--edge-subtle)] bg-[color-mix(in_srgb,var(--surface-base)_55%,transparent)] px-3.5 backdrop-blur-xl shadow-sm">
-              <Clock className="w-3.5 h-3.5 text-white/60 shrink-0" />
+            <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-1)_88%,transparent)] px-4">
+              <Clock className="w-3.5 h-3.5 text-[var(--ink-muted)] shrink-0" />
               <span>{formattedHours} jogadas</span>
             </span>
 
             {Boolean(game.totalAchievements && game.totalAchievements > 0) && (
-              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--edge-subtle)] bg-[color-mix(in_srgb,var(--surface-base)_55%,transparent)] px-3.5 backdrop-blur-xl shadow-sm">
+              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-1)_88%,transparent)] px-4">
                 <Trophy className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                 <span>
                   {game.completedAchievements || 0}/{game.totalAchievements} Conquistas
@@ -100,7 +100,7 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
             )}
 
             {game.isFavorite && (
-              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/15 px-3 text-amber-300 backdrop-blur-xl shadow-sm">
+              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-1)_88%,transparent)] px-4 text-[var(--ink)]">
                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
                 <span className="font-semibold">Favorito</span>
               </span>

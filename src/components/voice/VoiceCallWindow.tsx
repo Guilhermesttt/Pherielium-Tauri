@@ -960,7 +960,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             isCompactMode ? "bg-black/35 backdrop-blur-md" : "bg-black/50 backdrop-blur-2xl"
           }`}
         >
-          {/* Main Call Window Container — Apple minimalist, solid surface bg-[#0F0F0F] with border #161616 */}
+          {/* Main Call Window Container — Apple minimalist, solid surface bg-[var(--tone-1)] with border #161616 */}
           <motion.div
             ref={containerRef}
             initial={{ scale: 0.96, opacity: 0, y: 18, filter: "blur(6px)" }}
@@ -970,10 +970,10 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             style={{
               cornerShape: "squircle",
             } as React.CSSProperties}
-            className={`relative flex flex-col w-full overflow-hidden bg-[#0c0c0e] border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.8)] transition duration-300 ${
+            className={`relative flex flex-col w-full overflow-hidden bg-[var(--tone-1)] border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.8)] transition duration-300 ${
               isCompactMode
-                ? "max-w-xl h-[440px] sm:h-[460px] rounded-[24px]"
-                : "max-w-5xl h-[84vh] rounded-[28px]"
+                ? "max-w-xl h-[440px] sm:h-[460px] rounded-[var(--corner-lg)]"
+                : "max-w-5xl h-[84vh] rounded-[var(--corner-lg)]"
             }`}
           >
             {/* AREA 1: HEADER */}
@@ -1263,7 +1263,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                       className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-auto z-20"
                     >
                       <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-black/80 border border-white/10 backdrop-blur-xl shadow-2xl">
-                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-[var(--live)] animate-pulse" />
                         <span className="text-sm font-semibold text-white">
                           {focusedFeed.title}
                         </span>
@@ -1273,7 +1273,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                         <button
                           type="button"
                           onClick={() => void handleTogglePip()}
-                          className="flex h-9 w-9 items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                          className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--ink-muted)] hover:text-white hover:bg-white/10 transition cursor-pointer"
                           title="Mini-player flutuante (PiP)"
                         >
                           <PictureInPicture2 className="h-4 w-4" />

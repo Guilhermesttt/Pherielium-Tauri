@@ -99,16 +99,16 @@ export const EmptyStateGraphic: React.FC<EmptyStateGraphicProps> = ({
           <div className="absolute h-24 w-24 rounded-full border border-[#2A2A2A]" />
           <div className="absolute h-24 w-24 rounded-full bg-[#D2D2D2]/[0.04] blur-xl" />
           {staticFx ? (
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-[#2A2A2A] bg-[#161616] shadow-[0_12px_32px_rgba(0,0,0,0.5)]">
-              <Icon className="h-6 w-6 text-[#6C6C6C]" />
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-[#2A2A2A] bg-[var(--tone-2)] shadow-[0_12px_32px_rgba(0,0,0,0.5)]">
+              <Icon className="h-6 w-6 text-[var(--ink-faint)]" />
             </div>
           ) : (
             <motion.div
               animate={{ y: [0, -6, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-[#2A2A2A] bg-[#161616] shadow-[0_12px_32px_rgba(0,0,0,0.5)]"
+              className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-[#2A2A2A] bg-[var(--tone-2)] shadow-[0_12px_32px_rgba(0,0,0,0.5)]"
             >
-              <Icon className="h-6 w-6 text-[#6C6C6C]" />
+              <Icon className="h-6 w-6 text-[var(--ink-faint)]" />
             </motion.div>
           )}
         </div>

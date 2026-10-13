@@ -36,20 +36,20 @@ export const AdvancedLaunchSettings: React.FC<AdvancedLaunchSettingsProps> = ({
         className="flex w-full cursor-pointer items-center justify-between p-4 text-left transition-colors hover:bg-white/5"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-white/70">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-[var(--ink-muted)]">
             <Sliders className="h-4 w-4" />
           </div>
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-white">
               Configurações Avançadas de Inicialização
             </h4>
-            <p className="text-[10px] font-medium text-white/40">
+            <p className="text-[length:var(--step-0)] font-medium text-[var(--ink-faint)]">
               Monitor, resolução, prioridade de processo e argumentos CLI
             </p>
           </div>
         </div>
         <ChevronDown
-          className={`h-4 w-4 text-white/50 transition-transform duration-300 ${
+          className={`h-4 w-4 text-[var(--ink-muted)] transition-transform duration-300 ${
             isOpen ? "rotate-180" : ""
           }`}
         />
@@ -59,7 +59,7 @@ export const AdvancedLaunchSettings: React.FC<AdvancedLaunchSettingsProps> = ({
         <div className="space-y-4 border-t border-white/[0.08] p-4 pt-4 bg-white/[0.01]">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/50">
+              <label className="mb-1.5 flex items-center gap-1.5 text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[var(--ink-muted)]">
                 <Monitor className="h-3 w-3" /> Monitor de Exibição
               </label>
               <input
@@ -74,7 +74,7 @@ export const AdvancedLaunchSettings: React.FC<AdvancedLaunchSettingsProps> = ({
             </div>
 
             <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/50">
+              <label className="mb-1.5 flex items-center gap-1.5 text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[var(--ink-muted)]">
                 <Cpu className="h-3 w-3" /> Prioridade de Processo
               </label>
               <select
@@ -91,27 +91,27 @@ export const AdvancedLaunchSettings: React.FC<AdvancedLaunchSettingsProps> = ({
           </div>
 
           <div>
-            <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/50">
+            <label className="mb-1.5 flex items-center gap-1.5 text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[var(--ink-muted)]">
               <Terminal className="h-3 w-3" /> Argumentos de Linha de Comando
             </label>
             <input
               type="text"
               value={commandLineArgs}
               onChange={(e) => onArgsChange?.(e.target.value)}
-              className="h-10 w-full rounded-2xl border border-white/10 bg-white/5 px-3 text-xs font-mono text-white outline-none focus:border-white/20 placeholder:text-white/20"
+              className="h-10 w-full rounded-2xl border border-white/10 bg-white/5 px-3 text-xs font-mono text-white outline-none focus:border-white/20 placeholder:text-[var(--ink-faint)]"
               placeholder="-fullscreen -novid -dx11"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/50">
+            <label className="mb-1.5 flex items-center gap-1.5 text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[var(--ink-muted)]">
               <FolderOpen className="h-3 w-3" /> Diretório de Trabalho (CWD)
             </label>
             <input
               type="text"
               value={workingDirectory}
               onChange={(e) => onWorkDirChange?.(e.target.value)}
-              className="h-10 w-full rounded-2xl border border-white/10 bg-white/5 px-3 text-xs font-mono text-white outline-none focus:border-white/20 placeholder:text-white/20"
+              className="h-10 w-full rounded-2xl border border-white/10 bg-white/5 px-3 text-xs font-mono text-white outline-none focus:border-white/20 placeholder:text-[var(--ink-faint)]"
               placeholder="C:\Caminho\Para\PastaDoJogo"
             />
           </div>

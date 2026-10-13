@@ -108,7 +108,7 @@ const CustomFilterModalBody: React.FC<CustomFilterModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       maxWidthClassName="max-w-2xl"
-      className="p-0 bg-[#0F1014] border border-white/10 rounded-3xl shadow-[0_24px_70px_rgba(0,0,0,0.85)] overflow-hidden select-none"
+      className="p-0 bg-[var(--tone-1)] border border-white/10 rounded-3xl shadow-[0_24px_70px_rgba(0,0,0,0.85)] overflow-hidden select-none"
     >
       <form onSubmit={handleSave} className="flex flex-col max-h-[85vh]">
         {/* Modal Header */}
@@ -121,7 +121,7 @@ const CustomFilterModalBody: React.FC<CustomFilterModalProps> = ({
               <h3 className="text-base font-display font-bold text-white tracking-tight">
                 {filterToEdit ? "Editar Filtro Personalizado" : "Novo Filtro Personalizado"}
               </h3>
-              <p className="text-xs text-white/45">
+              <p className="text-xs text-[var(--ink-faint)]">
                 Crie abas exclusivas para organizar seus jogos como preferir
               </p>
             </div>
@@ -130,7 +130,7 @@ const CustomFilterModalBody: React.FC<CustomFilterModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--ink-muted)] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -140,7 +140,7 @@ const CustomFilterModalBody: React.FC<CustomFilterModalProps> = ({
         <div className="px-6 py-5 flex flex-col gap-4 overflow-y-auto no-scrollbar">
           {/* Nome do Filtro */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
+            <label className="text-xs font-semibold text-[var(--ink-muted)] uppercase tracking-wider">
               Nome do Filtro
             </label>
             <input
@@ -149,29 +149,29 @@ const CustomFilterModalBody: React.FC<CustomFilterModalProps> = ({
               onChange={(e) => setFilterName(e.target.value)}
               placeholder="Ex: Meus RPGs, Campanhas, Multiplayer..."
               autoFocus
-              className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 focus:border-white/30 focus:outline-none text-white text-sm placeholder:text-white/30 transition-colors"
+              className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 focus:border-white/30 focus:outline-none text-white text-sm placeholder:text-[var(--ink-faint)] transition-colors"
             />
           </div>
 
           {/* Seletor de Jogos */}
           <div className="flex flex-col gap-2 mt-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">
+              <label className="text-xs font-semibold text-[var(--ink-muted)] uppercase tracking-wider">
                 Selecionar Jogos ({selectedGameIds.size} de {games.length})
               </label>
               <div className="flex items-center gap-3 text-xs">
                 <button
                   type="button"
                   onClick={handleSelectAll}
-                  className="text-white/60 hover:text-white transition-colors cursor-pointer"
+                  className="text-[var(--ink-muted)] hover:text-white transition-colors cursor-pointer"
                 >
                   Selecionar todos
                 </button>
-                <span className="text-white/20">|</span>
+                <span className="text-[var(--ink-faint)]">|</span>
                 <button
                   type="button"
                   onClick={handleClearAll}
-                  className="text-white/60 hover:text-white transition-colors cursor-pointer"
+                  className="text-[var(--ink-muted)] hover:text-white transition-colors cursor-pointer"
                 >
                   Limpar
                 </button>
@@ -180,20 +180,20 @@ const CustomFilterModalBody: React.FC<CustomFilterModalProps> = ({
 
             {/* Barra de busca de jogos dentro da modal */}
             <div className="relative w-full">
-              <Search className="w-4 h-4 text-white/40 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-[var(--ink-faint)] absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar jogos para incluir no filtro..."
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-white/20"
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white text-xs placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-white/20"
               />
             </div>
 
             {/* Lista com checkboxes dos jogos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[300px] overflow-y-auto no-scrollbar p-1 rounded-xl bg-black/20 border border-white/[0.04]">
               {filteredGames.length === 0 ? (
-                <div className="col-span-2 py-8 text-center text-xs text-white/40">
+                <div className="col-span-2 py-8 text-center text-xs text-[var(--ink-faint)]">
                   Nenhum jogo encontrado para esta busca.
                 </div>
               ) : (
@@ -207,7 +207,7 @@ const CustomFilterModalBody: React.FC<CustomFilterModalProps> = ({
                       className={`flex items-center gap-3 p-2 rounded-xl border transition-all cursor-pointer ${
                         isChecked
                           ? "bg-white/[0.08] border-white/20 text-white shadow-sm"
-                          : "bg-white/[0.02] border-transparent hover:bg-white/[0.05] text-white/70 hover:text-white"
+                          : "bg-white/[0.02] border-transparent hover:bg-white/[0.05] text-[var(--ink-muted)] hover:text-white"
                       }`}
                     >
                       <div
@@ -260,7 +260,7 @@ const CustomFilterModalBody: React.FC<CustomFilterModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-white/70 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--ink-muted)] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
             >
               Cancelar
             </button>

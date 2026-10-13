@@ -36,7 +36,7 @@ export const LinearProgress: React.FC<LinearProgressProps> = ({
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={determinate ? Math.round(pct) : undefined}
-      className={`h-1 w-full overflow-hidden rounded-full bg-[#2A2A2A] ${trackClassName} ${className}`}
+      className={`h-1 w-full overflow-hidden rounded-full bg-[var(--tone-4)] ${trackClassName} ${className}`}
     >
       {determinate ? (
         <motion.div

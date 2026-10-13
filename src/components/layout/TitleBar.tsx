@@ -175,10 +175,10 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           bounce: 0,
           duration: 0.32,
         }}
-        className={`select-none items-center justify-between font-sans text-xs tracking-tight text-white/70 ${
+        className={`select-none items-center justify-between font-sans text-xs tracking-tight text-[var(--ink-muted)] ${
           isFullscreen
-            ? "fixed top-0 left-0 right-0 z-50 flex h-9 px-3 border-b border-white/[0.08] bg-[#070707]/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.06)]"
-            : "relative z-50 flex h-9 w-full shrink-0 px-3 border-b border-white/[0.08] bg-[#070707] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+            ? "fixed top-0 left-0 right-0 z-50 flex h-9 px-3 bg-[var(--tone-0)]"
+            : "relative z-50 flex h-9 w-full shrink-0 px-3 bg-[var(--tone-0)]"
         }`}
         style={{
           WebkitAppRegion: isFullscreen ? "no-drag" : "drag",
@@ -193,37 +193,34 @@ export const TitleBar: React.FC<TitleBarProps> = ({
             <img
               src={pherieliumDesktopIcon}
               alt="Pherielium"
-              className="h-5 w-5 object-contain select-none pointer-events-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]"
+              className="h-5 w-5 object-contain select-none pointer-events-none"
               draggable={false}
             />
-            <span className="font-semibold text-white/90 tracking-[-0.01em] text-[12px] select-none pointer-events-none">
+            <span className="font-semibold text-[var(--ink)] tracking-[-0.01em] text-[length:var(--step-0)] select-none pointer-events-none">
               Pherielium
             </span>
           </div>
-
-          {/* Divisor sutil */}
-          <div className="h-3 w-[1px] bg-white/10 pointer-events-none select-none" />
 
           {/* Botão Tela Cheia ao lado do nome Pherielium */}
           <motion.button
             type="button"
             onClick={handleToggleFullscreen}
-            whileHover={{ scale: 1.03, backgroundColor: "rgba(255, 255, 255, 0.12)" }}
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.94 }}
             transition={{ type: "spring", bounce: 0.2, duration: 0.2 }}
-            className={`group flex h-[22px] items-center gap-1.5 rounded-full px-2.5 text-[10px] font-medium transition-colors cursor-pointer ${
+            className={`group flex h-6 items-center gap-1.5 rounded-[var(--node)] px-3 text-[length:var(--step-0)] font-medium transition-colors cursor-pointer ${
               isFullscreen
-                ? "bg-white/20 text-white shadow-inner"
-                : "bg-white/[0.06] text-white/70 hover:text-white border border-white/[0.08]"
+                ? "bg-[var(--tone-4)] text-[var(--ink)]"
+                : "bg-[var(--tone-2)] text-[var(--ink-muted)] hover:bg-[var(--tone-3)] hover:text-[var(--ink)]"
             }`}
             style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
             title={isFullscreen ? "Sair da tela cheia (F11 ou Esc)" : "Entrar em tela cheia (F11)"}
             aria-label={isFullscreen ? "Sair da tela cheia" : "Entrar em tela cheia"}
           >
             {isFullscreen ? (
-              <Minimize2 className="h-2.5 w-2.5 text-white/90 transition-transform group-hover:scale-110" />
+              <Minimize2 className="h-2.5 w-2.5 text-[var(--ink)] transition-transform group-hover:scale-110" />
             ) : (
-              <Maximize2 className="h-2.5 w-2.5 text-white/70 transition-transform group-hover:scale-110 group-hover:text-white" />
+              <Maximize2 className="h-2.5 w-2.5 text-[var(--ink-muted)] transition-transform group-hover:scale-110 group-hover:text-[var(--ink)]" />
             )}
             <span>{isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}</span>
           </motion.button>
@@ -241,10 +238,9 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           <motion.button
             type="button"
             onClick={handleMinimize}
-            whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.08)" }}
-            whileTap={{ scale: 0.92, backgroundColor: "rgba(255, 255, 255, 0.14)" }}
+            whileTap={{ scale: 0.92 }}
             transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
-            className="flex h-7 w-8 items-center justify-center rounded-[6px] text-white/60 transition-colors hover:text-white focus:outline-none cursor-pointer"
+            className="flex h-7 w-9 items-center justify-center rounded-[var(--node)] text-[var(--ink-muted)] transition-colors hover:bg-[var(--tone-3)] hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] cursor-pointer"
             title="Minimizar"
             aria-label="Minimizar janela"
           >
@@ -255,10 +251,9 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           <motion.button
             type="button"
             onClick={handleToggleMaximize}
-            whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.08)" }}
-            whileTap={{ scale: 0.92, backgroundColor: "rgba(255, 255, 255, 0.14)" }}
+            whileTap={{ scale: 0.92 }}
             transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
-            className="flex h-7 w-8 items-center justify-center rounded-[6px] text-white/60 transition-colors hover:text-white focus:outline-none cursor-pointer"
+            className="flex h-7 w-9 items-center justify-center rounded-[var(--node)] text-[var(--ink-muted)] transition-colors hover:bg-[var(--tone-3)] hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] cursor-pointer"
             title={isMaximized ? "Restaurar" : "Maximizar"}
             aria-label={isMaximized ? "Restaurar janela" : "Maximizar janela"}
           >
@@ -273,10 +268,9 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           <motion.button
             type="button"
             onClick={handleClose}
-            whileHover={{ backgroundColor: "rgba(239, 68, 68, 0.2)", color: "#f87171" }}
-            whileTap={{ scale: 0.92, backgroundColor: "rgba(239, 68, 68, 0.35)" }}
+            whileTap={{ scale: 0.92 }}
             transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
-            className="flex h-7 w-8 items-center justify-center rounded-[6px] text-white/60 transition-colors hover:text-red-400 focus:outline-none cursor-pointer"
+            className="flex h-7 w-9 items-center justify-center rounded-[var(--node)] text-[var(--ink-muted)] transition-colors hover:bg-[#c42b1c] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] cursor-pointer"
             title="Fechar"
             aria-label="Fechar janela"
           >

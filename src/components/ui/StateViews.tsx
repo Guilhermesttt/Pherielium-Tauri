@@ -42,18 +42,18 @@ export const StandardEmptyState: React.FC<StandardEmptyStateProps> = ({
         <EmptyStateGraphic variant={illustrated} icon={Icon} className="mb-3 h-32" />
       ) : (
         Icon && (
-          <div className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center mb-3 shrink-0 text-white/60">
+          <div className="w-9 h-9 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center mb-3 shrink-0 text-[var(--ink-muted)]">
             <Icon className="w-4.5 h-4.5" />
           </div>
         )
       )}
 
-      <h3 className="text-[15px] font-display font-semibold text-white tracking-tight leading-tight mb-1">
+      <h3 className="text-[length:var(--step-1)] font-display font-semibold text-white tracking-tight leading-tight mb-1">
         {title}
       </h3>
 
       {description && (
-        <p className="text-[13px] font-body text-white/60 leading-normal max-w-sm mb-4">
+        <p className="text-[length:var(--step-0)] font-body text-[var(--ink-muted)] leading-normal max-w-sm mb-4">
           {description}
         </p>
       )}
@@ -76,7 +76,7 @@ export const StandardEmptyState: React.FC<StandardEmptyStateProps> = ({
             <button
               type="button"
               onClick={onSecondaryAction}
-              className="cursor-pointer h-10 px-4 rounded-lg border border-white/15 bg-white/[0.04] text-white/80 hover:text-white hover:bg-white/[0.08] active:scale-98 text-xs font-medium transition-all duration-160"
+              className="cursor-pointer h-10 px-4 rounded-lg border border-white/15 bg-white/[0.04] text-[var(--ink)] hover:text-white hover:bg-white/[0.08] active:scale-98 text-xs font-medium transition-all duration-160"
             >
               {secondaryActionLabel}
             </button>
@@ -109,7 +109,7 @@ export const StandardErrorState: React.FC<StandardErrorStateProps> = ({
       </div>
 
       <h3 className="text-sm font-semibold text-white mb-1">{title}</h3>
-      <p className="text-xs text-white/60 mb-4">{message}</p>
+      <p className="text-xs text-[var(--ink-muted)] mb-4">{message}</p>
 
       {onRetry && (
         <button

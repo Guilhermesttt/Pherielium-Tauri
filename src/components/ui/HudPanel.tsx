@@ -24,13 +24,13 @@ export const HudPanel: React.FC<HudPanelProps> = ({
 }) => {
   return (
     <section
-      className={`relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#08090C]/90 p-5 md:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-xl font-sans ${className}`}
+      className={`relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[var(--tone-1)]/90 p-5 md:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.6)] backdrop-blur-xl font-sans ${className}`}
     >
       {(title || tag || headerRight) && (
         <header className="relative mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
           <div className="flex items-center gap-3">
             {tag && (
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-xs font-medium tracking-wide text-white/70">
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-xs font-medium tracking-wide text-[var(--ink-muted)]">
                 {tag}
               </span>
             )}
@@ -40,7 +40,7 @@ export const HudPanel: React.FC<HudPanelProps> = ({
                   {title}
                 </h3>
                 {subtitle && (
-                  <p className="mt-0.5 text-xs text-white/40">
+                  <p className="mt-0.5 text-xs text-[var(--ink-faint)]">
                     {subtitle}
                   </p>
                 )}
@@ -82,7 +82,7 @@ export const HudModRow: React.FC<HudModRowProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`group relative flex items-center justify-between gap-4 rounded-2xl border border-white/[0.06] bg-[#0E1015] px-4 py-3.5 transition-all duration-200 hover:border-white/20 hover:bg-[#12151B] ${
+      className={`group relative flex items-center justify-between gap-4 rounded-2xl border border-white/[0.06] bg-[var(--tone-1)] px-4 py-3.5 transition-all duration-200 hover:border-white/20 hover:bg-[var(--tone-2)] ${
         onClick ? "cursor-pointer" : ""
       } ${className}`}
     >
@@ -98,7 +98,7 @@ export const HudModRow: React.FC<HudModRowProps> = ({
           <p className="truncate text-xs md:text-sm font-semibold text-white group-hover:text-white tracking-tight">
             {name}
           </p>
-          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-white/40">
+          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[length:var(--step-0)] text-[var(--ink-faint)]">
             {version && <span>v{version}</span>}
             {author && (
               <>
@@ -108,12 +108,12 @@ export const HudModRow: React.FC<HudModRowProps> = ({
             )}
             {status && (
               <span
-                className={`rounded-full px-2 py-0.2 text-[9px] font-medium tracking-wide uppercase ${
+                className={`rounded-full px-2 py-0.2 text-[length:var(--step-0)] font-medium tracking-wide uppercase ${
                   status === "active" || status === "installed"
                     ? "bg-white/10 text-white"
                     : status === "error"
                     ? "bg-red-500/20 text-red-300"
-                    : "bg-white/[0.05] text-white/50"
+                    : "bg-white/[0.05] text-[var(--ink-muted)]"
                 }`}
               >
                 {status}
@@ -154,7 +154,7 @@ export const HudModRow: React.FC<HudModRowProps> = ({
               e.stopPropagation();
               onRemove();
             }}
-            className="cursor-pointer p-1 text-white/30 hover:text-red-400 transition-colors"
+            className="cursor-pointer p-1 text-[var(--ink-faint)] hover:text-red-400 transition-colors"
           >
             ✕
           </button>

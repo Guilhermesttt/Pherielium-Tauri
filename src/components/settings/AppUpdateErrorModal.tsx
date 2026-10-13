@@ -28,7 +28,7 @@ export const AppUpdateErrorModal: React.FC<AppUpdateErrorModalProps> = ({
       ariaLabel="Detalhes Técnicos do Erro de Atualização"
       maxWidthClassName="max-w-xl"
     >
-      <div className="space-y-4 p-6 bg-[#090909] rounded-3xl border border-white/10 text-white shadow-2xl">
+      <div className="space-y-4 p-6 bg-[var(--tone-1)] rounded-3xl border border-white/10 text-white shadow-2xl">
         <h3 className="text-lg font-bold tracking-tight text-white">
           Detalhes Técnicos do Erro de Atualização
         </h3>
@@ -42,18 +42,18 @@ export const AppUpdateErrorModal: React.FC<AppUpdateErrorModalProps> = ({
         </div>
 
         <div className="relative">
-          <div className="flex items-center justify-between rounded-t-xl border border-white/10 bg-black/60 px-4 py-2 text-[10px] font-black uppercase text-white/50">
+          <div className="flex items-center justify-between rounded-t-xl border border-white/10 bg-black/60 px-4 py-2 text-[length:var(--step-0)] font-black uppercase text-[var(--ink-muted)]">
             <span>Stack / Log do Erro</span>
             <button
               type="button"
               onClick={handleCopy}
-              className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1 text-[10px] font-bold text-white transition-all hover:bg-white/20 active:scale-95"
+              className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1 text-[length:var(--step-0)] font-bold text-white transition-all hover:bg-white/20 active:scale-95"
             >
               {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
               {copied ? "Copiado!" : "Copiar"}
             </button>
           </div>
-          <pre className="max-h-60 overflow-y-auto whitespace-pre-wrap rounded-b-xl border border-t-0 border-white/10 bg-black/40 p-4 font-mono text-[11px] leading-relaxed text-red-300/90 no-scrollbar">
+          <pre className="max-h-60 overflow-y-auto whitespace-pre-wrap rounded-b-xl border border-t-0 border-white/10 bg-black/40 p-4 font-mono text-[length:var(--step-0)] leading-relaxed text-red-300/90 no-scrollbar">
             {errorMessage || "Nenhum detalhe adicional disponível."}
           </pre>
         </div>

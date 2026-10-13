@@ -47,7 +47,7 @@ export const FriendsSubTabs: React.FC<FriendsSubTabsProps> = ({
             }
           }}
           className="!bg-transparent !p-0 gap-1 border-0"
-          tabClassName="flex items-center gap-2 px-5 py-2 !h-auto text-[13px] font-semibold tracking-wide"
+          tabClassName="flex items-center gap-2 px-5 py-2 !h-auto text-[length:var(--step-0)] font-semibold tracking-wide"
           tabs={tabs.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -59,9 +59,9 @@ export const FriendsSubTabs: React.FC<FriendsSubTabsProps> = ({
                   <span>{tab.label}</span>
                   {tab.badge !== undefined && tab.badge > 0 && (
                     <span
-                      className={`ml-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${isActive
+                      className={`ml-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1.5 text-[length:var(--step-0)] font-bold ${isActive
                           ? "bg-white/20 text-white"
-                          : "bg-white/10 text-white/70"
+                          : "bg-white/10 text-[var(--ink-muted)]"
                         }`}
                     >
                       {tab.badge}
@@ -77,7 +77,7 @@ export const FriendsSubTabs: React.FC<FriendsSubTabsProps> = ({
         <div className="pl-4 pr-2">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.05] shadow-inner">
             <span className="w-2 h-2 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-            <span className="text-[11px] font-bold text-white/80 tracking-widest uppercase">
+            <span className="text-[length:var(--step-0)] font-bold text-[var(--ink)] tracking-widest uppercase">
               Online {onlineCount}
             </span>
           </div>

@@ -112,7 +112,7 @@ export const EmptyState: React.FC<EmptyStateProps> = React.memo(
         <h3 className="mb-1.5 text-lg font-display font-semibold tracking-tight text-white">
           {title}
         </h3>
-        <p className="mb-6 text-[13px] font-body text-white/70 leading-relaxed">
+        <p className="mb-6 text-[length:var(--step-0)] font-body text-[var(--ink-muted)] leading-relaxed">
           {description}
         </p>
 
@@ -254,10 +254,10 @@ export const EmptyLibraryOnboarding: React.FC<EmptyLibraryOnboardingProps> = Rea
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-xl rounded-3xl p-8 md:p-10 bg-[#0b0d14]/90 border border-white/[0.08] backdrop-blur-2xl shadow-2xl shadow-black/60 font-sans"
+        className="w-full max-w-xl rounded-3xl p-8 md:p-10 bg-[var(--tone-1)]/90 border border-white/[0.08] backdrop-blur-2xl shadow-2xl shadow-black/60 font-sans"
       >
         <div className="flex items-center justify-between mb-8">
-          <p className="text-xs font-semibold tracking-wider uppercase text-white/60">
+          <p className="text-xs font-semibold tracking-wider uppercase text-[var(--ink-muted)]">
             Primeiros passos • Etapa {step + 1} de 3
           </p>
           <div className="flex items-center gap-2">
@@ -288,7 +288,7 @@ export const EmptyLibraryOnboarding: React.FC<EmptyLibraryOnboardingProps> = Rea
                 <h3 className="text-2xl md:text-3xl font-display font-bold tracking-tight text-white">
                   Sua biblioteca está vazia
                 </h3>
-                <p className="text-xs md:text-sm font-body text-white/60 leading-relaxed">
+                <p className="text-xs md:text-sm font-body text-[var(--ink-muted)] leading-relaxed">
                   Centralize todos os seus jogos, mods e acompanhe estatísticas em um único hub limpo e veloz.
                 </p>
               </motion.div>
@@ -306,7 +306,7 @@ export const EmptyLibraryOnboarding: React.FC<EmptyLibraryOnboardingProps> = Rea
                 <h3 className="text-2xl md:text-3xl font-display font-bold tracking-tight text-white">
                   Conecte com a Steam
                 </h3>
-                <p className="text-xs md:text-sm font-body text-white/60 leading-relaxed">
+                <p className="text-xs md:text-sm font-body text-[var(--ink-muted)] leading-relaxed">
                   Vincule sua conta para importar seus jogos e conquistas automaticamente em segundos.
                 </p>
                 <div className="pt-1">
@@ -334,7 +334,7 @@ export const EmptyLibraryOnboarding: React.FC<EmptyLibraryOnboardingProps> = Rea
                 <h3 className="text-2xl md:text-3xl font-display font-bold tracking-tight text-white">
                   Adicione manualmente
                 </h3>
-                <p className="text-xs md:text-sm font-body text-white/60 leading-relaxed">
+                <p className="text-xs md:text-sm font-body text-[var(--ink-muted)] leading-relaxed">
                   Cadastre qualquer jogo local, instalador ou emulador diretamente no seu launcher.
                 </p>
                 <div className="pt-1">
@@ -360,7 +360,7 @@ export const EmptyLibraryOnboarding: React.FC<EmptyLibraryOnboardingProps> = Rea
             type="button"
             onClick={handleBack}
             disabled={step === 0}
-            className="cursor-pointer flex items-center gap-1.5 text-xs font-body font-semibold text-white/50 hover:text-white disabled:opacity-0 transition-all duration-200"
+            className="cursor-pointer flex items-center gap-1.5 text-xs font-body font-semibold text-[var(--ink-muted)] hover:text-white disabled:opacity-0 transition-all duration-200"
           >
             <ChevronLeft className="h-4 w-4" /> Voltar
           </button>
@@ -378,8 +378,8 @@ export const EmptyLibraryOnboarding: React.FC<EmptyLibraryOnboardingProps> = Rea
           </button>
         </div>
 
-        <p className="mt-6 flex items-center gap-2 text-[11px] font-body text-white/35">
-          <CheckCircle2 className="h-3.5 w-3.5 text-white/60" />
+        <p className="mt-6 flex items-center gap-2 text-[length:var(--step-0)] font-body text-[var(--ink-faint)]">
+          <CheckCircle2 className="h-3.5 w-3.5 text-[var(--ink-muted)]" />
           Após a sincronização, seus jogos aparecem automaticamente na biblioteca.
         </p>
       </motion.div>

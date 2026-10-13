@@ -68,8 +68,8 @@ export function LoadingState({
   const elapsed = useElapsed(showTimer);
   const orbState = resolveOrbState(variant);
 
-  const textSize = size === "sm" ? "text-[11px]" : size === "lg" ? "text-[14px]" : "text-[13px]";
-  const timerSize = size === "sm" ? "text-[10px]" : size === "lg" ? "text-[13px]" : "text-[12px]";
+  const textSize = size === "sm" ? "text-[length:var(--step-0)]" : size === "lg" ? "text-[length:var(--step-1)]" : "text-[length:var(--step-0)]";
+  const timerSize = size === "sm" ? "text-[length:var(--step-0)]" : size === "lg" ? "text-[length:var(--step-0)]" : "text-[length:var(--step-0)]";
 
   const shimmerGradient = dark
     ? "linear-gradient(90deg, rgba(0,0,0,0.4) 35%, rgba(0,0,0,0.95) 50%, rgba(0,0,0,0.4) 65%)"
@@ -100,7 +100,7 @@ export function LoadingState({
         </span>
       )}
       {showTimer && (
-        <span className={`font-mono ${timerSize} ${dark ? "text-black/50" : "text-white/50"} tabular-nums`}>
+        <span className={`font-mono ${timerSize} ${dark ? "text-black/50" : "text-[var(--ink-muted)]"} tabular-nums`}>
           {elapsed}
         </span>
       )}

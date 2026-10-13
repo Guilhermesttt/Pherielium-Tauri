@@ -212,8 +212,8 @@ const FloatingPlatformShowcase: React.FC<{
           <span className="font-semibold text-white tracking-tight font-display text-base">
             {platformName}
           </span>
-          <span className="text-white/35 font-normal text-xs">•</span>
-          <span className="text-white/60 font-medium text-sm">
+          <span className="text-[var(--ink-faint)] font-normal text-xs">•</span>
+          <span className="text-[var(--ink-muted)] font-medium text-sm">
             {countText}
           </span>
         </motion.div>
@@ -449,7 +449,7 @@ export const PlatformSelectorModal: React.FC<PlatformSelectorModalProps> = ({
               playSound?.("back");
               onClose();
             }}
-            className="absolute top-6 right-8 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/50 backdrop-blur-xl transition-all hover:bg-white/15 hover:text-white active:scale-95 shadow-lg cursor-pointer"
+            className="absolute top-6 right-8 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[var(--ink-muted)] backdrop-blur-xl transition-all hover:bg-white/15 hover:text-white active:scale-95 shadow-lg cursor-pointer"
             aria-label="Fechar"
           >
             <X className="h-4 w-4" />
@@ -466,7 +466,7 @@ export const PlatformSelectorModal: React.FC<PlatformSelectorModalProps> = ({
           >
             {/* Header tag */}
             <div className="absolute top-8 left-8 md:left-16 z-20 flex items-center gap-2">
-              <span className="text-xs font-bold tracking-widest text-white/40 uppercase font-display">
+              <span className="text-xs font-bold tracking-widest text-[var(--ink-faint)] uppercase font-display">
                 Filtrar por Plataforma
               </span>
             </div>
@@ -511,34 +511,34 @@ export const PlatformSelectorModal: React.FC<PlatformSelectorModalProps> = ({
               className="absolute bottom-8 left-8 md:left-16 z-20 flex items-center gap-4 text-xs select-none font-normal"
             >
               {isGamepadConnected ? (
-                <div className="flex items-center gap-5 text-white/70">
+                <div className="flex items-center gap-5 text-[var(--ink-muted)]">
                   <div className="flex items-center gap-2">
                     <ControllerButtonGlyph button="DPAD" gamepadFamily={gamepadFamily} size={20} />
                     <span>Navegar</span>
                   </div>
-                  <span className="text-white/20">•</span>
-                  <div className="flex items-center gap-2 text-white/90">
+                  <span className="text-[var(--ink-faint)]">•</span>
+                  <div className="flex items-center gap-2 text-[var(--ink)]">
                     <ControllerButtonGlyph button="A" gamepadFamily={gamepadFamily} size={20} />
                     <span className="font-semibold text-white">Confirmar</span>
                   </div>
-                  <span className="text-white/20">•</span>
-                  <div className="flex items-center gap-2 text-white/70">
+                  <span className="text-[var(--ink-faint)]">•</span>
+                  <div className="flex items-center gap-2 text-[var(--ink-muted)]">
                     <ControllerButtonGlyph button="B" gamepadFamily={gamepadFamily} size={20} />
                     <span>Fechar</span>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2.5 text-white/45">
+                <div className="flex items-center gap-2.5 text-[var(--ink-faint)]">
                   <span>Gire o scroll para navegar</span>
                   {!openedViaShortcut ? (
                     <>
-                      <span className="text-white/20">•</span>
-                      <span className="text-white/75 font-medium">Enter para confirmar</span>
+                      <span className="text-[var(--ink-faint)]">•</span>
+                      <span className="text-[var(--ink-muted)] font-medium">Enter para confirmar</span>
                     </>
                   ) : (
                     <>
-                      <span className="text-white/20">•</span>
-                      <span className="text-white/75 font-medium">Solte Alt para confirmar</span>
+                      <span className="text-[var(--ink-faint)]">•</span>
+                      <span className="text-[var(--ink-muted)] font-medium">Solte Alt para confirmar</span>
                     </>
                   )}
                 </div>

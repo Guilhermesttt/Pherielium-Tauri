@@ -56,7 +56,7 @@ const MainVideoBackground: React.FC = () => {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none bg-[#050507]">
+    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none bg-[var(--tone-0)]">
       <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
         <video
           ref={videoRef}

@@ -552,14 +552,14 @@ export const LevelUpModal: React.FC = () => {
               y: reduceMotion ? 0 : 10,
             }}
             transition={{ duration: reduceMotion ? 0 : 0.55, ease: [0.16, 1, 0.3, 1] }}
-            className="bg-[#0E0E0E] relative w-full max-w-[530px] overflow-hidden rounded-[28px] border border-[var(--color-border)] px-7 pb-7 pt-8 text-center shadow-[0_40px_120px_rgba(0,0,0,.95)] select-none"
+            className="bg-[var(--tone-1)] relative w-full max-w-[530px] overflow-hidden rounded-[var(--corner-lg)] border border-[var(--color-border)] px-7 pb-7 pt-8 text-center shadow-[0_40px_120px_rgba(0,0,0,.95)] select-none"
           >
             {isTierPromotion && !reduceMotion && (
               <motion.div
                 initial={{ opacity: 0.65 }}
                 animate={{ opacity: 0 }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="absolute inset-0 bg-white pointer-events-none z-50 rounded-[28px]"
+                className="absolute inset-0 bg-white pointer-events-none z-50 rounded-[var(--corner-lg)]"
               />
             )}
 
@@ -589,7 +589,7 @@ export const LevelUpModal: React.FC = () => {
                   initial={{ opacity: 0, scale: 0.8, y: -8 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   transition={{ delay: reduceMotion ? 0 : 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="mb-1 inline-flex items-center gap-2 rounded-full px-3.5 py-1 border font-mono text-[10px] font-black uppercase tracking-[0.2em] shadow-lg"
+                  className="mb-1 inline-flex items-center gap-2 rounded-full px-3.5 py-1 border font-mono text-[length:var(--step-0)] font-black uppercase tracking-[0.2em] shadow-lg"
                   style={{
                     borderColor: visual.accent,
                     backgroundColor: `rgba(${visual.accentRgb}, 0.15)`,
@@ -604,7 +604,7 @@ export const LevelUpModal: React.FC = () => {
                   initial={{ opacity: 0, y: -5 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: reduceMotion ? 0 : 0.15, duration: 0.4 }}
-                  className="text-[10px] font-mono font-semibold uppercase tracking-[0.3em] text-white/40"
+                  className="text-[length:var(--step-0)] font-mono font-semibold uppercase tracking-[0.3em] text-[var(--ink-faint)]"
                 >
                   {visual.subLabel}
                 </motion.div>
@@ -788,20 +788,20 @@ export const LevelUpModal: React.FC = () => {
               >
                 <p
                   id="level-up-title"
-                  className="text-[11px] font-bold uppercase tracking-[0.24em] text-white/45"
+                  className="text-[length:var(--step-0)] font-bold uppercase tracking-[0.24em] text-[var(--ink-faint)]"
                 >
                   {isTierPromotion ? "Nova patente conquistada" : "Novo nível alcançado"}
                 </p>
 
                 <div className="mt-1 flex items-baseline justify-center gap-2">
-                  <span className="text-lg font-semibold text-white/35">NÍVEL</span>
+                  <span className="text-lg font-semibold text-[var(--ink-faint)]">NÍVEL</span>
                   <span
                     className={`text-[66px] font-black leading-none tracking-[-0.06em] ${tierKey === "platinum"
                       ? "bg-gradient-to-r from-[#75D8FF] via-[#F8FAFC] to-[#C084FC] bg-clip-text text-transparent"
                       : tierKey === "gold"
                         ? "text-[#FFD86B]"
                         : tierKey === "silver"
-                          ? "text-[#F8FAFC]"
+                          ? "text-[var(--ink)]"
                           : "text-white"
                       }`}
                     style={{
@@ -823,7 +823,7 @@ export const LevelUpModal: React.FC = () => {
                       boxShadow: `0 0 10px rgba(${visual.accentRgb}, .9)`,
                     }}
                   />
-                  <span className="text-sm font-bold tracking-wide text-white/90">
+                  <span className="text-sm font-bold tracking-wide text-[var(--ink)]">
                     {rankName}
                   </span>
                 </div>
@@ -836,7 +836,7 @@ export const LevelUpModal: React.FC = () => {
                 transition={{ delay: reduceMotion ? 0 : 0.55, duration: 0.4 }}
                 className="mt-6 flex items-center justify-center gap-4"
               >
-                <span className="font-mono text-[11px] text-white/30">NV. {oldLevel}</span>
+                <span className="font-mono text-[length:var(--step-0)] text-[var(--ink-faint)]">NV. {oldLevel}</span>
                 <div className="relative h-px w-24 overflow-hidden bg-white/[0.08]">
                   <motion.div
                     initial={{ scaleX: 0 }}
@@ -849,7 +849,7 @@ export const LevelUpModal: React.FC = () => {
                     }}
                   />
                 </div>
-                <span className="font-mono text-[11px] font-bold text-white/90">NV. {newLevel}</span>
+                <span className="font-mono text-[length:var(--step-0)] font-bold text-[var(--ink)]">NV. {newLevel}</span>
               </motion.div>
 
               {/* Próximo marco — barra com mais contraste, sem repetir "Nível X" */}
@@ -860,9 +860,9 @@ export const LevelUpModal: React.FC = () => {
                   transition={{ delay: reduceMotion ? 0 : 0.68, duration: 0.45 }}
                   className="mt-7"
                 >
-                  <div className="mb-2.5 flex items-center justify-between gap-4 text-[11px]">
-                    <span className="font-medium text-white/40">Próximo marco</span>
-                    <span className="font-mono text-white/55">
+                  <div className="mb-2.5 flex items-center justify-between gap-4 text-[length:var(--step-0)]">
+                    <span className="font-medium text-[var(--ink-faint)]">Próximo marco</span>
+                    <span className="font-mono text-[var(--ink-muted)]">
                       {levelInfo.currentLevelXp} / {levelInfo.xpForNextLevel} XP
                     </span>
                   </div>
@@ -880,7 +880,7 @@ export const LevelUpModal: React.FC = () => {
                     />
                   </div>
 
-                  <div className="mt-2 flex items-center justify-between text-[10px] text-white/25">
+                  <div className="mt-2 flex items-center justify-between text-[length:var(--step-0)] text-[var(--ink-faint)]">
                     <span>Faltam {remainingXp} XP para o Nv. {newLevel + 1}</span>
                     <span>{progress}%</span>
                   </div>
@@ -897,10 +897,10 @@ export const LevelUpModal: React.FC = () => {
                 transition={{ delay: reduceMotion ? 0 : 0.85, duration: 0.4 }}
                 whileHover={reduceMotion ? undefined : { y: -1 }}
                 whileTap={{ scale: 0.99 }}
-                className="group mt-7 flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/[0.11] bg-white/[0.055] text-xs font-semibold text-white/85 transition-colors hover:bg-white/[0.09] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 cursor-pointer"
+                className="group mt-7 flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-white/[0.11] bg-white/[0.055] text-xs font-semibold text-[var(--ink)] transition-colors hover:bg-white/[0.09] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 cursor-pointer"
               >
                 <span>Continuar jornada</span>
-                <span className="rounded-md border border-white/[0.08] bg-black/30 px-2 py-0.5 font-mono text-[10px] text-white/40 transition-colors group-hover:text-white/60">
+                <span className="rounded-md border border-white/[0.08] bg-black/30 px-2 py-0.5 font-mono text-[length:var(--step-0)] text-[var(--ink-faint)] transition-colors group-hover:text-[var(--ink-muted)]">
                   ENTER / A
                 </span>
               </motion.button>

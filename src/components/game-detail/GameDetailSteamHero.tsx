@@ -57,9 +57,9 @@ export const GameDetailSteamHero: React.FC<GameDetailSteamHeroProps> = React.mem
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-transparent pointer-events-none" />
 
       {/* 3. Top-Right Status Bar */}
-      <div className="absolute top-6 right-8 z-30 flex items-center gap-4 text-white/70">
+      <div className="absolute top-6 right-8 z-30 flex items-center gap-4 text-[var(--ink-muted)]">
         {currentTime && (
-          <span className="font-semibold text-xs tracking-wider text-white/90">
+          <span className="font-semibold text-xs tracking-wider text-[var(--ink)]">
             {currentTime}
           </span>
         )}
@@ -75,7 +75,7 @@ export const GameDetailSteamHero: React.FC<GameDetailSteamHeroProps> = React.mem
           type="button"
           onClick={onClose}
           aria-label="Fechar"
-          className="ml-2 w-10 h-10 min-w-[40px] min-h-[40px] aspect-square rounded-full shrink-0 flex items-center justify-center p-0 bg-black/60 hover:bg-white/15 text-white/80 hover:text-white border border-white/15 backdrop-blur-xl transition-all hover:rotate-90 active:scale-90 cursor-pointer shadow-lg"
+          className="ml-2 w-10 h-10 min-w-[40px] min-h-[40px] aspect-square rounded-full shrink-0 flex items-center justify-center p-0 bg-black/60 hover:bg-white/15 text-[var(--ink)] hover:text-white border border-white/15 backdrop-blur-xl transition-all hover:rotate-90 active:scale-90 cursor-pointer shadow-lg"
         >
           <X className="w-4 h-4 shrink-0" />
         </button>

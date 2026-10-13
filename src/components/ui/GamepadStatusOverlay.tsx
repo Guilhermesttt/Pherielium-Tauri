@@ -232,10 +232,10 @@ export const GamepadStatusOverlay: React.FC = () => {
   const iconColor = isBatteryLow
     ? "text-red-300"
     : kind === "hapticsOff"
-      ? "text-white/35"
+      ? "text-[var(--ink-faint)]"
       : isConnected
         ? "text-white"
-        : "text-white/35";
+        : "text-[var(--ink-faint)]";
 
   const dotClass = isBatteryLow
     ? "bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.7)]"
@@ -276,12 +276,12 @@ export const GamepadStatusOverlay: React.FC = () => {
             </span>
 
             <div className="flex flex-col leading-tight">
-              <span className="font-display font-semibold text-[13px] tracking-tight text-white">
+              <span className="font-display font-semibold text-[length:var(--step-0)] tracking-tight text-white">
                 {title}
               </span>
               <span className="flex items-center gap-1.5 mt-0.5">
                 <span className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${dotClass}`} />
-                <span className="font-body text-[10px] uppercase tracking-[0.16em] text-white/40">
+                <span className="font-body text-[length:var(--step-0)] uppercase tracking-[0.16em] text-[var(--ink-faint)]">
                   {subtitle}
                 </span>
               </span>

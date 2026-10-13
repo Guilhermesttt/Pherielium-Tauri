@@ -37,7 +37,7 @@ const KIND_CONFIG: Record<
   },
   unknown: {
     icon: AlertTriangle,
-    accentColor: "border-white/20 bg-white/5 text-white/80",
+    accentColor: "border-white/20 bg-white/5 text-[var(--ink)]",
     defaultTitle: "Ocorreu um Erro",
   },
 };
@@ -88,7 +88,7 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({
             data-gamepad-id={gamepadId}
             onClick={handleRetry}
             disabled={retrying}
-            className="ml-auto flex items-center gap-1 rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-white/20 active:scale-95 transition-all"
+            className="ml-auto flex items-center gap-1 rounded-md bg-white/10 px-2 py-0.5 text-[length:var(--step-0)] font-bold text-white hover:bg-white/20 active:scale-95 transition-all"
           >
             <RefreshCw className={`h-3 w-3 ${retrying ? "animate-spin" : ""}`} />
             {errorObj.actionLabel || "Repetir"}
@@ -110,7 +110,7 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({
           </div>
           <div className="min-w-0 flex-1">
             <h4 className="text-sm font-bold text-white">{title}</h4>
-            <p className="mt-1 text-xs text-white/70 leading-relaxed">{errorObj.message}</p>
+            <p className="mt-1 text-xs text-[var(--ink-muted)] leading-relaxed">{errorObj.message}</p>
             {retryHandler && (
               <div className="mt-3.5 flex items-center gap-2">
                 <button
@@ -127,7 +127,7 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({
                   <button
                     type="button"
                     onClick={onDismiss}
-                    className="rounded-xl border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-white/70 hover:bg-white/10 active:scale-95 transition-all"
+                    className="rounded-xl border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-[var(--ink-muted)] hover:bg-white/10 active:scale-95 transition-all"
                   >
                     Dispensar
                   </button>
@@ -140,7 +140,7 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({
               type="button"
               onClick={onDismiss}
               aria-label="Fechar"
-              className="rounded-lg p-1 text-white/40 hover:bg-white/10 hover:text-white transition-colors"
+              className="rounded-lg p-1 text-[var(--ink-faint)] hover:bg-white/10 hover:text-white transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -160,7 +160,7 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({
         <Icon className="h-4 w-4 shrink-0" />
         <div className="min-w-0">
           <span className="text-xs font-bold text-white mr-2">{title}:</span>
-          <span className="text-xs text-white/80">{errorObj.message}</span>
+          <span className="text-xs text-[var(--ink)]">{errorObj.message}</span>
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">
@@ -181,7 +181,7 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({
             type="button"
             onClick={onDismiss}
             aria-label="Fechar aviso"
-            className="rounded-md p-1 text-white/40 hover:bg-white/10 hover:text-white transition-colors"
+            className="rounded-md p-1 text-[var(--ink-faint)] hover:bg-white/10 hover:text-white transition-colors"
           >
             <X className="h-3.5 w-3.5" />
           </button>

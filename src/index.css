@@ -626,20 +626,20 @@ html[data-launcher-theme="xbox360"] {
 
 @theme {
   /* Títulos, Headings e Elementos de Destaque (Impacto Máximo) */
-  --font-display: 'Inter', system-ui, sans-serif;
+  --font-display: 'Inter Variable', 'Inter', system-ui, sans-serif;
   /* Aplicar font-weight: 900 */
-  --font-heading: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Inter Variable', 'Inter', system-ui, sans-serif;
   /* Aplicar font-weight: 900 */
-  --font-space: 'Inter', system-ui, sans-serif;
+  --font-space: 'Inter Variable', 'Inter', system-ui, sans-serif;
   /* Aplicar font-weight: 900 */
-  --font-title: 'Inter', system-ui, sans-serif;
+  --font-title: 'Inter Variable', 'Inter', system-ui, sans-serif;
   /* Aplicar font-weight: 900 */
 
   /* Textos de Interface, Corpo, Menus e Legendas (Legibilidade Apple) */
-  --font-body: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-  --font-ui: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-  --font-inter: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+  --font-body: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', sans-serif;
+  --font-ui: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', sans-serif;
+  --font-sans: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', sans-serif;
+  --font-inter: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', sans-serif;
 
   --color-bg-main: var(--color-bg-main);
   --color-surface: var(--color-surface);
@@ -2226,4 +2226,266 @@ html[data-ui-style="refined"]:is(:not([data-launcher-theme]), [data-launcher-the
   html[data-ui-style="refined"] :is(button, [role="button"], summary):active {
     scale: 1;
   }
+}
+
+
+/* ========================================================
+   Pherielium Refined: sistema do novo visual (branch design/hub-refined)
+   Ideia: o nó do logo (círculo ligado por uma haste) vira a forma do sistema:
+   botões em pílula, pontos de estado com anel, o anel de foco.
+   Regras: tinta cheia para o que se lê, piso de 13px, superfícies separadas por tom
+   (sem borda), uma cor de acento só para "ao vivo", movimento com a mola do iOS.
+   ======================================================== */
+html[data-ui-style="refined"] {
+  --font-display: 'Sora Variable', 'Inter Variable', system-ui, sans-serif;
+  --font-heading: 'Sora Variable', 'Inter Variable', system-ui, sans-serif;
+  --font-title: 'Sora Variable', 'Inter Variable', system-ui, sans-serif;
+}
+
+/* Tokens do sistema: sempre definidos (as peças em components/ui/refined funcionam também no estilo clássico). */
+:root {
+  /* tinta (contraste sobre --tone-0: 18:1, 8:1, 4.6:1) */
+  --ink: #f5f5f7;
+  --ink-muted: #a1a1a6;
+  --ink-faint: #7c7c82;
+
+  /* tons: cada superfície é um degrau acima da anterior */
+  --tone-0: #050505;
+  --tone-1: #0e0e10;
+  --tone-2: #17171a;
+  --tone-3: #212125;
+  --tone-4: #2c2c31;
+
+  /* passos de tipo: piso de 13px, um tamanho grande por tela */
+  --step-0: 0.8125rem;
+  --step-1: 0.9375rem;
+  --step-2: 1.0625rem;
+  --step-3: 1.375rem;
+  --step-4: 2rem;
+  --step-5: clamp(2.75rem, 4vw, 4.5rem);
+
+  /* forma: o nó (pílula) e dois cantos */
+  --node: 999px;
+  --corner-sm: 12px;
+  --corner-md: 20px;
+  --corner-lg: 28px;
+
+  /* camadas nomeadas no lugar de z-index soltos */
+  --z-bar: 40;
+  --z-panel: 60;
+  --z-modal: 80;
+  --z-toast: 90;
+  --z-system: 100;
+
+  /* movimento */
+  --spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-1: 160ms;
+  --dur-2: 260ms;
+  --dur-3: 420ms;
+
+  /* o único acento de cor: "ao vivo" (online, falando, transmitindo) */
+  --live: #30d158;
+}
+
+/* ========================================================
+   Pherielium Refined: regras globais do hub inteiro
+   Valem só no estilo refinado. Em vez de editar 250 arquivos, a camada abaixo
+   desliga os enfeites que o sistema não usa (sombra em repouso, vidro, texto em
+   gradiente) e leva a escala do Tailwind para a do sistema (piso de 13px, cantos).
+   Janelas que não marcam data-ui-style (overlay do jogo, notch) continuam como estão.
+   ======================================================== */
+html[data-ui-style="refined"] {
+  /* escala do Tailwind -> escala do sistema */
+  --text-xs: var(--step-0);
+  --text-xs--line-height: 1.45;
+  --radius-xl: var(--corner-sm);
+  --radius-2xl: var(--corner-md);
+  --radius-3xl: var(--corner-lg);
+
+  /* superfícies dos temas -> tons */
+  --surface-base: var(--tone-0);
+  --surface-raised: var(--tone-1);
+  --surface-overlay: var(--tone-2);
+  --radius-panel: var(--corner-lg);
+  --radius-card: var(--corner-md);
+  --radius-control: var(--corner-sm);
+  --elev-card: none;
+  --elev-focus: 0 0 0 1.5px var(--ink);
+  --surface-chamfer: 0 0 #0000;
+}
+
+/* Sem sombra em repouso: zera só a sombra (anéis de foco do Tailwind continuam, usam outra variável). */
+html[data-ui-style="refined"] [class*="shadow-"] {
+  --tw-shadow: 0 0 #0000 !important;
+}
+html[data-ui-style="refined"] :is(.theme-panel, .theme-card-surface) {
+  box-shadow: none;
+}
+
+/* Sem vidro: o blur custa GPU de quem está jogando e o sistema separa por tom. */
+html[data-ui-style="refined"] [class*="backdrop-blur"],
+html[data-ui-style="refined"] [class*="backdrop-filter"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Texto em gradiente vira tinta cheia (o gradiente some, o texto continua legível). */
+html[data-ui-style="refined"] .bg-clip-text.text-transparent {
+  background-image: none !important;
+  color: var(--ink) !important;
+}
+
+/* O anel de foco é o "nó": tinta cheia, afastado do controle. */
+html[data-ui-style="refined"] :focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Barras de rolagem discretas, no tom do fundo. */
+html[data-ui-style="refined"] * {
+  scrollbar-color: var(--tone-4) transparent;
+}
+
+/* Modais: entram com a mola do sistema e o painel se separa do fundo só pelo tom (sem borda). */
+html[data-ui-style="refined"] .t-modal {
+  --modal-ease: var(--spring);
+  --modal-open-dur: var(--dur-3);
+  --modal-close-dur: var(--dur-2);
+  border-color: transparent !important;
+}
+html[data-ui-style="refined"] .t-modal.t-modal-panel:not(.is-open):not(.is-closing),
+html[data-ui-style="refined"] .t-modal.t-modal-panel.is-closing {
+  filter: none;
+}
+
+/* Abas (HorizontalTabs): o mesmo segmentado do sistema (fundo tone-2, pílula tone-4, 13px). */
+html[data-ui-style="refined"] {
+  --tabs-dur: var(--dur-2);
+  --tabs-ease: var(--spring);
+  --tabs-text-muted: var(--ink-muted);
+  --tabs-text-active: var(--ink);
+  --tabs-bar-bg: var(--tone-2);
+  --tabs-pill-bg: var(--tone-4);
+  --toast-ease: var(--spring);
+  --toast-blur: 0px;
+  --toggle-ease: var(--spring);
+}
+html[data-ui-style="refined"] .t-tabs {
+  gap: 0;
+  padding: 4px;
+}
+html[data-ui-style="refined"] .t-tab {
+  height: 36px;
+  padding: 0 16px;
+  font-size: var(--step-0);
+  font-weight: 600;
+}
+
+/* Dicas (tooltip do Radix): pílula em tom, tinta cheia. */
+html[data-ui-style="refined"] [data-slot="tooltip-content"] {
+  border-radius: var(--node);
+  background: var(--tone-3);
+  color: var(--ink);
+  font-size: var(--step-0);
+  font-weight: 500;
+}
+html[data-ui-style="refined"] [data-slot="tooltip-content"] svg.fill-foreground {
+  fill: var(--tone-3);
+  background: var(--tone-3);
+}
+
+/* Sem sobretítulo: rótulos pequenos em caixa-alta e espaçados viram texto normal (o tamanho e o peso já hierarquizam). */
+html[data-ui-style="refined"] .uppercase {
+  text-transform: none;
+}
+html[data-ui-style="refined"] :is(.tracking-wide, .tracking-wider, .tracking-widest, [class*="tracking-[0."], [class*="tracking-[.1"], [class*="tracking-[.2"], [class*="tracking-[.3"]) {
+  letter-spacing: 0;
+}
+
+/* Sem monoespaçada: números alinham com algarismos tabulares da Inter. */
+html[data-ui-style="refined"] .font-mono {
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Botões secundários com contorno fino viram o botão tonal do sistema (sem linha).
+   Só os que não guardam estado: seleção (aria-pressed/selected/checked/current, data-state, role)
+   ou borda inline (cor dinâmica) continuam como estão, porque ali a borda informa. */
+html[data-ui-style="refined"] button[class*="border-white/"]:not([aria-pressed]):not([aria-selected]):not([aria-checked]):not([aria-current]):not([data-state]):not([role]):not([style*="border"]) {
+  border-color: transparent !important;
+}
+html[data-ui-style="refined"] button[class*="border-white/"]:not([class^="bg-"]):not([class*=" bg-"]):not([aria-pressed]):not([aria-selected]):not([aria-checked]):not([aria-current]):not([data-state]):not([role]):not([style*="border"]) {
+  background-color: var(--tone-3);
+}
+html[data-ui-style="refined"] button[class*="border-white/"]:not([class^="bg-"]):not([class*=" bg-"]):not([aria-pressed]):not([aria-selected]):not([aria-checked]):not([aria-current]):not([data-state]):not([role]):not([style*="border"]):hover:not(:disabled) {
+  background-color: var(--tone-4);
+}
+
+/* Selos em pílula com contorno: um degrau de tom no lugar da linha. */
+html[data-ui-style="refined"] span[class*="rounded-full"][class*="border-white/"]:not([style*="border"]) {
+  border-color: transparent !important;
+}
+html[data-ui-style="refined"] span[class*="rounded-full"][class*="border-white/"]:not([class^="bg-"]):not([class*=" bg-"]):not([style*="border"]) {
+  background-color: var(--tone-3);
+}
+
+
+/* Cartões com linha quase invisível (5–10%) e fundo próprio: o tom já separa, a linha sai.
+   Bordas de seleção (20% ou mais) e bordas inline (cor dinâmica) ficam. */
+html[data-ui-style="refined"] div:is([class*=" border-white/5 "],[class$=" border-white/5"],[class^="border-white/5 "],[class*=" border border-white/5"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/6 "],[class$=" border-white/6"],[class^="border-white/6 "],[class*=" border border-white/6"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/8 "],[class$=" border-white/8"],[class^="border-white/8 "],[class*=" border border-white/8"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/10 "],[class$=" border-white/10"],[class^="border-white/10 "],[class*=" border border-white/10"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.04] "],[class$=" border-white/[0.04]"],[class^="border-white/[0.04] "],[class*=" border border-white/[0.04]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.05] "],[class$=" border-white/[0.05]"],[class^="border-white/[0.05] "],[class*=" border border-white/[0.05]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.06] "],[class$=" border-white/[0.06]"],[class^="border-white/[0.06] "],[class*=" border border-white/[0.06]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.07] "],[class$=" border-white/[0.07]"],[class^="border-white/[0.07] "],[class*=" border border-white/[0.07]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.08] "],[class$=" border-white/[0.08]"],[class^="border-white/[0.08] "],[class*=" border border-white/[0.08]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.1] "],[class$=" border-white/[0.1]"],[class^="border-white/[0.1] "],[class*=" border border-white/[0.1]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]) {
+  border-color: transparent;
+}
+
+/* Início e Biblioteca: os controles ficam sobre a arte do jogo, então usam tom quase opaco
+   (legível sobre qualquer capa) em vez de vidro com blur. Rótulos com piso de 13px. */
+html[data-ui-style="refined"] {
+  --fs-label: clamp(0.8125rem, 0.62vw, 1.0625rem);
+  --fs-caption: clamp(0.8125rem, 0.66vw, 1.125rem);
+  --tracking-label: 0;
+  --elev-pill: none;
+  --elev-button: none;
+  --ease-focus: var(--spring);
+}
+html[data-ui-style="refined"] :is(.ctl-circle, .ctl-pill) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--tone-2) 88%, transparent);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-ui-style="refined"] .ctl-circle {
+  color: var(--ink-muted);
+}
+html[data-ui-style="refined"] .ctl-circle:hover {
+  background: var(--tone-3);
+  color: var(--ink);
+}
+html[data-ui-style="refined"] .ctl-circle[data-active="true"] {
+  background: var(--ink);
+  color: var(--tone-0);
+}
+html[data-ui-style="refined"] .btn-play {
+  border-color: transparent;
+  box-shadow: none;
+  border-radius: var(--node);
+}
+html[data-ui-style="refined"] .platform-hint:hover,
+html[data-ui-style="refined"] .platform-hint:focus-visible {
+  border-color: transparent;
+  background: var(--tone-2);
+}
+
+/* Brilhos em gradiente branco (reflexo no topo de cartões, linhas que somem nas pontas) saem.
+   Os degradês escuros (from-black, scrims) ficam: protegem a leitura do texto sobre imagens. */
+html[data-ui-style="refined"] :is([class*="bg-gradient-"], [class*="bg-linear-"]):is([class*="from-white/"], [class*="via-white/"]):not(.bg-clip-text) {
+  background-image: none !important;
 }

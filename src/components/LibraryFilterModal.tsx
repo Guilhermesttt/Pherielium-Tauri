@@ -207,22 +207,22 @@ const LibraryFilterModal: React.FC<LibraryFilterModalProps> = ({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#0E0E0E] relative z-10 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl border border-white/[0.08] shadow-[0_24px_80px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.06)] thin-scrollbar"
+            className="bg-[var(--tone-1)] relative z-10 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl border border-white/[0.08] shadow-[0_24px_80px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.06)] thin-scrollbar"
           >
             {/* Header */}
-            <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/[0.06] bg-[#0E0E0E]/95 backdrop-blur-md px-6 py-4">
+            <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/[0.06] bg-[var(--tone-1)]/95 backdrop-blur-md px-6 py-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06]">
-                  <Filter className="h-4 w-4 text-white/70" />
+                  <Filter className="h-4 w-4 text-[var(--ink-muted)]" />
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-white">Filtros da Biblioteca</h2>
-                  <p className="text-[10px] text-white/40">{gameCount} de {games.length} jogos</p>
+                  <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">{gameCount} de {games.length} jogos</p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-white/40 transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
+                className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-[var(--ink-faint)] transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
                 aria-label="Fechar"
               >
                 <X className="h-4 w-4" />
@@ -245,7 +245,7 @@ const LibraryFilterModal: React.FC<LibraryFilterModalProps> = ({
                   } ${
                     filters.favoritesOnly
                       ? "border-yellow-500/40 bg-yellow-500/15 text-yellow-300"
-                      : "border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/[0.06]"
+                      : "border-white/10 bg-white/[0.03] text-[var(--ink-muted)] hover:bg-white/[0.06]"
                   }`}
                 >
                   <Star className={`h-3.5 w-3.5 ${filters.favoritesOnly ? "fill-yellow-400 text-yellow-400" : ""}`} />
@@ -264,7 +264,7 @@ const LibraryFilterModal: React.FC<LibraryFilterModalProps> = ({
                   } ${
                     filters.withAchievements
                       ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
-                      : "border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/[0.06]"
+                      : "border-white/10 bg-white/[0.03] text-[var(--ink-muted)] hover:bg-white/[0.06]"
                   }`}
                 >
                   <Trophy className="h-3.5 w-3.5 text-emerald-400" />
@@ -274,15 +274,15 @@ const LibraryFilterModal: React.FC<LibraryFilterModalProps> = ({
 
               {/* Categories/Genres */}
               <div>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-white/40">Gêneros</h3>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--ink-faint)]">Gêneros</h3>
                 <div className="relative mb-2">
-                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
+                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink-faint)]" />
                   <input
                     type="text"
                     value={searchGenre}
                     onChange={(e) => setSearchGenre(e.target.value)}
                     placeholder="Buscar gênero..."
-                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] py-2 pl-9 pr-3 text-xs text-white placeholder:text-white/25 outline-none focus:border-white/30"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] py-2 pl-9 pr-3 text-xs text-white placeholder:text-[var(--ink-faint)] outline-none focus:border-white/30"
                   />
                 </div>
                 <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto thin-scrollbar p-1">
@@ -297,12 +297,12 @@ const LibraryFilterModal: React.FC<LibraryFilterModalProps> = ({
                           toggleCategory(cat);
                           playHapticPattern("action");
                         }}
-                        className={`rounded-lg border px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                        className={`rounded-lg border px-2.5 py-1.5 text-[length:var(--step-0)] font-bold uppercase tracking-wider transition-all cursor-pointer ${
                           isFocused ? "ring-2 ring-white/70 shadow-[0_0_12px_rgba(255,255,255,0.25)]" : ""
                         } ${
                           isSelected
                             ? "border-white/30 bg-white/20 text-white"
-                            : "border-white/[0.08] bg-white/[0.03] text-white/40 hover:bg-white/[0.08]"
+                            : "border-white/[0.08] bg-white/[0.03] text-[var(--ink-faint)] hover:bg-white/[0.08]"
                         }`}
                       >
                         {cat}
@@ -314,7 +314,7 @@ const LibraryFilterModal: React.FC<LibraryFilterModalProps> = ({
 
               {/* Sort */}
               <div>
-                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-white/40">Ordenar por</h3>
+                <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--ink-faint)]">Ordenar por</h3>
                 <div className="flex gap-2 flex-wrap">
                   {SORT_OPTIONS.map((opt) => {
                     const isFocused = isGamepadConnected && focusableItems[focusedIndex]?.type === "sort" && focusableItems[focusedIndex]?.id === opt.id;
@@ -336,7 +336,7 @@ const LibraryFilterModal: React.FC<LibraryFilterModalProps> = ({
                         } ${
                           isSelected
                             ? "border-white/30 bg-white/20 text-white shadow-sm"
-                            : "border-white/[0.08] bg-white/[0.03] text-white/50 hover:bg-white/[0.08]"
+                            : "border-white/[0.08] bg-white/[0.03] text-[var(--ink-muted)] hover:bg-white/[0.08]"
                         }`}
                       >
                         {opt.label}
@@ -351,7 +351,7 @@ const LibraryFilterModal: React.FC<LibraryFilterModalProps> = ({
             </div>
 
             {/* Footer Buttons & Controller Legend Bar */}
-            <div className="sticky bottom-0 flex flex-col border-t border-white/[0.06] bg-[#0E0E0E]/95 backdrop-blur-md px-6 py-4 gap-3">
+            <div className="sticky bottom-0 flex flex-col border-t border-white/[0.06] bg-[var(--tone-1)]/95 backdrop-blur-md px-6 py-4 gap-3">
               <div className="flex items-center justify-between">
                 <button
                   type="button"
@@ -359,7 +359,7 @@ const LibraryFilterModal: React.FC<LibraryFilterModalProps> = ({
                   className={`rounded-xl border px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
                     isGamepadConnected && focusableItems[focusedIndex]?.type === "action" && focusableItems[focusedIndex]?.id === "reset"
                       ? "ring-2 ring-white/70 bg-white/10 border-white/30 text-white"
-                      : "border-white/10 bg-white/[0.04] text-white/50 hover:bg-white/10 hover:text-white"
+                      : "border-white/10 bg-white/[0.04] text-[var(--ink-muted)] hover:bg-white/10 hover:text-white"
                   }`}
                 >
                   Limpar Filtros
@@ -379,12 +379,12 @@ const LibraryFilterModal: React.FC<LibraryFilterModalProps> = ({
 
               {/* Controller Hints Strip */}
               {isGamepadConnected && (
-                <div className="flex items-center justify-between pt-2.5 border-t border-white/[0.06] text-[11px] text-white/70 select-none">
+                <div className="flex items-center justify-between pt-2.5 border-t border-white/[0.06] text-[length:var(--step-0)] text-[var(--ink-muted)] select-none">
                   <div className="flex items-center gap-1.5">
                     <ControllerButtonGlyph button="DPAD" gamepadFamily={gamepadFamily} size={16} />
                     <span>Navegar</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-white/90">
+                  <div className="flex items-center gap-1.5 text-[var(--ink)]">
                     <ControllerButtonGlyph button="A" gamepadFamily={gamepadFamily} size={16} />
                     <span className="font-semibold text-white">Alternar</span>
                   </div>

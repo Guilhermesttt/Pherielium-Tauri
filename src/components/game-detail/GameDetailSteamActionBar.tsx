@@ -102,10 +102,10 @@ export const GameDetailSteamActionBar: React.FC<GameDetailSteamActionBarProps> =
               {/* Session & Playtime Stacks */}
               <div className="flex items-center gap-6 sm:gap-8 text-xs">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+                  <span className="text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[var(--ink-faint)]">
                     Última Sessão
                   </span>
-                  <span className="text-sm font-semibold text-white/90">
+                  <span className="text-sm font-semibold text-[var(--ink)]">
                     {lastSession}
                   </span>
                 </div>
@@ -113,10 +113,10 @@ export const GameDetailSteamActionBar: React.FC<GameDetailSteamActionBarProps> =
                 <div className="w-px h-8 bg-white/10 shrink-0" />
 
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+                  <span className="text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[var(--ink-faint)]">
                     Tempo de Jogo
                   </span>
-                  <span className="text-sm font-semibold text-white/90">
+                  <span className="text-sm font-semibold text-[var(--ink)]">
                     {formattedHours}
                   </span>
                 </div>
@@ -134,7 +134,7 @@ export const GameDetailSteamActionBar: React.FC<GameDetailSteamActionBarProps> =
                   onOpenControllerPanel();
                 }}
                 disabled={!onOpenControllerPanel}
-                className="flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.05] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 text-white/70 hover:text-white transition-all cursor-pointer shadow-md disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.05] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 text-[var(--ink-muted)] hover:text-white transition-all cursor-pointer shadow-md disabled:cursor-not-allowed disabled:opacity-40"
                 title="Configuração do Controle"
                 aria-label="Configuração do Controle"
               >
@@ -146,7 +146,7 @@ export const GameDetailSteamActionBar: React.FC<GameDetailSteamActionBarProps> =
                 <button
                   type="button"
                   onClick={onEditGame}
-                  className="flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.05] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 text-white/70 hover:text-white transition-all cursor-pointer shadow-md"
+                  className="flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.05] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 text-[var(--ink-muted)] hover:text-white transition-all cursor-pointer shadow-md"
                   title="Gerenciar Jogo"
                   aria-label="Gerenciar Jogo"
                 >
@@ -162,7 +162,7 @@ export const GameDetailSteamActionBar: React.FC<GameDetailSteamActionBarProps> =
                   className={`flex items-center justify-center w-11 h-11 rounded-xl border transition-all cursor-pointer shadow-md ${
                     isFavorite
                       ? "bg-amber-500/20 border-amber-400/50 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.25)]"
-                      : "bg-white/[0.05] hover:bg-white/[0.12] border-white/10 text-white/70 hover:text-white"
+                      : "bg-white/[0.05] hover:bg-white/[0.12] border-white/10 text-[var(--ink-muted)] hover:text-white"
                   }`}
                   title={
                     isFavorite

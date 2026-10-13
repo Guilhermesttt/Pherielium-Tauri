@@ -221,7 +221,7 @@ const GameCard: React.FC<GameCardProps> = ({
       aria-label={title}
       aria-pressed={isActive}
       data-game-card={true}
-      className="group relative flex items-center justify-center p-0 text-left select-none outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--edge-selected)] focus-visible:shadow-[var(--focus-shadow)] cursor-pointer rounded-[var(--radius-card)]"
+      className="group relative flex items-center justify-center p-0 text-left select-none outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] cursor-pointer rounded-[var(--radius-card)]"
       style={{
         width: CARD_FRAME_WIDTH,
         height: CARD_FRAME_HEIGHT,
@@ -240,21 +240,18 @@ const GameCard: React.FC<GameCardProps> = ({
           width: CARD_WIDTH,
           height: CARD_HEIGHT,
           borderRadius: "var(--radius-card, 16px)",
-          borderColor: isActive ? "var(--edge-selected)" : "var(--edge-subtle)",
-          boxShadow: isActive
-            ? "var(--elev-focus), var(--focus-shadow), var(--surface-chamfer)"
-            : "var(--elev-card), var(--surface-chamfer)",
-          transition:
-            "box-shadow var(--transition-focus), border-color var(--transition-focus)",
+          // Selecionado = o anel do sistema (tinta), sem brilho nem sombra; em repouso, só a capa.
+          boxShadow: isActive ? "0 0 0 2px var(--ink)" : "none",
+          transition: "box-shadow var(--transition-focus)",
         }}
-        className={`relative isolate bg-[var(--surface-raised)] border transform-gpu will-change-transform flex flex-col justify-between ${
+        className={`relative isolate bg-[var(--tone-2)] transform-gpu will-change-transform flex flex-col justify-between ${
           isActive ? "z-20" : "z-10"
         }`}
       >
         {/* Clip container isolado - borda arredondada herdada de var(--radius-card) */}
         <div
           className="absolute inset-0 overflow-hidden isolate"
-          style={{ borderRadius: "calc(var(--radius-card, 16px) - 1px)" }}
+          style={{ borderRadius: "var(--radius-card, 16px)" }}
         >
           {/* Full-Bleed Cover Image Artwork */}
           {hasAllFailed ? (
@@ -262,7 +259,7 @@ const GameCard: React.FC<GameCardProps> = ({
               className="absolute inset-0 flex items-center justify-center p-5 text-center"
               style={{ background: FALLBACK_CARD_BACKGROUND }}
             >
-              <span className="line-clamp-3 text-xs font-display font-medium text-white/70">
+              <span className="line-clamp-3 text-[length:var(--step-0)] font-display font-medium text-[var(--ink-muted)]">
                 {title}
               </span>
             </div>
@@ -284,24 +281,17 @@ const GameCard: React.FC<GameCardProps> = ({
 
           {/* Cinematic Vignette Overlay (Darker at bottom for text contrast) */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-black/20 pointer-events-none" />
-
-          {/* Ambient Gloss Highlight on Top Edge */}
-          <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white/[0.08] to-transparent pointer-events-none" />
         </div>
 
         {/* Top Badges (Platform, Favorite & 3-Dots Morph Menu) */}
         <div className="absolute left-2.5 right-2.5 top-2.5 z-30 flex items-center justify-between pointer-events-none">
           {platformBadge && (
             <div
-              className="flex items-center gap-1.5 rounded-xl px-2 py-1 shadow-sm"
-              style={{
-                background: platformBadge.background,
-                border: `1px solid ${platformBadge.border}`,
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
-              }}
+              className="flex items-center gap-1.5 rounded-[var(--node)] px-2.5 py-1"
+              style={{ background: platformBadge.background }}
             >
               {platformBadge.icon}
-              <span className="text-[10px] font-bold tracking-tight text-white uppercase">
+              <span className="text-[length:var(--step-0)] font-semibold text-white">
                 {platformBadge.label}
               </span>
             </div>
@@ -310,10 +300,10 @@ const GameCard: React.FC<GameCardProps> = ({
           <div className="flex items-center gap-1.5 pointer-events-auto ml-auto">
             {isFavorite && (
               <div
-                className="flex h-6 w-6 items-center justify-center rounded-[var(--radius-badge)] bg-[color-mix(in_srgb,var(--surface-base)_95%,transparent)] border border-[color:var(--edge-strong)] shadow-sm pointer-events-none"
-                style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15)" }}
+                className="flex h-7 w-7 items-center justify-center rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-1)_90%,transparent)] pointer-events-none"
+                aria-label="Favorito"
               >
-                <Star className="h-3 w-3 fill-amber-400 text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
+                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
               </div>
             )}
 
@@ -348,7 +338,7 @@ const GameCard: React.FC<GameCardProps> = ({
                   e.preventDefault();
                   onMenuClick(e);
                 }}
-                className="relative flex h-7 w-7 items-center justify-center rounded-full bg-black/60 hover:bg-white/20 text-white/80 hover:text-white border border-white/20 hover:border-white/50 shadow-md hover:shadow-[0_0_14px_rgba(255,255,255,0.3)] backdrop-blur-md cursor-pointer transition-colors duration-200"
+                className="relative flex h-8 w-8 items-center justify-center rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-1)_90%,transparent)] hover:bg-[var(--tone-3)] text-[var(--ink)] cursor-pointer transition-colors duration-200"
                 aria-label={isMenuOpen ? "Fechar opções" : `Opções de ${title}`}
                 title={isMenuOpen ? "Fechar opções" : "Opções do jogo"}
               >
@@ -362,7 +352,7 @@ const GameCard: React.FC<GameCardProps> = ({
                       transition={{ type: "spring", bounce: 0.15, duration: 0.22 }}
                       className="flex items-center justify-center"
                     >
-                      <X className="w-3.5 h-3.5 stroke-[2.2] text-white/90" />
+                      <X className="w-3.5 h-3.5 stroke-[2.2] text-[var(--ink)]" />
                     </motion.div>
                   ) : (
                     <motion.div
@@ -373,7 +363,7 @@ const GameCard: React.FC<GameCardProps> = ({
                       transition={{ type: "spring", bounce: 0.15, duration: 0.22 }}
                       className="flex items-center justify-center"
                     >
-                      <MoreVertical className="w-3.5 h-3.5 text-white/90" />
+                      <MoreVertical className="w-3.5 h-3.5 text-[var(--ink)]" />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -394,23 +384,19 @@ const GameCard: React.FC<GameCardProps> = ({
           className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
         >
           <motion.div
-            animate={{
-              scale: isActive ? 1.1 : 1,
-              boxShadow: isActive ? "0 0 30px rgba(255,255,255,0.5)" : "0 0 24px rgba(255,255,255,0.3)"
-            }}
-            whileHover={{ scale: 1.1 }}
+            animate={{ scale: isActive ? 1.06 : 1 }}
+            whileHover={{ scale: 1.06 }}
             transition={{ type: "spring", bounce: 0.3, duration: 0.3 }}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--surface-base)_90%,transparent)] border border-[color:var(--edge-selected)] shadow-lg"
-            style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)" }}
+            className="flex h-12 w-12 items-center justify-center rounded-[var(--node)] bg-[var(--ink)]"
           >
-            <Play className="h-4 w-4 fill-white text-white ml-0.5" />
+            <Play className="ml-0.5 h-4 w-4 fill-[var(--tone-0)] text-[var(--tone-0)]" aria-hidden="true" />
           </motion.div>
         </motion.div>
 
 
         {/* Bottom Title (Clean & uncluttered) */}
         <div className="relative z-20 mt-auto p-3.5 flex flex-col justify-end pointer-events-none">
-          <h3 className="line-clamp-2 text-[length:var(--fs-body)] font-display font-semibold text-white/95 tracking-tight leading-snug drop-shadow-md">
+          <h3 className="line-clamp-2 text-[length:var(--fs-body)] font-display font-semibold text-[var(--ink)] tracking-tight leading-snug drop-shadow-md">
             {title}
           </h3>
         </div>

@@ -33,7 +33,7 @@ export const PlatformRemovalTransition: React.FC<PlatformRemovalTransitionProps>
             <h4 className="text-sm font-bold text-white mb-1">
               Desconectando plataforma...
             </h4>
-            <p className="text-xs text-white/60">
+            <p className="text-xs text-[var(--ink-muted)]">
               {getPlatformPhaseLabel(phase)}
             </p>
           </motion.div>

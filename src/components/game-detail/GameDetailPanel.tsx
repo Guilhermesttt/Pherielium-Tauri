@@ -384,7 +384,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
   return (
     <div className="fixed inset-0 z-100 overflow-hidden pointer-events-none">
       <div
-        className="t-panel-slide w-full h-full bg-[#0C0D10] overflow-y-auto detail-panel-scrollbar select-none"
+        className="t-panel-slide w-full h-full bg-[var(--tone-1)] overflow-y-auto detail-panel-scrollbar select-none"
         data-open={isOpen ? "true" : "false"}
         ref={scrollRef}
         role="dialog"
@@ -441,7 +441,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                     className={`px-5 sm:px-7 py-2 rounded-full text-xs font-display font-bold tracking-wider uppercase transition-all cursor-pointer ${
                       isActive
                         ? "bg-white/15 text-white shadow-md ring-1 ring-white/25"
-                        : "text-white/50 hover:text-white hover:bg-white/5"
+                        : "text-[var(--ink-muted)] hover:text-white hover:bg-white/5"
                     }`}
                   >
                     {tabKey}
@@ -484,9 +484,9 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                 {/* Photo Wall rápido na aba Jogar */}
                 {galleryItems.length > 0 && (
                   <div className="w-full">
-                    <h3 className="text-[10px] font-black tracking-[0.28em] text-white/35 uppercase mb-4 flex items-center gap-2">
+                    <h3 className="text-[length:var(--step-0)] font-black tracking-[0.28em] text-[var(--ink-faint)] uppercase mb-4 flex items-center gap-2">
                       <Camera className="w-3.5 h-3.5" /> {copy.photoWall}
-                      <span className="ml-1 px-2 py-0.5 rounded-md bg-[#0F0F0F] border border-[#161616] text-[9px] font-black text-white/40">
+                      <span className="ml-1 px-2 py-0.5 rounded-md bg-[var(--tone-1)] border border-[#161616] text-[length:var(--step-0)] font-black text-[var(--ink-faint)]">
                         {galleryItems.length}
                       </span>
                     </h3>
@@ -498,7 +498,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                             openGallery(idx);
                             playSound("select");
                           }}
-                          className="group relative rounded-xl overflow-hidden aspect-video border border-[#161616] bg-[#0F0F0F] hover:border-white/30 hover:bg-white/10 transition-all cursor-pointer"
+                          className="group relative rounded-xl overflow-hidden aspect-video border border-[#161616] bg-[var(--tone-1)] hover:border-white/30 hover:bg-white/10 transition-all cursor-pointer"
                         >
                           <img src={item.url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                         </button>
@@ -590,7 +590,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.2 }}
-            className="w-full max-w-6xl mx-auto px-6 sm:px-12 md:px-16 pt-6 pb-12 flex items-center justify-between text-xs text-white/60 select-none border-t border-white/[0.06]"
+            className="w-full max-w-6xl mx-auto px-6 sm:px-12 md:px-16 pt-6 pb-12 flex items-center justify-between text-xs text-[var(--ink-muted)] select-none border-t border-white/[0.06]"
           >
             <div className="flex items-center gap-2">
               <ControllerButtonGlyph button="OPTIONS" gamepadFamily={gamepadFamily} size={18} />
@@ -599,11 +599,11 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-1.5">
                 <ControllerButtonGlyph button="LB" gamepadFamily={gamepadFamily} size={16} />
-                <span className="text-white/30">/</span>
+                <span className="text-[var(--ink-faint)]">/</span>
                 <ControllerButtonGlyph button="RB" gamepadFamily={gamepadFamily} size={16} />
                 <span className="ml-1">Abas</span>
               </div>
-              <div className="flex items-center gap-1.5 text-white/90">
+              <div className="flex items-center gap-1.5 text-[var(--ink)]">
                 <ControllerButtonGlyph button="A" gamepadFamily={gamepadFamily} size={18} />
                 <span className="font-semibold text-white">Iniciar / Selecionar</span>
               </div>
@@ -663,7 +663,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
             zIndexClassName="z-[160]"
             reducedEffects
           >
-            <div className="w-full max-w-[340px] mx-auto bg-[var(--color-surface)]  rounded-[32px] overflow-hidden border border-[var(--color-ui-detail)] shadow-[0_32px_64px_rgba(0,0,0,0.6)] p-8 flex flex-col items-center">
+            <div className="w-full max-w-[340px] mx-auto bg-[var(--color-surface)]  rounded-[var(--corner-lg)] overflow-hidden border border-[var(--color-ui-detail)] shadow-[0_32px_64px_rgba(0,0,0,0.6)] p-8 flex flex-col items-center">
 
               {/* Animated Trash Icon Area */}
               <div className="relative w-32 h-32 flex items-center justify-center mb-2">
@@ -701,7 +701,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                 >
                   <div className="w-8 h-1.5 bg-[#48484A] rounded-t-md absolute -top-1.5 z-10" />
                   <div className="w-[84px] h-3 bg-[#48484A] rounded-full border-[3px] border-[#2C2C2E] shadow-sm relative z-20" />
-                  <div className="w-[68px] h-20 bg-gradient-to-b from-[#3A3A3C] to-[#1C1C1E] rounded-b-[18px] border-[3px] border-t-0 border-[#2C2C2E] relative -top-1 flex justify-evenly pt-2 pb-3 px-2">
+                  <div className="w-[68px] h-20 bg-gradient-to-b from-[#3A3A3C] to-[#1C1C1E] rounded-b-[var(--corner-md)] border-[3px] border-t-0 border-[#2C2C2E] relative -top-1 flex justify-evenly pt-2 pb-3 px-2">
                     <div className="w-1.5 h-full bg-black/40 rounded-full" />
                     <div className="w-1.5 h-full bg-black/40 rounded-full" />
                     <div className="w-1.5 h-full bg-black/40 rounded-full" />
@@ -711,10 +711,10 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
               </div>
 
               {/* Text Content */}
-              <h2 className="text-[19px] font-semibold text-white tracking-tight mb-2 text-center">
+              <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-tight mb-2 text-center">
                 {copy.removeGame || "Delete File"}
               </h2>
-              <p className="text-[13px] font-medium text-white/60 text-center leading-[1.4] mb-8 px-2 max-w-[240px]">
+              <p className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] text-center leading-[1.4] mb-8 px-2 max-w-[240px]">
                 {copy.confirmRemove(game.title)}
               </p>
 
@@ -727,7 +727,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                     playSound("back");
                   }}
                   disabled={state.isDeleting}
-                  className="flex-1 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/5 text-[14px] font-medium text-white transition-all disabled:opacity-40"
+                  className="flex-1 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/5 text-[length:var(--step-1)] font-medium text-white transition-all disabled:opacity-40"
                 >
                   {copy.cancel}
                 </button>
@@ -735,7 +735,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                   type="button"
                   onClick={actions.handleDeleteGame}
                   disabled={state.isDeleting}
-                  className="flex-1 py-3 rounded-full bg-[#FF453A] hover:bg-[#FF5147] border border-[#FF453A]/50 text-[14px] font-medium text-white shadow-[0_4px_16px_rgba(255,69,58,0.4)] hover:shadow-[0_6px_20px_rgba(255,69,58,0.6)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-40"
+                  className="flex-1 py-3 rounded-full bg-[#FF453A] hover:bg-[#FF5147] border border-[#FF453A]/50 text-[length:var(--step-1)] font-medium text-white shadow-[0_4px_16px_rgba(255,69,58,0.4)] hover:shadow-[0_6px_20px_rgba(255,69,58,0.6)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-40"
                 >
                   {state.isDeleting ? copy.removing : (copy.remove || "Delete")}
                 </button>
@@ -834,7 +834,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                       {game.logoImage ? (
                         <img src={game.logoImage} alt="" className="w-12 object-contain opacity-80 animate-pulse" />
                       ) : (
-                        <Play className="w-8 h-8 text-white/80 animate-pulse fill-white/80" />
+                        <Play className="w-8 h-8 text-[var(--ink)] animate-pulse fill-white/80" />
                       )}
                     </div>
                   </motion.div>
@@ -842,7 +842,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                   <h2 className="text-3xl md:text-4xl font-display font-light tracking-[0.25em] text-white uppercase mb-3 drop-shadow-[0_0_20px_rgba(255,255,255,0.4)]">
                     {game.title}
                   </h2>
-                  <p className="text-[10px] font-bold text-white/40 tracking-[0.4em] uppercase animate-pulse">
+                  <p className="text-[length:var(--step-0)] font-bold text-[var(--ink-faint)] tracking-[0.4em] uppercase animate-pulse">
                     {copy.launching}
                   </p>
                 </div>

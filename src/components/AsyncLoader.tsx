@@ -182,7 +182,7 @@ const AsyncLoader: React.FC<AsyncLoaderProps> = ({
                 variant="searching"
                 showTimer={false}
                 showIcon={false}
-                className="py-2.5 px-6 rounded-full bg-transparent font-medium tracking-wide text-[#D2D2D2]"
+                className="py-2.5 px-6 rounded-full bg-transparent font-medium tracking-wide text-[var(--ink-muted)]"
               />
             </motion.div>
           </AnimatePresence>

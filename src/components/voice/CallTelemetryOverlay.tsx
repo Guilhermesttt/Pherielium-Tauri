@@ -173,18 +173,18 @@ export const CallTelemetryLeft: React.FC<CallTelemetryLeftProps> = ({
       <div className="flex items-center justify-between gap-3 rounded-2xl p-3 bg-black/40 border border-white/10 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-[var(--live)] animate-pulse" />
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+            <span className="text-[length:var(--step-0)] font-medium uppercase tracking-wider text-[var(--ink-muted)]">
               Qualidade
             </span>
             <span className="text-xs font-bold tracking-wide text-emerald-400 flex items-center gap-1.5 mt-0.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--live)]" />
               Excelente
             </span>
-            <span className="text-[10px] font-medium text-white/60 font-mono mt-1 tabular-nums flex items-center gap-1.5">
-              <Clock className="h-3 w-3 text-white/40" />
+            <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] font-mono mt-1 tabular-nums flex items-center gap-1.5">
+              <Clock className="h-3 w-3 text-[var(--ink-faint)]" />
               {formatDuration(duration)}
             </span>
           </div>
@@ -290,7 +290,7 @@ export const CallTelemetryRight: React.FC<CallTelemetryRightProps> = ({
     <div className={`flex flex-col gap-2.5 w-full max-w-[340px] select-none ${className}`}>
       {/* Simplified: Nível de voz — horizontal bar h-1 bg-white/15 rounded-full with fill per audit */}
       <div className="flex items-center justify-between gap-4 rounded-2xl p-3 bg-black/40 border border-white/10 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-        <span className="text-[10px] font-medium uppercase tracking-wider text-white/60">
+        <span className="text-[length:var(--step-0)] font-medium uppercase tracking-wider text-[var(--ink-muted)]">
           Nível de voz
         </span>
 
