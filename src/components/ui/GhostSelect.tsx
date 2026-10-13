@@ -64,12 +64,14 @@ export const GhostSelect: React.FC<GhostSelectProps> = ({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm transition-all outline-none ${
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        className={`flex h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-[var(--node)] pl-4 pr-3 text-[length:var(--step-0)] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] ${
           disabled
-            ? "opacity-50 cursor-not-allowed border-white/5 bg-white/[0.02]"
+            ? "opacity-40 cursor-not-allowed bg-[var(--tone-2)]"
             : isOpen
-            ? "border-white/20 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
-            : "border-white/10 bg-white/[0.04] hover:bg-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+            ? "bg-[var(--tone-3)]"
+            : "bg-[var(--tone-2)] hover:bg-[var(--tone-3)]"
         }`}
       >
         <div className="flex items-center gap-2 truncate">
@@ -93,7 +95,8 @@ export const GhostSelect: React.FC<GhostSelectProps> = ({
             animate={{ opacity: 1, y: 4, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.95 }}
             transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
-            className={`absolute left-0 right-0 z-[200] mt-1 overflow-hidden rounded-2xl border border-white/10 p-1 shadow-[0_16px_40px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] transform-origin-top glass-panel ${menuClassName}`}
+            role="listbox"
+            className={`absolute left-0 right-0 z-[200] mt-1 overflow-hidden rounded-[var(--corner-md)] bg-[var(--tone-3)] p-1 transform-origin-top ${menuClassName}`}
           >
             <div
               className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20 p-1 flex flex-col gap-0.5"
@@ -113,14 +116,16 @@ export const GhostSelect: React.FC<GhostSelectProps> = ({
                     onMouseEnter={() => setHovered(option.value)}
                     onFocus={() => setHovered(option.value)}
                     onBlur={() => setHovered((prev) => (prev === option.value ? null : prev))}
-                    className={`relative flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm transition-all outline-none text-left ${
+                    role="option"
+                    aria-selected={isSelected}
+                    className={`relative flex h-10 w-full cursor-pointer items-center justify-between rounded-[var(--node)] px-3.5 text-[length:var(--step-0)] transition-colors outline-none text-left ${
                       glideOff
                         ? isSelected
-                          ? "bg-white/10 text-white font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-                          : "text-[var(--ink-muted)] hover:bg-white/[0.06] hover:text-white"
+                          ? "bg-[var(--tone-4)] text-[var(--ink)] font-semibold"
+                          : "text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                         : isSelected
-                          ? "text-white font-medium"
-                          : "text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08]"
+                          ? "text-[var(--ink)] font-semibold"
+                          : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
                     }`}
                   >
                     {glideActive && (
@@ -130,7 +135,7 @@ export const GhostSelect: React.FC<GhostSelectProps> = ({
                         initial={{ opacity: 0, scale: 0.92 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ type: "spring", stiffness: 700, damping: 40 }}
-                        className="absolute inset-0 rounded-xl bg-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]"
+                        className="absolute inset-0 rounded-[var(--node)] bg-[var(--tone-4)]"
                       />
                     )}
                     <div className="flex items-center gap-2 truncate z-10">
@@ -138,7 +143,7 @@ export const GhostSelect: React.FC<GhostSelectProps> = ({
                       <span className="truncate">{option.label}</span>
                     </div>
                     {isSelected && (
-                      <Check className="h-4 w-4 text-white z-10" />
+                      <Check className="h-4 w-4 text-[var(--ink)] z-10" aria-hidden="true" />
                     )}
                   </button>
                 );
