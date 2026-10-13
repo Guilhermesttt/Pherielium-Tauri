@@ -226,7 +226,7 @@ const PSNTierBadge = React.memo<{
 
         {/* Pedestal / Badge discreto de Nível integrado */}
         <div className="mt-1 flex items-center gap-1 rounded-full bg-black/60 border border-white/10 px-2.5 py-0.5 backdrop-blur-md shadow-lg group-hover:border-white/25 transition-colors">
-          <span className="text-[9px] font-black uppercase tracking-wider text-white/50">LV</span>
+          <span className="text-[9px] font-black uppercase tracking-wider text-[var(--ink-muted)]">LV</span>
           <span className="text-xs font-black text-white leading-none tracking-tight">{level}</span>
         </div>
       </motion.div>
@@ -420,7 +420,7 @@ const GameRow = React.memo<GameRowProps>(
         <div className="absolute inset-0 rounded-2xl border border-white/[0.08] group-hover:border-transparent transition-colors duration-300 pointer-events-none z-0" />
 
         {/* Superfície interna do Card (mantém fundo sólido conforme DIRETRIZES DA APPLE, deixando borda de 1.5px visível) */}
-        <div className="absolute inset-[1.5px] rounded-[14.5px] bg-[#0C0D10] group-hover:bg-[#101217] transition-colors duration-300 pointer-events-none z-0 overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+        <div className="absolute inset-[1.5px] rounded-[14.5px] bg-[var(--tone-1)] group-hover:bg-[var(--tone-2)] transition-colors duration-300 pointer-events-none z-0 overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
           {/* Efeito Sheen transversal dinâmico com brilho vívido passando no hover */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
 
@@ -461,7 +461,7 @@ const GameRow = React.memo<GameRowProps>(
                     decoding="async"
                   />
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center bg-neutral-800 text-white/30 text-xs font-bold">
+                  <div className="h-full w-full flex items-center justify-center bg-neutral-800 text-[var(--ink-faint)] text-xs font-bold">
                     {game.title?.slice(0, 2).toUpperCase()}
                   </div>
                 )}
@@ -476,25 +476,25 @@ const GameRow = React.memo<GameRowProps>(
                     ? "text-white group-hover:text-[#7dd3fc]"
                     : gameTier === "gold"
                       ? "text-white group-hover:text-amber-200"
-                      : "text-white/90 group-hover:text-white"
+                      : "text-[var(--ink)] group-hover:text-white"
                 }`}
               >
                 {game.title}
               </h3>
 
               {/* Metadados elegantes sem ruído */}
-              <div className="flex items-center gap-2 text-xs text-white/45 flex-wrap">
-                <span className="font-semibold text-white/70">{launcherLabel}</span>
+              <div className="flex items-center gap-2 text-xs text-[var(--ink-faint)] flex-wrap">
+                <span className="font-semibold text-[var(--ink-muted)]">{launcherLabel}</span>
                 {hours > 0 && (
                   <>
-                    <span className="text-white/20">•</span>
-                    <span className="flex items-center gap-1 font-medium text-white/60">
-                      <Clock className="h-3 w-3 text-white/40" /> {formatPlayedHours(hours)}h
+                    <span className="text-[var(--ink-faint)]">•</span>
+                    <span className="flex items-center gap-1 font-medium text-[var(--ink-muted)]">
+                      <Clock className="h-3 w-3 text-[var(--ink-faint)]" /> {formatPlayedHours(hours)}h
                     </span>
                   </>
                 )}
-                <span className="text-white/20">•</span>
-                <span className="font-medium text-white/60">
+                <span className="text-[var(--ink-faint)]">•</span>
+                <span className="font-medium text-[var(--ink-muted)]">
                   {trophyCounts.completed} de {trophyCounts.total} marcos
                 </span>
               </div>
@@ -535,10 +535,10 @@ const GameRow = React.memo<GameRowProps>(
 
               {/* Status da Patente */}
               <div className="flex flex-col items-start min-w-[95px]">
-                <span className={`text-[11px] font-bold tracking-wider uppercase ${tierStyle.textColor}`}>
+                <span className={`text-[length:var(--step-0)] font-bold tracking-wider uppercase ${tierStyle.textColor}`}>
                   {tierName}
                 </span>
-                <span className={`text-sm font-semibold tracking-tight ${hasPlatinum ? "text-[#38bdf8]" : "text-white/95"}`}>
+                <span className={`text-sm font-semibold tracking-tight ${hasPlatinum ? "text-[#38bdf8]" : "text-[var(--ink)]"}`}>
                   {completionPct === 100 ? "100%" : `${completionPct}%`}
                 </span>
               </div>
@@ -546,7 +546,7 @@ const GameRow = React.memo<GameRowProps>(
 
             <ChevronRight
               className={`h-4 w-4 transition-transform duration-200 group-hover:translate-x-1 ${
-                hasPlatinum ? "text-[#38bdf8]" : "text-white/30 group-hover:text-white"
+                hasPlatinum ? "text-[#38bdf8]" : "text-[var(--ink-faint)] group-hover:text-white"
               }`}
             />
           </div>
@@ -810,14 +810,14 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
         >
           Troféus
         </h1>
-        <p className="mt-2 max-w-2xl text-sm font-body leading-relaxed text-white/50">
+        <p className="mt-2 max-w-2xl text-sm font-body leading-relaxed text-[var(--ink-muted)]">
           Gerencie suas conquistas e monitore o seu progresso rumo à platina.
         </p>
       </div>
 
       <div className="mx-auto max-w-5xl space-y-7">
         {/* Banner PlayStation PSN Level */}
-        <section className="relative rounded-3xl border border-white/[0.08] p-6 sm:p-8 shadow-[0_32px_64px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] overflow-hidden bg-[#0B0B0B]">
+        <section className="relative rounded-3xl border border-white/[0.08] p-6 sm:p-8 shadow-[0_32px_64px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] overflow-hidden bg-[var(--tone-1)]">
 
           <div
             className="absolute -top-32 -left-32 w-80 h-80 rounded-full blur-[100px] opacity-25 pointer-events-none transition duration-700"
@@ -838,7 +838,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                   <h2 className={`text-2xl sm:text-3xl font-black tracking-tight ${tierInfo.color}`}>
                     {levelInfo.tierName}
                   </h2>
-                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-neutral-300">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[length:var(--step-0)] font-extrabold uppercase tracking-widest text-neutral-300">
                     PATENTE ATUAL
                   </span>
                 </div>
@@ -875,17 +875,17 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
 
                 {/* Total Acumulado e contexto de XP */}
                 <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2 text-[11px] font-medium text-white/50 flex-wrap">
+                  <div className="flex items-center gap-2 text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] flex-wrap">
                     <span>XP do Hub:</span>
-                    <span className="text-white/90 font-semibold flex items-center gap-1">
+                    <span className="text-[var(--ink)] font-semibold flex items-center gap-1">
                       <Zap className="h-3 w-3 text-amber-400" />
                       {levelInfo.xp.toLocaleString()} XP
                     </span>
-                    <span className="text-white/20">•</span>
-                    <span className="text-white/60">{totalStats.unlocked} troféus sincronizados</span>
+                    <span className="text-[var(--ink-faint)]">•</span>
+                    <span className="text-[var(--ink-muted)]">{totalStats.unlocked} troféus sincronizados</span>
                   </div>
                   {levelInfo.xp === 0 && totalStats.unlocked > 0 && (
-                    <p className="text-[10px] text-white/40 leading-snug">
+                    <p className="text-[length:var(--step-0)] text-[var(--ink-faint)] leading-snug">
                       Troféus sincronizados alimentam sua vitrine. Ganhe XP em sessões pelo hub e completando missões.
                     </p>
                   )}
@@ -894,9 +894,9 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
             </div>
 
             {/* Progression Ladder (Escalada de Troféus por Patente) */}
-            <div className="flex flex-col gap-2.5 rounded-3xl border border-white/[0.08] p-3.5 sm:p-4 shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] bg-[#0B0B0B]">
+            <div className="flex flex-col gap-2.5 rounded-3xl border border-white/[0.08] p-3.5 sm:p-4 shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] bg-[var(--tone-1)]">
 
-              <div className="flex items-center justify-between px-1 text-[10px] font-extrabold uppercase tracking-widest text-neutral-400">
+              <div className="flex items-center justify-between px-1 text-[length:var(--step-0)] font-extrabold uppercase tracking-widest text-neutral-400">
                 <span>Escalada de Troféus</span>
                 <span className="text-neutral-500 font-medium">Total: {totalStats.unlocked} troféus</span>
               </div>
@@ -930,9 +930,9 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                         <span className={`text-lg font-black tabular-nums ${style.textColor}`}>
                           {item.count}
                         </span>
-                        <span className="text-[10px] font-semibold text-neutral-400">troféus</span>
+                        <span className="text-[length:var(--step-0)] font-semibold text-neutral-400">troféus</span>
                       </div>
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-white/40 group-hover:text-white/70 transition-colors text-center">
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-[var(--ink-faint)] group-hover:text-[var(--ink-muted)] transition-colors text-center">
                         {item.label} ({item.xp})
                       </span>
                     </div>
@@ -945,7 +945,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
 
         {/* Controles de Filtros e Busca */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-1">
-          <div className="flex items-center gap-1.5 p-1 rounded-3xl border border-white/[0.08] overflow-x-auto shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] bg-[#0B0B0B]">
+          <div className="flex items-center gap-1.5 p-1 rounded-3xl border border-white/[0.08] overflow-x-auto shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] bg-[var(--tone-1)]">
 
             {filterTabs.map((f) => (
               <motion.button
@@ -960,7 +960,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
               >
                 <span>{f.label}</span>
                 <span
-                  className={`rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ${filter === f.id ? "bg-black/10 text-black" : "bg-white/10 text-white/60"
+                  className={`rounded-full px-1.5 py-0.2 text-[length:var(--step-0)] font-extrabold ${filter === f.id ? "bg-black/10 text-black" : "bg-white/10 text-[var(--ink-muted)]"
                     }`}
                 >
                   {f.count}
@@ -983,7 +983,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
               </button>
 
               {isSortOpen && (
-                <div className="absolute right-0 top-full mt-2 w-44 rounded-2xl border border-white/10 bg-[#0B0B0B] shadow-xl overflow-hidden z-20">
+                <div className="absolute right-0 top-full mt-2 w-44 rounded-2xl border border-white/10 bg-[var(--tone-1)] shadow-xl overflow-hidden z-20">
                   {sortOptions.map((opt) => (
                     <button
                       key={opt.value}
@@ -1017,12 +1017,12 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
               >
                 <Filter className="h-3.5 w-3.5" />
                 {filterByPlat !== "all" && (
-                  <span className="rounded-full bg-[#38bdf8]/20 px-1.5 text-[10px]">1</span>
+                  <span className="rounded-full bg-[#38bdf8]/20 px-1.5 text-[length:var(--step-0)]">1</span>
                 )}
               </button>
 
               {isPlataformFilterOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl border border-white/10 bg-[#0B0B0B] shadow-xl overflow-hidden z-20">
+                <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl border border-white/10 bg-[var(--tone-1)] shadow-xl overflow-hidden z-20">
                   {platformOptions.map((opt) => (
                     <button
                       key={opt.value}

@@ -184,7 +184,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
       <div className="glass-panel relative w-full overflow-hidden rounded-[22px] border border-white/12 p-6 shadow-[0_25px_70px_rgba(0,0,0,0.85)] text-white">
         <header className="mb-5 flex items-start justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-white/60">
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
               Personalização
             </p>
             <h2 className="mt-0.5 text-xl font-bold text-white tracking-tight">
@@ -194,7 +194,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-xl border border-white/10 p-2 text-white/50 hover:bg-white/10 hover:text-white transition"
+            className="rounded-xl border border-white/10 p-2 text-[var(--ink-muted)] hover:bg-white/10 hover:text-white transition"
           >
             <X className="h-4 w-4" />
           </button>
@@ -246,7 +246,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
             </div>
           </div>
 
-          <div className="mt-3 flex items-center gap-1.5 text-xs text-white/40">
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-[var(--ink-faint)]">
             <Move className="h-3.5 w-3.5" />
             <span>Arraste para posicionar ou use o scroll para zoom</span>
           </div>
@@ -255,7 +255,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
         {/* Controls: Zoom, Rotate, Reset */}
         <div className="mt-5 space-y-4 rounded-2xl border border-white/8 bg-white/[0.03] p-4">
           <div className="flex items-center gap-3">
-            <ZoomOut className="h-4 w-4 text-white/40 shrink-0" />
+            <ZoomOut className="h-4 w-4 text-[var(--ink-faint)] shrink-0" />
             <input
               type="range"
               min="0.5"
@@ -265,8 +265,8 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
               onChange={(e) => setScale(parseFloat(e.target.value))}
               className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-white/15 accent-white outline-none"
             />
-            <ZoomIn className="h-4 w-4 text-white/40 shrink-0" />
-            <span className="min-w-[44px] text-right text-xs font-mono font-medium text-white/60">
+            <ZoomIn className="h-4 w-4 text-[var(--ink-faint)] shrink-0" />
+            <span className="min-w-[44px] text-right text-xs font-mono font-medium text-[var(--ink-muted)]">
               {Math.round(scale * 100)}%
             </span>
           </div>
@@ -275,15 +275,15 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
             <button
               type="button"
               onClick={handleRotate}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white transition active:scale-95"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-[var(--ink)] hover:bg-white/10 hover:text-white transition active:scale-95"
             >
-              <RotateCw className="h-3.5 w-3.5 text-white/80" /> Girar 90°
+              <RotateCw className="h-3.5 w-3.5 text-[var(--ink)]" /> Girar 90°
             </button>
 
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white/60 hover:bg-white/10 hover:text-white transition active:scale-95"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-[var(--ink-muted)] hover:bg-white/10 hover:text-white transition active:scale-95"
             >
               <RefreshCw className="h-3.5 w-3.5" /> Recentralizar
             </button>
@@ -295,7 +295,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-xl border border-white/10 px-4 py-2.5 text-xs font-black text-white/55 hover:bg-white/10 hover:text-white transition active:scale-95"
+            className="rounded-xl border border-white/10 px-4 py-2.5 text-xs font-black text-[var(--ink-muted)] hover:bg-white/10 hover:text-white transition active:scale-95"
           >
             Cancelar
           </button>

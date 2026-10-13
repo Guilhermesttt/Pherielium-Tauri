@@ -247,10 +247,10 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="font-display text-[20px] font-bold text-white">
+              <h2 className="font-display text-[length:var(--step-3)] font-bold text-white">
                 Guia de Iniciação & Missões
               </h2>
-              <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[12px] font-semibold text-[rgb(var(--launcher-accent))]">
+              <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[length:var(--step-0)] font-semibold text-[rgb(var(--launcher-accent))]">
                 Novos Jogadores
               </span>
             </div>
@@ -264,15 +264,15 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
         <div className="flex items-center gap-3 shrink-0">
           <div className="flex items-center gap-3 rounded-2xl bg-[var(--surface-base)] px-3.5 py-2">
             <div className="flex flex-col">
-              <span className="text-[11px] font-extrabold text-white">
+              <span className="text-[length:var(--step-0)] font-extrabold text-white">
                 {completedCount} de {totalCount} Concluídas
               </span>
-              <span className="text-[12px] font-semibold text-[rgb(var(--launcher-accent))]">
+              <span className="text-[length:var(--step-0)] font-semibold text-[rgb(var(--launcher-accent))]">
                 +{earnedXp} XP Acumulado
               </span>
             </div>
             <div className="h-4 w-px bg-white/10" />
-            <span className="text-[13px] font-semibold tabular-nums text-[rgb(var(--launcher-accent))]">
+            <span className="text-[length:var(--step-0)] font-semibold tabular-nums text-[rgb(var(--launcher-accent))]">
               {progressPercent}%
             </span>
           </div>
@@ -363,7 +363,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
                         className={`flex h-10 w-10 items-center justify-center rounded-xl shrink-0 transition-colors ${
                           q.completed
                             ? "border border-white/15 bg-white/10 text-[rgb(var(--launcher-accent))]"
-                            : "border border-white/10 bg-white/[0.06] text-white/80 group-hover:border-white/30 group-hover:text-[rgb(var(--launcher-accent))]"
+                            : "border border-white/10 bg-white/[0.06] text-[var(--ink)] group-hover:border-white/30 group-hover:text-[rgb(var(--launcher-accent))]"
                         }`}
                       >
                         {q.completed ? <CheckCircle2 className="h-4 w-4" /> : icon}
@@ -371,12 +371,12 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
 
                       <div className="flex items-center gap-1.5">
                         {q.instantLevelUp && !q.completed && (
-                          <span className="rounded-md border border-white/15 bg-white/10 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                          <span className="rounded-md border border-white/15 bg-white/10 px-1.5 py-0.5 text-[length:var(--step-0)] font-semibold text-white">
                             ★ Level UP
                           </span>
                         )}
                         <span
-                          className={`text-[13px] font-semibold tabular-nums ${
+                          className={`text-[length:var(--step-0)] font-semibold tabular-nums ${
                             q.completed ? "text-[rgb(var(--launcher-accent))]" : "text-[rgb(var(--launcher-accent))]"
                           }`}
                         >
@@ -388,13 +388,13 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
                     {/* Conteúdo */}
                     <div className="mt-3">
                       <h3
-                        className={`text-[15px] font-semibold ${
+                        className={`text-[length:var(--step-1)] font-semibold ${
                           q.completed ? "line-through text-neutral-400" : "text-white"
                         }`}
                       >
                         {q.title}
                       </h3>
-                      <p className="mt-1 text-[13px] leading-relaxed text-neutral-400 line-clamp-2">
+                      <p className="mt-1 text-[length:var(--step-0)] leading-relaxed text-neutral-400 line-clamp-2">
                         {q.description}
                       </p>
                     </div>
@@ -403,7 +403,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
                   {/* Ação ou Badge de Concluído */}
                   <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between">
                     {q.completed ? (
-                      <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[rgb(var(--launcher-accent))]">
+                      <span className="inline-flex items-center gap-1.5 text-[length:var(--step-0)] font-semibold text-[rgb(var(--launcher-accent))]">
                         <CheckCircle2 className="h-3 w-3" />
                         Concluída
                       </span>
@@ -411,7 +411,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
                       <button
                         type="button"
                         onClick={() => handleAction(q.id)}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.09] px-4 py-2 text-[13px] font-semibold text-white hover:bg-white hover:text-black transition active:scale-95 group/btn"
+                        className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.09] px-4 py-2 text-[length:var(--step-0)] font-semibold text-white hover:bg-white hover:text-black transition active:scale-95 group/btn"
                       >
                         <span>Realizar</span>
                         <ArrowRight className="h-3 w-3 transition-transform group-hover/btn:translate-x-0.5" />

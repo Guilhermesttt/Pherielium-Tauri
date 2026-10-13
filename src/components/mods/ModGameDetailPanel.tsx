@@ -845,12 +845,12 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                     onClose();
                   }}
                   aria-label="Voltar para os jogos"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/45 text-white/60 transition hover:bg-white/10 hover:text-white"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/45 text-[var(--ink-muted)] transition hover:bg-white/10 hover:text-white"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </button>
                 <div className="min-w-0">
-                  <div className="mb-1 flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.24em] text-white/35">
+                  <div className="mb-1 flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.24em] text-[var(--ink-faint)]">
                     <PackageOpen className="h-3.5 w-3.5" />
                     Nexus Mods
                   </div>
@@ -872,10 +872,10 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                       playSound("navigate");
                       setActiveTab(id);
                     }}
-                    className={`flex min-w-max flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[9px] font-black uppercase tracking-wider transition sm:px-4 sm:text-[10px] xl:flex-none ${
+                    className={`flex min-w-max flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[9px] font-black uppercase tracking-wider transition sm:px-4 sm:text-[length:var(--step-0)] xl:flex-none ${
                       activeTab === id
                         ? "bg-white/12 text-white shadow-lg"
-                        : "text-white/35 hover:bg-white/[0.06] hover:text-white/65"
+                        : "text-[var(--ink-faint)] hover:bg-white/[0.06] hover:text-[var(--ink-muted)]"
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5" />
@@ -904,7 +904,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                     <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-b border-white/8 p-4 sm:p-5 xl:border-b-0 xl:border-r xl:p-6">
                       <div className="mb-3 flex shrink-0 flex-wrap items-center gap-3">
                         <div className="relative min-w-60 flex-1">
-                          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/25" />
+                          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-faint)]" />
                           <input
                             value={searchTerm}
                             onChange={(event) => {
@@ -919,7 +919,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               }
                             }}
                             placeholder="Pesquisar ou colar a URL de um mod"
-                            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white outline-none placeholder:text-white/20 focus:border-white/25"
+                            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white outline-none placeholder:text-[var(--ink-faint)] focus:border-white/25"
                           />
                         </div>
                         {pastedModUrl && (
@@ -942,7 +942,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             setVisibleCount(CATALOG_PAGE_SIZE);
                           }}
                           aria-label="Ordenar catálogo"
-                          className="h-12 rounded-2xl border border-white/10 bg-[#111114] px-4 text-[10px] font-black uppercase tracking-wider text-white/55 outline-none focus:border-white/25"
+                          className="h-12 rounded-2xl border border-white/10 bg-[var(--tone-1)] px-4 text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-muted)] outline-none focus:border-white/25"
                         >
                           <option value="featured">Destaques</option>
                           <option value="recent">Mais recentes</option>
@@ -950,7 +950,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           <option value="endorsements">Mais apoiados</option>
                           <option value="name">Nome A–Z</option>
                         </select>
-                        <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-[9px] font-black uppercase tracking-wider text-white/35">
+                        <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-[9px] font-black uppercase tracking-wider text-[var(--ink-faint)]">
                           {loading
                             ? "Carregando"
                             : searchTerm.trim()
@@ -959,7 +959,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         </span>
                       </div>
                       {!loading && mods.length > 0 && (
-                        <p className="mb-4 shrink-0 text-[9px] leading-relaxed text-white/25 xl:mb-5">
+                        <p className="mb-4 shrink-0 text-[9px] leading-relaxed text-[var(--ink-faint)] xl:mb-5">
                           {catalogScope === "recent-30-days"
                             ? "Catálogo recente: destaques e mods com atividade nos últimos 30 dias. O arquivo histórico completo exige acesso de aplicativo aprovado pela Nexus."
                             : catalogScope === "curated-feeds"
@@ -968,7 +968,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         </p>
                       )}
                       {urlImportError && (
-                        <p className="mb-4 shrink-0 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[10px] text-red-100/55">
+                        <p className="mb-4 shrink-0 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[length:var(--step-0)] text-red-100/55">
                           {urlImportError}
                         </p>
                       )}
@@ -1021,11 +1021,11 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     />
                                   ) : (
                                     <div className="flex h-full items-center justify-center">
-                                      <PackageOpen className="h-7 w-7 text-white/15" />
+                                      <PackageOpen className="h-7 w-7 text-[var(--ink-faint)]" />
                                     </div>
                                   )}
                                   <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent" />
-                                  <span className="absolute bottom-2 left-2 rounded-md border border-white/10 bg-black/55 px-2 py-1 text-[8px] font-black uppercase tracking-wider text-white/55">
+                                  <span className="absolute bottom-2 left-2 rounded-md border border-white/10 bg-black/55 px-2 py-1 text-[8px] font-black uppercase tracking-wider text-[var(--ink-muted)]">
                                     {mod.feed || "Nexus"}
                                   </span>
                                   {installedMods.find((entry) => entry.id === mod.id) && (
@@ -1038,12 +1038,12 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                   )}
                                 </div>
                                 <div className="p-3.5">
-                                  <h3 className="line-clamp-1 text-sm font-black text-white/85">{mod.name}</h3>
-                                  <p className="mt-1 line-clamp-2 min-h-8 text-[10px] leading-relaxed text-white/35">
+                                  <h3 className="line-clamp-1 text-sm font-black text-[var(--ink)]">{mod.name}</h3>
+                                  <p className="mt-1 line-clamp-2 min-h-8 text-[length:var(--step-0)] leading-relaxed text-[var(--ink-faint)]">
                                     {mod.summary || "Sem descrição."}
                                   </p>
                                   {mod.author && (
-                                    <p className="mt-2 flex items-center gap-1 text-[9px] font-bold text-white/25">
+                                    <p className="mt-2 flex items-center gap-1 text-[9px] font-bold text-[var(--ink-faint)]">
                                       <UserRound className="h-3 w-3" /> Por {mod.author}
                                     </p>
                                   )}
@@ -1055,7 +1055,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               <button
                                 type="button"
                                 onClick={() => setVisibleCount((count) => count + CATALOG_PAGE_SIZE)}
-                                className="mx-auto mt-5 flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-6 text-[9px] font-black uppercase tracking-wider text-white/45 transition hover:bg-white/10 hover:text-white"
+                                className="mx-auto mt-5 flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-6 text-[9px] font-black uppercase tracking-wider text-[var(--ink-faint)] transition hover:bg-white/10 hover:text-white"
                               >
                                 Carregar mais ({filteredMods.length - visibleCount})
                               </button>
@@ -1073,21 +1073,21 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               <img src={selectedMod.pictureUrl} alt="" className="h-48 w-full object-cover" />
                             ) : (
                               <div className="flex h-48 items-center justify-center">
-                                <PackageOpen className="h-8 w-8 text-white/15" />
+                                <PackageOpen className="h-8 w-8 text-[var(--ink-faint)]" />
                               </div>
                             )}
                           </div>
-                          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30">
+                          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--ink-faint)]">
                             Mod em destaque
                           </p>
                           <h2 className="mt-2 text-2xl font-black leading-tight text-white">{selectedMod.name}</h2>
                           {selectedMod.author && (
-                            <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-white/35">
+                            <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-[var(--ink-faint)]">
                               <UserRound className="h-3.5 w-3.5" />
                               Por {selectedMod.author}
                             </p>
                           )}
-                          <p className="mt-5 text-sm leading-relaxed text-white/55">
+                          <p className="mt-5 text-sm leading-relaxed text-[var(--ink-muted)]">
                             {selectedMod.summary || "Este mod não possui uma descrição curta."}
                           </p>
 
@@ -1106,7 +1106,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                 ? `Conectado como ${nexusConnection.account?.name || "usuário Nexus"}`
                                 : "Conexão Nexus necessária"}
                             </div>
-                            <p className={`mt-2 text-[10px] leading-relaxed ${
+                            <p className={`mt-2 text-[length:var(--step-0)] leading-relaxed ${
                               nexusConnection.connected ? "text-emerald-100/35" : "text-amber-100/35"
                             }`}>
                               {nexusConnection.connected
@@ -1120,7 +1120,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               type="button"
                               onClick={() => void loadSelectedModFiles()}
                               disabled={!nexusConnection.connected || filesLoading}
-                              className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-3 py-3 text-[10px] font-black uppercase tracking-wider text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/25"
+                              className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-3 py-3 text-[length:var(--step-0)] font-black uppercase tracking-wider text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-[var(--ink-faint)]"
                             >
                               {filesLoading
                                 ? <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -1130,7 +1130,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             <button
                               type="button"
                               onClick={() => openModPage(selectedMod)}
-                              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[9px] font-black uppercase tracking-wider text-white/40 transition hover:bg-white/10 hover:text-white"
+                              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[9px] font-black uppercase tracking-wider text-[var(--ink-faint)] transition hover:bg-white/10 hover:text-white"
                             >
                               <ExternalLink className="h-3.5 w-3.5" /> Abrir página na Nexus
                             </button>
@@ -1138,7 +1138,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
 
                           {awaitingFileId && (
                             <div className="mt-3 rounded-xl border border-sky-400/15 bg-sky-400/[0.06] px-3 py-3">
-                              <p className="text-[10px] font-bold text-sky-100/70">
+                              <p className="text-[length:var(--step-0)] font-bold text-sky-100/70">
                                 Escolha o download gratuito na Nexus
                               </p>
                               <p className="mt-1 text-[9px] leading-relaxed text-sky-100/35">
@@ -1157,7 +1157,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                   : "border-sky-400/15 bg-sky-400/[0.06]"
                             }`}>
                               <div className="flex items-center justify-between gap-3">
-                                <p className="truncate text-[10px] font-bold text-white/70">
+                                <p className="truncate text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
                                   {downloadState.status === "resolving"
                                     ? "Validando autorização da Nexus"
                                     : downloadState.status === "downloading"
@@ -1188,7 +1188,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                       }}
                                     />
                                   </div>
-                                  <p className="mt-1.5 text-xs text-white/60">
+                                  <p className="mt-1.5 text-xs text-[var(--ink-muted)]">
                                     {formatBytes(downloadState.receivedBytes || 0)}
                                     {downloadState.totalBytes
                                       ? ` de ${formatBytes(downloadState.totalBytes)}`
@@ -1216,7 +1216,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     <button
                                       type="button"
                                       onClick={() => void onChooseFolder()}
-                                      className="rounded-lg border border-white/15 px-2.5 py-1 text-xs font-medium text-white/80 transition hover:bg-white/10"
+                                      className="rounded-lg border border-white/15 px-2.5 py-1 text-xs font-medium text-[var(--ink)] transition hover:bg-white/10"
                                     >
                                       Verificar pasta
                                     </button>
@@ -1226,7 +1226,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               {downloadState.status === "completed"
                                 && downloadState.installationError && (
                                 <div className="mt-2.5 rounded-lg border border-white/15 bg-white/5 p-2.5 text-left">
-                                  <p className="text-xs leading-relaxed text-white/85 font-medium">
+                                  <p className="text-xs leading-relaxed text-[var(--ink)] font-medium">
                                     {downloadState.installationError}
                                   </p>
                                   <div className="mt-2 flex items-center gap-2">
@@ -1240,7 +1240,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     <button
                                       type="button"
                                       onClick={() => void openNexusDownloadLocation()}
-                                      className="rounded-lg border border-white/10 px-2.5 py-1 text-xs font-medium text-white/70 transition hover:text-white"
+                                      className="rounded-lg border border-white/10 px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)] transition hover:text-white"
                                     >
                                       Abrir pasta baixada
                                     </button>
@@ -1251,7 +1251,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => void openNexusDownloadLocation()}
-                                  className="mt-2 flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-white/80 transition hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/30"
+                                  className="mt-2 flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-[var(--ink)] transition hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/30"
                                 >
                                   <FolderOpen className="h-3.5 w-3.5" />
                                   Mostrar arquivo
@@ -1261,7 +1261,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           )}
 
                           {filesError && (
-                            <p className="mt-3 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[10px] leading-relaxed text-red-200/65">
+                            <p className="mt-3 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-red-200/65">
                               {filesError}
                             </p>
                           )}
@@ -1269,10 +1269,10 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           {modFiles.length > 0 && (
                             <div className="mt-4 space-y-2">
                               <div className="flex items-center justify-between">
-                                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/30">
+                                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--ink-faint)]">
                                   Arquivos disponíveis
                                 </p>
-                                <span className="text-[9px] font-bold text-white/25">{modFiles.length}</span>
+                                <span className="text-[9px] font-bold text-[var(--ink-faint)]">{modFiles.length}</span>
                               </div>
                               {modFiles.slice(0, 8).map((file) => (
                                 (() => {
@@ -1289,10 +1289,10 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                 >
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
-                                      <p className="truncate text-[11px] font-bold text-white/65">
+                                      <p className="truncate text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
                                         {file.name}
                                       </p>
-                                      <p className="mt-1 text-[9px] text-white/30">
+                                      <p className="mt-1 text-[9px] text-[var(--ink-faint)]">
                                         {file.version || "Sem versão"} · {file.category || "Arquivo"}
                                       </p>
                                     </div>
@@ -1303,7 +1303,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     )}
                                   </div>
                                   <div className="mt-2 flex items-center justify-between gap-3">
-                                    <p className="text-[9px] text-white/25">
+                                    <p className="text-[9px] text-[var(--ink-faint)]">
                                       {file.sizeKb >= 1024
                                         ? `${(file.sizeKb / 1024).toFixed(1)} MB`
                                         : `${Math.round(file.sizeKb)} KB`}
@@ -1318,7 +1318,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                       className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[8px] font-black uppercase tracking-wider transition disabled:cursor-default ${
                                         isDownloaded
                                           ? "border-emerald-400/15 bg-emerald-400/[0.07] text-emerald-300/65"
-                                          : "border-white/10 bg-white/[0.05] text-white/50 hover:bg-white/10 hover:text-white disabled:opacity-40"
+                                          : "border-white/10 bg-white/[0.05] text-[var(--ink-muted)] hover:bg-white/10 hover:text-white disabled:opacity-40"
                                       }`}
                                     >
                                       {awaitingFileId === file.id
@@ -1342,9 +1342,9 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         </motion.div>
                       ) : (
                         <div className="flex min-h-full flex-col items-center justify-center text-center">
-                          <Sparkles className="mb-3 h-7 w-7 text-white/15" />
-                          <p className="text-sm font-bold text-white/45">Selecione um mod</p>
-                          <p className="mt-1 text-xs text-white/25">As informações aparecerão aqui.</p>
+                          <Sparkles className="mb-3 h-7 w-7 text-[var(--ink-faint)]" />
+                          <p className="text-sm font-bold text-[var(--ink-faint)]">Selecione um mod</p>
+                          <p className="mt-1 text-xs text-[var(--ink-faint)]">As informações aparecerão aqui.</p>
                         </div>
                       )}
                     </aside>
@@ -1362,9 +1362,9 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                     <div className="mx-auto max-w-5xl">
                       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                          <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/30">Gerenciamento local</p>
+                          <p className="text-[9px] font-black uppercase tracking-[0.22em] text-[var(--ink-faint)]">Gerenciamento local</p>
                           <h2 className="mt-2 text-2xl font-black text-white">Meus mods</h2>
-                          <p className="mt-1 text-xs text-white/35">Acompanhe downloads e gerencie os mods já instalados.</p>
+                          <p className="mt-1 text-xs text-[var(--ink-faint)]">Acompanhe downloads e gerencie os mods já instalados.</p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <button
@@ -1374,14 +1374,14 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               void openDownloadedModsFolder();
                             }}
                             disabled={folderActionBusy}
-                            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-[9px] font-black uppercase tracking-wider text-white/55 transition hover:bg-white/10 hover:text-white disabled:cursor-wait disabled:opacity-50"
+                            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-[9px] font-black uppercase tracking-wider text-[var(--ink-muted)] transition hover:bg-white/10 hover:text-white disabled:cursor-wait disabled:opacity-50"
                           >
                             {folderActionBusy
                               ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
                               : <FolderOpen className="h-3.5 w-3.5" />}
                             Abrir pasta dos mods
                           </button>
-                          <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] font-bold text-white/35">
+                          <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[length:var(--step-0)] font-bold text-[var(--ink-faint)]">
                             {installedMods.filter((mod) =>
                               (optimisticModStates[mod.id] ?? mod.enabled)).length} ativos
                           </span>
@@ -1420,7 +1420,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             </p>
                             <div className="mt-2 space-y-1">
                               {modConflicts.slice(0, 3).map((c, i) => (
-                                <div key={i} className="text-[10px] font-mono text-red-200/60 truncate">
+                                <div key={i} className="text-[length:var(--step-0)] font-mono text-red-200/60 truncate">
                                   • {c.relativePath} ({c.mods.map((m) => m.name).join(" vs ")})
                                 </div>
                               ))}
@@ -1432,10 +1432,10 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                       {/* GERENCIAMENTO DE PERFIS DE MODS */}
                       <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
-                          <Settings2 className="h-4 w-4 text-white/50" />
+                          <Settings2 className="h-4 w-4 text-[var(--ink-muted)]" />
                           <span className="text-xs font-bold uppercase tracking-wider text-white">Perfil de Mods:</span>
                           {modProfiles.length === 0 ? (
-                            <span className="text-xs text-white/40">Padrão</span>
+                            <span className="text-xs text-[var(--ink-faint)]">Padrão</span>
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               {modProfiles.map((prof) => (
@@ -1443,7 +1443,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                   key={prof.id}
                                   type="button"
                                   onClick={() => void handleApplyModProfile(prof)}
-                                  className="cursor-pointer rounded-lg border border-white/10 bg-white/10 px-2.5 py-1 text-[10px] font-bold text-white transition hover:bg-white/20 active:scale-95"
+                                  className="cursor-pointer rounded-lg border border-white/10 bg-white/10 px-2.5 py-1 text-[length:var(--step-0)] font-bold text-white transition hover:bg-white/20 active:scale-95"
                                 >
                                   {prof.name}
                                 </button>
@@ -1464,14 +1464,14 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             <button
                               type="button"
                               onClick={() => void handleSaveModProfile()}
-                              className="cursor-pointer rounded-lg bg-white px-3 py-1.5 text-[10px] font-black uppercase text-black transition hover:bg-white/90"
+                              className="cursor-pointer rounded-lg bg-white px-3 py-1.5 text-[length:var(--step-0)] font-black uppercase text-black transition hover:bg-white/90"
                             >
                               Salvar
                             </button>
                             <button
                               type="button"
                               onClick={() => setShowProfileSave(false)}
-                              className="cursor-pointer text-[10px] text-white/40 hover:text-white"
+                              className="cursor-pointer text-[length:var(--step-0)] text-[var(--ink-faint)] hover:text-white"
                             >
                               Cancelar
                             </button>
@@ -1480,7 +1480,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           <button
                             type="button"
                             onClick={() => setShowProfileSave(true)}
-                            className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white/60 transition hover:bg-white/10 hover:text-white"
+                            className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-muted)] transition hover:bg-white/10 hover:text-white"
                           >
                             + Salvar como Novo Perfil
                           </button>
@@ -1488,13 +1488,13 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                       </div>
 
                       {folderActionError && (
-                        <p className="mb-4 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[10px] leading-relaxed text-red-200/65">
+                        <p className="mb-4 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-red-200/65">
                           {folderActionError}
                         </p>
                       )}
 
                       {installedActionError && (
-                        <p className="mb-4 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[10px] leading-relaxed text-red-200/65">
+                        <p className="mb-4 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-red-200/65">
                           {installedActionError}
                         </p>
                       )}
@@ -1511,19 +1511,19 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             const displayedEnabled = optimisticModStates[mod.id] ?? mod.enabled;
                             const isBusy = modActionIds.has(mod.id);
                             return (
-                            <div key={mod.id} className="group relative flex flex-wrap items-center gap-3 rounded-xl border border-white/[0.08] bg-[#0E0E0E] p-3.5 transition hover:border-white/20 hover:bg-[#151515] sm:flex-nowrap sm:gap-4">
+                            <div key={mod.id} className="group relative flex flex-wrap items-center gap-3 rounded-xl border border-white/[0.08] bg-[var(--tone-1)] p-3.5 transition hover:border-white/20 hover:bg-[var(--tone-2)] sm:flex-nowrap sm:gap-4">
                               <HudCornerMarkers className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                              <div className="h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-[#171717]">
+                              <div className="h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-[var(--tone-2)]">
                                 {mod.pictureUrl && <img src={mod.pictureUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />}
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2 font-mono">
-                                  <span className="text-white/35 font-bold text-xs select-none">[</span>
+                                  <span className="text-[var(--ink-faint)] font-bold text-xs select-none">[</span>
                                   <h3 className="truncate text-xs md:text-sm font-bold text-white tracking-tight">{mod.name}</h3>
-                                  <span className="text-white/40 text-xs">▶</span>
-                                  <span className="text-white/35 font-bold text-xs select-none">]</span>
+                                  <span className="text-[var(--ink-faint)] text-xs">▶</span>
+                                  <span className="text-[var(--ink-faint)] font-bold text-xs select-none">]</span>
                                 </div>
-                                <p className="mt-1 font-mono text-[10px] text-white/35">
+                                <p className="mt-1 font-mono text-[length:var(--step-0)] text-[var(--ink-faint)]">
                                   {[
                                     mod.author ? `AUTHOR: ${mod.author.toUpperCase()}` : null,
                                     mod.version ? `VER: ${mod.version}` : null,
@@ -1537,8 +1537,8 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     : displayedEnabled
                                       ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
                                     : mod.status === "downloaded"
-                                      ? "border-white/10 bg-white/[0.04] text-white/50"
-                                      : "border-white/10 bg-white/[0.04] text-white/30"
+                                      ? "border-white/10 bg-white/[0.04] text-[var(--ink-muted)]"
+                                      : "border-white/10 bg-white/[0.04] text-[var(--ink-faint)]"
                                 }`}>
                                   {isBusy
                                     ? displayedEnabled ? "ATIVANDO..." : "DESATIVANDO..."
@@ -1554,7 +1554,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                   disabled={isBusy}
                                   aria-label={`Remover ${mod.name}`}
                                   title="Remover do jogo e apagar o download"
-                                  className="cursor-pointer flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-white/35 transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 disabled:cursor-wait disabled:opacity-40"
+                                  className="cursor-pointer flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-[var(--ink-faint)] transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 disabled:cursor-wait disabled:opacity-40"
                                 >
                                   {isBusy
                                     ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
@@ -1587,10 +1587,10 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                     <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
                       <div>
                         <h2 className="flex items-center gap-2.5 text-lg font-black tracking-tight text-white sm:text-xl">
-                          <Download className="h-5 w-5 text-white/70" />
+                          <Download className="h-5 w-5 text-[var(--ink-muted)]" />
                           Gerenciador de Downloads
                         </h2>
-                        <p className="mt-0.5 text-xs text-white/40">
+                        <p className="mt-0.5 text-xs text-[var(--ink-faint)]">
                           Acompanhe em tempo real os downloads e instalações de mods acionados na Nexus.
                         </p>
                       </div>
@@ -1599,7 +1599,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         <button
                           type="button"
                           onClick={handleClearCompletedDownloads}
-                          className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2 text-[10px] font-black uppercase tracking-wider text-white/70 transition hover:bg-white/10 hover:text-white"
+                          className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2 text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-muted)] transition hover:bg-white/10 hover:text-white"
                         >
                           <Trash2 className="h-3.5 w-3.5 text-red-400" />
                           Limpar Concluídos
@@ -1609,9 +1609,9 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
 
                     {downloadHistory.length === 0 ? (
                       <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-8 text-center">
-                        <Download className="mb-3 h-10 w-10 text-white/15" />
-                        <p className="text-sm font-black text-white/60">Nenhum download registrado</p>
-                        <p className="mt-1 max-w-sm text-xs leading-relaxed text-white/30">
+                        <Download className="mb-3 h-10 w-10 text-[var(--ink-faint)]" />
+                        <p className="text-sm font-black text-[var(--ink-muted)]">Nenhum download registrado</p>
+                        <p className="mt-1 max-w-sm text-xs leading-relaxed text-[var(--ink-faint)]">
                           Ao iniciar um download na Nexus Mods, o progresso e o status de instalação aparecerão aqui automaticamente.
                         </p>
                       </div>
@@ -1637,7 +1637,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                   {item.pictureUrl ? (
                                     <img src={item.pictureUrl} alt="" className="h-full w-full object-cover" />
                                   ) : (
-                                    <PackageOpen className="h-5 w-5 text-white/30" />
+                                    <PackageOpen className="h-5 w-5 text-[var(--ink-faint)]" />
                                   )}
                                 </div>
 
@@ -1647,13 +1647,13 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                       {item.modName || `Mod #${item.modId}`}
                                     </h3>
                                     {item.version && (
-                                      <span className="rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[9px] font-mono text-white/50">
+                                      <span className="rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[9px] font-mono text-[var(--ink-muted)]">
                                         v{item.version}
                                       </span>
                                     )}
                                   </div>
 
-                                  <p className="mt-0.5 text-xs text-white/40">
+                                  <p className="mt-0.5 text-xs text-[var(--ink-faint)]">
                                     {item.modAuthor ? `por ${item.modAuthor}` : `ID: ${item.modId}`}
                                   </p>
 
@@ -1711,7 +1711,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     type="button"
                                     onClick={() => void openNexusDownloadLocation(item.gameDomain || gameDomain)}
                                     title="Abrir pasta do arquivo"
-                                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50 transition hover:bg-white/10 hover:text-white"
+                                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[var(--ink-muted)] transition hover:bg-white/10 hover:text-white"
                                   >
                                     <FolderOpen className="h-4 w-4" />
                                   </button>
@@ -1723,7 +1723,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     if (item.id) handleRemoveDownloadCard(item.id);
                                   }}
                                   title="Remover do histórico"
-                                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/50 transition hover:bg-red-500/20 hover:text-red-400"
+                                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[var(--ink-muted)] transition hover:bg-red-500/20 hover:text-red-400"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
@@ -1746,13 +1746,13 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                   >
                     <div className="mx-auto max-w-3xl space-y-5">
                       <div>
-                        <p className="text-[9px] font-black uppercase tracking-[0.22em] text-white/30">Preparação do jogo</p>
+                        <p className="text-[9px] font-black uppercase tracking-[0.22em] text-[var(--ink-faint)]">Preparação do jogo</p>
                         <h2 className="mt-2 text-2xl font-black text-white">Configurar integração</h2>
                       </div>
 
                       <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                         <div className="mb-3 flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-white/55">
+                          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--ink-muted)]">
                             <KeyRound className="h-4 w-4" /> Conta Nexus de desenvolvimento
                           </div>
                           {nexusConnection.connected && (
@@ -1763,7 +1763,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         </div>
 
                         {connectionLoading ? (
-                          <div className="flex h-20 items-center justify-center gap-2 text-xs text-white/35">
+                          <div className="flex h-20 items-center justify-center gap-2 text-xs text-[var(--ink-faint)]">
                             <LoaderCircle className="h-4 w-4 animate-spin" />
                             Verificando conexão
                           </div>
@@ -1774,12 +1774,12 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                 <p className="text-sm font-black text-emerald-100/80">
                                   {nexusConnection.account?.name || "Chave pessoal validada"}
                                 </p>
-                                <p className="mt-1 text-[10px] leading-relaxed text-emerald-100/35">
+                                <p className="mt-1 text-[length:var(--step-0)] leading-relaxed text-emerald-100/35">
                                   A chave está criptografada pelo Windows e permanece somente neste computador.
                                 </p>
                                 {nexusConnection.account?.rateLimit.dailyRemaining !== null
                                   && nexusConnection.account?.rateLimit.dailyRemaining !== undefined && (
-                                  <p className="mt-2 text-[9px] font-bold text-white/25">
+                                  <p className="mt-2 text-[9px] font-bold text-[var(--ink-faint)]">
                                     {nexusConnection.account.rateLimit.dailyRemaining} requisições diárias restantes
                                   </p>
                                 )}
@@ -1788,7 +1788,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                 type="button"
                                 onClick={() => void removeNexusConnection()}
                                 disabled={connectionBusy}
-                                className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 px-4 text-[9px] font-black uppercase tracking-wider text-white/45 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
+                                className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 px-4 text-[9px] font-black uppercase tracking-wider text-[var(--ink-faint)] transition hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
                               >
                                 {connectionBusy
                                   ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
@@ -1799,7 +1799,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           </div>
                         ) : (
                           <>
-                            <p className="mb-4 text-xs leading-relaxed text-white/35">
+                            <p className="mb-4 text-xs leading-relaxed text-[var(--ink-faint)]">
                               Durante a avaliação, cada pessoa usa sua própria chave pessoal. Ela não é enviada ao Render,
                               Netlify, Supabase ou aos servidores do Phelierium.
                             </p>
@@ -1818,13 +1818,13 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     autoComplete="off"
                                     spellCheck={false}
                                     aria-label="Chave pessoal Nexus"
-                                    className="h-12 w-full rounded-xl border border-white/10 bg-black/25 px-4 pr-11 text-sm text-white outline-none placeholder:text-white/20 focus:border-white/25"
+                                    className="h-12 w-full rounded-xl border border-white/10 bg-black/25 px-4 pr-11 text-sm text-white outline-none placeholder:text-[var(--ink-faint)] focus:border-white/25"
                                   />
                                   <button
                                     type="button"
                                     onClick={() => setShowPersonalKey((visible) => !visible)}
                                     aria-label={showPersonalKey ? "Ocultar chave" : "Mostrar chave"}
-                                    className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-white/30 transition hover:bg-white/[0.06] hover:text-white/60"
+                                    className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--ink-faint)] transition hover:bg-white/[0.06] hover:text-[var(--ink-muted)]"
                                   >
                                     {showPersonalKey
                                       ? <EyeOff className="h-4 w-4" />
@@ -1835,7 +1835,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                   type="button"
                                   onClick={() => void connectPersonalKey()}
                                   disabled={connectionBusy || personalKey.trim().length < 32}
-                                  className="flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 text-[10px] font-black uppercase tracking-wider text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:opacity-35"
+                                  className="flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 text-[length:var(--step-0)] font-black uppercase tracking-wider text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:opacity-35"
                                 >
                                   {connectionBusy && <LoaderCircle className="h-4 w-4 animate-spin" />}
                                   Validar e salvar
@@ -1845,7 +1845,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             <button
                               type="button"
                               onClick={openNexusApiKeys}
-                              className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-bold text-white/35 transition hover:text-white/65"
+                              className="mt-3 inline-flex items-center gap-1.5 text-[length:var(--step-0)] font-bold text-[var(--ink-faint)] transition hover:text-[var(--ink-muted)]"
                             >
                               <ExternalLink className="h-3.5 w-3.5" />
                               Abrir página de chaves pessoais da Nexus
@@ -1854,14 +1854,14 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         )}
 
                         {connectionError && (
-                          <p className="mt-3 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[10px] leading-relaxed text-red-200/65">
+                          <p className="mt-3 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-red-200/65">
                             {connectionError}
                           </p>
                         )}
                       </div>
 
                       <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                        <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-white/55">
+                        <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--ink-muted)]">
                           <FolderOpen className="h-4 w-4" /> Pasta do jogo
                         </div>
                         <button
@@ -1869,8 +1869,8 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           onClick={() => void onChooseFolder()}
                           className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-white/10 bg-black/25 px-4 text-left transition hover:bg-white/[0.06]"
                         >
-                          <HardDrive className="h-4 w-4 shrink-0 text-white/35" />
-                          <span className="min-w-0 flex-1 truncate text-xs font-bold text-white/60">
+                          <HardDrive className="h-4 w-4 shrink-0 text-[var(--ink-faint)]" />
+                          <span className="min-w-0 flex-1 truncate text-xs font-bold text-[var(--ink-muted)]">
                             {gameFolder || "Selecionar pasta do jogo"}
                           </span>
                           {gameFolder && <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />}
@@ -1878,19 +1878,19 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                       </div>
 
                       <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                        <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-white/55">
+                        <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--ink-muted)]">
                           <PackageOpen className="h-4 w-4" /> Domínio Nexus
                         </div>
-                        <p className="mb-4 text-xs leading-relaxed text-white/35">
-                          É o trecho da URL antes de <code className="text-white/55">/mods</code>.
-                          Exemplo: <code className="text-white/55">skyrimspecialedition</code>.
+                        <p className="mb-4 text-xs leading-relaxed text-[var(--ink-faint)]">
+                          É o trecho da URL antes de <code className="text-[var(--ink-muted)]">/mods</code>.
+                          Exemplo: <code className="text-[var(--ink-muted)]">skyrimspecialedition</code>.
                         </p>
                         <div className="flex flex-col gap-2 sm:flex-row">
                           <input
                             value={domainDraft}
                             onChange={(event) => setDomainDraft(cleanDomain(event.target.value))}
                             placeholder="dominio-do-jogo"
-                            className="h-12 min-w-0 flex-1 rounded-xl border border-white/10 bg-black/25 px-4 text-sm text-white outline-none placeholder:text-white/20 focus:border-white/25"
+                            className="h-12 min-w-0 flex-1 rounded-xl border border-white/10 bg-black/25 px-4 text-sm text-white outline-none placeholder:text-[var(--ink-faint)] focus:border-white/25"
                           />
                           <button
                             type="button"
@@ -1901,7 +1901,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               setActiveTab("discover");
                             }}
                             disabled={!domainDraft}
-                            className="h-12 rounded-xl bg-white px-5 text-[10px] font-black uppercase tracking-wider text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:opacity-35"
+                            className="h-12 rounded-xl bg-white px-5 text-[length:var(--step-0)] font-black uppercase tracking-wider text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:opacity-35"
                           >
                             Salvar
                           </button>
@@ -1926,13 +1926,13 @@ const EmptyCatalog: React.FC<{
   onAction: () => void;
 }> = ({ title, description, onAction }) => (
   <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.025] px-6 text-center">
-    <PackageOpen className="mb-3 h-7 w-7 text-white/15" />
-    <p className="text-sm font-black text-white/55">{title}</p>
-    <p className="mt-1 max-w-md text-xs leading-relaxed text-white/30">{description}</p>
+    <PackageOpen className="mb-3 h-7 w-7 text-[var(--ink-faint)]" />
+    <p className="text-sm font-black text-[var(--ink-muted)]">{title}</p>
+    <p className="mt-1 max-w-md text-xs leading-relaxed text-[var(--ink-faint)]">{description}</p>
     <button
       type="button"
       onClick={onAction}
-      className="mt-4 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2 text-[9px] font-black uppercase tracking-wider text-white/45 transition hover:bg-white/10 hover:text-white"
+      className="mt-4 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2 text-[9px] font-black uppercase tracking-wider text-[var(--ink-faint)] transition hover:bg-white/10 hover:text-white"
     >
       Continuar
     </button>

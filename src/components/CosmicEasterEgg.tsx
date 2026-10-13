@@ -604,7 +604,7 @@ const ExplosionAnimation: React.FC<{
         <span className="font-mono text-xs tracking-widest uppercase font-semibold px-4 py-1.5 rounded-full border border-red-500/40 bg-red-950/80 text-red-400 backdrop-blur-md animate-pulse shadow-[0_0_25px_rgba(239,68,68,0.5)]">
           {disaster.badge}
         </span>
-        <span className="font-mono text-[11px] text-white/50 tracking-wider">
+        <span className="font-mono text-[length:var(--step-0)] text-[var(--ink-muted)] tracking-wider">
           {disaster.errorCode}
         </span>
       </motion.div>
@@ -649,7 +649,7 @@ const NotFoundDisasterScreen: React.FC<{
   }, [disaster.whatHappened, disaster.whyItHappened]);
 
   return (
-    <div className="relative w-full h-full bg-[#030405] text-white flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 overflow-y-auto font-mono select-text">
+    <div className="relative w-full h-full bg-[var(--tone-0)] text-white flex flex-col items-center justify-center p-4 sm:p-8 md:p-12 overflow-y-auto font-mono select-text">
       {/* ── DEEP COSMIC STARFIELD WITH PASSING STARS (LIKE LOGIN SCREEN) ── */}
       <LightSpeedTunnel
         isWarping={false}
@@ -686,19 +686,19 @@ const NotFoundDisasterScreen: React.FC<{
         initial={{ opacity: 0, scale: 0.95, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", bounce: 0, duration: 0.45 }}
-        className="relative z-20 w-full max-w-2xl bg-[#08080c]/98 border border-red-500/50 rounded-2xl shadow-[0_25px_90px_rgba(0,0,0,0.95),0_0_60px_rgba(239,68,68,0.25),inset_0_1px_0_rgba(255,255,255,0.06)] overflow-hidden"
+        className="relative z-20 w-full max-w-2xl bg-[var(--tone-1)]/98 border border-red-500/50 rounded-2xl shadow-[0_25px_90px_rgba(0,0,0,0.95),0_0_60px_rgba(239,68,68,0.25),inset_0_1px_0_rgba(255,255,255,0.06)] overflow-hidden"
       >
         {/* Terminal Header Bar */}
-        <div className="flex items-center justify-between px-4 py-2.5 bg-[#0e0e14] border-b border-red-500/30 text-xs">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-[var(--tone-1)] border-b border-red-500/30 text-xs">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]" />
             <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/30" />
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/30" />
-            <span className="text-white/50 text-[11px] ml-2">
+            <span className="text-[var(--ink-muted)] text-[length:var(--step-0)] ml-2">
               root@pherielium-core: /dev/ttyS0 (KERNEL_PANIC)
             </span>
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-red-400 font-bold uppercase tracking-wider">
+          <div className="flex items-center gap-2 text-[length:var(--step-0)] text-red-400 font-bold uppercase tracking-wider">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
             <span>SYSTEM_HALTED</span>
           </div>
@@ -707,26 +707,26 @@ const NotFoundDisasterScreen: React.FC<{
         {/* Terminal Console Content */}
         <div className="p-5 sm:p-7 space-y-4 text-left text-xs leading-relaxed">
           {/* Kernel Panic Trace Header */}
-          <div className="p-3 bg-[#050508] border border-red-500/20 rounded-xl space-y-1 text-[11px] text-red-400/90 font-mono">
+          <div className="p-3 bg-[var(--tone-0)] border border-red-500/20 rounded-xl space-y-1 text-[length:var(--step-0)] text-red-400/90 font-mono">
             <div className="text-white font-bold flex items-center justify-between">
               <span>*** KERNEL PANIC: FATAL UNRECOVERABLE HARDWARE FAULT ***</span>
-              <span className="text-white/40 text-[10px]">{disaster.badge}</span>
+              <span className="text-[var(--ink-faint)] text-[length:var(--step-0)]">{disaster.badge}</span>
             </div>
-            <div className="text-white/40 text-[10px] truncate">
+            <div className="text-[var(--ink-faint)] text-[length:var(--step-0)] truncate">
               FAULT_ADDR: {disaster.faultAddress}  |  CRASH_CODE: {disaster.errorCode}
             </div>
-            <div className="text-white/30 text-[10px]">
+            <div className="text-[var(--ink-faint)] text-[length:var(--step-0)]">
               COMM: pherielium-orbital-engine [PID: 1]  TAINTED: G   W
             </div>
           </div>
 
           {/* BLOCK 1: O QUE ACONTECEU */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2 text-[11px] font-bold text-red-400 uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-[length:var(--step-0)] font-bold text-red-400 uppercase tracking-wider">
               <span className="text-red-500">┌─ [01]</span>
               <span>O QUE ACONTECEU NO SISTEMA</span>
             </div>
-            <div className="p-3.5 bg-red-950/15 border border-red-500/25 rounded-xl text-white/85 text-[12px] leading-relaxed">
+            <div className="p-3.5 bg-red-950/15 border border-red-500/25 rounded-xl text-[var(--ink)] text-[length:var(--step-0)] leading-relaxed">
               {typedWhat}
               {!readyToReconstruct && typedWhat.length < disaster.whatHappened.length && (
                 <span className="inline-block w-1.5 h-3 bg-red-400 ml-1 animate-pulse align-middle" />
@@ -736,11 +736,11 @@ const NotFoundDisasterScreen: React.FC<{
 
           {/* BLOCK 2: POR QUE ACONTECEU */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2 text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-[length:var(--step-0)] font-bold text-amber-400 uppercase tracking-wider">
               <span className="text-amber-500">┌─ [02]</span>
               <span>POR QUE ACONTECEU (CAUSA RAIZ)</span>
             </div>
-            <div className="p-3.5 bg-amber-950/15 border border-amber-500/25 rounded-xl text-white/85 text-[12px] leading-relaxed">
+            <div className="p-3.5 bg-amber-950/15 border border-amber-500/25 rounded-xl text-[var(--ink)] text-[length:var(--step-0)] leading-relaxed">
               {typedWhy}
               {readyToReconstruct && (
                 <span className="inline-block w-1.5 h-3 bg-white ml-1 animate-pulse align-middle" />
@@ -749,11 +749,11 @@ const NotFoundDisasterScreen: React.FC<{
           </div>
 
           {/* Telemetry Matrix Dump */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-[#050508] border border-white/[0.07] rounded-xl text-[11px]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-[var(--tone-0)] border border-white/[0.07] rounded-xl text-[length:var(--step-0)]">
             {disaster.telemetry.map((item, idx) => (
-              <div key={idx} className="flex justify-between items-center text-white/70">
-                <span className="text-white/40">{item.label}:</span>
-                <span className="font-semibold text-white/90 truncate ml-2">
+              <div key={idx} className="flex justify-between items-center text-[var(--ink-muted)]">
+                <span className="text-[var(--ink-faint)]">{item.label}:</span>
+                <span className="font-semibold text-[var(--ink)] truncate ml-2">
                   {item.value}
                 </span>
               </div>
@@ -774,12 +774,12 @@ const NotFoundDisasterScreen: React.FC<{
               className={`w-full py-3.5 px-5 rounded-xl flex items-center justify-between text-xs font-mono font-semibold transition-all border ${
                 readyToReconstruct
                   ? "bg-white text-black hover:bg-white/90 border-white shadow-[0_0_25px_rgba(255,255,255,0.25)] cursor-pointer"
-                  : "bg-white/5 text-white/30 border-white/10 cursor-wait"
+                  : "bg-white/5 text-[var(--ink-faint)] border-white/10 cursor-wait"
               }`}
               disabled={!readyToReconstruct}
             >
               <span className="flex items-center gap-2">
-                <Terminal size={14} className={readyToReconstruct ? "text-black" : "text-white/30"} />
+                <Terminal size={14} className={readyToReconstruct ? "text-black" : "text-[var(--ink-faint)]"} />
                 <span>
                   {readyToReconstruct
                     ? "> [ REINICIALIZAR KERNEL E RESTAURAR AMBIENTE ]"
@@ -789,7 +789,7 @@ const NotFoundDisasterScreen: React.FC<{
               <RotateCcw size={14} className={readyToReconstruct ? "animate-spin-slow" : ""} />
             </motion.button>
 
-            <div className="mt-2 text-center text-[10px] text-white/30 font-mono">
+            <div className="mt-2 text-center text-[length:var(--step-0)] text-[var(--ink-faint)] font-mono">
               [systemd-journald] aguardando confirmação do operador para restaurar subsistema.
             </div>
           </div>
@@ -802,7 +802,7 @@ const NotFoundDisasterScreen: React.FC<{
 // ─── REBUILDING ANIMATION ────────────────────────────────────────────────────────
 const RebuildingAnimation: React.FC = () => {
   return (
-    <div className="relative w-full h-full bg-[#070707] flex flex-col items-center justify-center p-6 text-center select-none overflow-hidden">
+    <div className="relative w-full h-full bg-[var(--tone-0)] flex flex-col items-center justify-center p-6 text-center select-none overflow-hidden">
       {/* Background Starfield during reconstruction */}
       <LightSpeedTunnel
         isWarping={false}
@@ -891,7 +891,7 @@ const RebuildingAnimation: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="font-mono text-xs text-white/50 mt-2"
+          className="font-mono text-xs text-[var(--ink-muted)] mt-2"
         >
           Reconstruindo manifestos de jogos e realinhando órbitas...
         </motion.p>
@@ -913,7 +913,7 @@ const FakeBanScreen: React.FC<{
       : null;
 
   return (
-    <div className="relative w-full h-full bg-[#030405] text-white flex flex-col items-center justify-center p-6 md:p-12 overflow-y-auto">
+    <div className="relative w-full h-full bg-[var(--tone-0)] text-white flex flex-col items-center justify-center p-6 md:p-12 overflow-y-auto">
       {/* Deep space stars drifting in background */}
       <LightSpeedTunnel
         isWarping={false}
@@ -933,7 +933,7 @@ const FakeBanScreen: React.FC<{
         initial={{ opacity: 0, scale: 0.92, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", bounce: 0, duration: 0.45 }}
-        className="relative z-10 w-full max-w-xl bg-[#141417] border-2 border-red-600 rounded-3xl p-6 md:p-10 shadow-[0_30px_120px_rgba(239,68,68,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] flex flex-col items-center text-center my-auto"
+        className="relative z-10 w-full max-w-xl bg-[var(--tone-2)] border-2 border-red-600 rounded-3xl p-6 md:p-10 shadow-[0_30px_120px_rgba(239,68,68,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] flex flex-col items-center text-center my-auto"
       >
         {/* Red Lock Warning Badge (Double-click backdoor for safety / dev reset) */}
         <div
@@ -952,7 +952,7 @@ const FakeBanScreen: React.FC<{
         {/* Security Department Header */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-red-600/15 border border-red-600/40 mb-3">
           <Lock size={13} className="text-red-400" />
-          <span className="font-mono text-[11px] text-red-400 font-bold tracking-wider uppercase">
+          <span className="font-mono text-[length:var(--step-0)] text-red-400 font-bold tracking-wider uppercase">
             DEPARTAMENTO DE SEGURANÇA E COMBATE A FRAUDES DE HARDWARE
           </span>
         </div>
@@ -966,33 +966,33 @@ const FakeBanScreen: React.FC<{
         </p>
 
         {/* Strict Hardware Lock Table */}
-        <div className="w-full bg-[#0a0a0c] border border-red-500/30 rounded-2xl p-4 mb-6 text-left font-mono text-xs space-y-2.5">
-          <div className="flex justify-between items-center text-white/50 border-b border-white/[0.08] pb-2">
+        <div className="w-full bg-[var(--tone-1)] border border-red-500/30 rounded-2xl p-4 mb-6 text-left font-mono text-xs space-y-2.5">
+          <div className="flex justify-between items-center text-[var(--ink-muted)] border-b border-white/[0.08] pb-2">
             <span>HWID REGISTRADO:</span>
             <span className="text-red-400 font-bold">8F2A-99C1-DE40-AA38</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-white/40">INFRAÇÃO:</span>
+            <span className="text-[var(--ink-faint)]">INFRAÇÃO:</span>
             <span className="text-red-400 font-semibold text-right">
               Destruição Reiterada de Infraestrutura (Art. 18 - Nível V)
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-white/40">PENALIDADE:</span>
+            <span className="text-[var(--ink-faint)]">PENALIDADE:</span>
             <span className="text-white font-medium">Bloqueio de Kernel Ring-0 & Licenças</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-white/40">STATUS DA CONTA:</span>
+            <span className="text-[var(--ink-faint)]">STATUS DA CONTA:</span>
             <span className="text-red-500 font-bold uppercase tracking-wider">SUSPENSÃO IRREVOGÁVEL</span>
           </div>
           <div className="flex justify-between items-center pt-2 border-t border-white/[0.08]">
-            <span className="text-white/40">TEMPO RESTANTE:</span>
+            <span className="text-[var(--ink-faint)]">TEMPO RESTANTE:</span>
             <span className="text-yellow-400 font-bold">PERMANENTE (999.999 ANOS)</span>
           </div>
         </div>
 
         {/* Threatening Warning Note */}
-        <p className="text-[11px] font-mono text-red-400/85 mb-5 leading-relaxed">
+        <p className="text-[length:var(--step-0)] font-mono text-red-400/85 mb-5 leading-relaxed">
           ⚠ Tentativas de contornar este bloqueio utilizando máquinas virtuais, proxies ou substituição de hardware serão registradas e rejeitadas pelo kernel de segurança da rede.
         </p>
 
@@ -1009,12 +1009,12 @@ const FakeBanScreen: React.FC<{
             <Radio size={16} className="animate-pulse" />
             <span>{BAN_PLEDGES[pledgeStep]}</span>
           </div>
-          <span className="text-xs text-white/80 font-mono bg-red-800/80 px-2.5 py-1 rounded-lg">
+          <span className="text-xs text-[var(--ink)] font-mono bg-red-800/80 px-2.5 py-1 rounded-lg">
             {pledgeStep + 1}/{BAN_PLEDGES.length}
           </span>
         </motion.button>
 
-        <span className="mt-3 text-[11px] font-mono text-white/40">
+        <span className="mt-3 text-[length:var(--step-0)] font-mono text-[var(--ink-faint)]">
           Pressione repetidamente para formalizar seu arrependimento perante o conselho.
         </span>
       </motion.div>
@@ -1031,20 +1031,20 @@ const FakeBanScreen: React.FC<{
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.85, filter: "blur(8px)" }}
               transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
-              className="w-full max-w-lg bg-[#0d0d11] border-2 border-red-600 rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(220,38,38,0.7),inset_0_1px_0_rgba(255,255,255,0.15)] flex flex-col text-left relative max-h-[90vh] overflow-y-auto"
+              className="w-full max-w-lg bg-[var(--tone-1)] border-2 border-red-600 rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(220,38,38,0.7),inset_0_1px_0_rgba(255,255,255,0.15)] flex flex-col text-left relative max-h-[90vh] overflow-y-auto"
             >
               {/* Blood-Red Hazard Stripe Header Bar */}
               <div className="absolute top-0 inset-x-0 h-2 bg-[repeating-linear-gradient(45deg,#b91c1c,#b91c1c_10px,#7f1d1d_10px,#7f1d1d_20px)] animate-pulse" />
 
               <div className="flex items-center justify-between mt-1 mb-3">
-                <span className="font-mono text-[10px] text-red-400 font-extrabold tracking-widest uppercase flex items-center gap-1.5">
+                <span className="font-mono text-[length:var(--step-0)] text-red-400 font-extrabold tracking-widest uppercase flex items-center gap-1.5">
                   <Skull size={13} className="text-red-500" />
                   {activeModal.badge}
                 </span>
                 <button
                   type="button"
                   onClick={onPledgeClick}
-                  className="text-white/40 hover:text-white transition-colors cursor-pointer p-1"
+                  className="text-[var(--ink-faint)] hover:text-white transition-colors cursor-pointer p-1"
                   title="Fechar (Não adianta nada!)"
                 >
                   <X size={16} />
@@ -1061,7 +1061,7 @@ const FakeBanScreen: React.FC<{
                 {activeModal.description}
               </p>
 
-              <div className="w-full bg-red-950/40 border border-red-500/30 rounded-xl p-2.5 font-mono text-[10px] text-red-300 mb-5">
+              <div className="w-full bg-red-950/40 border border-red-500/30 rounded-xl p-2.5 font-mono text-[length:var(--step-0)] text-red-300 mb-5">
                 {activeModal.telemetry}
               </div>
 
@@ -1077,7 +1077,7 @@ const FakeBanScreen: React.FC<{
                   <Radio size={14} className="animate-pulse" />
                   <span>{BAN_PLEDGES[pledgeStep]}</span>
                 </div>
-                <span className="font-mono text-[11px] text-white/80 bg-red-800/80 px-2 py-0.5 rounded">
+                <span className="font-mono text-[length:var(--step-0)] text-[var(--ink)] bg-red-800/80 px-2 py-0.5 rounded">
                   {pledgeStep + 1}/{BAN_PLEDGES.length}
                 </span>
               </motion.button>
@@ -1092,7 +1092,7 @@ const FakeBanScreen: React.FC<{
 // ─── ZOEIRA REVEAL SCREEN ────────────────────────────────────────────────────────
 const ZoeiraRevealScreen: React.FC<{ onRestore: () => void }> = ({ onRestore }) => {
   return (
-    <div className="relative w-full h-full bg-[#070707] text-white flex flex-col items-center justify-center p-6 md:p-12 text-center select-none overflow-y-auto">
+    <div className="relative w-full h-full bg-[var(--tone-0)] text-white flex flex-col items-center justify-center p-6 md:p-12 text-center select-none overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, scale: 0.5 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -1104,7 +1104,7 @@ const ZoeiraRevealScreen: React.FC<{ onRestore: () => void }> = ({ onRestore }) 
         initial={{ opacity: 0, scale: 0.85, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
-        className="relative z-10 w-full max-w-lg bg-[#141416] border border-white/[0.12] rounded-3xl p-8 md:p-12 shadow-[0_30px_100px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.1)] flex flex-col items-center"
+        className="relative z-10 w-full max-w-lg bg-[var(--tone-2)] border border-white/[0.12] rounded-3xl p-8 md:p-12 shadow-[0_30px_100px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.1)] flex flex-col items-center"
       >
         <motion.div
           animate={{ rotate: [0, -12, 12, -6, 6, 0] }}
@@ -1123,7 +1123,7 @@ const ZoeiraRevealScreen: React.FC<{ onRestore: () => void }> = ({ onRestore }) 
           ZOEIRA! 🤣 NADA FOI APAGADO!
         </h1>
 
-        <p className="font-body text-sm md:text-base text-white/75 leading-relaxed mb-6">
+        <p className="font-body text-sm md:text-base text-[var(--ink-muted)] leading-relaxed mb-6">
           Relaxa! Seus jogos, saves, perfis e sua conta continuam 100% intactos! O cosmos tem senso de humor, mas você prometeu parar de explodir o hub, hein? Agora entra aí e vai curtir seus jogos!
         </p>
 

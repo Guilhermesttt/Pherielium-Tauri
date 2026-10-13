@@ -47,13 +47,13 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
   if (friends.length === 0) {
     return (
       <div className="mx-auto max-w-xl rounded-[22px] bg-[var(--surface-raised)] p-10 text-center ring-1 ring-[color:var(--border-subtle)]">
-        <MessageSquare className="mx-auto h-8 w-8 text-white/30" />
-        <h2 className="mt-4 font-display text-[20px] font-bold text-white">Nenhuma conversa ainda</h2>
-        <p className="mt-1 text-[14px] text-white/55">Adicione um amigo para começar a conversar.</p>
+        <MessageSquare className="mx-auto h-8 w-8 text-[var(--ink-faint)]" />
+        <h2 className="mt-4 font-display text-[length:var(--step-3)] font-bold text-white">Nenhuma conversa ainda</h2>
+        <p className="mt-1 text-[length:var(--step-1)] text-[var(--ink-muted)]">Adicione um amigo para começar a conversar.</p>
         <button
           type="button"
           onClick={onAddFriend}
-          className="mt-5 h-11 rounded-full bg-white px-6 text-[13px] font-semibold text-black active:scale-95"
+          className="mt-5 h-11 rounded-full bg-white px-6 text-[length:var(--step-0)] font-semibold text-black active:scale-95"
         >
           Adicionar amigo
         </button>
@@ -65,23 +65,23 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
     <section aria-label="Conversas" className="mx-auto max-w-3xl rounded-[22px] bg-[var(--surface-raised)] p-4 ring-1 ring-[color:var(--border-subtle)]">
       <header className="mb-3 flex items-center gap-3 px-1">
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-[22px] font-bold leading-tight text-white">Conversas</h2>
-          <p className="text-[13px] text-white/50">{totalUnread > 0 ? `${totalUnread} mensagens novas` : "Tudo em dia"}</p>
+          <h2 className="font-display text-[length:var(--step-3)] font-bold leading-tight text-white">Conversas</h2>
+          <p className="text-[length:var(--step-0)] text-[var(--ink-muted)]">{totalUnread > 0 ? `${totalUnread} mensagens novas` : "Tudo em dia"}</p>
         </div>
         <div className="relative w-56">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-faint)]" />
           <input
             aria-label="Buscar conversa"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar conversa"
-            className="h-10 w-full rounded-full bg-[var(--surface-base)] pl-10 pr-4 text-[13px] text-white outline-none placeholder:text-white/35 focus:ring-2 focus:ring-white/25"
+            className="h-10 w-full rounded-full bg-[var(--surface-base)] pl-10 pr-4 text-[length:var(--step-0)] text-white outline-none placeholder:text-[var(--ink-faint)] focus:ring-2 focus:ring-white/25"
           />
         </div>
       </header>
 
       {rows.length === 0 ? (
-        <p className="px-3 py-10 text-center text-[13px] text-white/45">Nenhuma conversa com esse nome.</p>
+        <p className="px-3 py-10 text-center text-[length:var(--step-0)] text-[var(--ink-faint)]">Nenhuma conversa com esse nome.</p>
       ) : (
         <ul className="flex flex-col gap-0.5">
           {rows.map((f) => {
@@ -104,7 +104,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
                       {f.avatar ? (
                         <img src={f.avatar} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       ) : (
-                        <span className="flex h-full w-full items-center justify-center text-white/45">
+                        <span className="flex h-full w-full items-center justify-center text-[var(--ink-faint)]">
                           <User className="h-5 w-5" />
                         </span>
                       )}
@@ -116,10 +116,10 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
                     />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className={`block truncate text-[15px] ${n > 0 ? "font-bold text-white" : "font-semibold text-white/90"}`}>
+                    <span className={`block truncate text-[length:var(--step-1)] ${n > 0 ? "font-bold text-white" : "font-semibold text-[var(--ink)]"}`}>
                       {f.name}
                     </span>
-                    <span className={`flex items-center gap-1 truncate text-[12.5px] ${playing ? "text-[rgb(var(--launcher-accent))]" : "text-white/50"}`}>
+                    <span className={`flex items-center gap-1 truncate text-[length:var(--step-0)] ${playing ? "text-[rgb(var(--launcher-accent))]" : "text-[var(--ink-muted)]"}`}>
                       {playing && <Gamepad2 className="h-3 w-3 shrink-0" />}
                       <span className="truncate">
                         {n > 0
@@ -133,7 +133,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
                     </span>
                   </span>
                   {n > 0 && (
-                    <span className="min-w-6 rounded-full bg-white px-2 text-center text-[12px] font-bold leading-6 text-black">{n}</span>
+                    <span className="min-w-6 rounded-full bg-white px-2 text-center text-[length:var(--step-0)] font-bold leading-6 text-black">{n}</span>
                   )}
                 </button>
                 {onStartVoiceCall && (

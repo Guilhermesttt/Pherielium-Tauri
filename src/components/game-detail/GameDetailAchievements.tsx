@@ -107,7 +107,7 @@ function resolveTierIndex(
 
 // ── Componente Skeleton ───────────────────────────────────────────────────────
 const AchievementSkeleton: React.FC = () => (
-  <div className="h-[88px] flex items-center gap-4 animate-pulse p-4 rounded-2xl bg-[#141414] border border-white/[0.05]">
+  <div className="h-[88px] flex items-center gap-4 animate-pulse p-4 rounded-2xl bg-[var(--tone-2)] border border-white/[0.05]">
     <div className="w-14 h-14 rounded-xl bg-white/10 flex-shrink-0" />
     <div className="flex-1 space-y-2 min-w-0">
       <div className="h-4 w-1/3 bg-white/10 rounded" />
@@ -170,8 +170,8 @@ const PlatinumCard: React.FC<{
       onMouseMove={handleCursorGlow}
       className={`cursor-glow relative overflow-hidden rounded-2xl border p-4 sm:p-5 transition-all duration-300 ${
         isUnlocked
-          ? "border-[#38bdf8]/35 bg-[#14171a]"
-          : "border-white/10 bg-[#141414]"
+          ? "border-[#38bdf8]/35 bg-[var(--tone-2)]"
+          : "border-white/10 bg-[var(--tone-2)]"
       }`}
       style={{
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
@@ -208,12 +208,12 @@ const PlatinumCard: React.FC<{
         {/* Informações e Progresso Real da Coleção */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#38bdf8] flex items-center gap-1">
+            <span className="text-[length:var(--step-0)] font-bold uppercase tracking-widest text-[#38bdf8] flex items-center gap-1">
               <Trophy className="w-3 h-3" />
               {isPt ? "Conclusão da Coleção" : "Collection Completion"}
             </span>
             {!hasNative && (
-              <span className="text-[9px] font-bold text-white/40 border border-white/10 rounded px-1.5 py-0.2 uppercase tracking-wider">
+              <span className="text-[9px] font-bold text-[var(--ink-faint)] border border-white/10 rounded px-1.5 py-0.2 uppercase tracking-wider">
                 Virtual
               </span>
             )}
@@ -223,7 +223,7 @@ const PlatinumCard: React.FC<{
             {name}
           </h3>
 
-          <p className="text-xs text-white/70 leading-relaxed mt-0.5">
+          <p className="text-xs text-[var(--ink-muted)] leading-relaxed mt-0.5">
             {isUnlocked
               ? (isPt ? "Você completou 100% de todas as conquistas do jogo!" : "You have completed 100% of all achievements!")
               : (description || (isPt ? "Complete todas as conquistas para desbloquear" : "Complete all achievements to unlock"))}
@@ -232,7 +232,7 @@ const PlatinumCard: React.FC<{
           {/* Barra de Progresso Real da Coleção */}
           <div className="mt-3 space-y-1.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-white/50 font-medium">
+              <span className="text-[var(--ink-muted)] font-medium">
                 {isPt ? "Progresso geral" : "Overall progress"}
               </span>
               <span className="text-white font-bold tracking-tight">
@@ -258,22 +258,22 @@ const PlatinumCard: React.FC<{
           {isUnlocked ? (
             <div className="flex flex-col items-end gap-1">
               <span
-                className="px-3 py-1 rounded-xl text-[11px] font-bold uppercase tracking-wider text-[#38bdf8] border border-[#38bdf8]/40 bg-[#38bdf8]/15"
+                className="px-3 py-1 rounded-xl text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[#38bdf8] border border-[#38bdf8]/40 bg-[#38bdf8]/15"
               >
                 {isPt ? "Desbloqueado" : "Unlocked"}
               </span>
               {unlockDate && (
-                <span className="text-[10px] text-white/40">
+                <span className="text-[length:var(--step-0)] text-[var(--ink-faint)]">
                   {unlockedAtLabel} {unlockDate}
                 </span>
               )}
             </div>
           ) : (
             <div className="flex flex-col items-end gap-1">
-              <span className="px-3 py-1 rounded-xl text-[11px] font-bold uppercase tracking-wider text-white/60 bg-white/[0.04] border border-white/10">
+              <span className="px-3 py-1 rounded-xl text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[var(--ink-muted)] bg-white/[0.04] border border-white/10">
                 {isPt ? "Em Progresso" : "In Progress"}
               </span>
-              <span className="text-[10px] text-white/40">
+              <span className="text-[length:var(--step-0)] text-[var(--ink-faint)]">
                 {totalCount - unlockedCount} {isPt ? "restantes" : "remaining"}
               </span>
             </div>
@@ -328,8 +328,8 @@ const AchievementCard: React.FC<{
       onMouseMove={handleCursorGlow}
       className={`cursor-glow group relative flex items-center gap-4 rounded-2xl p-4 transition-all duration-200 outline-none focus-visible:ring-1 focus-visible:ring-white/40 ${
         isAchieved
-          ? "bg-[#141414] hover:bg-[#181818] border border-white/[0.06] hover:border-white/20"
-          : "bg-[#111111] hover:bg-[#151515] border border-white/[0.04] hover:border-white/15"
+          ? "bg-[var(--tone-2)] hover:bg-[var(--tone-2)] border border-white/[0.06] hover:border-white/20"
+          : "bg-[var(--tone-1)] hover:bg-[var(--tone-2)] border border-white/[0.04] hover:border-white/15"
       }`}
       style={{
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
@@ -360,7 +360,7 @@ const AchievementCard: React.FC<{
           isAchieved ? (
             <Trophy className="h-6 w-6" style={{ color: tierCfg.color }} />
           ) : (
-            <Lock className="h-5 w-5 text-white/40" />
+            <Lock className="h-5 w-5 text-[var(--ink-faint)]" />
           )
         )}
       </div>
@@ -368,7 +368,7 @@ const AchievementCard: React.FC<{
       {/* Conteúdo Central: Nome em destaque, Requisito legível, Data secundária */}
       <div className="flex-1 min-w-0 flex flex-col justify-center">
         <div className="flex items-center gap-2 mb-0.5">
-          <h4 className={`font-bold text-sm tracking-tight truncate ${isAchieved ? "text-white" : "text-white/90"}`}>
+          <h4 className={`font-bold text-sm tracking-tight truncate ${isAchieved ? "text-white" : "text-[var(--ink)]"}`}>
             {achievement.name}
           </h4>
           {isUltraRare && isAchieved && (
@@ -386,13 +386,13 @@ const AchievementCard: React.FC<{
         </div>
 
         {/* Requisito com alto contraste para leitura */}
-        <p className={`text-xs leading-relaxed line-clamp-2 ${isAchieved ? "text-white/70" : "text-white/65"}`}>
+        <p className={`text-xs leading-relaxed line-clamp-2 ${isAchieved ? "text-[var(--ink-muted)]" : "text-[var(--ink-muted)]"}`}>
           {achievement.description || (isAchieved ? unlockedLabel : lockedLabel)}
         </p>
 
         {/* Data secundária abaixo do requisito */}
         {isAchieved && unlockDate && (
-          <span className="text-[11px] text-white/40 font-medium block mt-1">
+          <span className="text-[length:var(--step-0)] text-[var(--ink-faint)] font-medium block mt-1">
             {unlockedAtLabel} {unlockDate}
           </span>
         )}
@@ -417,7 +417,7 @@ const AchievementCard: React.FC<{
           </div>
         ) : isAchieved ? (
           <span
-            className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider"
+            className="px-2.5 py-1 rounded-lg text-[length:var(--step-0)] font-bold uppercase tracking-wider"
             style={{
               background: tierCfg.badgeBg,
               color: tierCfg.color,
@@ -427,14 +427,14 @@ const AchievementCard: React.FC<{
             {tierCfg.label || unlockedLabel}
           </span>
         ) : (
-          <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white/40 bg-white/[0.03] border border-white/10">
+          <span className="px-2.5 py-1 rounded-lg text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[var(--ink-faint)] bg-white/[0.03] border border-white/10">
             {lockedLabel}
           </span>
         )}
 
         {/* Texto explícito: "2.0% dos jogadores" */}
         {globalRarityText && (
-          <span className="text-[11px] text-white/50 font-medium whitespace-nowrap">
+          <span className="text-[length:var(--step-0)] text-[var(--ink-muted)] font-medium whitespace-nowrap">
             {globalRarityText}
           </span>
         )}
@@ -482,7 +482,7 @@ const TierSummary: React.FC<{
           <span className="text-xs font-bold" style={{ color: unlocked > 0 ? cfg.color : "rgba(255,255,255,0.25)" }}>
             {unlocked}
           </span>
-          <span className="text-xs text-white/25">/{total}</span>
+          <span className="text-xs text-[var(--ink-faint)]">/{total}</span>
         </div>
       ))}
     </div>
@@ -601,7 +601,7 @@ export const GameDetailAchievements: React.FC<GameDetailAchievementsProps> = Rea
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                     isActive
                       ? "text-black shadow-md"
-                      : "bg-[var(--color-surface)] text-white/50 hover:text-white border border-white/5"
+                      : "bg-[var(--color-surface)] text-[var(--ink-muted)] hover:text-white border border-white/5"
                   }`}
                   style={isActive ? {
                     background: "rgb(var(--launcher-accent))",
@@ -622,18 +622,18 @@ export const GameDetailAchievements: React.FC<GameDetailAchievementsProps> = Rea
 
         {/* Input de Busca */}
         <div className="relative w-full sm:w-64">
-          <Search className="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-4 h-4 text-[var(--ink-faint)] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={copy.searchPlaceholder}
-            className="w-full bg-[var(--color-surface)] border border-white/10 rounded-xl pl-9 pr-8 py-1.5 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-white/40 transition-colors"
+            className="w-full bg-[var(--color-surface)] border border-white/10 rounded-xl pl-9 pr-8 py-1.5 text-xs text-white placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-white/40 transition-colors"
           />
           {searchQuery && (
             <button
               onClick={() => onSearchChange("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--ink-faint)] hover:text-white"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -668,8 +668,8 @@ export const GameDetailAchievements: React.FC<GameDetailAchievementsProps> = Rea
       {/* Erro com Retry */}
       {!isLoading && error && (
         <div className="glass-panel flex min-h-[220px] flex-col items-center justify-center rounded-3xl border border-dashed border-white/10 p-8 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-          <AlertCircle className="mb-3 h-8 w-8 text-white/30" />
-          <p className="text-sm font-semibold text-white/70 mb-4">{error}</p>
+          <AlertCircle className="mb-3 h-8 w-8 text-[var(--ink-faint)]" />
+          <p className="text-sm font-semibold text-[var(--ink-muted)] mb-4">{error}</p>
           <button
             onClick={onRetry}
             className="flex items-center gap-2 rounded-xl bg-[var(--color-surface)] border border-white/15 px-4 py-2 text-xs font-bold text-white hover:bg-white/10 transition-colors"
@@ -683,17 +683,17 @@ export const GameDetailAchievements: React.FC<GameDetailAchievementsProps> = Rea
       {/* Sem suporte a conquistas */}
       {!isLoading && !error && achievements.length === 0 && (
         <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[var(--color-surface)] p-8 text-center">
-          <Trophy className="mb-3 h-8 w-8 text-white/20" />
-          <p className="text-sm font-bold text-white/70">{copy.achievementsNoSupportTitle}</p>
-          <p className="mt-1 text-xs text-white/40 max-w-sm">{copy.achievementsNoSupportDesc}</p>
+          <Trophy className="mb-3 h-8 w-8 text-[var(--ink-faint)]" />
+          <p className="text-sm font-bold text-[var(--ink-muted)]">{copy.achievementsNoSupportTitle}</p>
+          <p className="mt-1 text-xs text-[var(--ink-faint)] max-w-sm">{copy.achievementsNoSupportDesc}</p>
         </div>
       )}
 
       {/* Nenhum resultado na busca */}
       {!isLoading && !error && achievements.length > 0 && filteredAchievements.length === 0 && (
         <div className="flex min-h-[140px] flex-col items-center justify-center rounded-2xl border border-white/5 bg-black/20 p-6 text-center">
-          <Search className="mb-2 h-6 w-6 text-white/30" />
-          <p className="text-xs font-semibold text-white/60">{copy.noMatchingAchievements}</p>
+          <Search className="mb-2 h-6 w-6 text-[var(--ink-faint)]" />
+          <p className="text-xs font-semibold text-[var(--ink-muted)]">{copy.noMatchingAchievements}</p>
         </div>
       )}
 

@@ -80,12 +80,12 @@ export const AuthSessionAlert: React.FC = () => {
     <div className="pointer-events-none fixed inset-x-0 top-4 z-120 flex justify-center px-4">
       <div
         role="alert"
-        className="pointer-events-auto flex w-full max-w-xl items-start gap-3 rounded-xl border border-amber-500/30 bg-[#12141a]/95 px-4 py-3 text-amber-100 shadow-lg backdrop-blur-md"
+        className="pointer-events-auto flex w-full max-w-xl items-start gap-3 rounded-xl border border-amber-500/30 bg-[var(--tone-2)]/95 px-4 py-3 text-amber-100 shadow-lg backdrop-blur-md"
       >
         <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold text-white">{title}</p>
-          <p className="mt-0.5 text-xs leading-relaxed text-white/75">{message}</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-[var(--ink-muted)]">{message}</p>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             {isExpired ? (
               <button
@@ -110,7 +110,7 @@ export const AuthSessionAlert: React.FC = () => {
             <button
               type="button"
               onClick={handleDismiss}
-              className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 transition-all hover:bg-white/10 active:scale-95"
+              className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-[var(--ink-muted)] transition-all hover:bg-white/10 active:scale-95"
             >
               Dispensar
             </button>
@@ -120,7 +120,7 @@ export const AuthSessionAlert: React.FC = () => {
           type="button"
           onClick={handleDismiss}
           aria-label="Fechar aviso de sessão"
-          className="rounded-md p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white"
+          className="rounded-md p-1 text-[var(--ink-faint)] transition-colors hover:bg-white/10 hover:text-white"
         >
           <X className="h-3.5 w-3.5" />
         </button>

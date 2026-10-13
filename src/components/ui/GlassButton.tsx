@@ -4,14 +4,14 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const glassButtonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-[12.5px] font-semibold transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 shrink-0 cursor-pointer select-none",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-[length:var(--step-0)] font-semibold transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 shrink-0 cursor-pointer select-none",
   {
     variants: {
       variant: {
         default: "bg-white/10 hover:bg-white/20 text-white border border-white/10 shadow-lg active:scale-[0.98]",
         white: "bg-white hover:bg-white/90 text-black font-bold hover:scale-[1.02] shadow-[0_4px_20px_rgba(255,255,255,0.25)] active:scale-[0.98]",
         destructive: "bg-red-500/90 hover:bg-red-500 text-white font-bold hover:scale-[1.02] shadow-[0_4px_20px_rgba(239,68,68,0.35)] active:scale-[0.98]",
-        ghost: "hover:bg-white/10 text-white/70 hover:text-white active:scale-[0.98]",
+        ghost: "hover:bg-white/10 text-[var(--ink-muted)] hover:text-white active:scale-[0.98]",
         outline: "border border-white/15 bg-white/[0.05] hover:bg-white/10 hover:border-white/25 text-white active:scale-[0.98]",
       },
       size: {

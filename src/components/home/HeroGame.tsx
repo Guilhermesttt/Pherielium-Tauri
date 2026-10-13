@@ -67,7 +67,7 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
           </div>
 
           {/* 2. Estatísticas e plataforma */}
-          <div className="flex items-center gap-[var(--gap-inline)] flex-wrap text-[length:var(--fs-caption)] text-white/80 font-medium">
+          <div className="flex items-center gap-[var(--gap-inline)] flex-wrap text-[length:var(--fs-caption)] text-[var(--ink)] font-medium">
             {isRunning && (
               <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3.5 text-emerald-200 backdrop-blur-xl shadow-sm">
                 <span className="relative flex h-2 w-2 shrink-0">
@@ -80,13 +80,13 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
 
             {platformInfo && (
               <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--edge-subtle)] bg-[color-mix(in_srgb,var(--surface-base)_55%,transparent)] px-3.5 backdrop-blur-xl shadow-sm">
-                <platformInfo.icon className="w-3.5 h-3.5 text-white/90 shrink-0" />
-                <span className="font-semibold text-white/90">{platformInfo.label}</span>
+                <platformInfo.icon className="w-3.5 h-3.5 text-[var(--ink)] shrink-0" />
+                <span className="font-semibold text-[var(--ink)]">{platformInfo.label}</span>
               </span>
             )}
 
             <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--edge-subtle)] bg-[color-mix(in_srgb,var(--surface-base)_55%,transparent)] px-3.5 backdrop-blur-xl shadow-sm">
-              <Clock className="w-3.5 h-3.5 text-white/60 shrink-0" />
+              <Clock className="w-3.5 h-3.5 text-[var(--ink-muted)] shrink-0" />
               <span>{formattedHours} jogadas</span>
             </span>
 

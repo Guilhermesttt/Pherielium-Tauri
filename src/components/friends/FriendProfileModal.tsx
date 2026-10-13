@@ -37,7 +37,7 @@ export const FriendProfileModal: React.FC<FriendProfileModalProps> = ({
       zIndexClassName="z-[170]"
       backdropClassName="bg-black/75 backdrop-blur-md"
       ariaLabel={`Perfil de ${profile.displayName || "Amigo"}`}
-      className="relative flex h-[88vh] max-h-[920px] w-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#070709] p-0 shadow-[0_32px_90px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)] text-white"
+      className="relative flex h-[88vh] max-h-[920px] w-full flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[var(--tone-0)] p-0 shadow-[0_32px_90px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)] text-white"
     >
       {/* Botão Fechar Integrado */}
       <div className="flex items-center justify-end px-8 pt-5 pb-1 shrink-0 z-20">
@@ -49,7 +49,7 @@ export const FriendProfileModal: React.FC<FriendProfileModalProps> = ({
             onClose();
           }}
           onMouseEnter={() => playSound?.("hover")}
-          className="cursor-pointer flex h-8 w-8 items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/10 transition-all active:scale-95"
+          className="cursor-pointer flex h-8 w-8 items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-[var(--ink-muted)] hover:text-white border border-white/10 transition-all active:scale-95"
         >
           <X className="h-4 w-4" />
         </button>

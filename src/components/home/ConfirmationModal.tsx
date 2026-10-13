@@ -147,10 +147,10 @@ const ConfirmationModalBody: React.FC<ConfirmationModalProps> = React.memo(
             />
           </motion.div>
 
-          <h3 className="text-[18px] font-semibold tracking-tight text-white">
+          <h3 className="text-[length:var(--step-2)] font-semibold tracking-tight text-white">
             {title}
           </h3>
-          <p className="mt-2 max-w-[320px] text-[13.5px] font-medium leading-relaxed text-white/55">
+          <p className="mt-2 max-w-[320px] text-[length:var(--step-1)] font-medium leading-relaxed text-[var(--ink-muted)]">
             {description}
           </p>
         </div>
@@ -160,7 +160,7 @@ const ConfirmationModalBody: React.FC<ConfirmationModalProps> = React.memo(
             type="button"
             onClick={handleCloseAction}
             onMouseEnter={() => playSound("hover")}
-            className="h-11 cursor-pointer rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface-overlay)] px-4 text-[11px] font-bold uppercase tracking-[0.06em] text-white transition-all hover:bg-white/[0.08] active:scale-[0.97]"
+            className="h-11 cursor-pointer rounded-[var(--radius-control)] border border-[var(--border-subtle)] bg-[var(--surface-overlay)] px-4 text-[length:var(--step-0)] font-bold uppercase tracking-[0.06em] text-white transition-all hover:bg-white/[0.08] active:scale-[0.97]"
           >
             {resolvedCancel}
           </button>
@@ -168,7 +168,7 @@ const ConfirmationModalBody: React.FC<ConfirmationModalProps> = React.memo(
             type="button"
             onClick={handleConfirmAction}
             onMouseEnter={() => playSound("hover")}
-            className={`h-11 cursor-pointer rounded-[var(--radius-control)] px-4 text-[11px] font-bold uppercase tracking-[0.06em] transition-all active:scale-[0.97] ${confirmClass}`}
+            className={`h-11 cursor-pointer rounded-[var(--radius-control)] px-4 text-[length:var(--step-0)] font-bold uppercase tracking-[0.06em] transition-all active:scale-[0.97] ${confirmClass}`}
           >
             {confirmLabel}
           </button>

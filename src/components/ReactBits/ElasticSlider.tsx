@@ -141,7 +141,7 @@ export const ElasticSlider: React.FC<ElasticSliderProps> = ({
               opacity,
               scale: useTransform(scale, [1, 1.2], [1, 1.1]),
             }}
-            className="font-mono text-xs font-semibold text-white/80 tracking-wider select-none"
+            className="font-mono text-xs font-semibold text-[var(--ink)] tracking-wider select-none"
           >
             {Math.round(currentValue)}
           </motion.span>
@@ -167,7 +167,7 @@ export const ElasticSlider: React.FC<ElasticSliderProps> = ({
           style={{
             x: leftIconX,
           }}
-          className="shrink-0 text-white/50 hover:text-white cursor-pointer transition-colors p-0.5"
+          className="shrink-0 text-[var(--ink-muted)] hover:text-white cursor-pointer transition-colors p-0.5"
           onClick={() => {
             setRegion('left');
             updateValue(currentValue - (stepSize > 1 ? stepSize : 5));
@@ -240,7 +240,7 @@ export const ElasticSlider: React.FC<ElasticSliderProps> = ({
           style={{
             x: rightIconX,
           }}
-          className="shrink-0 text-white/50 hover:text-white cursor-pointer transition-colors p-0.5"
+          className="shrink-0 text-[var(--ink-muted)] hover:text-white cursor-pointer transition-colors p-0.5"
           onClick={() => {
             setRegion('right');
             updateValue(currentValue + (stepSize > 1 ? stepSize : 5));

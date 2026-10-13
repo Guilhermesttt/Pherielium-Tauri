@@ -30,12 +30,12 @@ export const SettingsHeader: React.FC<{
   description: string;
 }> = React.memo(({ icon, title, description }) => (
   <div className="mb-6 flex items-center gap-3.5">
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-white/75 shadow-sm">
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 text-[var(--ink-muted)] shadow-sm">
       {icon}
     </div>
     <div>
       <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">{title}</h2>
-      {description && <p className="text-xs font-medium text-white/40 mt-0.5 leading-relaxed">{description}</p>}
+      {description && <p className="text-xs font-medium text-[var(--ink-faint)] mt-0.5 leading-relaxed">{description}</p>}
     </div>
   </div>
 ));
@@ -67,7 +67,7 @@ export const AppUpdateSection: React.FC = React.memo(() => {
           WebkitBackdropFilter: "blur(20px) saturate(180%)",
         }}>
         <SettingsHeader
-          icon={<Download className="h-5 w-5 text-white/70" />}
+          icon={<Download className="h-5 w-5 text-[var(--ink-muted)]" />}
           title={updateCopy[0]}
           description={`${updateCopy[1]}: v${currentVersion}`}
         />
@@ -75,7 +75,7 @@ export const AppUpdateSection: React.FC = React.memo(() => {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               {updateStatus === "idle" && (
-                <p className="text-xs text-white/50">{updateCopy[2]}</p>
+                <p className="text-xs text-[var(--ink-muted)]">{updateCopy[2]}</p>
               )}
               {updateStatus === "checking" && (
                 <p className="flex items-center gap-2 text-xs text-amber-300">
@@ -89,7 +89,7 @@ export const AppUpdateSection: React.FC = React.memo(() => {
                 </p>
               )}
               {updateStatus === "not-available" && (
-                <p className="text-xs text-white/70">{updateCopy[5]}</p>
+                <p className="text-xs text-[var(--ink-muted)]">{updateCopy[5]}</p>
               )}
               {updateStatus === "downloading" && (
                 <div className="space-y-2">
@@ -111,7 +111,7 @@ export const AppUpdateSection: React.FC = React.memo(() => {
                   <button
                     type="button"
                     onClick={() => setShowErrorModal(true)}
-                    className="flex cursor-pointer items-center gap-1 text-[11px] font-bold text-red-300/80 hover:text-red-200 underline decoration-red-400/40"
+                    className="flex cursor-pointer items-center gap-1 text-[length:var(--step-0)] font-bold text-red-300/80 hover:text-red-200 underline decoration-red-400/40"
                   >
                     <Info className="h-3 w-3" />
                     Ver detalhes
@@ -124,7 +124,7 @@ export const AppUpdateSection: React.FC = React.memo(() => {
               <button
                 type="button"
                 onClick={() => setShowWhatsNewModal(true)}
-                className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 text-[10px] font-bold uppercase tracking-wider text-white/80 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white active:scale-95 shadow-sm"
+                className="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[var(--ink)] transition-all hover:border-white/20 hover:bg-white/10 hover:text-white active:scale-95 shadow-sm"
               >
                 {WHATS_NEW_BUTTON_COPY[language] || WHATS_NEW_BUTTON_COPY["pt-BR"]}
               </button>
@@ -133,7 +133,7 @@ export const AppUpdateSection: React.FC = React.memo(() => {
                 <button
                   type="button"
                   onClick={checkForUpdates}
-                  className="cursor-pointer rounded-xl bg-white px-4 py-2 text-[10px] font-black uppercase text-black transition-all hover:bg-white/90 active:scale-95 shadow-md"
+                  className="cursor-pointer rounded-xl bg-white px-4 py-2 text-[length:var(--step-0)] font-black uppercase text-black transition-all hover:bg-white/90 active:scale-95 shadow-md"
                 >
                   {updateCopy[10]}
                 </button>
@@ -143,7 +143,7 @@ export const AppUpdateSection: React.FC = React.memo(() => {
                 <button
                   type="button"
                   onClick={downloadUpdate}
-                  className="cursor-pointer rounded-xl bg-sky-500 px-4 py-2 text-[10px] font-black uppercase text-white shadow-[0_0_15px_rgba(14,165,233,0.3)] transition-all hover:bg-sky-400 active:scale-95"
+                  className="cursor-pointer rounded-xl bg-sky-500 px-4 py-2 text-[length:var(--step-0)] font-black uppercase text-white shadow-[0_0_15px_rgba(14,165,233,0.3)] transition-all hover:bg-sky-400 active:scale-95"
                 >
                   {updateCopy[11]}
                 </button>
@@ -153,7 +153,7 @@ export const AppUpdateSection: React.FC = React.memo(() => {
                 <button
                   type="button"
                   onClick={installUpdate}
-                  className="cursor-pointer rounded-xl bg-emerald-500 px-4 py-2 text-[10px] font-black uppercase text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all hover:bg-emerald-400 active:scale-95"
+                  className="cursor-pointer rounded-xl bg-emerald-500 px-4 py-2 text-[length:var(--step-0)] font-black uppercase text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all hover:bg-emerald-400 active:scale-95"
                 >
                   {updateCopy[12]}
                 </button>

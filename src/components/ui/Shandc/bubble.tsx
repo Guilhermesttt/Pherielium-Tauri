@@ -67,7 +67,7 @@ function BubbleFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="bubble-footer"
-      className={cn("flex items-center gap-1.5 text-[10px] text-muted-foreground", className)}
+      className={cn("flex items-center gap-1.5 text-[length:var(--step-0)] text-muted-foreground", className)}
       {...props}
     />
   )

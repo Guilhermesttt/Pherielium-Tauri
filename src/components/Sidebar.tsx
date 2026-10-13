@@ -343,7 +343,7 @@ const RailButton: React.FC<NavButtonProps> = ({
 
   const inactiveIconClass = active
     ? ""
-    : "text-[#6C6C6C] group-hover:text-white";
+    : "text-[var(--ink-faint)] group-hover:text-white";
 
   const showGlide = Boolean(!reducedMotion && !active && isHovered);
 
@@ -432,7 +432,7 @@ const RailButton: React.FC<NavButtonProps> = ({
         side="right"
         align="center"
         sideOffset={16}
-        className="border border-[#161616] bg-[#0F0F0F]/90 px-3 py-1.5 text-xs text-[#D2D2D2] tracking-wide backdrop-blur-2xl rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
+        className="border border-[#161616] bg-[var(--tone-1)]/90 px-3 py-1.5 text-xs text-[var(--ink-muted)] tracking-wide backdrop-blur-2xl rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
       >
         {label}
       </TooltipContent>
@@ -489,7 +489,7 @@ const OverlayButton: React.FC<NavButtonProps> = ({
 
   const inactiveIconClass = active
     ? ""
-    : "text-[#6C6C6C] group-hover:text-white";
+    : "text-[var(--ink-faint)] group-hover:text-white";
 
   const showGlide = Boolean(isFocused || (!reducedMotion && !active && isHovered));
 
@@ -570,7 +570,7 @@ const OverlayButton: React.FC<NavButtonProps> = ({
           className={`truncate font-body text-sm tracking-[0.015em] ${
             active
               ? "font-semibold"
-              : "text-[#6C6C6C] group-hover:text-white"
+              : "text-[var(--ink-faint)] group-hover:text-white"
           }`}
           style={
             active
@@ -587,7 +587,7 @@ const OverlayButton: React.FC<NavButtonProps> = ({
         {hasNotifications && (
           <div className="relative flex items-center justify-center shrink-0">
             <span
-              className="flex h-5 min-w-5 items-center justify-center rounded-md border px-1.5 text-[10px] font-bold text-black shadow-[0_0_12px_rgb(var(--launcher-accent)/0.3)] backdrop-blur-md"
+              className="flex h-5 min-w-5 items-center justify-center rounded-md border px-1.5 text-[length:var(--step-0)] font-bold text-black shadow-[0_0_12px_rgb(var(--launcher-accent)/0.3)] backdrop-blur-md"
               style={{
                 background: "rgb(var(--launcher-accent))",
                 borderColor: "rgb(var(--launcher-accent) / 0.4)",
@@ -1037,7 +1037,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               transition={{ type: "spring", bounce: 0, duration: 0.35 }}
               onMouseEnter={handleOpenSidebar}
               onMouseLeave={handleCloseSidebar}
-              className="fixed left-0 top-0 bottom-0 w-[260px] z-50 bg-[#0D0D0D] border-r border-white/[0.08] shadow-[24px_0_60px_rgba(0,0,0,0.85)] p-4 flex flex-col select-none overflow-y-auto no-scrollbar"
+              className="fixed left-0 top-0 bottom-0 w-[260px] z-50 bg-[var(--tone-1)] border-r border-white/[0.08] shadow-[24px_0_60px_rgba(0,0,0,0.85)] p-4 flex flex-col select-none overflow-y-auto no-scrollbar"
               aria-label="Menu de navegação"
             >
               {/* Header: Logo + Pherielium Brand */}
@@ -1047,7 +1047,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 tabIndex={0}
                 className="relative mb-6 flex cursor-pointer items-center gap-3 px-1 group"
               >
-                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#161616] shadow-[0_4px_16px_rgba(0,0,0,0.2)] transition-colors group-hover:bg-[#1E1E1E]">
+                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--tone-2)] shadow-[0_4px_16px_rgba(0,0,0,0.2)] transition-colors group-hover:bg-[var(--tone-3)]">
                   <img
                     src={PHERIELIUM_LOGO_PATH}
                     alt="Pherielium"
@@ -1056,9 +1056,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </div>
 
                 <div className="flex items-center min-w-0">
-                  <span className="font-display font-bold text-[22px] bg-linear-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent tracking-tight flex items-start gap-0.5">
+                  <span className="font-display font-bold text-[length:var(--step-3)] bg-linear-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent tracking-tight flex items-start gap-0.5">
                     Pherielium
-                    <span className="text-white/40 text-[13px] font-semibold translate-y-0.5">
+                    <span className="text-[var(--ink-faint)] text-[length:var(--step-0)] font-semibold translate-y-0.5">
                       &reg;
                     </span>
                   </span>
@@ -1070,7 +1070,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 {overlaySections.map((section, sIndex) => (
                   <div key={section.key} role="group" className="flex flex-col">
                     <span
-                      className={`text-[11px] font-semibold tracking-wide text-[#6C6C6C] font-body uppercase px-3 mb-2 ${
+                      className={`text-[length:var(--step-0)] font-semibold tracking-wide text-[var(--ink-faint)] font-body uppercase px-3 mb-2 ${
                         sIndex > 0 ? "mt-6" : ""
                       }`}
                     >
@@ -1104,12 +1104,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Controller Navigation Hint in Sidebar Footer */}
               {isGamepadConnected && (
-                <div className="mt-auto pt-3 border-t border-white/[0.08] flex items-center justify-between text-[11px] text-white/60 select-none">
+                <div className="mt-auto pt-3 border-t border-white/[0.08] flex items-center justify-between text-[length:var(--step-0)] text-[var(--ink-muted)] select-none">
                   <div className="flex items-center gap-1.5">
                     <ControllerButtonGlyph button="DPAD" gamepadFamily={gamepadFamily} size={15} />
                     <span>Navegar</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-white/90">
+                  <div className="flex items-center gap-1.5 text-[var(--ink)]">
                     <ControllerButtonGlyph button="A" gamepadFamily={gamepadFamily} size={15} />
                     <span className="font-semibold text-white">Selecionar</span>
                   </div>

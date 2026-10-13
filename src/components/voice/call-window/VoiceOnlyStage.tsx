@@ -163,7 +163,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                   )}
                   <span>{single?.title || "Você"}</span>
                 </h3>
-                <p className="text-[11px] text-white/50 font-medium">Câmera ativa</p>
+                <p className="text-[length:var(--step-0)] text-[var(--ink-muted)] font-medium">Câmera ativa</p>
               </div>
             </>
           ) : (
@@ -210,7 +210,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
 
                 {/* Avatar Central (Mais presente, integrado sem quadrado escuro por trás) */}
                 <div
-                  className={`absolute h-[92px] w-[92px] rounded-full overflow-hidden border transition duration-200 z-10 bg-[#0E0E0E] flex items-center justify-center ${
+                  className={`absolute h-[92px] w-[92px] rounded-full overflow-hidden border transition duration-200 z-10 bg-[var(--tone-1)] flex items-center justify-center ${
                     isSpeaking
                       ? "border-white/70 shadow-[0_0_14px_rgba(255,255,255,0.28)]"
                       : "border-white/12"
@@ -235,9 +235,9 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                 {single?.isMuted && (
                   <div
                     title="Microfone desativado"
-                    className="absolute bottom-1 right-1 p-1.5 rounded-full bg-[#181818] border border-white/20 text-white/70 shadow-md ring-2 ring-[#0F0F0F] z-20"
+                    className="absolute bottom-1 right-1 p-1.5 rounded-full bg-[var(--tone-2)] border border-white/20 text-[var(--ink-muted)] shadow-md ring-2 ring-[#0F0F0F] z-20"
                   >
-                    <MicOff className="h-3 w-3 text-white/70" aria-hidden="true" />
+                    <MicOff className="h-3 w-3 text-[var(--ink-muted)]" aria-hidden="true" />
                   </div>
                 )}
               </div>
@@ -268,12 +268,12 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                     {single?.title || "Você"}
                   </h3>
                   {single?.isMuted && (
-                    <span title="Microfone silenciado" className="inline-flex items-center text-white/50 shrink-0">
+                    <span title="Microfone silenciado" className="inline-flex items-center text-[var(--ink-muted)] shrink-0">
                       <MicOff className="h-3 w-3" aria-hidden="true" />
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-white/50 font-medium">
+                <p className="text-[length:var(--step-0)] text-[var(--ink-muted)] font-medium">
                   {single?.isMuted ? "Microfone silenciado" : "Você está sozinho na chamada"}
                 </p>
               </div>
@@ -341,13 +341,13 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                 width: tileWidth,
                 height: tileHeight,
               } as React.CSSProperties}
-              className="group relative flex items-center justify-center rounded-[24px] overflow-hidden bg-[#060606] border border-sky-400/50 shadow-[0_0_30px_rgba(56,189,248,0.22),inset_0_1px_0_rgba(255,255,255,0.06)] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60"
+              className="group relative flex items-center justify-center rounded-[24px] overflow-hidden bg-[var(--tone-0)] border border-sky-400/50 shadow-[0_0_30px_rgba(56,189,248,0.22),inset_0_1px_0_rgba(255,255,255,0.06)] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60"
             >
               {screenFeed.stream ? (
                 <VideoRenderer stream={screenFeed.stream} fitMode="cover" muted className="h-full w-full opacity-90" />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-[#0A0A0A]">
-                  <Monitor className="h-10 w-10 text-white/20" />
+                <div className="flex h-full w-full items-center justify-center bg-[var(--tone-1)]">
+                  <Monitor className="h-10 w-10 text-[var(--ink-faint)]" />
                 </div>
               )}
 
@@ -356,7 +356,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
               {/* Badge "AO VIVO" */}
               <div
                 style={{ cornerShape: "squircle" } as React.CSSProperties}
-                className="absolute top-2.5 left-2.5 flex items-center gap-1 px-2 py-1 rounded-[9px] bg-rose-500/90 text-white text-[10px] font-bold z-10 shadow-md"
+                className="absolute top-2.5 left-2.5 flex items-center gap-1 px-2 py-1 rounded-[9px] bg-rose-500/90 text-white text-[length:var(--step-0)] font-bold z-10 shadow-md"
               >
                 <Radio className="h-2.5 w-2.5 animate-pulse" aria-hidden="true" />
                 <span>AO VIVO</span>
@@ -369,7 +369,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                   onFocusScreen?.(screenFeed.id);
                 }}
                 style={{ cornerShape: "squircle" } as React.CSSProperties}
-                className="absolute top-2.5 right-2.5 flex items-center gap-1 px-2 py-1 rounded-[9px] bg-black/55 hover:bg-sky-500/80 text-sky-200 hover:text-white text-[10px] font-semibold z-10 backdrop-blur-md cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70"
+                className="absolute top-2.5 right-2.5 flex items-center gap-1 px-2 py-1 rounded-[9px] bg-black/55 hover:bg-sky-500/80 text-sky-200 hover:text-white text-[length:var(--step-0)] font-semibold z-10 backdrop-blur-md cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70"
               >
                 <span>Focar tela</span>
               </button>
@@ -439,7 +439,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                     e.stopPropagation();
                     onContextMenu?.(e, feed);
                   }}
-                  className={`absolute top-2 right-2 p-1.5 rounded-full border text-white/60 hover:text-white z-30 cursor-pointer shadow-sm transition-[background-color,border-color,transform] duration-200 ${
+                  className={`absolute top-2 right-2 p-1.5 rounded-full border text-[var(--ink-muted)] hover:text-white z-30 cursor-pointer shadow-sm transition-[background-color,border-color,transform] duration-200 ${
                     activeMenuFeedId === feed.id
                       ? "opacity-100 bg-white/20 border-white/25 scale-105"
                       : "opacity-0 group-hover:opacity-100 bg-white/[0.06] hover:bg-white/[0.14] border-white/[0.08]"
@@ -464,7 +464,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                 {isPresenting && (
                   <div
                     style={{ cornerShape: "squircle" } as React.CSSProperties}
-                    className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-[10px] bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[10px] font-bold z-30 backdrop-blur-md"
+                    className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-[10px] bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[length:var(--step-0)] font-bold z-30 backdrop-blur-md"
                     title={`${feed.title} está compartilhando a tela — clique para focar`}
                   >
                     <Monitor className="h-2.5 w-2.5" aria-hidden="true" />
@@ -513,17 +513,17 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                           {feed.title}
                         </span>
                         {feed.isMuted && (
-                          <span title="Microfone silenciado" className="inline-flex items-center text-white/50 shrink-0">
+                          <span title="Microfone silenciado" className="inline-flex items-center text-[var(--ink-muted)] shrink-0">
                             <MicOff className="h-3 w-3" aria-hidden="true" />
                           </span>
                         )}
                         {feed.isDeafened && (
-                          <span title="Áudio desativado" className="inline-flex items-center text-white/50 shrink-0">
+                          <span title="Áudio desativado" className="inline-flex items-center text-[var(--ink-muted)] shrink-0">
                             <VolumeX className="h-3 w-3" aria-hidden="true" />
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] text-white/60 font-medium">Câmera ativa</span>
+                      <span className="text-[length:var(--step-0)] text-[var(--ink-muted)] font-medium">Câmera ativa</span>
                     </div>
                   </>
                 ) : (
@@ -571,7 +571,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
 
                       {/* Avatar Central (Mais presente, integrado sem quadrado escuro por trás) */}
                       <div
-                        className={`absolute rounded-full overflow-hidden border transition duration-200 z-10 bg-[#0E0E0E] flex items-center justify-center ${
+                        className={`absolute rounded-full overflow-hidden border transition duration-200 z-10 bg-[var(--tone-1)] flex items-center justify-center ${
                           isSpeaking
                             ? "border-white/70 shadow-[0_0_14px_rgba(255,255,255,0.28)]"
                             : "border-white/12"
@@ -602,17 +602,17 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                       {feed.isMuted && (
                         <div
                           title="Microfone desativado"
-                          className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[#181818] border border-white/20 text-white/70 shadow-md ring-2 ring-[#0F0F0F] z-20"
+                          className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[var(--tone-2)] border border-white/20 text-[var(--ink-muted)] shadow-md ring-2 ring-[#0F0F0F] z-20"
                         >
-                          <MicOff className="h-3 w-3 text-white/70" aria-hidden="true" />
+                          <MicOff className="h-3 w-3 text-[var(--ink-muted)]" aria-hidden="true" />
                         </div>
                       )}
                       {feed.isDeafened && (
                         <div
                           title="Áudio silenciado"
-                          className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[#181818] border border-white/20 text-white/70 shadow-md ring-2 ring-[#0F0F0F] z-20"
+                          className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[var(--tone-2)] border border-white/20 text-[var(--ink-muted)] shadow-md ring-2 ring-[#0F0F0F] z-20"
                         >
-                          <VolumeX className="h-3 w-3 text-white/70" aria-hidden="true" />
+                          <VolumeX className="h-3 w-3 text-[var(--ink-muted)]" aria-hidden="true" />
                         </div>
                       )}
                     </div>
@@ -651,30 +651,30 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
 
                         {/* Ícone explícito de microfone silenciado junto ao nome */}
                         {feed.isMuted && (
-                          <span title="Microfone silenciado" className="inline-flex items-center text-white/50 shrink-0">
+                          <span title="Microfone silenciado" className="inline-flex items-center text-[var(--ink-muted)] shrink-0">
                             <MicOff className="h-3 w-3" aria-hidden="true" />
                           </span>
                         )}
                         {feed.isDeafened && (
-                          <span title="Áudio desativado" className="inline-flex items-center text-white/50 shrink-0">
+                          <span title="Áudio desativado" className="inline-flex items-center text-[var(--ink-muted)] shrink-0">
                             <VolumeX className="h-3 w-3" aria-hidden="true" />
                           </span>
                         )}
                       </div>
 
                       {layout.showSubtitle && (
-                        <p className="text-[11px] text-white/50 font-medium truncate flex items-center justify-center gap-1">
+                        <p className="text-[length:var(--step-0)] text-[var(--ink-muted)] font-medium truncate flex items-center justify-center gap-1">
                           {feed.isRinging ? (
                             "Chamando…"
                           ) : feed.isConnecting ? (
                             <>
-                              <Loader2 className="h-2.5 w-2.5 animate-spin text-white/60" />
+                              <Loader2 className="h-2.5 w-2.5 animate-spin text-[var(--ink-muted)]" />
                               <span>Conectando…</span>
                             </>
                           ) : isSpeaking ? (
-                            <span className="text-white/80">Falando…</span>
+                            <span className="text-[var(--ink)]">Falando…</span>
                           ) : feed.isMuted ? (
-                            <span className="text-white/40">Silenciado</span>
+                            <span className="text-[var(--ink-faint)]">Silenciado</span>
                           ) : feed.isLocal ? (
                             "Você"
                           ) : (

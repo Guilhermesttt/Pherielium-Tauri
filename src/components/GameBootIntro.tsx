@@ -340,7 +340,7 @@ const TitleReveal = React.memo(function TitleReveal({
         initial={{ opacity: 0 }}
         animate={isComplete && !isExiting ? { opacity: 1 } : { opacity: 0 }}
         transition={{ duration: 1.2, delay: 0.3 }}
-        className="mt-3 text-[10px] sm:text-[11px] font-mono tracking-[0.38em] text-white/50 uppercase"
+        className="mt-3 text-[length:var(--step-0)] sm:text-[length:var(--step-0)] font-mono tracking-[0.38em] text-[var(--ink-muted)] uppercase"
       >
         UNIVERSAL GAME HUB · DESKTOP RUNTIME
       </motion.span>
@@ -372,10 +372,10 @@ const SkipHint = React.memo(function SkipHint({
             onClick={onSkip}
             className="group flex items-center gap-2.5 px-4 py-2 rounded-[10px] border border-white/20 bg-white/4 hover:bg-white/10 hover:border-white/40 transition-all duration-200 cursor-pointer backdrop-blur-md active:scale-95"
           >
-            <span className="text-[11px] font-mono tracking-[0.16em] uppercase text-white/70 group-hover:text-white transition-colors">
+            <span className="text-[length:var(--step-0)] font-mono tracking-[0.16em] uppercase text-[var(--ink-muted)] group-hover:text-white transition-colors">
               Pular Introdução
             </span>
-            <span className="text-xs text-white/50 group-hover:text-white transition-transform group-hover:translate-x-0.5">
+            <span className="text-xs text-[var(--ink-muted)] group-hover:text-white transition-transform group-hover:translate-x-0.5">
               →
             </span>
           </button>

@@ -16,9 +16,9 @@ const LoadingSkeleton: React.FC = () => {
           </div>
           <div className="h-10 md:h-12 w-72 md:w-96 rounded-2xl bg-white/[0.08] animate-pulse shadow-sm" />
           <div className="flex items-center gap-2.5 pt-1">
-            <div className="h-6 w-20 rounded-full bg-[#16171c]/90 border border-white/[0.08] animate-pulse" />
-            <div className="h-6 w-24 rounded-full bg-[#16171c]/70 border border-white/[0.06] animate-pulse" />
-            <div className="h-6 w-16 rounded-full bg-[#16171c]/90 border border-white/[0.08] animate-pulse" />
+            <div className="h-6 w-20 rounded-full bg-[var(--tone-2)]/90 border border-white/[0.08] animate-pulse" />
+            <div className="h-6 w-24 rounded-full bg-[var(--tone-2)]/70 border border-white/[0.06] animate-pulse" />
+            <div className="h-6 w-16 rounded-full bg-[var(--tone-2)]/90 border border-white/[0.08] animate-pulse" />
           </div>
         </div>
         <div className="shrink-0">
@@ -46,7 +46,7 @@ const LoadingSkeleton: React.FC = () => {
                     className="shrink-0"
                   >
                     <div
-                      className="relative overflow-hidden rounded-2xl bg-[#090A0D]/90 border backdrop-blur-xl p-3 flex flex-col justify-between"
+                      className="relative overflow-hidden rounded-2xl bg-[var(--tone-1)]/90 border backdrop-blur-xl p-3 flex flex-col justify-between"
                       style={{
                         width: CARD_WIDTH,
                         height: CARD_HEIGHT,

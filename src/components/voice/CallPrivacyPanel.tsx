@@ -70,19 +70,19 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
           <div className="flex items-center justify-between px-6 py-4.5 border-b border-white/8 bg-black/30 backdrop-blur-md">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white border border-white/10 shadow-sm">
-                {isPrivate ? <Lock className="h-5 w-5 text-amber-400" /> : <Unlock className="h-5 w-5 text-white/80" />}
+                {isPrivate ? <Lock className="h-5 w-5 text-amber-400" /> : <Unlock className="h-5 w-5 text-[var(--ink)]" />}
               </div>
               <div>
                 <h3 className="text-sm font-black text-white tracking-tight uppercase">
                   Privacidade da Chamada
                 </h3>
-                <p className="text-[11px] text-white/40">Controle de acesso e senha</p>
+                <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">Controle de acesso e senha</p>
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/5 text-white/60 hover:text-white hover:bg-white/15 transition cursor-pointer"
+              className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/5 text-[var(--ink-muted)] hover:text-white hover:bg-white/15 transition cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
@@ -97,7 +97,7 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
                   {isPrivate ? <Lock className="h-3.5 w-3.5 text-amber-400" /> : <Unlock className="h-3.5 w-3.5 text-emerald-400" />}
                   <span>{isPrivate ? "Sala Privada" : "Sala Aberta"}</span>
                 </span>
-                <p className="text-[10px] text-white/40">
+                <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">
                   {isPrivate ? "Apenas convidados com a senha podem entrar" : "Qualquer amigo convidado entra direto"}
                 </p>
               </div>
@@ -129,7 +129,7 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
                 exit={{ opacity: 0, height: 0 }}
                 className="space-y-2"
               >
-                <label className="text-[11px] font-bold text-white/70 flex items-center justify-between">
+                <label className="text-[length:var(--step-0)] font-bold text-[var(--ink-muted)] flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
                     <KeyRound className="h-3.5 w-3.5 text-amber-400" />
                     <span>Senha de Acesso</span>
@@ -150,7 +150,7 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 text-white/40 hover:text-white transition"
+                    className="absolute right-3 text-[var(--ink-faint)] hover:text-white transition"
                     title={showPassword ? "Ocultar senha" : "Ver senha"}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -160,7 +160,7 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
             )}
 
             {error && (
-              <p className="text-[11px] text-rose-400 font-medium flex items-center gap-1.5">
+              <p className="text-[length:var(--step-0)] text-rose-400 font-medium flex items-center gap-1.5">
                 <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
                 <span>{error}</span>
               </p>

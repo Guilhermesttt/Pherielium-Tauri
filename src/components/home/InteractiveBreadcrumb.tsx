@@ -31,7 +31,7 @@ export const InteractiveBreadcrumb: React.FC<InteractiveBreadcrumbProps> = React
         style={{ color: "rgba(255,255,255,0.45)" }}
         title="Voltar para a página inicial"
       >
-        <Home className="h-3 w-3 text-white/40 group-hover:text-white transition-colors" />
+        <Home className="h-3 w-3 text-[var(--ink-faint)] group-hover:text-white transition-colors" />
         
       </button>
 
@@ -47,7 +47,7 @@ export const InteractiveBreadcrumb: React.FC<InteractiveBreadcrumbProps> = React
           className="flex items-center"
         >
           <span
-            className="rounded-lg px-2 py-1 text-[13px] font-medium font-ui capitalize"
+            className="rounded-lg px-2 py-1 text-[length:var(--step-0)] font-medium font-ui capitalize"
             style={{ color: "rgba(255,255,255,0.85)" }}
           >
             {(categoryLabel || activeCategory).toLowerCase()}

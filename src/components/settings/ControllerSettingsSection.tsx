@@ -42,7 +42,7 @@ const DriverRow: React.FC<{
       className={`rounded-[var(--radius-badge)] border px-2 py-1 text-[length:var(--fs-label)] ${
         installed
           ? "border-[color:var(--edge-selected)] text-white"
-          : "border-[color:var(--edge-subtle)] text-white/55"
+          : "border-[color:var(--edge-subtle)] text-[var(--ink-muted)]"
       }`}
       data-driver={name}
       data-installed={installed ? "true" : "false"}
@@ -53,7 +53,7 @@ const DriverRow: React.FC<{
       <button
         type="button"
         onClick={() => void openExternal(url)}
-        className="inline-flex cursor-pointer items-center gap-1 text-[length:var(--fs-label)] text-white/80 underline underline-offset-2 hover:text-white"
+        className="inline-flex cursor-pointer items-center gap-1 text-[length:var(--fs-label)] text-[var(--ink)] underline underline-offset-2 hover:text-white"
       >
         Baixar
         <ExternalLink className="h-3 w-3" />
@@ -195,7 +195,7 @@ export const ControllerSettingsSection: React.FC<{
             type="button"
             onClick={() => void handleReset()}
             disabled={scopeGameId !== undefined && origin !== "game"}
-            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] px-3 py-1.5 text-[length:var(--fs-label)] text-white/70 transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:border-[color:var(--edge-strong)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] px-3 py-1.5 text-[length:var(--fs-label)] text-[var(--ink-muted)] transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:border-[color:var(--edge-strong)] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             {resetting}
@@ -217,7 +217,7 @@ export const ControllerSettingsSection: React.FC<{
               key={name}
               type="button"
               onClick={() => replace({ ...CONTROLLER_PRESETS[name] })}
-              className="cursor-pointer rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] px-3 py-1.5 text-[length:var(--fs-label)] font-medium text-white/70 transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:border-[color:var(--edge-strong)] hover:text-white"
+              className="cursor-pointer rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] px-3 py-1.5 text-[length:var(--fs-label)] font-medium text-[var(--ink-muted)] transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:border-[color:var(--edge-strong)] hover:text-white"
             >
               {PRESET_LABELS[name]}
             </button>
@@ -314,7 +314,7 @@ export const ControllerSettingsSection: React.FC<{
           </div>
         </div>
 
-        <p className="mt-[var(--space-3)] text-[length:var(--fs-label)] text-white/40">
+        <p className="mt-[var(--space-3)] text-[length:var(--fs-label)] text-[var(--ink-faint)]">
           {profile.saving ? "Salvando…" : "Salvo automaticamente"}
         </p>
         {profile.error && (
@@ -346,7 +346,7 @@ export const ControllerSettingsSection: React.FC<{
       {/* Perfis por jogo */}
       <Card title="Perfis por jogo" hint="Jogos com ajustes próprios, que valem no lugar do perfil global.">
         {withProfile.length === 0 ? (
-          <p className="py-[var(--space-3)] text-[length:var(--fs-caption)] text-white/45" data-empty="game-profiles">
+          <p className="py-[var(--space-3)] text-[length:var(--fs-caption)] text-[var(--ink-faint)]" data-empty="game-profiles">
             Nenhum jogo tem perfil próprio ainda. Escolha um jogo em “Aplicar a” e ajuste.
           </p>
         ) : (
@@ -357,7 +357,7 @@ export const ControllerSettingsSection: React.FC<{
                   <button
                     type="button"
                     onClick={() => setScope(id)}
-                    className="cursor-pointer rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] px-3 py-1.5 text-[length:var(--fs-label)] text-white/70 transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:border-[color:var(--edge-strong)] hover:text-white"
+                    className="cursor-pointer rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] px-3 py-1.5 text-[length:var(--fs-label)] text-[var(--ink-muted)] transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:border-[color:var(--edge-strong)] hover:text-white"
                   >
                     Editar
                   </button>
@@ -365,7 +365,7 @@ export const ControllerSettingsSection: React.FC<{
                     type="button"
                     onClick={() => void handleDeleteGameProfile(id)}
                     aria-label={`Excluir o perfil de ${titleOf(id)}`}
-                    className="inline-flex cursor-pointer items-center justify-center rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] p-1.5 text-white/60 transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:border-[color:var(--edge-strong)] hover:text-white"
+                    className="inline-flex cursor-pointer items-center justify-center rounded-[var(--radius-control)] border border-[color:var(--edge-subtle)] p-1.5 text-[var(--ink-muted)] transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:border-[color:var(--edge-strong)] hover:text-white"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

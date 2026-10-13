@@ -233,21 +233,21 @@ const GamingRadarPage: React.FC = () => {
         {/* Compact, Focused Editorial Header */}
         <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-white/[0.06]">
           <div>
-            <div className="inline-flex items-center gap-2 text-xs font-medium text-white/50 mb-1.5">
-              <Radio className="h-3 w-3 text-white/70" />
+            <div className="inline-flex items-center gap-2 text-xs font-medium text-[var(--ink-muted)] mb-1.5">
+              <Radio className="h-3 w-3 text-[var(--ink-muted)]" />
               <span>{copy.eyebrow}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight text-white">
               {copy.title}
             </h1>
-            <p className="mt-1 text-xs sm:text-sm font-normal text-white/60 max-w-xl">
+            <p className="mt-1 text-xs sm:text-sm font-normal text-[var(--ink-muted)] max-w-xl">
               {copy.subtitle}
             </p>
           </div>
 
           <div className="flex items-center gap-3 self-start sm:self-auto shrink-0">
             {/* Discreet update status */}
-            <span className="inline-flex items-center gap-1.5 text-xs text-white/50 font-medium">
+            <span className="inline-flex items-center gap-1.5 text-xs text-[var(--ink-muted)] font-medium">
               <span className={`h-1.5 w-1.5 rounded-full ${stale ? "bg-amber-400" : "bg-emerald-400"}`} />
               <span>{lastUpdatedLabel}</span>
             </span>
@@ -256,7 +256,7 @@ const GamingRadarPage: React.FC = () => {
               type="button"
               disabled={loading}
               onClick={() => void loadNews()}
-              className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.05] hover:bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/90 shadow-sm transition-all disabled:opacity-50 active:scale-95"
+              className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.05] hover:bg-white/10 px-3.5 py-1.5 text-xs font-medium text-[var(--ink)] shadow-sm transition-all disabled:opacity-50 active:scale-95"
               title={copy.refresh}
             >
               <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
@@ -275,7 +275,7 @@ const GamingRadarPage: React.FC = () => {
               className={`cursor-pointer rounded-full border px-3.5 py-1 text-xs font-medium transition-all ${
                 activeSource === source
                   ? "border-white bg-white text-black font-semibold shadow-sm"
-                  : "border-white/[0.08] bg-white/[0.03] text-white/60 hover:border-white/20 hover:text-white"
+                  : "border-white/[0.08] bg-white/[0.03] text-[var(--ink-muted)] hover:border-white/20 hover:text-white"
               }`}
             >
               {source === "__all__" ? copy.all : source}
@@ -287,20 +287,20 @@ const GamingRadarPage: React.FC = () => {
         {error ? (
           <div className="flex min-h-60 flex-col items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/[0.04] p-8 text-center">
             <AlertCircle className="mb-3 h-8 w-8 text-red-400/60" />
-            <p className="font-semibold text-white/80">{copy.unavailable}</p>
-            <p className="mt-1 text-xs text-white/40">{error}</p>
+            <p className="font-semibold text-[var(--ink)]">{copy.unavailable}</p>
+            <p className="mt-1 text-xs text-[var(--ink-faint)]">{error}</p>
           </div>
         ) : loading && !items.length ? (
           <div className="space-y-4">
-            <div className="h-64 sm:h-80 animate-pulse rounded-3xl border border-white/[0.06] bg-[#0E1015]" />
+            <div className="h-64 sm:h-80 animate-pulse rounded-3xl border border-white/[0.06] bg-[var(--tone-1)]" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="h-56 animate-pulse rounded-2xl border border-white/[0.06] bg-[#0E1015]" />
+                <div key={index} className="h-56 animate-pulse rounded-2xl border border-white/[0.06] bg-[var(--tone-1)]" />
               ))}
             </div>
           </div>
         ) : visibleItems.length === 0 ? (
-          <div className="flex min-h-48 flex-col items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 text-center text-white/40 text-xs">
+          <div className="flex min-h-48 flex-col items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 text-center text-[var(--ink-faint)] text-xs">
             Nenhuma notícia encontrada para a fonte selecionada.
           </div>
         ) : (
@@ -309,11 +309,11 @@ const GamingRadarPage: React.FC = () => {
             {featuredItem && (
               <article
                 onClick={() => void openExternal(featuredItem.url)}
-                className="group relative cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-[#0C0D10] shadow-[0_24px_64px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-300 hover:border-white/25 hover:bg-[#101217]"
+                className="group relative cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-[var(--tone-1)] shadow-[0_24px_64px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-300 hover:border-white/25 hover:bg-[var(--tone-2)]"
               >
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-stretch">
                   {/* Imagem Widescreen */}
-                  <div className="lg:col-span-7 relative aspect-video lg:aspect-auto lg:min-h-[300px] overflow-hidden bg-[#14161C]">
+                  <div className="lg:col-span-7 relative aspect-video lg:aspect-auto lg:min-h-[300px] overflow-hidden bg-[var(--tone-2)]">
                     {featuredItem.imageUrl ? (
                       <img
                         src={proxyImage(featuredItem.imageUrl)}
@@ -322,7 +322,7 @@ const GamingRadarPage: React.FC = () => {
                         className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90 group-hover:opacity-100"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-white/20">
+                      <div className="flex h-full w-full items-center justify-center text-[var(--ink-faint)]">
                         <Newspaper className="h-12 w-12" />
                       </div>
                     )}
@@ -333,11 +333,11 @@ const GamingRadarPage: React.FC = () => {
                   <div className="lg:col-span-5 flex flex-col justify-between p-6 sm:p-8">
                     <div>
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/10 border border-amber-400/25 px-2.5 py-0.5 text-[10px] font-semibold text-amber-300 uppercase tracking-wider">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/10 border border-amber-400/25 px-2.5 py-0.5 text-[length:var(--step-0)] font-semibold text-amber-300 uppercase tracking-wider">
                           <Sparkles className="h-2.5 w-2.5" />
                           {copy.featured}
                         </span>
-                        <span className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-0.5 text-[10px] font-mono font-medium text-white/70">
+                        <span className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-0.5 text-[length:var(--step-0)] font-mono font-medium text-[var(--ink-muted)]">
                           {featuredItem.source}
                         </span>
                       </div>
@@ -347,15 +347,15 @@ const GamingRadarPage: React.FC = () => {
                       </h2>
 
                       {featuredItem.summary && (
-                        <p className="mt-3 line-clamp-3 text-xs sm:text-sm text-white/60 leading-relaxed font-body">
+                        <p className="mt-3 line-clamp-3 text-xs sm:text-sm text-[var(--ink-muted)] leading-relaxed font-body">
                           {featuredItem.summary}
                         </p>
                       )}
                     </div>
 
-                    <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs text-white/50">
-                      <span className="flex items-center gap-1 font-mono text-[11px]">
-                        <Clock className="h-3 w-3 text-white/40" />
+                    <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs text-[var(--ink-muted)]">
+                      <span className="flex items-center gap-1 font-mono text-[length:var(--step-0)]">
+                        <Clock className="h-3 w-3 text-[var(--ink-faint)]" />
                         {relativeTime(featuredItem.publishedAt, language)}
                       </span>
                       <span className="inline-flex items-center gap-1.5 font-semibold text-white group-hover:text-amber-300 transition-colors">
@@ -390,10 +390,10 @@ const GamingRadarPage: React.FC = () => {
         )}
 
         {/* Communities Section */}
-        <section className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0B0B0E] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+        <section className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[var(--tone-1)] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
           <div className="mb-4 flex items-center gap-2">
-            <Users className="h-4 w-4 text-white/60" />
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-white/70">
+            <Users className="h-4 w-4 text-[var(--ink-muted)]" />
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
               {copy.communities}
             </h2>
           </div>
@@ -407,9 +407,9 @@ const GamingRadarPage: React.FC = () => {
                 <p className="text-sm font-semibold text-white tracking-tight">
                   Fórum Adrenaline
                 </p>
-                <ExternalLink className="h-3.5 w-3.5 text-white/30 group-hover:text-white transition-colors" />
+                <ExternalLink className="h-3.5 w-3.5 text-[var(--ink-faint)] group-hover:text-white transition-colors" />
               </div>
-              <p className="mt-1 text-xs text-white/40 leading-relaxed">
+              <p className="mt-1 text-xs text-[var(--ink-faint)] leading-relaxed">
                 {copy.adrenaline}
               </p>
             </button>
@@ -423,9 +423,9 @@ const GamingRadarPage: React.FC = () => {
                 <p className="text-sm font-semibold text-white tracking-tight">
                   Discussões Steam
                 </p>
-                <ExternalLink className="h-3.5 w-3.5 text-white/30 group-hover:text-white transition-colors" />
+                <ExternalLink className="h-3.5 w-3.5 text-[var(--ink-faint)] group-hover:text-white transition-colors" />
               </div>
-              <p className="mt-1 text-xs text-white/40 leading-relaxed">
+              <p className="mt-1 text-xs text-[var(--ink-faint)] leading-relaxed">
                 {copy.steam}
               </p>
             </button>

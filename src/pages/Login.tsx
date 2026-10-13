@@ -52,7 +52,7 @@ const SuccessOverlay = ({ message }: { message: string }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.4, ease: "easeInOut" } }}
-      className="fixed inset-0 z-50 bg-[#030405] flex items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-50 bg-[var(--tone-0)] flex items-center justify-center overflow-hidden"
     >
       {/* Onda de luz expandindo a partir do centro */}
       <motion.div
@@ -267,7 +267,7 @@ const OrbitIcon: React.FC<OrbitIconProps> = ({
                   animate={{ opacity: 1, y: -26, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.8 }}
                   transition={{ type: "spring", bounce: 0.25, duration: 0.2 }}
-                  className="absolute left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-[#121216]/95 backdrop-blur-md border border-white/20 text-white text-[11px] font-medium font-body shadow-[0_8px_24px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.15)] whitespace-nowrap pointer-events-none flex items-center gap-1.5 z-50 select-none"
+                  className="absolute left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-[var(--tone-2)]/95 backdrop-blur-md border border-white/20 text-white text-[length:var(--step-0)] font-medium font-body shadow-[0_8px_24px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.15)] whitespace-nowrap pointer-events-none flex items-center gap-1.5 z-50 select-none"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
                   <span>{label}</span>
@@ -599,9 +599,9 @@ const LoginContent: React.FC = () => {
 
   if (authLoading && !user) {
     return (
-      <div className="min-h-screen w-full bg-[#030405] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+      <div className="min-h-screen w-full bg-[var(--tone-0)] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
         <PlasmaHeroBackground opacity={0.45} />
-        <div className="relative z-10 flex flex-col items-center gap-6 p-8 md:p-10 rounded-[32px] border border-white/[0.08] bg-[#08090C]/80 backdrop-blur-2xl shadow-2xl">
+        <div className="relative z-10 flex flex-col items-center gap-6 p-8 md:p-10 rounded-[32px] border border-white/[0.08] bg-[var(--tone-1)]/80 backdrop-blur-2xl shadow-2xl">
           <img src={pherieliumLogo} alt="Pherielium" className="w-16 h-16 object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.4)] animate-pulse" />
           <LoadingState label="Verificando sessão..." variant="breathing" />
         </div>
@@ -685,7 +685,7 @@ const LoginContent: React.FC = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="min-h-screen w-full bg-[#030405] text-white flex flex-col md:flex-row items-center justify-between p-6 md:p-14 lg:p-20 relative overflow-hidden font-sans selection:bg-white selection:text-black"
+      className="min-h-screen w-full bg-[var(--tone-0)] text-white flex flex-col md:flex-row items-center justify-between p-6 md:p-14 lg:p-20 relative overflow-hidden font-sans selection:bg-white selection:text-black"
     >
       {/* Overlay de sucesso — some assim que o login/cadastro é confirmado */}
       <AnimatePresence>
@@ -761,14 +761,14 @@ const LoginContent: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -16, scale: 0.95 }}
             transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
-            className="absolute top-6 md:top-8 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#121216]/90 backdrop-blur-xl border border-white/15 text-white shadow-[0_10px_30px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.12)] text-xs select-none"
+            className="absolute top-6 md:top-8 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 px-4 py-2 rounded-full bg-[var(--tone-2)]/90 backdrop-blur-xl border border-white/15 text-white shadow-[0_10px_30px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.12)] text-xs select-none"
           >
             <span className="w-2 h-2 rounded-full bg-[#FF9838] shadow-[0_0_8px_#FF9838] animate-pulse" />
-            <span className="font-ui text-white/90 font-medium">Singularidade Ativa</span>
+            <span className="font-ui text-[var(--ink)] font-medium">Singularidade Ativa</span>
             <button
               type="button"
               onClick={() => setIsBlackHoleActive(false)}
-              className="text-[11px] text-white/50 hover:text-white underline ml-1 cursor-pointer transition-colors"
+              className="text-[length:var(--step-0)] text-[var(--ink-muted)] hover:text-white underline ml-1 cursor-pointer transition-colors"
             >
               Desativar
             </button>
@@ -887,7 +887,7 @@ const LoginContent: React.FC = () => {
                     onClick={() => setShowPassword(!showPassword)}
                     whileTap={{ scale: 0.85 }}
                     transition={{ type: "spring", bounce: 0.3, duration: 0.25 }}
-                    className="text-white/40 hover:text-white transition-colors p-1"
+                    className="text-[var(--ink-faint)] hover:text-white transition-colors p-1"
                   >
                     <AnimatePresence mode="wait" initial={false}>
                       <motion.span
@@ -1011,13 +1011,13 @@ const LoginContent: React.FC = () => {
             <motion.div variants={formItemVariants}>
               {isGoogleLoading ? (
                 <div className="w-full flex items-center gap-2">
-                  <div className="flex-1 flex items-center justify-center gap-2.5 py-3 px-4 bg-white/[0.05] border border-white/[0.18] text-white/85 rounded-2xl text-xs font-body font-medium">
+                  <div className="flex-1 flex items-center justify-center gap-2.5 py-3 px-4 bg-white/[0.05] border border-white/[0.18] text-[var(--ink)] rounded-2xl text-xs font-body font-medium">
                     <LoadingState label="Aguardando no navegador..." variant="connecting" size="sm" />
                   </div>
                   <button
                     type="button"
                     onClick={handleCancelGoogleLogin}
-                    className="py-3 px-4 bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.22] hover:border-white/40 text-white/85 hover:text-white rounded-2xl text-xs font-medium transition-all active:scale-95 cursor-pointer shrink-0"
+                    className="py-3 px-4 bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.22] hover:border-white/40 text-[var(--ink)] hover:text-white rounded-2xl text-xs font-medium transition-all active:scale-95 cursor-pointer shrink-0"
                     title="Cancelar tentativa de login (Esc)"
                   >
                     Cancelar

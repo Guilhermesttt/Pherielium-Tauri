@@ -59,7 +59,7 @@ const RoundAction: React.FC<{
     >
       {children}
     </motion.button>
-    <span className="text-[12px] font-medium text-white/60">{label}</span>
+    <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)]">{label}</span>
   </div>
 );
 
@@ -139,7 +139,7 @@ export const IncomingCallModal: React.FC<IncomingCallModalProps> = ({
     >
       <animated.div
         style={panel}
-        className="relative flex w-full max-w-[360px] flex-col items-center overflow-hidden rounded-[30px] border border-white/10 bg-[#0c0c0e]/95 px-8 pb-8 pt-9 shadow-[0_30px_90px_rgba(0,0,0,0.75)]"
+        className="relative flex w-full max-w-[360px] flex-col items-center overflow-hidden rounded-[30px] border border-white/10 bg-[var(--tone-1)]/95 px-8 pb-8 pt-9 shadow-[0_30px_90px_rgba(0,0,0,0.75)]"
       >
         <div className="pointer-events-none absolute -top-28 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-white/[0.05] blur-[80px]" />
 
@@ -181,7 +181,7 @@ export const IncomingCallModal: React.FC<IncomingCallModalProps> = ({
                 motion: { speed: 0.35, drift: 0.2 },
               }}
             />
-            <div className="pointer-events-none absolute z-10 flex h-[88px] w-[88px] items-center justify-center overflow-hidden rounded-full border border-white/15 bg-[#0E0E0E] shadow-[0_8px_32px_rgba(0,0,0,0.85)]">
+            <div className="pointer-events-none absolute z-10 flex h-[88px] w-[88px] items-center justify-center overflow-hidden rounded-full border border-white/15 bg-[var(--tone-1)] shadow-[0_8px_32px_rgba(0,0,0,0.85)]">
               {invite.callerAvatar ? (
                 <img src={invite.callerAvatar} alt="" className="h-full w-full rounded-full object-cover" />
               ) : (
@@ -193,8 +193,8 @@ export const IncomingCallModal: React.FC<IncomingCallModalProps> = ({
           </animated.div>
         </div>
 
-        <h2 className="mt-3 max-w-full truncate text-[24px] font-semibold tracking-tight text-white">{invite.callerName}</h2>
-        <p className="mt-1 flex items-center gap-1.5 text-[14px] text-white/50">
+        <h2 className="mt-3 max-w-full truncate text-[length:var(--step-3)] font-semibold tracking-tight text-white">{invite.callerName}</h2>
+        <p className="mt-1 flex items-center gap-1.5 text-[length:var(--step-1)] text-[var(--ink-muted)]">
           {invite.hasVideo ? <Video className="h-3.5 w-3.5" aria-hidden /> : null}
           {invite.hasVideo ? "Chamada de vídeo" : "Chamada de voz"}
         </p>

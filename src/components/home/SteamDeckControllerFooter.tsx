@@ -32,14 +32,14 @@ export const SteamDeckControllerFooter: React.FC<SteamDeckControllerFooterProps>
 
   return (
     <footer
-      className="shrink-0 flex items-center justify-between px-[var(--safe-x)] py-2.5 bg-[color-mix(in_srgb,var(--surface-base)_92%,transparent)] backdrop-blur-2xl border-t border-[color:var(--edge-subtle)] select-none text-[12px] z-20"
+      className="shrink-0 flex items-center justify-between px-[var(--safe-x)] py-2.5 bg-[color-mix(in_srgb,var(--surface-base)_92%,transparent)] backdrop-blur-2xl border-t border-[color:var(--edge-subtle)] select-none text-[length:var(--step-0)] z-20"
       role="navigation"
       aria-label="Atalhos do Controle"
     >
       {/* Primary Action Buttons with official vector icons */}
       <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
         {/* (A) / (✕) Iniciar */}
-        <div className="flex items-center gap-1.5 text-white/90">
+        <div className="flex items-center gap-1.5 text-[var(--ink)]">
           <ControllerButtonGlyph
             button="A"
             gamepadFamily={gamepadFamily}
@@ -52,7 +52,7 @@ export const SteamDeckControllerFooter: React.FC<SteamDeckControllerFooterProps>
         <button
           type="button"
           onClick={onOpenOptions}
-          className="flex items-center gap-1.5 text-[#D3D3D3] hover:text-white transition-all cursor-pointer group active:scale-95"
+          className="flex items-center gap-1.5 text-[var(--ink-muted)] hover:text-white transition-all cursor-pointer group active:scale-95"
           title="Opções do jogo"
         >
           <ControllerButtonGlyph
@@ -70,7 +70,7 @@ export const SteamDeckControllerFooter: React.FC<SteamDeckControllerFooterProps>
           <button
             type="button"
             onClick={onToggleFavorite}
-            className="flex items-center gap-1.5 text-[#D3D3D3] hover:text-white transition-all cursor-pointer group active:scale-95"
+            className="flex items-center gap-1.5 text-[var(--ink-muted)] hover:text-white transition-all cursor-pointer group active:scale-95"
           >
             <ControllerButtonGlyph
               button="Y"
@@ -87,7 +87,7 @@ export const SteamDeckControllerFooter: React.FC<SteamDeckControllerFooterProps>
         <button
           type="button"
           onClick={onOpenPlatforms}
-          className="flex items-center gap-1.5 text-[#D3D3D3] hover:text-white transition-all cursor-pointer group active:scale-95"
+          className="flex items-center gap-1.5 text-[var(--ink-muted)] hover:text-white transition-all cursor-pointer group active:scale-95"
           title="Abrir seletor giratório de plataformas"
         >
           <ControllerButtonGlyph
@@ -104,7 +104,7 @@ export const SteamDeckControllerFooter: React.FC<SteamDeckControllerFooterProps>
         <button
           type="button"
           onClick={onOpenFilters}
-          className="flex items-center gap-1.5 text-[#D3D3D3] hover:text-white transition-all cursor-pointer group active:scale-95"
+          className="flex items-center gap-1.5 text-[var(--ink-muted)] hover:text-white transition-all cursor-pointer group active:scale-95"
           title="Abrir filtros de biblioteca"
         >
           <ControllerButtonGlyph
@@ -119,12 +119,12 @@ export const SteamDeckControllerFooter: React.FC<SteamDeckControllerFooterProps>
       </div>
 
       {/* Secondary Bumper & Navigation Helpers */}
-      <div className="hidden lg:flex items-center gap-5 text-white/70">
+      <div className="hidden lg:flex items-center gap-5 text-[var(--ink-muted)]">
         {/* (View) / (Share) Buscar */}
         <button
           type="button"
           onClick={onOpenSearch}
-          className="flex items-center gap-1.5 text-white/70 hover:text-white transition-all cursor-pointer"
+          className="flex items-center gap-1.5 text-[var(--ink-muted)] hover:text-white transition-all cursor-pointer"
           title="Buscar jogos"
         >
           <ControllerButtonGlyph
@@ -132,14 +132,14 @@ export const SteamDeckControllerFooter: React.FC<SteamDeckControllerFooterProps>
             gamepadFamily={gamepadFamily}
             size={18}
           />
-          <span className="text-[11px] font-medium">Buscar</span>
+          <span className="text-[length:var(--step-0)] font-medium">Buscar</span>
         </button>
 
         {/* (Menu) / (Options) Menu lateral */}
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="flex items-center gap-1.5 text-white/70 hover:text-white transition-all cursor-pointer"
+          className="flex items-center gap-1.5 text-[var(--ink-muted)] hover:text-white transition-all cursor-pointer"
           title="Menu lateral"
         >
           <ControllerButtonGlyph
@@ -147,31 +147,31 @@ export const SteamDeckControllerFooter: React.FC<SteamDeckControllerFooterProps>
             gamepadFamily={gamepadFamily}
             size={18}
           />
-          <span className="text-[11px] font-medium">Menu Lateral</span>
+          <span className="text-[length:var(--step-0)] font-medium">Menu Lateral</span>
         </button>
 
-        <div className="flex items-center gap-1 text-white/70">
+        <div className="flex items-center gap-1 text-[var(--ink-muted)]">
           <ControllerButtonGlyph
             button="LB"
             gamepadFamily={gamepadFamily}
             size={17}
           />
-          <span className="text-[10px] text-white/40">/</span>
+          <span className="text-[length:var(--step-0)] text-[var(--ink-faint)]">/</span>
           <ControllerButtonGlyph
             button="RB"
             gamepadFamily={gamepadFamily}
             size={17}
           />
-          <span className="text-[11px] ml-1 font-medium">Abas</span>
+          <span className="text-[length:var(--step-0)] ml-1 font-medium">Abas</span>
         </div>
 
-        <div className="flex items-center gap-1.5 text-white/70">
+        <div className="flex items-center gap-1.5 text-[var(--ink-muted)]">
           <ControllerButtonGlyph
             button="B"
             gamepadFamily={gamepadFamily}
             size={20}
           />
-          <span className="text-[11px] font-medium">Voltar</span>
+          <span className="text-[length:var(--step-0)] font-medium">Voltar</span>
         </div>
       </div>
     </footer>

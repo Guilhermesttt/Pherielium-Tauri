@@ -47,19 +47,19 @@ export const ContactCard: React.FC<ContactCardProps> = ({
         playSound?.("hover");
         onMouseEnter?.();
       }}
-      className={`group relative flex items-center justify-between gap-4 rounded-xl border border-white/[0.08] bg-[#0a0a0a] p-3.5 transition-all duration-150 ease-out hover:border-white/20 hover:bg-[#141414] hover:-translate-y-0.5 ${
+      className={`group relative flex items-center justify-between gap-4 rounded-xl border border-white/[0.08] bg-[var(--tone-1)] p-3.5 transition-all duration-150 ease-out hover:border-white/20 hover:bg-[var(--tone-2)] hover:-translate-y-0.5 ${
         isClickable ? "cursor-pointer active:scale-[0.99]" : ""
       } ${className}`}
     >
       <div className="flex min-w-0 items-center gap-3">
         {/* Avatar Container with rounded container and subtle functional status indicator */}
-        <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[#141414]">
+        <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-[var(--tone-2)]">
           {avatarUrl ? (
             <img src={avatarUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
           ) : customIcon ? (
             customIcon
           ) : (
-            <Users className="h-5 w-5 text-white/40" />
+            <Users className="h-5 w-5 text-[var(--ink-faint)]" />
           )}
 
           {/* Functional status indicator: subtle green for online/playing, subtle red for offline */}
@@ -87,7 +87,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
             )}
           </div>
           {statusText && (
-            <p className="mt-0.5 truncate text-[11px] font-medium uppercase tracking-wider text-white/40 font-body">
+            <p className="mt-0.5 truncate text-[length:var(--step-0)] font-medium uppercase tracking-wider text-[var(--ink-faint)] font-body">
               {statusText}
             </p>
           )}
@@ -111,7 +111,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
             <ArrowRight className="h-3 w-3" />
           </button>
         ) : isClickable ? (
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] text-white/35 transition-all group-hover:bg-white/[0.08] group-hover:text-white">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.04] text-[var(--ink-faint)] transition-all group-hover:bg-white/[0.08] group-hover:text-white">
             <ArrowRight className="h-4 w-4" />
           </div>
         ) : null}

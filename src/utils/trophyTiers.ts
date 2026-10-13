@@ -98,7 +98,7 @@ export const TIER_LEVELS: TrophyTierInfo[] = [
   {
     id: "silver",
     label: "Prata",
-    color: "text-[#f1f5f9]",
+    color: "text-[var(--ink)]",
     bgColor: "bg-[#f1f5f9]/12",
     borderColor: "border-[#f1f5f9]/35",
     glowColor: "shadow-[0_0_14px_rgba(241,245,249,0.30)]",
@@ -738,7 +738,7 @@ export const getPSNTierInfo = (level: number): PSNTierInfo => {
       subTier,
       name: `Prata ${subTier}`,
       baseTierName: "Prata",
-      color: "text-[#f1f5f9]",
+      color: "text-[var(--ink)]",
       hexColor: "#f1f5f9",
       bgClass: "bg-[#f1f5f9]/15",
       borderClass: "border-[#f1f5f9]/40",

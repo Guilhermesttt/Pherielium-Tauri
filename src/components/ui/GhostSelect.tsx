@@ -74,7 +74,7 @@ export const GhostSelect: React.FC<GhostSelectProps> = ({
       >
         <div className="flex items-center gap-2 truncate">
           {icon || selectedOption?.icon}
-          <span className={`truncate ${!selectedOption ? "text-white/40" : "text-white/90"}`}>
+          <span className={`truncate ${!selectedOption ? "text-[var(--ink-faint)]" : "text-[var(--ink)]"}`}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
         </div>
@@ -82,7 +82,7 @@ export const GhostSelect: React.FC<GhostSelectProps> = ({
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ type: "spring", bounce: 0, duration: 0.3 }}
         >
-          <ChevronDown className="h-4 w-4 text-white/50" />
+          <ChevronDown className="h-4 w-4 text-[var(--ink-muted)]" />
         </motion.div>
       </button>
 
@@ -117,10 +117,10 @@ export const GhostSelect: React.FC<GhostSelectProps> = ({
                       glideOff
                         ? isSelected
                           ? "bg-white/10 text-white font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-                          : "text-white/70 hover:bg-white/[0.06] hover:text-white"
+                          : "text-[var(--ink-muted)] hover:bg-white/[0.06] hover:text-white"
                         : isSelected
                           ? "text-white font-medium"
-                          : "text-white/70 hover:text-white hover:bg-white/[0.08]"
+                          : "text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08]"
                     }`}
                   >
                     {glideActive && (

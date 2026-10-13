@@ -124,7 +124,7 @@ export const FavoriteParticleButton: React.FC<FavoriteParticleButtonProps> = ({
       </span>
 
       {showLabel && (
-        <span className="ml-2 font-medium text-[11.5px] uppercase tracking-wider text-current">
+        <span className="ml-2 font-medium text-[length:var(--step-0)] uppercase tracking-wider text-current">
           {label || (isFavorite ? "Favorito" : "Favoritar")}
         </span>
       )}

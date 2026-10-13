@@ -16,13 +16,13 @@ export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept
   if (requests.length === 0) {
     return (
       <div className="mx-auto max-w-xl rounded-[22px] bg-[var(--surface-raised)] p-10 text-center ring-1 ring-[color:var(--border-subtle)]">
-        <UserPlus className="mx-auto h-8 w-8 text-white/30" />
-        <h2 className="mt-4 font-display text-[20px] font-bold text-white">Nenhum convite pendente</h2>
-        <p className="mt-1 text-[14px] text-white/55">Quando alguém pedir para ser seu amigo, o convite aparece aqui.</p>
+        <UserPlus className="mx-auto h-8 w-8 text-[var(--ink-faint)]" />
+        <h2 className="mt-4 font-display text-[length:var(--step-3)] font-bold text-white">Nenhum convite pendente</h2>
+        <p className="mt-1 text-[length:var(--step-1)] text-[var(--ink-muted)]">Quando alguém pedir para ser seu amigo, o convite aparece aqui.</p>
         <button
           type="button"
           onClick={onAddFriend}
-          className="mt-5 h-11 rounded-full bg-white px-6 text-[13px] font-semibold text-black active:scale-95"
+          className="mt-5 h-11 rounded-full bg-white px-6 text-[length:var(--step-0)] font-semibold text-black active:scale-95"
         >
           Adicionar amigo
         </button>
@@ -33,8 +33,8 @@ export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept
   return (
     <section aria-label="Convites de amizade" className="mx-auto max-w-3xl rounded-[22px] bg-[var(--surface-raised)] p-4 ring-1 ring-[color:var(--border-subtle)]">
       <header className="mb-3 px-1">
-        <h2 className="font-display text-[22px] font-bold leading-tight text-white">Convites de amizade</h2>
-        <p className="text-[13px] text-white/50">
+        <h2 className="font-display text-[length:var(--step-3)] font-bold leading-tight text-white">Convites de amizade</h2>
+        <p className="text-[length:var(--step-0)] text-[var(--ink-muted)]">
           {requests.length === 1 ? "1 pessoa quer ser sua amiga" : `${requests.length} pessoas querem ser suas amigas`}
         </p>
       </header>
@@ -45,14 +45,14 @@ export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept
               {r.photoURL ? (
                 <img src={r.photoURL} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
               ) : (
-                <span className="flex h-full w-full items-center justify-center text-white/45">
+                <span className="flex h-full w-full items-center justify-center text-[var(--ink-faint)]">
                   <User className="h-5 w-5" />
                 </span>
               )}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[15px] font-semibold text-white">{r.displayName || "Jogador"}</span>
-              <span className="text-[12.5px] text-white/50">Quer ser seu amigo</span>
+              <span className="block truncate text-[length:var(--step-1)] font-semibold text-white">{r.displayName || "Jogador"}</span>
+              <span className="text-[length:var(--step-0)] text-[var(--ink-muted)]">Quer ser seu amigo</span>
             </span>
             <button
               type="button"
@@ -60,7 +60,7 @@ export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept
                 playSound?.("back");
                 onReject(r.uid);
               }}
-              className="h-10 rounded-full bg-white/[0.08] px-4 text-[13px] font-semibold text-white/75 hover:bg-white/[0.14] hover:text-white focus-visible:ring-2 focus-visible:ring-white/40"
+              className="h-10 rounded-full bg-white/[0.08] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] hover:bg-white/[0.14] hover:text-white focus-visible:ring-2 focus-visible:ring-white/40"
             >
               Recusar
             </button>
@@ -70,7 +70,7 @@ export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept
                 playSound?.("select");
                 onAccept(r.uid);
               }}
-              className="h-10 rounded-full bg-white px-5 text-[13px] font-semibold text-black active:scale-95 focus-visible:ring-2 focus-visible:ring-white/60"
+              className="h-10 rounded-full bg-white px-5 text-[length:var(--step-0)] font-semibold text-black active:scale-95 focus-visible:ring-2 focus-visible:ring-white/60"
             >
               Aceitar
             </button>

@@ -44,8 +44,8 @@ const TechnicalDetail: React.FC<{ label: string; value?: string | null; fallback
   fallback,
 }) => (
   <div className="flex flex-col">
-    <span className="text-[10px] font-black tracking-[0.2em] text-white/35 uppercase mb-1">{label}</span>
-    <span className="text-sm font-semibold text-white/80">{value || fallback}</span>
+    <span className="text-[length:var(--step-0)] font-black tracking-[0.2em] text-[var(--ink-faint)] uppercase mb-1">{label}</span>
+    <span className="text-sm font-semibold text-[var(--ink)]">{value || fallback}</span>
   </div>
 );
 
@@ -86,13 +86,13 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
     return (
       <div className="w-full flex flex-col gap-6">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-[11px] font-black tracking-[0.28em] text-white/35 uppercase">
+          <h3 className="text-[length:var(--step-0)] font-black tracking-[0.28em] text-[var(--ink-faint)] uppercase">
             {copy.photoWall} ({localScreenshots.length})
           </h3>
           {localScreenshots.length > 0 && (
             <button
               onClick={onOpenFolder}
-              className="flex items-center gap-1.5 text-xs font-bold text-white/50 hover:text-white px-3 py-1.5 rounded-lg bg-[var(--color-surface)] border border-white/5 transition-colors"
+              className="flex items-center gap-1.5 text-xs font-bold text-[var(--ink-muted)] hover:text-white px-3 py-1.5 rounded-lg bg-[var(--color-surface)] border border-white/5 transition-colors"
             >
               <FolderOpen className="w-3.5 h-3.5" />
               {copy.openFolder}
@@ -102,8 +102,8 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
 
         {localScreenshots.length === 0 ? (
           <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[var(--color-surface)] text-center p-8">
-            <Camera className="mb-3 h-8 w-8 text-white/20" />
-            <p className="text-sm font-semibold text-white/50">{copy.noScreenshot}</p>
+            <Camera className="mb-3 h-8 w-8 text-[var(--ink-faint)]" />
+            <p className="text-sm font-semibold text-[var(--ink-muted)]">{copy.noScreenshot}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -124,7 +124,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-[10px] font-bold text-white uppercase tracking-widest px-4 py-2 bg-white/10 rounded-full ">
+                  <span className="text-[length:var(--step-0)] font-bold text-white uppercase tracking-widest px-4 py-2 bg-white/10 rounded-full ">
                     {copy.viewGallery}
                   </span>
                 </div>
@@ -153,28 +153,28 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
 
         {gameMods.length === 0 ? (
           <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[var(--color-surface)] text-center p-8">
-            <PackageOpen className="mb-3 h-8 w-8 text-white/20" />
-            <p className="text-sm font-semibold text-white/50">Nenhum mod instalado para este jogo.</p>
+            <PackageOpen className="mb-3 h-8 w-8 text-[var(--ink-faint)]" />
+            <p className="text-sm font-semibold text-[var(--ink-muted)]">Nenhum mod instalado para este jogo.</p>
           </div>
         ) : (
           <div className="grid gap-3">
             {gameMods.map((mod) => (
               <div
                 key={mod.id}
-                className="flex items-center gap-4 rounded-2xl border border-white/10 bg-[var(--color-surface)] p-4 transition-colors hover:bg-[#222222]"
+                className="flex items-center gap-4 rounded-2xl border border-white/10 bg-[var(--color-surface)] p-4 transition-colors hover:bg-[var(--tone-3)]"
               >
                 <div className="h-12 w-16 shrink-0 overflow-hidden rounded-xl bg-black/40 border border-white/10">
                   {mod.pictureUrl ? (
                     <img src={mod.pictureUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white/20">
+                    <div className="w-full h-full flex items-center justify-center text-[var(--ink-faint)]">
                       <PackageOpen className="w-5 h-5" />
                     </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-white text-sm truncate">{mod.name}</h4>
-                  <span className="text-xs text-white/40">
+                  <span className="text-xs text-[var(--ink-faint)]">
                     {mod.enabled ? "Ativo no jogo" : "Desativado"}
                   </span>
                 </div>
@@ -193,14 +193,14 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
     return (
       <div className="w-full flex flex-col gap-8">
         <div>
-          <h3 className="text-[11px] font-black tracking-[0.28em] text-white/35 uppercase mb-4">{copy.about}</h3>
+          <h3 className="text-[length:var(--step-0)] font-black tracking-[0.28em] text-[var(--ink-faint)] uppercase mb-4">{copy.about}</h3>
           {isAboutLoading ? (
             <div className="w-full h-32 flex items-center justify-center">
               <LoadingState label="Carregando detalhes..." variant="searching" />
             </div>
           ) : (
             <div
-              className="text-white/70 leading-relaxed text-sm prose prose-invert prose-p:my-0 pb-2"
+              className="text-[var(--ink-muted)] leading-relaxed text-sm prose prose-invert prose-p:my-0 pb-2"
               dangerouslySetInnerHTML={{ __html: sanitizedAboutHtml }}
             />
           )}
@@ -208,11 +208,11 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
 
         {sanitizedSupportedLanguagesHtml && (
           <div>
-            <h3 className="text-[11px] font-black tracking-[0.28em] text-white/35 uppercase mb-3">
+            <h3 className="text-[length:var(--step-0)] font-black tracking-[0.28em] text-[var(--ink-faint)] uppercase mb-3">
               Idiomas Suportados
             </h3>
             <div
-              className="text-white/60 text-xs"
+              className="text-[var(--ink-muted)] text-xs"
               dangerouslySetInnerHTML={{ __html: sanitizedSupportedLanguagesHtml }}
             />
           </div>
@@ -220,7 +220,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
 
         {(sanitizedMinRequirementsHtml || sanitizedRecRequirementsHtml) && (
           <div>
-            <h3 className="text-[11px] font-black tracking-[0.28em] text-white/35 uppercase mb-3">
+            <h3 className="text-[length:var(--step-0)] font-black tracking-[0.28em] text-[var(--ink-faint)] uppercase mb-3">
               Requisitos de Sistema
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -248,7 +248,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
 
           {metacritic && (
             <div className="flex flex-col">
-              <span className="text-[10px] font-black tracking-[0.2em] text-white/35 uppercase mb-2">
+              <span className="text-[length:var(--step-0)] font-black tracking-[0.2em] text-[var(--ink-faint)] uppercase mb-2">
                 Metacritic
               </span>
               <span
@@ -267,24 +267,24 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
 
           {priceOverview && (
             <div className="flex flex-col">
-              <span className="text-[10px] font-black tracking-[0.2em] text-white/35 uppercase mb-2">
+              <span className="text-[length:var(--step-0)] font-black tracking-[0.2em] text-[var(--ink-faint)] uppercase mb-2">
                 Preço
               </span>
-              <span className="text-sm font-semibold text-white/80">{priceOverview.final_formatted}</span>
+              <span className="text-sm font-semibold text-[var(--ink)]">{priceOverview.final_formatted}</span>
             </div>
           )}
         </div>
 
         {tags && tags.length > 0 && (
           <div>
-            <h3 className="text-[11px] font-black tracking-[0.28em] text-white/35 uppercase mb-3">
+            <h3 className="text-[length:var(--step-0)] font-black tracking-[0.28em] text-[var(--ink-faint)] uppercase mb-3">
               {copy.popularTags}
             </h3>
             <div className="flex flex-wrap gap-2">
               {tags.slice(0, 15).map((tag, i) => (
                 <span
                   key={i}
-                  className="px-3 py-1.5 rounded-lg bg-[var(--color-surface)] border border-[var(--color-ui-detail)] text-[10px] font-semibold text-white/65"
+                  className="px-3 py-1.5 rounded-lg bg-[var(--color-surface)] border border-[var(--color-ui-detail)] text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]"
                 >
                   {tag}
                 </span>
@@ -306,19 +306,19 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
       <div className="w-full flex flex-col gap-8">
         {/* Metadados de Integração do Hub */}
         <div className="flex flex-col gap-3 p-5 rounded-2xl bg-[var(--color-surface)] border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-          <h3 className="text-xs font-semibold text-white/70 uppercase tracking-wider">
+          <h3 className="text-xs font-semibold text-[var(--ink-muted)] uppercase tracking-wider">
             Metadados de Integração
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             {game.launcherType === "steam" && (
               <div className="flex flex-col gap-1">
-                <span className="text-white/40">{copy.appId}</span>
-                <span className="font-mono text-white/90">{game.steamAppId || "---"}</span>
+                <span className="text-[var(--ink-faint)]">{copy.appId}</span>
+                <span className="font-mono text-[var(--ink)]">{game.steamAppId || "---"}</span>
               </div>
             )}
             <div className="flex flex-col gap-1">
-              <span className="text-white/40">{copy.source}</span>
-              <span className="text-white/90">
+              <span className="text-[var(--ink-faint)]">{copy.source}</span>
+              <span className="text-[var(--ink)]">
                 {game.source === "steam"
                   ? copy.sourceSteamSync
                   : game.source === "epic"
@@ -327,10 +327,10 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
               </span>
             </div>
             <div className="flex flex-col gap-2 sm:col-span-2">
-              <span className="text-white/40">
+              <span className="text-[var(--ink-faint)]">
                 {isEpicGame ? copy.epicInstallPath : "Executável"}
               </span>
-              <span className="font-mono text-[11px] text-white/70 break-all">
+              <span className="font-mono text-[length:var(--step-0)] text-[var(--ink-muted)] break-all">
                 {game.executablePath || copy.epicInstallPathMissing}
               </span>
               {isEpicGame && (
@@ -338,7 +338,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
                   <button
                     type="button"
                     onClick={onSelectEpicInstallFolder}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/15 text-[11px] font-bold text-white hover:bg-white/20 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/15 text-[length:var(--step-0)] font-bold text-white hover:bg-white/20 transition-colors"
                   >
                     <FolderOpen className="w-3.5 h-3.5" />
                     {copy.epicSelectInstallFolder}
@@ -346,7 +346,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
                   <button
                     type="button"
                     onClick={onSelectEpicExecutable}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/15 text-[11px] font-bold text-white hover:bg-white/20 transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/15 text-[length:var(--step-0)] font-bold text-white hover:bg-white/20 transition-colors"
                   >
                     <FileSearch className="w-3.5 h-3.5" />
                     {copy.epicSelectExecutable}
@@ -355,7 +355,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
                     <button
                       type="button"
                       onClick={onOpenFolder}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] font-bold text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[length:var(--step-0)] font-bold text-[var(--ink-muted)] hover:text-white hover:bg-white/10 transition-colors"
                     >
                       <FolderOpen className="w-3.5 h-3.5" />
                       {copy.openFolder}
@@ -408,7 +408,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
           <h3 className="text-xs font-bold text-red-400 uppercase tracking-wider">
             Zona de Perigo
           </h3>
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-[var(--ink-faint)]">
             Remover o jogo da sua biblioteca local do Checkpoint não desinstalará os arquivos do seu disco.
           </p>
           <button

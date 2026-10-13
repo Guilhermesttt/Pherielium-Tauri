@@ -227,7 +227,7 @@ const TimelineTrophyRow = React.memo<{
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(idx, 8) * 0.02 }}
       title={formatFullDate(trophy.unlocked_at)}
-      className={`group relative flex items-center justify-between gap-4 rounded-xl border border-white/[0.05] bg-[#0E1012]/70 p-3 sm:p-3.5 hover:bg-[#131519] hover:border-white/10 transition ${tierAccent.borderL}`}
+      className={`group relative flex items-center justify-between gap-4 rounded-xl border border-white/[0.05] bg-[var(--tone-1)]/70 p-3 sm:p-3.5 hover:bg-[var(--tone-2)] hover:border-white/10 transition ${tierAccent.borderL}`}
     >
       <div className="flex items-center gap-3.5 min-w-0 flex-1">
         {/* Insígnia 3D Hero Flutuante */}
@@ -273,7 +273,7 @@ const TimelineTrophyRow = React.memo<{
             +{trophy.trophy.xp_value} XP
           </span>
         )}
-        <time className="text-[10px] font-mono text-neutral-500 font-medium mt-0.5">
+        <time className="text-[length:var(--step-0)] font-mono text-neutral-500 font-medium mt-0.5">
           {formatRelativeDate(trophy.unlocked_at)}
         </time>
       </div>
@@ -298,7 +298,7 @@ const TimelineXpRow = React.memo<{
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(idx, 8) * 0.02 }}
       title={formatFullDate(event.created_at)}
-      className="group relative flex items-center justify-between gap-4 rounded-xl border border-white/[0.05] bg-[#0E1012]/70 p-3 sm:p-3.5 hover:bg-[#131519] hover:border-white/10 transition border-l-2 border-l-emerald-400/80"
+      className="group relative flex items-center justify-between gap-4 rounded-xl border border-white/[0.05] bg-[var(--tone-1)]/70 p-3 sm:p-3.5 hover:bg-[var(--tone-2)] hover:border-white/10 transition border-l-2 border-l-emerald-400/80"
     >
       <div className="flex items-center gap-3.5 min-w-0 flex-1">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-105 transition-transform">
@@ -311,7 +311,7 @@ const TimelineXpRow = React.memo<{
               {sourceLabel}
             </span>
             {event.level_before != null && event.level_after != null && event.level_after > event.level_before && (
-              <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-mono font-bold text-emerald-300">
+              <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[length:var(--step-0)] font-mono font-bold text-emerald-300">
                 Lv.{event.level_before} → Lv.{event.level_after}
               </span>
             )}
@@ -327,7 +327,7 @@ const TimelineXpRow = React.memo<{
         <span className="text-xs sm:text-sm font-mono font-black tabular-nums text-emerald-400">
           +{event.amount} XP
         </span>
-        <time className="text-[10px] font-mono text-neutral-500 font-medium mt-0.5">
+        <time className="text-[length:var(--step-0)] font-mono text-neutral-500 font-medium mt-0.5">
           {formatRelativeDate(event.created_at)}
         </time>
       </div>
@@ -954,7 +954,7 @@ export const TrophyHistoryTimeline: React.FC<TrophyHistoryTimelineProps> = ({
               {/* Nó de data da Timeline */}
               <div className="flex items-center gap-3 -ml-4 sm:-ml-5">
                 <div className="h-2 w-2 rounded-full bg-white/70 ring-4 ring-[#0A0B0D]" />
-                <span className="text-[10px] font-mono font-bold tracking-widest text-neutral-400 uppercase">
+                <span className="text-[length:var(--step-0)] font-mono font-bold tracking-widest text-neutral-400 uppercase">
                   {group.dateLabel}
                 </span>
                 <div className="h-px flex-1 bg-white/[0.05]" />
@@ -978,7 +978,7 @@ export const TrophyHistoryTimeline: React.FC<TrophyHistoryTimelineProps> = ({
       {/* Paginação Minimalista */}
       {totalPages > 1 && (
         <footer className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/[0.06] pt-4">
-          <p className="text-[11px] font-mono text-neutral-500">
+          <p className="text-[length:var(--step-0)] font-mono text-neutral-500">
             {copy.showing(
               (safeCurrentPage - 1) * ITEMS_PER_PAGE + 1,
               Math.min(safeCurrentPage * ITEMS_PER_PAGE, totalItems),

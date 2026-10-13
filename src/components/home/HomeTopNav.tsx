@@ -182,8 +182,8 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                 <Search
                   className={`ctl-icon transition-colors ${
                     searchExpanded
-                      ? "text-white/40"
-                      : "text-white/60 group-hover:text-white"
+                      ? "text-[var(--ink-faint)]"
+                      : "text-[var(--ink-muted)] group-hover:text-white"
                   }`}
                 />
               </button>
@@ -198,7 +198,7 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                   if (!searchTerm) onToggleSearch(false);
                 }}
                 placeholder="Buscar..."
-                className={`absolute left-0 top-0 h-full w-full pl-[var(--control-h)] ${searchTerm ? "pr-[var(--control-h)]" : "pr-3"} text-[length:var(--fs-caption)] text-white placeholder:text-white/35 bg-transparent outline-none transition-opacity duration-[var(--dur-focus)] ${
+                className={`absolute left-0 top-0 h-full w-full pl-[var(--control-h)] ${searchTerm ? "pr-[var(--control-h)]" : "pr-3"} text-[length:var(--fs-caption)] text-white placeholder:text-[var(--ink-faint)] bg-transparent outline-none transition-opacity duration-[var(--dur-focus)] ${
                   searchExpanded
                     ? "opacity-100"
                     : "opacity-0 pointer-events-none"
@@ -217,7 +217,7 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                   }}
                   className="absolute right-1 top-1/2 flex h-[calc(var(--control-h)-8px)] w-[calc(var(--control-h)-8px)] -translate-y-1/2 items-center justify-center rounded-full hover:bg-white/10 transition-colors z-10"
                 >
-                  <X className="h-[45%] w-[45%] text-white/50 hover:text-white" />
+                  <X className="h-[45%] w-[45%] text-[var(--ink-muted)] hover:text-white" />
                 </button>
               )}
             </div>
@@ -266,9 +266,9 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                       onSyncLibraries();
                       playSound("select");
                     }}
-                    className="cursor-pointer gap-2.5 rounded-[var(--radius-control)] px-3 py-2 text-[length:var(--fs-caption)] font-medium text-white/90 focus:bg-white/10"
+                    className="cursor-pointer gap-2.5 rounded-[var(--radius-control)] px-3 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-white/10"
                   >
-                    <RefreshCw className="h-4 w-4 text-white/60" />
+                    <RefreshCw className="h-4 w-4 text-[var(--ink-muted)]" />
                     Sincronizar tudo
                   </DropdownMenuItem>
                   {onSyncSteam && (
@@ -278,12 +278,12 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                         onSyncSteam();
                         playSound("select");
                       }}
-                      className="cursor-pointer gap-2.5 rounded-[var(--radius-control)] px-3 py-2 text-[length:var(--fs-caption)] font-medium text-white/90 focus:bg-white/10"
+                      className="cursor-pointer gap-2.5 rounded-[var(--radius-control)] px-3 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-white/10"
                     >
-                      <SteamBrandIcon className="h-4 w-4 text-white/60" />
+                      <SteamBrandIcon className="h-4 w-4 text-[var(--ink-muted)]" />
                       <span className="flex min-w-0 flex-col leading-tight">
                         <span>{isSyncingSteam ? "Sincronizando Steam…" : "Só a Steam"}</span>
-                        <span className="text-[length:var(--fs-label)] font-normal text-white/40">{syncAgo(lastSteamSyncAt)}</span>
+                        <span className="text-[length:var(--fs-label)] font-normal text-[var(--ink-faint)]">{syncAgo(lastSteamSyncAt)}</span>
                       </span>
                     </DropdownMenuItem>
                   )}
@@ -294,12 +294,12 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                         onSyncEpic();
                         playSound("select");
                       }}
-                      className="cursor-pointer gap-2.5 rounded-[var(--radius-control)] px-3 py-2 text-[length:var(--fs-caption)] font-medium text-white/90 focus:bg-white/10"
+                      className="cursor-pointer gap-2.5 rounded-[var(--radius-control)] px-3 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-white/10"
                     >
-                      <EpicBrandIcon className="h-4 w-4 text-white/60" />
+                      <EpicBrandIcon className="h-4 w-4 text-[var(--ink-muted)]" />
                       <span className="flex min-w-0 flex-col leading-tight">
                         <span>{isSyncingEpic ? "Sincronizando Epic…" : "Só a Epic Games"}</span>
-                        <span className="text-[length:var(--fs-label)] font-normal text-white/40">{syncAgo(lastEpicSyncAt)}</span>
+                        <span className="text-[length:var(--fs-label)] font-normal text-[var(--ink-faint)]">{syncAgo(lastEpicSyncAt)}</span>
                       </span>
                     </DropdownMenuItem>
                   )}

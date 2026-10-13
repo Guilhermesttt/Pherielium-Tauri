@@ -42,7 +42,7 @@ function Toast({ className, ...props }: ToastPrimitive.Root.Props) {
         <ToastPrimitive.Root
             data-slot="toast"
             className={cn(
-                "group/toast pointer-events-auto absolute right-0 bottom-0 z-[calc(1000-var(--toast-index))] w-full origin-bottom rounded-2xl border border-white/[0.08] bg-[#1C1C1E]/75 backdrop-blur-[40px] text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] outline-none select-none focus-visible:border-white/40 focus-visible:ring-2 focus-visible:ring-white/20 antialiased",
+                "group/toast pointer-events-auto absolute right-0 bottom-0 z-[calc(1000-var(--toast-index))] w-full origin-bottom rounded-2xl border border-white/[0.08] bg-[var(--tone-2)]/75 backdrop-blur-[40px] text-white shadow-[0_20px_40px_rgba(0,0,0,0.6)] outline-none select-none focus-visible:border-white/40 focus-visible:ring-2 focus-visible:ring-white/20 antialiased",
                 "[--gap:0.75rem] [--height:var(--toast-frontmost-height,var(--toast-height))] [--offset-y:calc(var(--toast-offset-y)*-1+calc(var(--toast-index)*var(--gap)*-1)+var(--toast-swipe-movement-y))] [--peek:0.75rem] [--scale:calc(max(0,1-(var(--toast-index)*0.1)))] [--shrink:calc(1-var(--scale))]",
                 "h-(--height) [transform:translateX(var(--toast-swipe-movement-x))_translateY(calc(var(--toast-swipe-movement-y)-(var(--toast-index)*var(--peek))-(var(--shrink)*var(--height))))_scale(var(--scale))] [transition:transform_400ms_cubic-bezier(0.16,1,0.3,1),opacity_300ms,height_150ms]",
                 "after:absolute after:top-full after:left-0 after:h-[calc(var(--gap)+1px)] after:w-full after:content-['']",
@@ -81,7 +81,7 @@ function ToastTitle({ className, ...props }: ToastPrimitive.Title.Props) {
     return (
         <ToastPrimitive.Title
             data-slot="toast-title"
-            className={cn("text-[14px] font-semibold text-white tracking-tight leading-tight", className)}
+            className={cn("text-[length:var(--step-1)] font-semibold text-white tracking-tight leading-tight", className)}
             {...props}
         />
     )
@@ -94,7 +94,7 @@ function ToastDescription({
     return (
         <ToastPrimitive.Description
             data-slot="toast-description"
-            className={cn("text-[13px] font-medium text-white/60 leading-snug antialiased", className)}
+            className={cn("text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] leading-snug antialiased", className)}
             {...props}
         />
     )
@@ -118,7 +118,7 @@ function ToastAction({
 function ToastClose({
     className,
     children,
-    render = <button type="button" className="h-7 w-7 rounded-lg text-white/40 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors" />,
+    render = <button type="button" className="h-7 w-7 rounded-lg text-[var(--ink-faint)] hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors" />,
     ...props
 }: ToastPrimitive.Close.Props) {
     return (
@@ -127,7 +127,7 @@ function ToastClose({
             aria-label="Close toast"
             render={render}
             className={cn(
-                "relative shrink-0 text-white/40 hover:text-white cursor-pointer transition-colors",
+                "relative shrink-0 text-[var(--ink-faint)] hover:text-white cursor-pointer transition-colors",
                 className
             )}
             {...props}
@@ -139,7 +139,7 @@ function ToastClose({
 
 function ToastIcon({ type }: { type: string | undefined }) {
     let icon: React.ReactNode = null
-    let colorClass = "bg-white/10 text-white/80 border-white/15"
+    let colorClass = "bg-white/10 text-[var(--ink)] border-white/15"
 
     if (type === "success") {
         icon = <CircleCheckIcon className="h-5 w-5" aria-hidden="true" />
@@ -162,8 +162,8 @@ function ToastIcon({ type }: { type: string | undefined }) {
     }
 
     if (type === "loading") {
-        icon = <Loader2Icon className="h-5 w-5 animate-spin text-white/70" aria-hidden="true" />
-        colorClass = "bg-white/10 text-white/70 border border-white/15 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+        icon = <Loader2Icon className="h-5 w-5 animate-spin text-[var(--ink-muted)]" aria-hidden="true" />
+        colorClass = "bg-white/10 text-[var(--ink-muted)] border border-white/15 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
     }
 
     if (!icon) {

@@ -34,7 +34,7 @@ const DesignLab = import.meta.env.DEV ? lazy(() => import("./pages/DesignLab")) 
 const isDesktopRuntime = true;
 
 const routeFallback = (
-  <div className="flex min-h-screen items-center justify-center bg-[#030405] text-white">
+  <div className="flex min-h-screen items-center justify-center bg-[var(--tone-0)] text-white">
     <LoadingState label="Iniciando Pherielium" variant="working" />
   </div>
 );

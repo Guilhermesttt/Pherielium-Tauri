@@ -40,7 +40,7 @@ export interface InputHintProps {
 }
 
 const KeyboardHint: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <kbd className="min-w-6 rounded-md border border-white/20 px-1.5 py-0.5 text-center font-sans text-[10px] font-bold">
+  <kbd className="min-w-6 rounded-md border border-white/20 px-1.5 py-0.5 text-center font-sans text-[length:var(--step-0)] font-bold">
     {children}
   </kbd>
 );
@@ -97,12 +97,12 @@ const getPCHint = (button: string) => {
     case "SHARE":
       return <UserPlus className="h-3.5 w-3.5" />;
     case "DPAD":
-      return <span className="text-[12px] font-bold">{"\u2190 \u2192"}</span>;
+      return <span className="text-[length:var(--step-0)] font-bold">{"\u2190 \u2192"}</span>;
     case "SCROLL":
       return (
         <span className="flex items-center gap-1">
           <Mouse className="h-3.5 w-3.5" />
-          <span className="text-[12px] font-bold">{"\u2195"}</span>
+          <span className="text-[length:var(--step-0)] font-bold">{"\u2195"}</span>
         </span>
       );
     case "CONTEXT":

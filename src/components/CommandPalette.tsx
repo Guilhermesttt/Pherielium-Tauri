@@ -301,7 +301,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           >
             {/* Search Input Bar */}
             <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.08] bg-white/[0.02]">
-              <Search className="w-4 h-4 text-white/50 shrink-0 pointer-events-none" />
+              <Search className="w-4 h-4 text-[var(--ink-muted)] shrink-0 pointer-events-none" />
               <input
                 ref={inputRef}
                 id="command-palette-search"
@@ -314,9 +314,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Digite um comando, jogo ou amigo... (↑↓ para navegar)"
-                className="w-full bg-transparent text-sm font-body text-white placeholder:text-white/40 focus:outline-none"
+                className="w-full bg-transparent text-sm font-body text-white placeholder:text-[var(--ink-faint)] focus:outline-none"
               />
-              <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-[4px] border border-white/10 bg-white/[0.04] text-[10px] font-mono text-white/50">
+              <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-[4px] border border-white/10 bg-white/[0.04] text-[length:var(--step-0)] font-mono text-[var(--ink-muted)]">
                 ESC
               </span>
             </div>
@@ -324,7 +324,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             {/* Results List */}
             <div ref={listRef} className="max-h-[380px] overflow-y-auto p-2 no-scrollbar flex flex-col gap-0.5">
               {filteredItems.length === 0 ? (
-                <div className="py-12 text-center text-xs font-body text-white/50">
+                <div className="py-12 text-center text-xs font-body text-[var(--ink-muted)]">
                   Nenhum comando ou jogo correspondente.
                 </div>
               ) : (
@@ -339,13 +339,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                       onClick={() => executeItem(item)}
                       onMouseEnter={() => setSelectedIndex(idx)}
                       className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-[8px] text-left transition-colors duration-100 cursor-pointer ${
-                        isSelected ? "bg-white/[0.10] text-white" : "text-white/80 hover:bg-white/[0.05]"
+                        isSelected ? "bg-white/[0.10] text-white" : "text-[var(--ink)] hover:bg-white/[0.05]"
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <div
                           className={`w-7 h-7 rounded-[6px] flex items-center justify-center shrink-0 ${
-                            isSelected ? "bg-white text-black" : "bg-white/[0.06] text-white/70"
+                            isSelected ? "bg-white text-black" : "bg-white/[0.06] text-[var(--ink-muted)]"
                           }`}
                         >
                           <Icon className="w-3.5 h-3.5" />
@@ -353,18 +353,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-white truncate">{item.title}</p>
                           {item.subtitle && (
-                            <p className="text-[11px] text-white/50 truncate font-body">{item.subtitle}</p>
+                            <p className="text-[length:var(--step-0)] text-[var(--ink-muted)] truncate font-body">{item.subtitle}</p>
                           )}
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
                         {item.badge && (
-                          <span className="px-2 py-0.5 rounded-full border border-white/15 bg-white/[0.05] text-[10px] font-medium text-white/80">
+                          <span className="px-2 py-0.5 rounded-full border border-white/15 bg-white/[0.05] text-[length:var(--step-0)] font-medium text-[var(--ink)]">
                             {item.badge}
                           </span>
                         )}
-                        <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider">
+                        <span className="text-[length:var(--step-0)] font-mono text-[var(--ink-faint)] uppercase tracking-wider">
                           {item.category}
                         </span>
                       </div>
@@ -375,7 +375,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             </div>
 
             {/* Palette Footer */}
-            <div className="flex items-center justify-between px-4 py-2 border-t border-white/[0.06] bg-white/[0.01] text-[11px] text-white/40 font-body">
+            <div className="flex items-center justify-between px-4 py-2 border-t border-white/[0.06] bg-white/[0.01] text-[length:var(--step-0)] text-[var(--ink-faint)] font-body">
               <span>Pherielium Quick Launcher</span>
               <div className="flex items-center gap-3">
                 <span>↵ Executar</span>

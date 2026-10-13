@@ -35,7 +35,7 @@ export const GameDetailStats: React.FC<GameDetailStatsProps> = React.memo(({
                 <span className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
                   {achievementsUnlocked}
                 </span>
-                <span className="text-xs font-semibold text-white/40 uppercase tracking-wider">
+                <span className="text-xs font-semibold text-[var(--ink-faint)] uppercase tracking-wider">
                   / {achievementsTotal} {copy.achievements}
                 </span>
               </div>
@@ -45,10 +45,10 @@ export const GameDetailStats: React.FC<GameDetailStatsProps> = React.memo(({
           )}
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">
+            <span className="text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)] uppercase tracking-wider">
               {copy.timePlayed}
             </span>
-            <span className="text-lg sm:text-xl font-semibold text-white/95 tracking-tight">
+            <span className="text-lg sm:text-xl font-semibold text-[var(--ink)] tracking-tight">
               {formattedHours}
             </span>
           </div>
@@ -56,10 +56,10 @@ export const GameDetailStats: React.FC<GameDetailStatsProps> = React.memo(({
           <div className="w-px h-10 bg-white/10 shrink-0 hidden sm:block" />
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">
+            <span className="text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)] uppercase tracking-wider">
               {copy.lastSession}
             </span>
-            <span className="text-lg sm:text-xl font-semibold text-white/95 tracking-tight">
+            <span className="text-lg sm:text-xl font-semibold text-[var(--ink)] tracking-tight">
               {lastSession}
             </span>
           </div>

@@ -73,7 +73,7 @@ export const GameDetailActions: React.FC<GameDetailActionsProps> = React.memo(({
         </span>
       </ShinyButton>
       {launchError && (
-        <p className="mt-2 text-[10px] text-white/80 max-w-[220px] text-center font-medium">
+        <p className="mt-2 text-[length:var(--step-0)] text-[var(--ink)] max-w-[220px] text-center font-medium">
           {launchError}
         </p>
       )}

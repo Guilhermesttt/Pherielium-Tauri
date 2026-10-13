@@ -122,7 +122,7 @@ export const InstallSetupScreen: React.FC<InstallSetupScreenProps> = ({ onFinish
 
   return (
     <motion.div
-      className="fixed inset-0 z-[240] flex flex-col items-center justify-center overflow-hidden bg-[#070707]"
+      className="fixed inset-0 z-[240] flex flex-col items-center justify-center overflow-hidden bg-[var(--tone-0)]"
       initial={reduceMotion ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={reduceMotion ? { opacity: 0 } : { opacity: 0 }}
@@ -188,13 +188,13 @@ export const InstallSetupScreen: React.FC<InstallSetupScreenProps> = ({ onFinish
           >
             {step === 0 && (
               <>
-                <p className="text-[12px] font-medium tracking-[0.14em] text-white/40">
+                <p className="text-[length:var(--step-0)] font-medium tracking-[0.14em] text-[var(--ink-faint)]">
                   Configuração inicial
                 </p>
-                <h1 className="mt-3 text-[32px] font-semibold tracking-tight text-white">
+                <h1 className="mt-3 text-[length:var(--step-4)] font-semibold tracking-tight text-white">
                   Pherielium
                 </h1>
-                <p className="mx-auto mt-3 max-w-[340px] text-[15px] leading-relaxed text-white/50">
+                <p className="mx-auto mt-3 max-w-[340px] text-[length:var(--step-1)] leading-relaxed text-[var(--ink-muted)]">
                   Seu hub de jogos está pronto. Em poucos passos ajustamos como a
                   janela se comporta neste PC.
                 </p>
@@ -203,22 +203,22 @@ export const InstallSetupScreen: React.FC<InstallSetupScreenProps> = ({ onFinish
 
             {step === 1 && (
               <>
-                <h2 className="text-[24px] font-semibold tracking-tight text-white">
+                <h2 className="text-[length:var(--step-3)] font-semibold tracking-tight text-white">
                   Comportamento da janela
                 </h2>
-                <p className="mt-2 text-[14px] text-white/45">
+                <p className="mt-2 text-[length:var(--step-1)] text-[var(--ink-faint)]">
                   Você pode mudar isso depois em Ajustes.
                 </p>
                 <ul className="mt-7 space-y-3 text-left">
                   <li className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 py-3.5">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/5 text-white/70">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/5 text-[var(--ink-muted)]">
                       <Monitor className="h-4 w-4" strokeWidth={2} />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13.5px] font-semibold text-white">
+                      <p className="text-[length:var(--step-1)] font-semibold text-white">
                         Minimizar para a bandeja
                       </p>
-                      <p className="mt-0.5 text-[12px] text-white/40">
+                      <p className="mt-0.5 text-[length:var(--step-0)] text-[var(--ink-faint)]">
                         Fechar a janela oculta o app em vez de encerrar.
                       </p>
                     </div>
@@ -229,14 +229,14 @@ export const InstallSetupScreen: React.FC<InstallSetupScreenProps> = ({ onFinish
                     />
                   </li>
                   <li className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 py-3.5">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/5 text-white/70">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/5 text-[var(--ink-muted)]">
                       <ShieldCheck className="h-4 w-4" strokeWidth={2} />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13.5px] font-semibold text-white">
+                      <p className="text-[length:var(--step-1)] font-semibold text-white">
                         Confirmar antes de sair
                       </p>
-                      <p className="mt-0.5 text-[12px] text-white/40">
+                      <p className="mt-0.5 text-[length:var(--step-0)] text-[var(--ink-faint)]">
                         Pede confirmação ao encerrar o aplicativo.
                       </p>
                     </div>
@@ -247,14 +247,14 @@ export const InstallSetupScreen: React.FC<InstallSetupScreenProps> = ({ onFinish
                     />
                   </li>
                   <li className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 py-3.5">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/5 text-white/70">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/5 text-[var(--ink-muted)]">
                       <Power className="h-4 w-4" strokeWidth={2} />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13.5px] font-semibold text-white">
+                      <p className="text-[length:var(--step-1)] font-semibold text-white">
                         Iniciar com o Windows
                       </p>
-                      <p className="mt-0.5 text-[12px] text-white/40">
+                      <p className="mt-0.5 text-[length:var(--step-0)] text-[var(--ink-faint)]">
                         Abre o launcher em segundo plano ao ligar o PC.
                       </p>
                     </div>
@@ -270,10 +270,10 @@ export const InstallSetupScreen: React.FC<InstallSetupScreenProps> = ({ onFinish
 
             {step === 2 && (
               <>
-                <h2 className="text-[24px] font-semibold tracking-tight text-white">
+                <h2 className="text-[length:var(--step-3)] font-semibold tracking-tight text-white">
                   Tudo certo
                 </h2>
-                <p className="mx-auto mt-3 max-w-[320px] text-[15px] leading-relaxed text-white/50">
+                <p className="mx-auto mt-3 max-w-[320px] text-[length:var(--step-1)] leading-relaxed text-[var(--ink-muted)]">
                   Preferências salvas neste computador. Abra o hub e comece a
                   montar sua biblioteca.
                 </p>
@@ -287,7 +287,7 @@ export const InstallSetupScreen: React.FC<InstallSetupScreenProps> = ({ onFinish
             type="button"
             onClick={goBack}
             disabled={step === 0}
-            className="rounded-full px-4 py-2.5 text-[13px] font-medium text-white/45 transition-colors hover:text-white disabled:invisible focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50"
+            className="rounded-full px-4 py-2.5 text-[length:var(--step-0)] font-medium text-[var(--ink-faint)] transition-colors hover:text-white disabled:invisible focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/50"
           >
             Voltar
           </button>
@@ -295,7 +295,7 @@ export const InstallSetupScreen: React.FC<InstallSetupScreenProps> = ({ onFinish
             type="button"
             onClick={goNext}
             whileTap={reduceMotion ? undefined : { scale: 0.97 }}
-            className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[13px] font-semibold text-black shadow-[0_0_28px_rgba(255,255,255,0.22)] transition-colors hover:bg-white/92 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[length:var(--step-0)] font-semibold text-black shadow-[0_0_28px_rgba(255,255,255,0.22)] transition-colors hover:bg-white/92 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
           >
             {step === STEPS - 1 ? "Abrir hub" : "Continuar"}
             {step < STEPS - 1 && <ChevronRight className="h-4 w-4" strokeWidth={2.5} />}

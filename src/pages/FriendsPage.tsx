@@ -128,7 +128,7 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
               setManualDnd(next);
             }}
             className={`cursor-pointer rounded-full px-4 py-2.5 text-xs font-bold tracking-wide ${
-              dnd ? "bg-rose-500/20 text-rose-200" : "bg-white/10 text-white/80"
+              dnd ? "bg-rose-500/20 text-rose-200" : "bg-white/10 text-[var(--ink)]"
             }`}
           >
             {dnd ? "Não perturbe" : "Disponível"}
@@ -346,31 +346,31 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
             type="button"
             onClick={handleCloseModal}
             aria-label="Fechar"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/60 transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/8 text-[var(--ink-muted)] transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
         <div>
-          <label className="text-xs font-body font-medium text-white/70 block mb-2">
+          <label className="text-xs font-body font-medium text-[var(--ink-muted)] block mb-2">
             Busque por nome de usuário ou email
           </label>
           <form onSubmit={handleSearch} className="flex items-center gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-faint)]" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => handleQueryChange(e.target.value)}
                 placeholder={t("addFriendSearchPlaceholder") || "Digite o nome ou email do usuário..."}
-                className="w-full h-12 pl-11 pr-11 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-ui-detail)] text-xs font-body text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 shadow-inner transition-all "
+                className="w-full h-12 pl-11 pr-11 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-ui-detail)] text-xs font-body text-white placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-white/30 shadow-inner transition-all "
                 autoFocus
               />
               {query && (
                 <button
                   type="button"
                   onClick={handleClearQuery}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-[var(--ink-faint)] hover:text-white hover:bg-white/10 transition-all cursor-pointer"
                   title="Limpar campo"
                 >
                   <X className="w-4 h-4" />
@@ -392,7 +392,7 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
         {recentSearches.length > 0 && (!query.trim() || !hasSearched) && (
           <div className="space-y-2 pt-1">
             <div className="flex items-center justify-between">
-              <span className="text-[10.5px] font-body uppercase tracking-wider text-white/40 block">
+              <span className="text-[length:var(--step-0)] font-body uppercase tracking-wider text-[var(--ink-faint)] block">
                 Pesquisados recentemente
               </span>
               <button
@@ -401,7 +401,7 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
                   setRecentSearches([]);
                   localStorage.removeItem("checkpoint_recent_searched_users");
                 }}
-                className="text-[10px] text-white/30 hover:text-white/70 transition-colors cursor-pointer"
+                className="text-[length:var(--step-0)] text-[var(--ink-faint)] hover:text-[var(--ink-muted)] transition-colors cursor-pointer"
               >
                 Limpar histórico
               </button>
@@ -416,7 +416,7 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
                     void handleSearch(undefined, item);
                   }}
                   onMouseEnter={() => playSound?.("hover")}
-                  className="px-3 py-1 rounded-xl bg-[var(--color-surface)] border border-[var(--color-ui-detail)] hover:border-white/20 text-xs font-body text-white/70 hover:text-white transition-all cursor-pointer"
+                  className="px-3 py-1 rounded-xl bg-[var(--color-surface)] border border-[var(--color-ui-detail)] hover:border-white/20 text-xs font-body text-[var(--ink-muted)] hover:text-white transition-all cursor-pointer"
                 >
                   {item}
                 </button>
@@ -435,21 +435,21 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
             return (
               <div
                 key={user.uid}
-                className="flex items-center justify-between p-4 rounded-2xl bg-[var(--color-surface)] hover:bg-[#222222] border border-[var(--color-ui-detail)] hover:border-white/20 transition-all shadow-md "
+                className="flex items-center justify-between p-4 rounded-2xl bg-[var(--color-surface)] hover:bg-[var(--tone-3)] border border-[var(--color-ui-detail)] hover:border-white/20 transition-all shadow-md "
               >
                 <div className="flex items-center gap-3.5">
                   <div className="w-12 h-12 rounded-2xl overflow-hidden bg-[var(--color-surface)] border border-white/10 flex items-center justify-center shrink-0">
                     {user.photoURL ? (
                       <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <User className="w-6 h-6 text-white/40" />
+                      <User className="w-6 h-6 text-[var(--ink-faint)]" />
                     )}
                   </div>
                   <div>
                     <p className="text-sm font-display font-bold text-white tracking-tight">
                       {user.displayName || "Jogador"}
                     </p>
-                    <p className="text-[10px] font-body text-white/40 uppercase tracking-wider mt-0.5">
+                    <p className="text-[length:var(--step-0)] font-body text-[var(--ink-faint)] uppercase tracking-wider mt-0.5">
                       NÍVEL {user.level || 1}
                     </p>
                   </div>
@@ -474,7 +474,7 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
                       Amigo
                     </span>
                   ) : isOutgoing ? (
-                    <span className="px-4 py-2 rounded-xl bg-white/10 text-white/60 text-xs font-medium">
+                    <span className="px-4 py-2 rounded-xl bg-white/10 text-[var(--ink-muted)] text-xs font-medium">
                       Pendente
                     </span>
                   ) : isIncoming ? (
@@ -501,7 +501,7 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
 
           {hasSearched && results.length === 0 && !searching && (
             <div className="text-center py-8 rounded-2xl bg-[var(--color-surface)] border border-dashed border-[var(--color-ui-detail)]">
-              <p className="text-xs font-body text-white/40">Nenhum jogador encontrado para essa busca.</p>
+              <p className="text-xs font-body text-[var(--ink-faint)]">Nenhum jogador encontrado para essa busca.</p>
             </div>
           )}
         </div>

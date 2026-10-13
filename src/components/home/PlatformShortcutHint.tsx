@@ -36,9 +36,9 @@ export const PlatformShortcutHint: React.FC<PlatformShortcutHintProps> = ({ onAc
     onClick={onActivate}
     aria-label="Filtrar por plataforma. Atalho: segure Alt e role o mouse"
     title="Segure Alt e role o mouse"
-    className="platform-hint group inline-flex items-center gap-[0.55em] rounded-full py-[0.3em] pl-[0.35em] pr-[0.95em] text-[length:var(--fs-label)] font-medium text-white/55 transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:text-white/90 focus-visible:text-white/90"
+    className="platform-hint group inline-flex items-center gap-[0.55em] rounded-full py-[0.3em] pl-[0.35em] pr-[0.95em] text-[length:var(--fs-label)] font-medium text-[var(--ink-muted)] transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] hover:text-[var(--ink)] focus-visible:text-[var(--ink)]"
   >
-    <kbd className="inline-flex min-w-[2.4em] items-center justify-center rounded-[0.45em] border border-white/16 border-b-[2px] border-b-white/22 bg-white/[0.07] px-[0.6em] py-[0.12em] font-display text-[0.92em] font-semibold leading-none text-white/80">
+    <kbd className="inline-flex min-w-[2.4em] items-center justify-center rounded-[0.45em] border border-white/16 border-b-[2px] border-b-white/22 bg-white/[0.07] px-[0.6em] py-[0.12em] font-display text-[0.92em] font-semibold leading-none text-[var(--ink)]">
       Alt
     </kbd>
     <WheelGlyph />

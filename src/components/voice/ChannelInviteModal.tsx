@@ -127,11 +127,11 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
               <div>
                 <h3 className="text-sm font-black text-white tracking-tight uppercase flex items-center gap-2">
                   <span>Convidar Amigos</span>
-                  <span className="text-[10px] font-mono font-normal text-white/70 bg-white/10 px-1.5 py-0.5 rounded border border-white/10">
+                  <span className="text-[length:var(--step-0)] font-mono font-normal text-[var(--ink-muted)] bg-white/10 px-1.5 py-0.5 rounded border border-white/10">
                     {availableFriends.length}
                   </span>
                 </h3>
-                <p className="text-[11px] text-white/40">
+                <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">
                   Envie um convite direto pelo chat para entrarem no canal
                 </p>
               </div>
@@ -139,7 +139,7 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/5 text-white/60 hover:text-white hover:bg-white/15 transition cursor-pointer"
+              className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/5 text-[var(--ink-muted)] hover:text-white hover:bg-white/15 transition cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
@@ -148,7 +148,7 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
           {/* Search Bar */}
           <div className="px-5 pt-4 pb-2">
             <div className="relative flex items-center">
-              <Search className="absolute left-3.5 h-4 w-4 text-white/40 pointer-events-none" />
+              <Search className="absolute left-3.5 h-4 w-4 text-[var(--ink-faint)] pointer-events-none" />
               <input
                 type="text"
                 placeholder="Buscar amigo por nome..."
@@ -161,7 +161,7 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 text-white/40 hover:text-white transition"
+                  className="absolute right-3 text-[var(--ink-faint)] hover:text-white transition"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -173,12 +173,12 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
           <div className="flex-1 overflow-y-auto px-5 py-3 space-y-2 scrollbar-thin scrollbar-thumb-white/10 max-h-[380px]">
             {filteredFriends.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center space-y-2">
-                <Users className="h-8 w-8 text-white/20" />
-                <p className="text-xs font-bold text-white/50">
+                <Users className="h-8 w-8 text-[var(--ink-faint)]" />
+                <p className="text-xs font-bold text-[var(--ink-muted)]">
                   {searchQuery ? "Nenhum amigo encontrado" : "Sua lista de amigos está vazia"}
                 </p>
                 {searchQuery && (
-                  <p className="text-[10px] text-white/30">Tente buscar por outro termo</p>
+                  <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">Tente buscar por outro termo</p>
                 )}
               </div>
             ) : (
@@ -224,7 +224,7 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
                         <h4 className="text-xs font-bold text-white truncate max-w-[170px]">
                           {friend.name}
                         </h4>
-                        <p className="text-[10px] text-white/40 truncate max-w-[170px]">
+                        <p className="text-[length:var(--step-0)] text-[var(--ink-faint)] truncate max-w-[170px]">
                           {friend.playing
                             ? `🎮 Jogando ${friend.playing}`
                             : friend.status === "online"
@@ -243,7 +243,7 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
                         isInvited
                           ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 cursor-default"
                           : isSending
-                          ? "bg-white/10 text-white/50 border border-white/10"
+                          ? "bg-white/10 text-[var(--ink-muted)] border border-white/10"
                           : "bg-white text-black hover:bg-white/90 shadow-md hover:scale-105 active:scale-95"
                       }`}
                     >
@@ -272,8 +272,8 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
 
           {/* Footer Info */}
           <div className="px-6 py-3 border-t border-white/8 bg-black/20 text-center">
-            <p className="text-[10px] text-white/40 flex items-center justify-center gap-1.5">
-              <Radio className="h-3 w-3 text-white/60 animate-pulse" />
+            <p className="text-[length:var(--step-0)] text-[var(--ink-faint)] flex items-center justify-center gap-1.5">
+              <Radio className="h-3 w-3 text-[var(--ink-muted)] animate-pulse" />
               <span>O amigo receberá uma mensagem interativa com botão para entrar na call</span>
             </p>
           </div>

@@ -262,7 +262,7 @@ const GameCard: React.FC<GameCardProps> = ({
               className="absolute inset-0 flex items-center justify-center p-5 text-center"
               style={{ background: FALLBACK_CARD_BACKGROUND }}
             >
-              <span className="line-clamp-3 text-xs font-display font-medium text-white/70">
+              <span className="line-clamp-3 text-xs font-display font-medium text-[var(--ink-muted)]">
                 {title}
               </span>
             </div>
@@ -301,7 +301,7 @@ const GameCard: React.FC<GameCardProps> = ({
               }}
             >
               {platformBadge.icon}
-              <span className="text-[10px] font-bold tracking-tight text-white uppercase">
+              <span className="text-[length:var(--step-0)] font-bold tracking-tight text-white uppercase">
                 {platformBadge.label}
               </span>
             </div>
@@ -348,7 +348,7 @@ const GameCard: React.FC<GameCardProps> = ({
                   e.preventDefault();
                   onMenuClick(e);
                 }}
-                className="relative flex h-7 w-7 items-center justify-center rounded-full bg-black/60 hover:bg-white/20 text-white/80 hover:text-white border border-white/20 hover:border-white/50 shadow-md hover:shadow-[0_0_14px_rgba(255,255,255,0.3)] backdrop-blur-md cursor-pointer transition-colors duration-200"
+                className="relative flex h-7 w-7 items-center justify-center rounded-full bg-black/60 hover:bg-white/20 text-[var(--ink)] hover:text-white border border-white/20 hover:border-white/50 shadow-md hover:shadow-[0_0_14px_rgba(255,255,255,0.3)] backdrop-blur-md cursor-pointer transition-colors duration-200"
                 aria-label={isMenuOpen ? "Fechar opções" : `Opções de ${title}`}
                 title={isMenuOpen ? "Fechar opções" : "Opções do jogo"}
               >
@@ -362,7 +362,7 @@ const GameCard: React.FC<GameCardProps> = ({
                       transition={{ type: "spring", bounce: 0.15, duration: 0.22 }}
                       className="flex items-center justify-center"
                     >
-                      <X className="w-3.5 h-3.5 stroke-[2.2] text-white/90" />
+                      <X className="w-3.5 h-3.5 stroke-[2.2] text-[var(--ink)]" />
                     </motion.div>
                   ) : (
                     <motion.div
@@ -373,7 +373,7 @@ const GameCard: React.FC<GameCardProps> = ({
                       transition={{ type: "spring", bounce: 0.15, duration: 0.22 }}
                       className="flex items-center justify-center"
                     >
-                      <MoreVertical className="w-3.5 h-3.5 text-white/90" />
+                      <MoreVertical className="w-3.5 h-3.5 text-[var(--ink)]" />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -410,7 +410,7 @@ const GameCard: React.FC<GameCardProps> = ({
 
         {/* Bottom Title (Clean & uncluttered) */}
         <div className="relative z-20 mt-auto p-3.5 flex flex-col justify-end pointer-events-none">
-          <h3 className="line-clamp-2 text-[length:var(--fs-body)] font-display font-semibold text-white/95 tracking-tight leading-snug drop-shadow-md">
+          <h3 className="line-clamp-2 text-[length:var(--fs-body)] font-display font-semibold text-[var(--ink)] tracking-tight leading-snug drop-shadow-md">
             {title}
           </h3>
         </div>

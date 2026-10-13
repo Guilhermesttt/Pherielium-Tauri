@@ -176,7 +176,7 @@ export const ConsoleLibraryTabs: React.FC<ConsoleLibraryTabsProps> = ({
                   className={`relative flex h-[calc(var(--control-h)-10px)] items-center gap-1.5 pl-[var(--space-4)] ${"isCustom" in tab && tab.filter ? "pr-8" : "pr-[var(--space-4)]"} rounded-full text-[length:var(--fs-label)] font-semibold whitespace-nowrap transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] cursor-pointer select-none ${
                     isActive
                       ? "text-white"
-                      : "text-[#8E8E93] hover:text-white/90 hover:bg-white/[0.04]"
+                      : "text-[var(--ink-faint)] hover:text-[var(--ink)] hover:bg-white/[0.04]"
                   }`}
                 >
                   {isActive && (
@@ -199,7 +199,7 @@ export const ConsoleLibraryTabs: React.FC<ConsoleLibraryTabsProps> = ({
                       type="button"
                       onClick={(e) => handleOpenEdit(tab.filter, e)}
                       title="Editar este filtro"
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/tab:opacity-100 focus-visible:opacity-100 p-0.5 rounded-full hover:bg-white/15 text-white/50 hover:text-white transition-opacity"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/tab:opacity-100 focus-visible:opacity-100 p-0.5 rounded-full hover:bg-white/15 text-[var(--ink-muted)] hover:text-white transition-opacity"
                     >
                       <Settings2 className="h-[1.1em] w-[1.1em]" />
                     </button>
@@ -215,7 +215,7 @@ export const ConsoleLibraryTabs: React.FC<ConsoleLibraryTabsProps> = ({
           onClick={handleOpenCreate}
           title="Criar novo filtro personalizado"
           aria-label="Criar filtro personalizado"
-          className="flex h-[calc(var(--control-h)-10px)] w-[calc(var(--control-h)-10px)] shrink-0 items-center justify-center rounded-full bg-white/[0.04] hover:bg-white/[0.12] border border-[color:var(--edge-subtle)] hover:border-[color:var(--edge-strong)] text-white/60 hover:text-white transition-[background-color,border-color,color,transform] duration-[var(--dur-focus)] ease-[var(--ease-focus)] cursor-pointer active:scale-90 ml-0.5"
+          className="flex h-[calc(var(--control-h)-10px)] w-[calc(var(--control-h)-10px)] shrink-0 items-center justify-center rounded-full bg-white/[0.04] hover:bg-white/[0.12] border border-[color:var(--edge-subtle)] hover:border-[color:var(--edge-strong)] text-[var(--ink-muted)] hover:text-white transition-[background-color,border-color,color,transform] duration-[var(--dur-focus)] ease-[var(--ease-focus)] cursor-pointer active:scale-90 ml-0.5"
         >
           <Plus className="h-[45%] w-[45%]" />
         </button>

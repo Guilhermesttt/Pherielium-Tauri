@@ -960,7 +960,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             isCompactMode ? "bg-black/35 backdrop-blur-md" : "bg-black/50 backdrop-blur-2xl"
           }`}
         >
-          {/* Main Call Window Container — Apple minimalist, solid surface bg-[#0F0F0F] with border #161616 */}
+          {/* Main Call Window Container — Apple minimalist, solid surface bg-[var(--tone-1)] with border #161616 */}
           <motion.div
             ref={containerRef}
             initial={{ scale: 0.96, opacity: 0, y: 18, filter: "blur(6px)" }}
@@ -970,7 +970,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             style={{
               cornerShape: "squircle",
             } as React.CSSProperties}
-            className={`relative flex flex-col w-full overflow-hidden bg-[#0c0c0e] border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.8)] transition duration-300 ${
+            className={`relative flex flex-col w-full overflow-hidden bg-[var(--tone-1)] border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.8)] transition duration-300 ${
               isCompactMode
                 ? "max-w-xl h-[440px] sm:h-[460px] rounded-[24px]"
                 : "max-w-5xl h-[84vh] rounded-[28px]"
@@ -1273,7 +1273,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                         <button
                           type="button"
                           onClick={() => void handleTogglePip()}
-                          className="flex h-9 w-9 items-center justify-center rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                          className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--ink-muted)] hover:text-white hover:bg-white/10 transition cursor-pointer"
                           title="Mini-player flutuante (PiP)"
                         >
                           <PictureInPicture2 className="h-4 w-4" />

@@ -77,10 +77,10 @@ export const GameDetailFriends: React.FC<GameDetailFriendsProps> = React.memo(({
 
   if (friendsPlayingNow.length === 0 && friendsWhoOwnNotPlaying.length === 0) {
     return (
-      <div className="w-full rounded-2xl bg-[#0F1116] border border-white/[0.06] p-6 text-center select-none shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-        <Users className="w-8 h-8 text-white/20 mx-auto mb-2" />
-        <h4 className="text-sm font-semibold text-white/70">Nenhum amigo possui este jogo na sua rede</h4>
-        <p className="text-xs text-white/40 mt-1">
+      <div className="w-full rounded-2xl bg-[var(--tone-1)] border border-white/[0.06] p-6 text-center select-none shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+        <Users className="w-8 h-8 text-[var(--ink-faint)] mx-auto mb-2" />
+        <h4 className="text-sm font-semibold text-[var(--ink-muted)]">Nenhum amigo possui este jogo na sua rede</h4>
+        <p className="text-xs text-[var(--ink-faint)] mt-1">
           Apenas amigos que possuem {game.title} na biblioteca aparecem aqui.
         </p>
       </div>
@@ -101,7 +101,7 @@ export const GameDetailFriends: React.FC<GameDetailFriendsProps> = React.memo(({
             </h3>
           </div>
 
-          <div className="w-full rounded-2xl bg-[#0E1318] border border-emerald-500/25 p-4 sm:p-5 shadow-[0_8px_24px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(52,211,153,0.15)]">
+          <div className="w-full rounded-2xl bg-[var(--tone-2)] border border-emerald-500/25 p-4 sm:p-5 shadow-[0_8px_24px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(52,211,153,0.15)]">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {friendsPlayingNow.map((friend) => (
                 <motion.div
@@ -133,7 +133,7 @@ export const GameDetailFriends: React.FC<GameDetailFriendsProps> = React.memo(({
                     </span>
                   </div>
 
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shrink-0 text-white/70">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shrink-0 text-[var(--ink-muted)]">
                     <MessageSquare className="w-4 h-4" />
                   </div>
                 </motion.div>
@@ -146,13 +146,13 @@ export const GameDetailFriends: React.FC<GameDetailFriendsProps> = React.memo(({
       {/* 2. Amigos que possuem este jogo */}
       {friendsWhoOwnNotPlaying.length > 0 && (
         <div className="flex flex-col gap-3">
-          <h4 className="text-[11px] font-bold tracking-wider text-white/45 uppercase font-display">
+          <h4 className="text-[length:var(--step-0)] font-bold tracking-wider text-[var(--ink-faint)] uppercase font-display">
             {friendsPlayingNow.length > 0
               ? `${friendsWhoOwnNotPlaying.length} amigos também possuem este jogo`
               : "Amigos que possuem este jogo"}
           </h4>
 
-          <div className="w-full rounded-2xl bg-[#0F1116] border border-white/[0.06] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] overflow-x-auto hide-scrollbar">
+          <div className="w-full rounded-2xl bg-[var(--tone-1)] border border-white/[0.06] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] overflow-x-auto hide-scrollbar">
             <div className="flex items-center gap-4 min-w-max">
               {friendsWhoOwnNotPlaying.map((friend) => (
                 <div
@@ -169,10 +169,10 @@ export const GameDetailFriends: React.FC<GameDetailFriendsProps> = React.memo(({
                     className="w-9 h-9 rounded-xl object-cover ring-1 ring-white/10 group-hover:ring-white/40 transition-all"
                   />
                   <div className="flex flex-col min-w-0">
-                    <span className="font-medium text-xs text-white/90 group-hover:text-white truncate max-w-[110px]">
+                    <span className="font-medium text-xs text-[var(--ink)] group-hover:text-white truncate max-w-[110px]">
                       {friend.name}
                     </span>
-                    <span className="text-[10px] text-white/40 truncate max-w-[110px]">
+                    <span className="text-[length:var(--step-0)] text-[var(--ink-faint)] truncate max-w-[110px]">
                       {friend.status === "online" ? "Online" : "Jogou recentemente"}
                     </span>
                   </div>

@@ -219,7 +219,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
               top: 0,
               ...(side === "right" ? { left: "calc(100% + 12px)" } : { right: "calc(100% + 12px)" }),
             }}
-              className="absolute z-[300] rounded-2xl p-2.5 flex flex-col gap-1 shadow-[0_24px_48px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.12)] glass-panel bg-[#161616]"
+              className="absolute z-[300] rounded-2xl p-2.5 flex flex-col gap-1 shadow-[0_24px_48px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.12)] glass-panel bg-[var(--tone-2)]"
               onClick={(e) => e.stopPropagation()}
               onContextMenu={(e) => {
                 e.preventDefault();
@@ -228,7 +228,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
             >
               {/* Título do jogo no topo — identifica claramente a qual card o menu pertence */}
               <div className="px-3 pt-1.5 pb-2 mb-0.5 border-b border-white/10">
-                <p className="text-[11px] font-bold text-white truncate" title={gameTitle}>
+                <p className="text-[length:var(--step-0)] font-bold text-white truncate" title={gameTitle}>
                   {gameTitle}
                 </p>
               </div>
@@ -242,13 +242,13 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                   onAction("edit");
                 }}
                 onMouseEnter={() => playSound?.("hover")}
-                className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[11.5px] font-bold uppercase tracking-wider transition-colors text-left outline-none ${
+                className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[length:var(--step-0)] font-bold uppercase tracking-wider transition-colors text-left outline-none ${
                   isGamepadConnected && focusedIndex === 0
                     ? "bg-white/15 text-white ring-1 ring-white/40"
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                    : "text-[var(--ink-muted)] hover:bg-white/10 hover:text-white"
                 }`}
               >
-                <Edit3 className="w-4 h-4 text-white/70" />
+                <Edit3 className="w-4 h-4 text-[var(--ink-muted)]" />
                 <span>{t("editMetadata")}</span>
               </motion.button>
 
@@ -263,10 +263,10 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                   size={16}
                   showLabel={true}
                   label={isFavorite ? t("removeFavorite") : t("addFavorite")}
-                  className={`w-full flex items-center justify-start gap-3.5 px-3.5 py-2.5 rounded-xl text-[11.5px] font-bold uppercase tracking-wider transition-colors text-left outline-none ${
+                  className={`w-full flex items-center justify-start gap-3.5 px-3.5 py-2.5 rounded-xl text-[length:var(--step-0)] font-bold uppercase tracking-wider transition-colors text-left outline-none ${
                     isGamepadConnected && focusedIndex === 1
                       ? "bg-white/15 text-white ring-1 ring-white/40"
-                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                      : "text-[var(--ink-muted)] hover:bg-white/10 hover:text-white"
                   }`}
                 />
               </div>
@@ -282,7 +282,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                   onAction("delete");
                 }}
                 onMouseEnter={() => playSound?.("hover")}
-                className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[11.5px] font-bold uppercase tracking-wider transition-colors text-left outline-none ${
+                className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[length:var(--step-0)] font-bold uppercase tracking-wider transition-colors text-left outline-none ${
                   isGamepadConnected && focusedIndex === 2
                     ? "bg-red-500/20 text-red-300 ring-1 ring-red-400/50"
                     : "text-red-500 hover:bg-red-500/10 hover:text-red-400"
@@ -293,12 +293,12 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
               </motion.button>
 
               {isGamepadConnected && (
-                <div className="mt-1 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-white/50 px-1 select-none">
+                <div className="mt-1 pt-2 border-t border-white/10 flex items-center justify-between text-[length:var(--step-0)] text-[var(--ink-muted)] px-1 select-none">
                   <div className="flex items-center gap-1">
                     <ControllerButtonGlyph button="DPAD" gamepadFamily={gamepadFamily} size={14} />
                     <span>Navegar</span>
                   </div>
-                  <div className="flex items-center gap-1 text-white/80">
+                  <div className="flex items-center gap-1 text-[var(--ink)]">
                     <ControllerButtonGlyph button="A" gamepadFamily={gamepadFamily} size={14} />
                     <span className="font-semibold text-white">OK</span>
                   </div>

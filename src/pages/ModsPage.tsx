@@ -152,7 +152,7 @@ const ModGameCard = React.memo<ModGameCardProps>(
         aria-label={`Gerenciar mods de ${game.title}`}
         onClick={handleCardClick}
         onKeyDown={handleKeyDown}
-        className="group relative rounded-2xl bg-[#0C0D10] hover:bg-[#101217] border border-white/10 hover:border-white/20 p-3.5 transition duration-200 hover:-translate-y-0.5 shadow-[0_8px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.06)] flex flex-col justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 cursor-pointer text-left"
+        className="group relative rounded-2xl bg-[var(--tone-1)] hover:bg-[var(--tone-2)] border border-white/10 hover:border-white/20 p-3.5 transition duration-200 hover:-translate-y-0.5 shadow-[0_8px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.06)] flex flex-col justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 cursor-pointer text-left"
       >
         <div>
           {/* Game Artwork Thumbnail */}
@@ -166,39 +166,39 @@ const ModGameCard = React.memo<ModGameCardProps>(
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white/40 px-2 text-center">
+              <div className="w-full h-full flex items-center justify-center text-xs font-bold text-[var(--ink-faint)] px-2 text-center">
                 {game.title}
               </div>
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
             <div
               aria-hidden="true"
-              className="absolute top-2 right-2 h-7 w-7 rounded-lg bg-black/60 text-white/70 flex items-center justify-center backdrop-blur-md pointer-events-none"
+              className="absolute top-2 right-2 h-7 w-7 rounded-lg bg-black/60 text-[var(--ink-muted)] flex items-center justify-center backdrop-blur-md pointer-events-none"
             >
               <MoreVertical className="w-3.5 h-3.5" />
             </div>
           </div>
 
           {/* Title */}
-          <h3 className="text-sm font-display font-semibold text-white/95 truncate group-hover:text-white">
+          <h3 className="text-sm font-display font-semibold text-[var(--ink)] truncate group-hover:text-white">
             {game.title}
           </h3>
 
           {/* Status do Jogo / Mods */}
           <div className="flex items-center gap-1.5 mt-2 flex-wrap text-xs">
             {hasFolder ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-semibold text-emerald-400">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-[length:var(--step-0)] font-semibold text-emerald-400">
                 <CheckCircle2 className="w-3 h-3 shrink-0" />
                 Pasta vinculada
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/10 text-[10px] font-medium text-white/40">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/10 text-[length:var(--step-0)] font-medium text-[var(--ink-faint)]">
                 Sem pasta vinculada
               </span>
             )}
 
             {gameModsCount > 0 && (
-              <span className="text-[11px] font-medium text-white/60">
+              <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)]">
                 {activeModsCount > 0 ? `${activeModsCount}/${gameModsCount} ativos` : `${gameModsCount} mods`}
               </span>
             )}
@@ -212,12 +212,12 @@ const ModGameCard = React.memo<ModGameCardProps>(
           >
             {!hasFolder ? (
               <>
-                <FolderPlus className="w-3.5 h-3.5 text-white/60" />
+                <FolderPlus className="w-3.5 h-3.5 text-[var(--ink-muted)]" />
                 <span>Vincular pasta</span>
               </>
             ) : gameModsCount === 0 ? (
               <>
-                <PackageOpen className="w-3.5 h-3.5 text-white/60" />
+                <PackageOpen className="w-3.5 h-3.5 text-[var(--ink-muted)]" />
                 <span>Explorar mods</span>
               </>
             ) : (
@@ -483,27 +483,27 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
         {/* Single Focused Editorial Header */}
         <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-white/[0.06]">
           <div>
-            <div className="inline-flex items-center gap-2 text-xs font-medium text-white/50 mb-1.5">
-              <PackageOpen className="h-3.5 w-3.5 text-white/70" />
+            <div className="inline-flex items-center gap-2 text-xs font-medium text-[var(--ink-muted)] mb-1.5">
+              <PackageOpen className="h-3.5 w-3.5 text-[var(--ink-muted)]" />
               <span>Gerenciador de Mods</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight text-white">
               Mods
             </h1>
-            <p className="mt-1 text-xs sm:text-sm font-normal text-white/60 max-w-xl">
+            <p className="mt-1 text-xs sm:text-sm font-normal text-[var(--ink-muted)] max-w-xl">
               Gerencie arquivos, vincule diretórios e ative modificações da comunidade para seus jogos instalados.
             </p>
           </div>
 
           {/* Discreet Metrics Line */}
-          <div className="flex items-center gap-2.5 text-xs text-white/50 flex-wrap self-start sm:self-auto">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-white/70 font-medium">
+          <div className="flex items-center gap-2.5 text-xs text-[var(--ink-muted)] flex-wrap self-start sm:self-auto">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-[var(--ink-muted)] font-medium">
               <span className="font-semibold text-white">{games.length}</span> na biblioteca
             </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-white/70 font-medium">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-[var(--ink-muted)] font-medium">
               <span className="font-semibold text-emerald-400">{configuredGames}</span> pastas vinculadas
             </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-white/70 font-medium">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-[var(--ink-muted)] font-medium">
               <span className="font-semibold text-white">{activeInstalledMods}</span> de {totalInstalledMods} mods ativos
             </span>
           </div>
@@ -517,7 +517,7 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-2 rounded-2xl bg-white/[0.02] border border-white/[0.06] backdrop-blur-xl">
               {/* Search Field */}
               <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-faint)] pointer-events-none" />
                 <input
                   id="mods-search-input"
                   type="text"
@@ -570,7 +570,7 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
                 <button
                   type="button"
                   title="Visualização em Lista"
-                  className="p-1.5 rounded-lg text-white/40 hover:text-white"
+                  className="p-1.5 rounded-lg text-[var(--ink-faint)] hover:text-white"
                 >
                   <ListFilter className="w-4 h-4" />
                 </button>
@@ -604,7 +604,7 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
                   <h4 className="text-sm font-display font-bold text-white">
                     Descubra novos mods para seus jogos favoritos
                   </h4>
-                  <p className="text-xs font-body text-white/50">
+                  <p className="text-xs font-body text-[var(--ink-muted)]">
                     Navegue por milhares de mods incríveis disponíveis no Nexus Mods.
                   </p>
                 </div>

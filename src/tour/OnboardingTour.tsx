@@ -90,8 +90,8 @@ const hasTarget = (selector: string) => document.querySelector(selector) !== nul
 /** Dica visual da Alt + rolagem. */
 const AltScrollHint: React.FC = () => (
   <div className="mt-2 flex items-center gap-2" aria-hidden>
-    <kbd className="rounded-md border border-white/25 bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-white">Alt</kbd>
-    <span className="text-white/50">+</span>
+    <kbd className="rounded-md border border-white/25 bg-white/10 px-2 py-0.5 text-[length:var(--step-0)] font-semibold text-white">Alt</kbd>
+    <span className="text-[var(--ink-muted)]">+</span>
     <motion.span
       className="relative flex h-7 w-5 justify-center rounded-full border border-white/40 pt-1"
       animate={{ opacity: [0.6, 1, 0.6] }}
@@ -373,16 +373,16 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
               isHovered
             />
           </div>
-          <div className="relative min-w-0 flex-1 rounded-[22px] rounded-bl-md border border-white/10 bg-[#141416]/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl">
-            <p className="text-[11px] font-medium tabular-nums text-white/40">
+          <div className="relative min-w-0 flex-1 rounded-[22px] rounded-bl-md border border-white/10 bg-[var(--tone-2)]/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+            <p className="text-[length:var(--step-0)] font-medium tabular-nums text-[var(--ink-faint)]">
               {index + 1} de {total}
             </p>
-            <h3 className="mt-0.5 text-[16px] font-semibold leading-tight text-white">{step.title}</h3>
-            <p className="mt-1.5 text-[13px] leading-snug text-white/70">{step.text}</p>
+            <h3 className="mt-0.5 text-[length:var(--step-1)] font-semibold leading-tight text-white">{step.title}</h3>
+            <p className="mt-1.5 text-[length:var(--step-0)] leading-snug text-[var(--ink-muted)]">{step.text}</p>
             {step.altScrollHint && <AltScrollHint />}
             <div className="mt-3 flex items-center justify-between gap-2">
               {!isLast ? (
-                <button type="button" onClick={finish} className="cursor-pointer text-[12px] font-medium text-white/45 transition hover:text-white">
+                <button type="button" onClick={finish} className="cursor-pointer text-[length:var(--step-0)] font-medium text-[var(--ink-faint)] transition hover:text-white">
                   Pular
                 </button>
               ) : (
@@ -393,7 +393,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
                   <button
                     type="button"
                     onClick={() => goTo(index - 1, -1)}
-                    className="h-8 cursor-pointer rounded-full bg-white/[0.08] px-3 text-[12px] font-semibold text-white transition hover:bg-white/[0.14]"
+                    className="h-8 cursor-pointer rounded-full bg-white/[0.08] px-3 text-[length:var(--step-0)] font-semibold text-white transition hover:bg-white/[0.14]"
                   >
                     Voltar
                   </button>
@@ -402,7 +402,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
                   <button
                     type="button"
                     onClick={() => (isLast ? finish() : goTo(index + 1, 1))}
-                    className="h-8 cursor-pointer rounded-full bg-white px-4 text-[12px] font-semibold text-black transition hover:bg-white/90 active:scale-95"
+                    className="h-8 cursor-pointer rounded-full bg-white px-4 text-[length:var(--step-0)] font-semibold text-black transition hover:bg-white/90 active:scale-95"
                   >
                     {isLast ? "Começar" : "Próximo"}
                   </button>
@@ -410,7 +410,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
                   <button
                     type="button"
                     onClick={() => goTo(index + 1, 1)}
-                    className="h-8 cursor-pointer rounded-full bg-white/[0.08] px-3 text-[12px] font-semibold text-white/80 transition hover:bg-white/[0.14]"
+                    className="h-8 cursor-pointer rounded-full bg-white/[0.08] px-3 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition hover:bg-white/[0.14]"
                   >
                     Já sei
                   </button>

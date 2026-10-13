@@ -17,7 +17,7 @@ export const buttonVariants = cva(
         secondary:
           "bg-white/10 text-white hover:bg-white/15 border border-white/10",
         ghost:
-          "text-white/80 hover:bg-white/10 hover:text-white",
+          "text-[var(--ink)] hover:bg-white/10 hover:text-white",
         link:
           "text-white underline-offset-4 hover:underline",
         glass:
@@ -25,7 +25,7 @@ export const buttonVariants = cva(
       },
       size: {
         default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-lg px-3 text-[11px]",
+        sm: "h-8 rounded-lg px-3 text-[length:var(--step-0)]",
         lg: "h-11 rounded-2xl px-6 text-sm",
         icon: "h-9 w-9 rounded-xl",
       },
