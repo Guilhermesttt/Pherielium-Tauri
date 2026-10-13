@@ -90,6 +90,8 @@ export interface CallInviteMeta {
   category: RoomCategory;
   callerName: string;
   callerAvatar?: string | null;
+  /** Presente nos convites da ligação 1:1: entrar nesse convite é atender a ligação. */
+  callerId?: string;
   isPrivate?: boolean;
   createdAt: number;
 }

@@ -47,6 +47,7 @@ export const parseCallInviteText = (text: string): CallInviteMeta | null => {
         category: data.category || "resenha_games",
         callerName: data.callerName || "Jogador",
         callerAvatar: data.callerAvatar || null,
+        callerId: typeof data.callerId === "string" ? data.callerId : undefined,
         isPrivate: Boolean(data.isPrivate),
         createdAt: data.createdAt || Date.now(),
       };

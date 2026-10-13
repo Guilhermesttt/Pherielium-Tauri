@@ -30,7 +30,7 @@ Este build inclui o DevTools (F12) para os testes; o instalador oficial não ter
 
 | Flag | Padrão | Efeito |
 | --- | --- | --- |
-| `invite_notifications` | **desligada** | `1` liga o convite como notificação (sem toque) |
+| `invite_notifications` | **ligada** (desde o rc.4) | `0` volta ao toque/modal de ligação; ligada, convites (inclusive a ligação 1:1) chegam como notificação |
 | `event_guards` | `log` | `enforce` descarta eventos rejeitados; `off` desliga |
 | `dm_ping_only` | ligada | `0` volta a enviar o texto da DM no canal público |
 | `presence_global_bus` | desligada | `1` volta a publicar no canal global de presença |

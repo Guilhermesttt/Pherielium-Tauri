@@ -2,6 +2,18 @@
 
 Fatia **front-only e não autoritativa**: não há validação no servidor. A versão com servidor (expiração e cancelamento autoritativos, `server_now`) é a fatia I (`docs/backend-audit/PLAN.md` §17), ainda bloqueada por schema e código da API.
 
+## Ligação 1:1 vira convite (rc.4)
+
+Pedido: ao ligar para alguém, a pessoa deve receber **um convite** ("<nome> convidou para uma chamada."), não "<nome> está te ligando".
+
+- **Quem liga** (`startCall`): além do aviso em tempo real, envia **um cartão de convite no chat** (`buildOneOnOneInviteCardText`, com `callerId`). O cartão é o mesmo do convite de canal.
+- **Quem recebe, no rc.4:** a flag `invite_notifications` agora é **ligada por padrão** (`"0"` desliga). O aviso em tempo real vira **notificação de convite** (toast, notch, overlay do jogo), sem toque e sem modal de atender. **Entrar** atende a ligação pelo fluxo normal (resposta enviada a quem ligou).
+- **Cartão no chat:** clicar em **Entrar na Chamada** num cartão de ligação 1:1 também atende (o app reconhece pelo `callerId` e pelo id da conversa).
+- **Sem aviso duplicado:** a notificação de mensagem do cartão 1:1 é omitida, porque o convite ao vivo já avisa (um som por convite).
+- **Quem liga continua vendo "chamando..."** e o aviso de "não atendeu" depois de 35 s encerra a chamada do lado dele; o cartão no chat continua clicável até 15 min, mas atender depois que quem ligou saiu não conecta a ninguém.
+- **Receptor no 1.0.2:** continua recebendo o aviso antigo (toque) mais o cartão.
+- **Efeitos que isso traz por padrão:** o notch reage ao convite como a um toque (mascote animado, notch aparece sozinho). Registrado em "Efeitos no mascote" abaixo; reverter: commit `d94f8ad`.
+
 ## Convite de canal: só o cartão no chat, sem ligação (remetente)
 
 Relato (rc.2): o amigo, mesmo na versão mais recente, recebia o convite de canal **como chamada** (toque e modal de atender), em vez de só o cartão no chat.
@@ -14,7 +26,7 @@ Correção: flag **`pherielium_channel_invite_ring`**, padrão **desligada**, li
 
 ## O que muda (só com a flag ligada)
 
-Flag **`pherielium_invite_notifications`**, **desligada** na primeira release. Desligada, nada muda.
+Flag **`pherielium_invite_notifications`**: **desligada** até o rc.3; **ligada por padrão a partir do rc.4** (`localStorage.setItem("pherielium_invite_notifications","0")` desliga). Desligada, nada muda.
 
 | Antes (ciclo antigo) | Com a flag ligada |
 | --- | --- |

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isCallInviteText, messageNotificationPreview } from "./inviteMessage";
+import { buildOneOnOneInviteCardText, isCallInviteText, isInviteCardForChat, messageNotificationPreview } from "./inviteMessage";
 
 describe("messageNotificationPreview", () => {
   const invite = JSON.stringify({ __type: "call_invite", chatId: "c", roomName: "Sala", createdAt: 1 });
@@ -17,5 +17,21 @@ describe("messageNotificationPreview", () => {
     expect(messageNotificationPreview("oi", true)).toBe("📷 Enviou uma imagem");
     expect(isCallInviteText("{\"outro\":1}")).toBe(false);
     expect(isCallInviteText(undefined)).toBe(false);
+  });
+});
+
+describe("1:1 invite card", () => {
+  const text = buildOneOnOneInviteCardText({ chatId: "a_b", callerId: "a", callerName: "Ana", callerAvatar: null, nowMs: 5 });
+
+  it("is a call_invite card that carries the caller id and reads as an invite", () => {
+    expect(isCallInviteText(text)).toBe(true);
+    expect(JSON.parse(text)).toMatchObject({ chatId: "a_b", callerId: "a", callerName: "Ana", isPrivate: false, createdAt: 5 });
+    expect(messageNotificationPreview(text, false)).toBe("Ana convidou para uma chamada.");
+  });
+
+  it("is recognised as the card of that 1:1 chat only", () => {
+    expect(isInviteCardForChat(text, "a_b")).toBe(true);
+    expect(isInviteCardForChat(text, "other")).toBe(false);
+    expect(isInviteCardForChat("oi", "a_b")).toBe(false);
   });
 });

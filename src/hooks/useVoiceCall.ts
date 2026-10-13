@@ -80,7 +80,8 @@ import {
 } from "../services/voiceCall/livekitConnectPolicy";
 import { installCallFailureReport, logCallFailure } from "../services/voiceCall/callFailureLog";
 import { getAppVersionCached } from "../lib/protocolVersion";
-import { getChatId } from "../services/chat";
+import { getChatId, sendChatMessage } from "../services/chat";
+import { buildOneOnOneInviteCardText } from "../services/voiceCall/inviteMessage";
 import { getTurnServers } from "../services/turnCredentials";
 import { buildProcessedAudioTrack } from "../services/audio/audioProcessing";
 import { attachKrispToTrack, detachKrispFromTrack } from "../services/audio/krispNoiseFilter";
@@ -769,6 +770,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     return next;
   }, []);
   const acceptPendingInviteRef = useRef<((key?: string) => void) | null>(null);
+  const answerCallRef = useRef<((invite?: CallInvitePayload) => Promise<void>) | null>(null);
   // Superfícies (notch, overlay do jogo, toast) leem o primeiro convite pendente e agem pelo id; sem id, o primeiro.
   const acceptPendingInvite = useCallback((key?: string) => acceptPendingInviteRef.current?.(key), []);
   const dismissPendingInvite = useCallback(
@@ -3393,6 +3395,18 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
         });
         callOutcome.inviteSent = true;
 
+        // O convite também fica no chat como cartão (a pessoa vê "<nome> convidou para uma chamada"), além do aviso em tempo real.
+        void sendChatMessage(
+          friendUid,
+          buildOneOnOneInviteCardText({
+            chatId,
+            callerId: user.uid,
+            callerName: userProfile?.displayName || user.displayName || "Jogador",
+            callerAvatar: userProfile?.photoURL?.startsWith("data:") ? null : (userProfile?.photoURL || user.photoURL || null),
+            nowMs: Date.now(),
+          }),
+        ).catch((error: unknown) => console.warn("[useVoiceCall] cartão de convite 1:1 não enviado:", error));
+
         // O toque e o cronômetro de "não atendeu" começam no envio do convite, não depois da mídia.
         playRingtone("ringout");
         audioRingIntervalRef.current = window.setInterval(() => {
@@ -3642,6 +3656,8 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     }
   }, [acquireAudioStream, announceMemberJoinedOnce, applyAudioProcessingChain, callState, cleanUpCall, createPeerConnectionForPeer, createUnifiedSessionHandlers, incomingInvite, inputMode, notify, playRingtone, selectedVideoInput, setupVoiceAnalyzer, stopRingtone, user, userProfile]);
 
+  answerCallRef.current = answerCall;
+
   // I0: entrar a partir da notificação de convite. Revalida a validade na hora do clique (a notificação pode ter ficado aberta).
   acceptPendingInviteRef.current = (requestedKey?: string) => {
     const entry = requestedKey
@@ -3839,6 +3855,19 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
 
       if (isPersistentVoiceRoomId(chatId)) {
         await joinRoom(chatId, password).catch(() => undefined); // já notificou
+        return;
+      }
+
+      // Cartão de convite de uma ligação 1:1: entrar é atender (mesmo fluxo do atender, com o aviso de resposta a quem ligou).
+      if (invite.callerId && chatId === getChatId(user.uid, invite.callerId)) {
+        await answerCallRef.current?.({
+          callerId: invite.callerId,
+          callerName: invite.callerName,
+          callerAvatar: invite.callerAvatar ?? null,
+          chatId,
+          hasVideo: false,
+          timestamp: invite.createdAt,
+        });
         return;
       }
 

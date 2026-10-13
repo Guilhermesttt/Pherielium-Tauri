@@ -20,8 +20,8 @@ export const INVITE_CARD_TOLERANCE_MS = 2 * 60 * 1000;
 /** Janela em que o mesmo convite (mesma chave) é ignorado depois de processado. */
 export const INVITE_DEDUPE_WINDOW_MS = 10_000;
 
-/** `pherielium_invite_notifications`: desligada na primeira release. Ligada, o convite vira notificação e não toca como ligação. */
-export const isInviteNotificationsOn = (): boolean => isFlagOn("invite_notifications", false);
+/** `pherielium_invite_notifications`: **ligada por padrão desde o rc.4** (`0` desliga). Ligada, o convite vira notificação e não toca como ligação. */
+export const isInviteNotificationsOn = (): boolean => isFlagOn("invite_notifications", true);
 
 /**
  * `pherielium_channel_invite_ring`: o remetente de um convite de CANAL também dispara o aviso de ligação em tempo real

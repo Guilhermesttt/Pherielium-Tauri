@@ -6,10 +6,10 @@ Convenções: **A** = quem joga/compartilha/convida; **B** = quem observa/recebe
 
 ## Antes de tudo: flags de teste
 
-Cole no console (F12) **em A e B**. Liga `stream_debug`, `presence_debug`, `invite_notifications` e `event_guards=log`, e recarrega.
+Cole no console (F12) **em A e B**. Liga `stream_debug`, `presence_debug` e `event_guards=log`, e recarrega. (No rc.4 `invite_notifications` já é padrão; para testar o fluxo antigo use `localStorage.setItem("pherielium_invite_notifications","0")`.)
 
 ```js
-["stream_debug", "presence_debug", "invite_notifications"].forEach((f) => localStorage.setItem("pherielium_" + f, "1"));
+["stream_debug", "presence_debug"].forEach((f) => localStorage.setItem("pherielium_" + f, "1"));
 localStorage.setItem("pherielium_event_guards", "log");
 location.reload();
 ```
@@ -23,7 +23,7 @@ location.reload();
 
 Se algum diagnóstico não aparecer depois do reload, feche o app pelo ícone da bandeja e abra de novo. Valores atuais das flags: `Object.keys(localStorage).filter((k) => k.startsWith("pherielium_")).map((k) => k + "=" + localStorage[k])`.
 
-Padrões da release (sem nenhuma flag): `invite_notifications` desligada, `event_guards=log`, `presence_global_bus` desligada, `dm_ping_only` ligada, `call_invite_first` ligada, `p2p_fallback` desligada, `stream_debug` e `presence_debug` desligadas.
+Padrões da release (sem nenhuma flag): `invite_notifications` **ligada** (rc.4), `channel_invite_ring` desligada, `event_guards=log`, `presence_global_bus` desligada, `dm_ping_only` ligada, `call_invite_first` ligada, `p2p_fallback` desligada, `stream_debug` e `presence_debug` desligadas.
 
 ---
 
@@ -114,7 +114,7 @@ Uma linha com `displaySurface=(ausente)` significa que o WebView2 não informa o
 ---
 
 ## (d) Convites: I0 e N-invite
-**Quem:** A convida; B recebe. **Flags:** `invite_notifications=1` em **B** (o receptor). A pode ser o 1.0.2. Detalhes e motivos: `docs/invite-notifications.md`.
+**Quem:** A convida; B recebe. **Flags:** nenhuma (no rc.4 `invite_notifications` é padrão). A pode ser o 1.0.2 para os passos de receptor; para o 1:1 como convite, **A e B no rc.4**. Detalhes e motivos: `docs/invite-notifications.md`.
 
 Execute os 9 passos. **Em todos, anote: o convite chegou mudo? (sim/não) e quantos sons ouviu (esperado: 1).**
 

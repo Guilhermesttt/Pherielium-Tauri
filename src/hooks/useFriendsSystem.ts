@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNotchConfig } from '../mascot/useNotchConfig';
-import { messageNotificationPreview } from "../services/voiceCall/inviteMessage";
+import { isInviteCardForChat, messageNotificationPreview } from "../services/voiceCall/inviteMessage";
+import { isInviteNotificationsOn } from "../services/voiceCall/inviteState";
 import { announceNotchEvent } from '../components/notch/notchEvent';
 import type { AuthUser } from "../auth/AuthProvider";
 import type {
@@ -11,7 +12,7 @@ import type {
 } from "../types/domain";
 import type { SoundEffectType } from './useSoundEffects';
 import type { NotificationType, NotificationOptions } from '../components/NotificationCenter';
-import { subscribeToUnreadMessages } from '../services/chat';
+import { getChatId, subscribeToUnreadMessages } from '../services/chat';
 import {
   subscribeToGlobalEventBus,
   setPresenceAudience,
@@ -142,7 +143,11 @@ export function useFriendsSystem({
           const cleanActiveId = String(currentActiveChat?.id || "").replace(/^cp-friend:/, "").trim();
           const isActiveChat = Boolean(cleanActiveId && cleanSenderId && cleanActiveId === cleanSenderId);
 
-          if (!isActiveChat) {
+          // O cartão da ligação 1:1 já é avisado pelo convite ao vivo (notificação/notch/overlay); não avisar duas vezes.
+          const coveredByLiveInvite =
+            isInviteNotificationsOn() && isInviteCardForChat(msg.text, getChatId(user?.uid ?? "", cleanSenderId));
+
+          if (!isActiveChat && !coveredByLiveInvite) {
             const displayContent = messageNotificationPreview(msg.text, isImage, senderName);
 
             if (notchEnabledRef.current) {
