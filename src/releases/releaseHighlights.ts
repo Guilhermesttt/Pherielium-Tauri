@@ -13,35 +13,35 @@ export interface ReleaseHighlights {
 }
 
 export const LATEST_RELEASE: ReleaseHighlights = {
-  version: "1.0.3-rc.5",
+  version: "1.0.3-rc.6",
   title: "Pherielium 1.0.3 (versão de teste)",
   description:
-    "Chamadas e transmissão mais confiáveis: volume que obedece, áudio do PC na tela inteira e convites de chamada como notificação.",
+    "Chamadas que se recuperam sozinhas, transmissão com qualidade à sua escolha e convites como notificação.",
   releaseUrl: "https://github.com/Guilhermesttt/Pherielium-Tauri/releases",
   highlights: [
     {
       id: "voice",
-      title: "Volume que obedece",
+      title: "Chamadas que se recuperam",
       description:
-        "O volume da transmissão e o da voz agora vão de 0 a 100% sem tocar em dobro, também com a câmera ligada, e voltar a saída de áudio para Padrão funciona.",
+        "Se a internet cair no meio da chamada, o app avisa que está reconectando e volta para a sala sozinho. Cada participante mostra um aviso quando a conexão dele está ruim.",
     },
     {
       id: "stability",
-      title: "Áudio do PC na tela inteira",
+      title: "Transmissão do seu jeito",
       description:
-        "A transmissão passa a levar o som do computador (todos os apps, menos o Pherielium) sem a voz da chamada voltar em eco. Se o áudio não puder ser capturado, você é avisado.",
+        "Escolha a qualidade (720p, 1080p ou Fonte, até 4K), os 30 ou 60 quadros e o bitrate. O áudio do PC sai sem a voz da chamada voltar em eco, e o volume obedece de 0 a 100%.",
     },
     {
-      id: "platforms",
-      title: "Chamadas sem surpresas",
+      id: "ui",
+      title: "Quem está assistindo",
       description:
-        "Até 3 tentativas de conectar e uma mensagem clara quando não der, em vez de cair em silêncio para um modo pior. O convite chega mais rápido.",
+        "Quem transmite vê quantas pessoas estão assistindo à tela.",
     },
     {
       id: "security",
-      title: "Convites como notificação (opcional)",
+      title: "Convites como notificação",
       description:
-        "Em teste, desligado por padrão: o convite de chamada aparece no notch e no overlay do jogo, sem tocar como ligação, e vale por 15 minutos.",
+        "Ligar ou convidar para uma sala chega como convite, com notificação no notch e no jogo, em vez de tocar como ligação. O convite vale por 15 minutos.",
     },
   ],
 };
