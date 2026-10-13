@@ -1,4 +1,4 @@
-# Folha de testes: 1.0.3-rc.4
+# Folha de testes: 1.0.3-rc.5
 
 Uma folha só, na ordem. Duas contas (A e B) em dois PCs ou duas sessões Windows, **cada conta com UM app aberto** (dois apps na mesma conta geram "sessão expirada" e resultados falsos). **Os dois lados instalam o rc.** Para os blocos de convivência (f), uma terceira conta com o **1.0.2**.
 
@@ -30,14 +30,14 @@ Padrões da release (sem nenhuma flag): `invite_notifications` **ligada** (rc.4)
 ## (a) Instalação e conferência
 **Quem:** A e B. **Flags:** nenhuma ainda.
 
-1. Receba o `.exe` direto. Confira o SHA-256: `Get-FileHash .\Pherielium_1.0.3-rc.4_x64-setup.exe` (esperado para o build gerado em 2026-10-12: `B86AE44AEB9728FBA5402B3E44C53EDB2CFDC03165953D456520147B1591E53D`, 133.084.261 bytes, ~126,9 MB).
+1. Receba o `.exe` direto. Confira o SHA-256: `Get-FileHash .\Pherielium_1.0.3-rc.5_x64-setup.exe` (esperado para o build gerado em 2026-10-12: `72C1C1C8E367061C3BAABCCD91EDDF89412ADB7981DE060F51F7B3F14E1862A5`, 133.086.917 bytes, ~126,9 MB).
 2. Execute. O SmartScreen avisa porque o instalador não é assinado: **Mais informações > Executar assim mesmo**.
 3. Se existir a 1.0.2, o instalador atualiza por cima (instalação por usuário, sem administrador). Abra o app e faça login.
 4. **Versão:** rode, em F12, `await window.pherieliumAudioInventory()` depois de ligar as flags (a primeira linha traz a versão), ou confira em Configurações do Windows > Aplicativos > Pherielium.
 5. **Windows:** `winver` (anote versão e build).
 6. **F12** abre o DevTools. Se não abrir, o instalador foi gerado sem `--features devtools`: pare e avise.
 
-**Esperado:** versão `1.0.3-rc.4`; F12 funciona; login normal.
+**Esperado:** versão `1.0.3-rc.5`; F12 funciona; login normal.
 
 | Registro | A | B |
 | --- | --- | --- |
