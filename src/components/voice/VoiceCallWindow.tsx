@@ -1263,7 +1263,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                       className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-auto z-20"
                     >
                       <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-black/80 border border-white/10 backdrop-blur-xl shadow-2xl">
-                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-[var(--live)] animate-pulse" />
                         <span className="text-sm font-semibold text-white">
                           {focusedFeed.title}
                         </span>

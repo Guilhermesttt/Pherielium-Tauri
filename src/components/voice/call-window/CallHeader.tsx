@@ -102,7 +102,7 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/[0.07] text-[length:var(--step-0)] font-mono tabular-nums font-medium text-[var(--ink)]">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--live)]" />
                 {formatDuration(duration)}
               </span>
             )}

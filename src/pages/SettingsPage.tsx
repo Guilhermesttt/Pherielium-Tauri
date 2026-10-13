@@ -2695,7 +2695,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             </div>
                           )}
                           <span
-                            className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-black"
+                            className="absolute bottom-0.5 right-0.5 h-2.5 w-2.5 rounded-full bg-[var(--live)] border-2 border-black"
                             title="Sessão ativa"
                           />
                         </div>
@@ -3351,7 +3351,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                               </span>
                             ) : testMicVolume > 4 ? (
                               <span className="inline-flex items-center gap-1.5 text-emerald-300 font-semibold">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--live)] animate-pulse" />
                                 Sinal detectado ({testMicVolume}%)
                               </span>
                             ) : (
@@ -3477,7 +3477,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[length:var(--step-0)] font-medium text-white">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--live)] animate-pulse" />
                             <span>Pré-visualização ativa</span>
                           </div>
                         </div>

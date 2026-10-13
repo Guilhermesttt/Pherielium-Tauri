@@ -93,7 +93,7 @@ export const GameDetailFriends: React.FC<GameDetailFriendsProps> = React.memo(({
       {friendsPlayingNow.length > 0 && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+            <span className="w-2 h-2 rounded-full bg-[var(--live)] animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
             <h3 className="text-sm font-bold text-white tracking-wide">
               {friendsPlayingNow.length === 1
                 ? "1 amigo está jogando agora"

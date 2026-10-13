@@ -212,7 +212,7 @@ const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ release, onClose }) => {
             className="md:col-span-3 relative overflow-hidden rounded-[var(--corner-md)] bg-[var(--tone-1)] border border-white/[0.05] p-3.5 flex items-center justify-between text-xs text-[var(--ink-faint)] font-mono"
           >
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-[var(--live)] animate-pulse" />
               <span>Multi-Launcher: Steam, Epic Games, GOG, EA, Ubisoft, Battle.net, Riot & Jogos Locais</span>
             </div>
             <span className="hidden sm:inline text-[var(--ink-faint)]">Totalmente integrado</span>

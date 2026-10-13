@@ -312,7 +312,7 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                 <div className="p-4 rounded-3xl bg-white/3 border border-white/6 space-y-3">
                   <div className="space-y-1">
                     <p className="text-xs font-bold text-white flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      <span className="w-2 h-2 rounded-full bg-[var(--live)]" />
                       Login Automático com 1 Clique
                     </p>
                     <p className="text-[length:var(--step-0)] text-neutral-400 leading-relaxed">

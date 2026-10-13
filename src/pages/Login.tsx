@@ -269,7 +269,7 @@ const OrbitIcon: React.FC<OrbitIconProps> = ({
                   transition={{ type: "spring", bounce: 0.25, duration: 0.2 }}
                   className="absolute left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-[var(--tone-2)]/95 backdrop-blur-md border border-white/20 text-white text-[length:var(--step-0)] font-medium font-body shadow-[0_8px_24px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.15)] whitespace-nowrap pointer-events-none flex items-center gap-1.5 z-50 select-none"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--live)] shadow-[0_0_6px_#34d399]" />
                   <span>{label}</span>
                 </motion.div>
               )}

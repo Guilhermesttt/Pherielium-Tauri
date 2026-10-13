@@ -128,7 +128,7 @@ export const CallInviteCard: React.FC<CallInviteCardProps> = ({
         {/* Top Header Badge */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[length:var(--step-0)] font-black uppercase text-white tracking-wider">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-[var(--live)] animate-pulse" />
             <span>Canal de Voz</span>
           </div>
 

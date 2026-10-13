@@ -47,7 +47,7 @@ export const SystemPageShell: React.FC<SystemPageShellProps> = React.memo(
                   WebkitBackdropFilter: "blur(20px)",
                 }}
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--live)] shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
                 <span>{eyebrow}</span>
               </div>
             )}

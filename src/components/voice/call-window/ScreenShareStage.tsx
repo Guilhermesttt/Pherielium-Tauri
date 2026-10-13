@@ -70,7 +70,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
           style={{ cornerShape: "squircle" } as React.CSSProperties}
           className="flex items-center gap-2 px-3 py-1.5 rounded-[var(--corner-sm)] bg-[var(--tone-1)]/80 border border-[#161616] backdrop-blur-xl shadow-lg pointer-events-auto select-none"
         >
-          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="h-2 w-2 rounded-full bg-[var(--live)] animate-pulse" />
           <span className="text-xs font-semibold text-white tracking-tight">
             {feed.title.replace(/^Tela de /i, "")}
           </span>
