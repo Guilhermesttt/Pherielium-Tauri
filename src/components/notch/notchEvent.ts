@@ -1,4 +1,5 @@
 import type { MascotMood } from "../../mascot/moods";
+import { messageNotificationPreview } from "../../services/voiceCall/inviteMessage";
 import { TIER_STYLES } from "./achievementTier";
 
 /**
@@ -112,7 +113,8 @@ export function parseNotchEvent(raw: unknown): NotchEvent | null {
     id: str(v.id, 64) ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     kind: v.kind as NotchEventKind,
     title,
-    subtitle: str(v.subtitle, 120),
+    // Ponto único por onde todo evento do notch passa: o cartão de convite (JSON) nunca pode aparecer cru, venha de onde vier.
+    subtitle: str(v.kind === "message" && typeof v.subtitle === "string" ? messageNotificationPreview(v.subtitle, false, title) : v.subtitle, 120),
     avatar: typeof v.avatar === "string" && v.avatar ? v.avatar : null,
     description: str(v.description, 160),
     gameTitle: str(v.gameTitle, 80),

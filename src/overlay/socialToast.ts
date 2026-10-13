@@ -1,3 +1,4 @@
+import { messageNotificationPreview } from "../services/voiceCall/inviteMessage";
 type FriendLike = {
   id?: string;
   name?: string;
@@ -113,11 +114,15 @@ export function normalizeSocialToast(
     friend?.avatar,
   );
 
-  const message = firstString(
+  const rawMessage = firstString(
     data.messageText,
     kind === "message" || kind === "friend-message" ? data.message : "",
     kind === "message" || kind === "friend-message" ? data.description : "",
   );
+  // O cartão de convite é JSON; nunca aparece cru no toast do overlay.
+  const message = kind === "message" || kind === "friend-message"
+    ? messageNotificationPreview(rawMessage, false, senderName)
+    : rawMessage;
 
   const description = firstString(
     kind === "message" || kind === "friend-message" ? message : "",

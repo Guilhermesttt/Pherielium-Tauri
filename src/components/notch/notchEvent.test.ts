@@ -23,6 +23,12 @@ describe("parseNotchEvent", () => {
     expect(e).toMatchObject({ kind: "achievement", title: "Platina", tier: "platinum", id: "x", at: 5 });
   });
 
+  it("nunca mostra o JSON do cartão de convite como mensagem", () => {
+    const card = JSON.stringify({ __type: "call_invite", chatId: "c9c9a468-ee0a-4c2a-9a3b-111111111111", roomName: "Sala", callerName: "Bia" });
+    expect(parseNotchEvent({ kind: "message", title: "JavaXcript", subtitle: card })?.subtitle).toBe("Bia convidou para uma chamada.");
+    expect(parseNotchEvent({ kind: "message", title: "JavaXcript", subtitle: "oi" })?.subtitle).toBe("oi");
+  });
+
   it("aceita o evento de boas-vindas e a Pherie acena nele", () => {
     expect(parseNotchEvent({ kind: "welcome", title: "Divirta-se" })?.kind).toBe("welcome");
     expect(notchEventWaves("welcome")).toBe(true);
