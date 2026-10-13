@@ -194,3 +194,16 @@ describe("bitrate selection", () => {
     expect(screenShareDegradationPreference()).toBe("maintain-framerate");
   });
 });
+
+describe("source resolution", () => {
+  it("asks for native size up to 4K with a higher default bitrate", () => {
+    expect(screenShareProfile({ resolution: "source", fps: 60 })).toMatchObject({ width: 3840, height: 2160, bitrate: 20_000_000 });
+    expect(screenShareProfile({ resolution: "source", fps: 30 }).bitrate).toBe(16_000_000);
+    expect(resolveScreenShareBitrate("source", 60, 12)).toBe(12_000_000);
+  });
+
+  it("keeps 720p and 1080p unchanged", () => {
+    expect(screenShareProfile({ resolution: "720p", fps: 30 })).toMatchObject({ width: 1280, height: 720, bitrate: 4_500_000 });
+    expect(screenShareProfile({ resolution: "1080p", fps: 60 })).toMatchObject({ width: 1920, height: 1080, bitrate: 12_000_000 });
+  });
+});

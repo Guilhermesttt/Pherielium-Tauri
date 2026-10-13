@@ -13,7 +13,9 @@ export interface ScreenShareOptions {
   callAudioBarrier?: boolean;
 }
 
-export const SCREEN_SHARE_BITRATE: Record<"720p" | "1080p", Record<30 | 60, number>> = {
+export type ScreenShareResolution = "720p" | "1080p" | "source";
+
+export const SCREEN_SHARE_BITRATE: Record<ScreenShareResolution, Record<30 | 60, number>> = {
   "720p": {
     30: 4_500_000,
     60: 6_500_000,
@@ -21,6 +23,11 @@ export const SCREEN_SHARE_BITRATE: Record<"720p" | "1080p", Record<30 | 60, numb
   "1080p": {
     30: 8_000_000,
     60: 12_000_000,
+  },
+  // "Fonte": resolução nativa da tela (até 4K). Pede mais bitrate para manter detalhe e movimento.
+  source: {
+    30: 16_000_000,
+    60: 20_000_000,
   },
 };
 
@@ -42,7 +49,7 @@ export const MAX_SCREEN_SHARE_BITRATE_MBPS = 30;
 
 /** Bitrate em bits/s: a escolha do usuário (limitada a 2 a 30 Mbps) ou a tabela quando é "auto"/inválida. */
 export const resolveScreenShareBitrate = (
-  resolution: "720p" | "1080p",
+  resolution: ScreenShareResolution,
   fps: 30 | 60,
   choice?: number | "auto",
 ): number => {
@@ -61,9 +68,11 @@ export const screenShareDegradationPreference = (): "maintain-framerate" => "mai
 
 export const screenShareProfile = (options: ScreenShareOptions) => {
   const fps: 30 | 60 = options.fps === 30 ? 30 : 60;
-  const resolution: "720p" | "1080p" = options.resolution === "720p" ? "720p" : "1080p";
-  const width = resolution === "720p" ? 1280 : 1920;
-  const height = resolution === "720p" ? 720 : 1080;
+  const resolution: ScreenShareResolution =
+    options.resolution === "720p" ? "720p" : options.resolution === "source" ? "source" : "1080p";
+  // "Fonte" pede até 4K; o navegador entrega o tamanho real da superfície capturada, sem ampliar.
+  const width = resolution === "720p" ? 1280 : resolution === "source" ? 3840 : 1920;
+  const height = resolution === "720p" ? 720 : resolution === "source" ? 2160 : 1080;
   const bitrate = resolveScreenShareBitrate(resolution, fps, options.bitrateMbps);
   return { fps, resolution, width, height, bitrate };
 };

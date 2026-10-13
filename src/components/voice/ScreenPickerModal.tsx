@@ -21,7 +21,7 @@ function readStoredPrefs(): Pick<ScreenShareOptions, "resolution" | "fps" | "wit
     if (!raw) return { resolution: "1080p", fps: 60, withAudio: true, bitrateMbps: "auto" };
     const parsed = JSON.parse(raw) as ScreenShareOptions;
     return {
-      resolution: parsed.resolution === "720p" ? "720p" : "1080p",
+      resolution: parsed.resolution === "720p" ? "720p" : parsed.resolution === "source" ? "source" : "1080p",
       fps: parsed.fps === 30 ? 30 : 60,
       withAudio: parsed.withAudio !== false,
       bitrateMbps: (BITRATE_CHOICES_MBPS as readonly (number | "auto")[]).includes(parsed.bitrateMbps as number | "auto")
@@ -38,7 +38,7 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
   onClose,
   onSelectSource,
 }) => {
-  const [resolution, setResolution] = useState<"720p" | "1080p">("1080p");
+  const [resolution, setResolution] = useState<"720p" | "1080p" | "source">("1080p");
   const [fps, setFps] = useState<30 | 60>(60);
   const [withAudio, setWithAudio] = useState(true);
   const [bitrateMbps, setBitrateMbps] = useState<number | "auto">("auto");
@@ -46,7 +46,7 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     const stored = readStoredPrefs();
-    setResolution(stored.resolution === "720p" ? "720p" : "1080p");
+    setResolution(stored.resolution === "720p" ? "720p" : stored.resolution === "source" ? "source" : "1080p");
     setFps(stored.fps === 30 ? 30 : 60);
     setWithAudio(stored.withAudio !== false);
     setBitrateMbps(stored.bitrateMbps ?? "auto");
@@ -110,8 +110,8 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="flex flex-col gap-1.5">
                 <span className="text-[11px] font-semibold tracking-wide text-white/45">Qualidade</span>
-                <div className="grid grid-cols-2 gap-1 rounded-[14px] border border-[#161616] bg-white/[0.04] p-1">
-                  {(["720p", "1080p"] as const).map((value) => (
+                <div className="grid grid-cols-3 gap-1 rounded-[14px] border border-[#161616] bg-white/[0.04] p-1">
+                  {(["720p", "1080p", "source"] as const).map((value) => (
                     <button
                       key={value}
                       type="button"
@@ -120,7 +120,7 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
                         resolution === value ? "bg-white text-black" : "text-white/50 hover:bg-white/5 hover:text-white"
                       }`}
                     >
-                      {value}
+                      {value === "source" ? "Fonte" : value}
                     </button>
                   ))}
                 </div>
