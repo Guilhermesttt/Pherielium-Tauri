@@ -17,6 +17,8 @@ import {
   type RunningProcessMatch,
 } from "../utils/processIdentity";
 import { resolveSessionStartedAt } from "../utils/sessionStartedAt";
+import { tierFromGlobalPercent } from "../services/achievementTier";
+import { streamDebugLog } from "../services/voiceCall/streamDebug";
 import { resolveGameFromPresence } from "../utils/presenceGameMatch";
 import {
   canConfirmSession,
@@ -672,8 +674,7 @@ export function useGamePresence({
               unlockedSet.add(achId);
 
               const percent = typeof ach.percent === "number" ? ach.percent : (ach.rarity?.percent ?? 15);
-              const tier: "platinum" | "gold" | "silver" | "bronze" =
-                percent <= 5 ? "platinum" : percent <= 20 ? "gold" : percent <= 50 ? "silver" : "bronze";
+              const tier = tierFromGlobalPercent(percent);
               const xpMap = { platinum: 90, gold: 60, silver: 30, bronze: 15 };
               const xp = typeof ach.xp === "number" && ach.xp > 0 ? ach.xp : (xpMap[tier] ?? 30);
               const iconUrl = ach.icon || ach.icon_link || ach.iconLink || ach.unlockedIconLink || "";
@@ -704,6 +705,7 @@ export function useGamePresence({
     }
     if (runningGame.steamAppId && steamId) {
       try {
+        const pollStartedAt = performance.now();
         const details = await fetchSteamAchievementDetails(
           steamId,
           runningGame.steamAppId,
@@ -711,6 +713,15 @@ export function useGamePresence({
           // o polling precisa ver o unlock novo: com o cache de 15 min a detecção levava ≥15 min
           { bypassCache: true },
         );
+
+        streamDebugLog("achievement-poll", {
+          game: runningGame.title,
+          appId: runningGame.steamAppId,
+          fetchMs: Math.round(performance.now() - pollStartedAt),
+          total: details.achievements.length,
+          unlocked: details.achievements.filter((a) => a.achieved).length,
+          baselineDone: state.firstLoadDone,
+        });
 
         if (!state.firstLoadDone) {
           details.achievements.forEach((ach) => {
@@ -727,11 +738,17 @@ export function useGamePresence({
         for (const ach of details.achievements) {
           if (ach.achieved && !unlockedSet.has(ach.apiName)) {
             console.info(`[achievements] Steam: nova conquista detectada em ${runningGame.title}: ${ach.name || ach.apiName}`);
+            streamDebugLog("achievement-detected", {
+              game: runningGame.title,
+              achievement: ach.apiName,
+              percent: ach.percent ?? null,
+              tier: tierFromGlobalPercent(ach.percent),
+              detectedAt: new Date().toISOString(),
+            });
             unlockedSet.add(ach.apiName);
 
             const percent = typeof ach.percent === "number" ? ach.percent : 15;
-            const tier: "platinum" | "gold" | "silver" | "bronze" =
-              percent <= 5 ? "platinum" : percent <= 20 ? "gold" : percent <= 50 ? "silver" : "bronze";
+            const tier = tierFromGlobalPercent(percent);
             const xpMap = { platinum: 90, gold: 60, silver: 30, bronze: 15 };
             const xp = xpMap[tier] ?? 30;
             const iconUrl = ach.icon || ach.iconGray || "";
