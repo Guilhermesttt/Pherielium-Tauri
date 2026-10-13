@@ -1,4 +1,4 @@
-# Pherielium 1.0.3-rc.2: notas da versão de teste
+# Pherielium 1.0.3-rc.3: notas da versão de teste
 
 **Versão de teste, não publicada.** Enviada direto aos testadores; os dois lados da conversa precisam do rc. Roteiro: `docs/TESTES-RC1.md`. Procedimento de geração: `docs/release-rc.md`.
 Este build inclui o DevTools (F12) para os testes; o instalador oficial não terá.
