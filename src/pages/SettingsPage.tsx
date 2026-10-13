@@ -1070,6 +1070,7 @@ SettingsSelect.displayName = "SettingsSelect";
 // COMPONENTES DE LAYOUT ESTILO MACOS
 // ============================================================================
 const SettingsRow: React.FC<{
+  /** Ignorado no visual refinado: só algumas linhas tinham ícone e isso desalinhava os títulos. */
   icon?: React.ReactNode;
   title: React.ReactNode;
   description?: React.ReactNode;
@@ -1079,7 +1080,6 @@ const SettingsRow: React.FC<{
   hasBorder?: boolean;
   className?: string;
 }> = ({
-  icon,
   title,
   description,
   action,
@@ -1091,7 +1091,6 @@ const SettingsRow: React.FC<{
   >
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6 min-h-11">
       <div className="flex items-start gap-2.5 min-w-0 flex-1">
-        {icon && <div className="text-[var(--ink-muted)] mt-0.5 shrink-0">{icon}</div>}
         <div className="min-w-0 flex-1">
           <div className="text-[length:var(--step-1)] font-medium text-[var(--ink)]">
             {title}
@@ -2082,7 +2081,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
         {/* Wrapper Principal - Split Layout estilo macOS */}
         <div className="flex w-full max-w-[1040px] h-[78vh] min-h-[620px] max-h-[860px] gap-3">
           {/* SIDEBAR ESQUERDA - Theme Surface Style */}
-          <aside className="w-[248px] bg-[var(--tone-1)] rounded-[var(--corner-lg)] flex flex-col py-6 px-3 shrink-0">
+          <aside className="w-[276px] bg-[var(--tone-1)] rounded-[var(--corner-lg)] flex flex-col py-6 px-3 shrink-0">
             <div
               className="flex items-center justify-between px-4 mb-6 group cursor-default"
               onMouseEnter={() => setIsSettingsTitleHovered(true)}
