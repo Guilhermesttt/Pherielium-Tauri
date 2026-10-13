@@ -1024,7 +1024,7 @@ export const SettingsSelect = <T extends string>({
           <button
             type="button"
             className={cn(
-              "flex items-center justify-between w-full bg-[var(--color-surface)] hover:bg-[var(--tone-3)] border border-white/10 hover:border-white/20 text-white text-[length:var(--step-0)] font-medium rounded-xl px-3 py-1.5 transition outline-none focus-visible:ring-1 focus-visible:ring-white/30 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm active:scale-[0.98]",
+              "flex h-10 items-center justify-between w-full bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--ink)] text-[length:var(--step-0)] font-medium rounded-[var(--node)] pl-4 pr-3 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed",
               triggerClassName,
             )}
           >
@@ -1036,7 +1036,7 @@ export const SettingsSelect = <T extends string>({
           align="end"
           side="bottom"
           sideOffset={6}
-          className="min-w-[180px] max-h-[260px] overflow-y-auto no-scrollbar border border-white/10 bg-[var(--tone-2)]/95  rounded-xl p-1.5 text-white shadow-[0_12px_40px_rgba(0,0,0,0.6)] z-[250]"
+          className="min-w-[180px] max-h-[260px] overflow-y-auto no-scrollbar border-0 bg-[var(--tone-3)] rounded-[var(--corner-md)] p-1.5 text-[var(--ink)] z-[250]"
         >
           {options.map((opt) => {
             const isSelected = opt.value === value;
@@ -1046,15 +1046,15 @@ export const SettingsSelect = <T extends string>({
                 glideId={opt.value}
                 onClick={() => onChange(opt.value)}
                 className={cn(
-                  "flex items-center justify-between gap-2 px-3 py-2 text-[length:var(--step-0)] rounded-lg cursor-pointer transition outline-none select-none",
+                  "flex h-10 items-center justify-between gap-2 px-3.5 text-[length:var(--step-0)] rounded-[var(--node)] cursor-pointer transition-colors outline-none select-none",
                   isSelected
-                    ? "bg-[var(--color-surface)] text-white font-semibold"
-                    : "text-[var(--ink-muted)] hover:text-white hover:bg-[var(--tone-3)]",
+                    ? "bg-[var(--tone-4)] text-[var(--ink)] font-semibold"
+                    : "text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)]",
                 )}
               >
                 <span className="truncate">{opt.label}</span>
                 {isSelected && (
-                  <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <Check className="w-3.5 h-3.5 text-[var(--ink)] shrink-0" aria-hidden="true" />
                 )}
               </DropdownMenuItem>
             );
@@ -1075,6 +1075,7 @@ const SettingsRow: React.FC<{
   description?: React.ReactNode;
   action?: React.ReactNode;
   children?: React.ReactNode;
+  /** Ignorado no visual refinado: o espaço separa as linhas, sem divisória. Mantido para não mexer nas chamadas. */
   hasBorder?: boolean;
   className?: string;
 }> = ({
@@ -1083,21 +1084,20 @@ const SettingsRow: React.FC<{
   description,
   action,
   children,
-  hasBorder = true,
   className = "",
 }) => (
   <div
-    className={`py-3.5 ${hasBorder ? "border-b border-[var(--border-subtle)]" : ""} ${className}`}
+    className={`py-4 ${className}`}
   >
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-h-[38px]">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-6 min-h-11">
       <div className="flex items-start gap-2.5 min-w-0 flex-1">
         {icon && <div className="text-[var(--ink-muted)] mt-0.5 shrink-0">{icon}</div>}
         <div className="min-w-0 flex-1">
-          <div className="text-[length:var(--step-0)] font-medium text-[var(--ink)] tracking-wide">
+          <div className="text-[length:var(--step-1)] font-medium text-[var(--ink)]">
             {title}
           </div>
           {description && (
-            <p className="text-[length:var(--step-0)] leading-relaxed text-[var(--ink-faint)] mt-0.5">
+            <p className="text-[length:var(--step-0)] leading-relaxed text-[var(--ink-muted)] mt-1">
               {description}
             </p>
           )}
@@ -1109,7 +1109,7 @@ const SettingsRow: React.FC<{
         </div>
       )}
     </div>
-    {children && <div className="mt-2.5 pl-0">{children}</div>}
+    {children && <div className="mt-3">{children}</div>}
   </div>
 );
 
@@ -2082,9 +2082,9 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
         {/* Wrapper Principal - Split Layout estilo macOS */}
         <div className="flex w-full max-w-[1040px] h-[78vh] min-h-[620px] max-h-[860px] gap-3">
           {/* SIDEBAR ESQUERDA - Theme Surface Style */}
-          <aside className="w-[240px] border border-[var(--border-subtle)] bg-[var(--surface-raised)] rounded-[var(--radius-panel)] flex flex-col py-6 px-4 shrink-0 shadow-[0_32px_64px_rgba(0,0,0,0.6)] [box-shadow:var(--surface-chamfer)] transform-gpu transition-colors duration-300">
+          <aside className="w-[248px] bg-[var(--tone-1)] rounded-[var(--corner-lg)] flex flex-col py-6 px-3 shrink-0">
             <div
-              className="flex items-center justify-between px-3 mb-5 group cursor-default"
+              className="flex items-center justify-between px-4 mb-6 group cursor-default"
               onMouseEnter={() => setIsSettingsTitleHovered(true)}
               onMouseLeave={() => setIsSettingsTitleHovered(false)}
             >
@@ -2095,15 +2095,13 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                   animateOnHover={true}
                   className="text-[var(--ink)] group-hover:text-white transition-colors"
                 />
-                <h2 className="text-[length:var(--step-1)] font-semibold text-white tracking-wide">
+                <h2 className="font-display text-[length:var(--step-3)] font-semibold tracking-[-0.03em] text-[var(--ink)]">
                   {t("settings")}
                 </h2>
               </div>
             </div>
 
-            <div className="h-px w-full bg-[var(--border-subtle)] mb-4" />
-
-            <nav className="space-y-1.5 flex-1 overflow-y-auto no-scrollbar">
+            <nav className="space-y-1 flex-1 overflow-y-auto no-scrollbar">
               {[
                 {
                   id: "general" as const,
@@ -2160,10 +2158,11 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                     onClick={() => selectTab(id)}
                     onMouseEnter={() => setHoveredTab(id)}
                     onMouseLeave={() => setHoveredTab(null)}
-                    className={`group flex w-full items-center gap-3 rounded-[var(--radius-control)] px-3.5 py-2.5 text-[length:var(--step-0)] font-medium transition duration-200 cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)] ${
+                    aria-current={isActive ? "page" : undefined}
+                    className={`group flex h-11 w-full items-center gap-3 rounded-[var(--node)] px-4 text-[length:var(--step-1)] font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] ${
                       isActive
-                        ? "bg-[var(--selection-bg)] text-[var(--selection-text)] border-[var(--selection-border)] shadow-sm font-semibold"
-                        : "text-[var(--ink-muted)] border-transparent hover:bg-white/[0.05] hover:text-white"
+                        ? "bg-[var(--tone-3)] text-[var(--ink)] font-semibold"
+                        : "text-[var(--ink-muted)] hover:bg-[var(--tone-2)] hover:text-[var(--ink)]"
                     }`}
                   >
                     <IconComponent
@@ -2178,13 +2177,13 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
               })}
             </nav>
 
-            <div className="pt-3 mt-3 border-t border-[var(--border-subtle)]">
+            <div className="pt-4 mt-4">
               <button
                 type="button"
                 onClick={handleQuitApp}
                 onMouseEnter={() => setIsQuitHovered(true)}
                 onMouseLeave={() => setIsQuitHovered(false)}
-                className="group flex w-full items-center gap-3 rounded-[var(--radius-control)] px-3.5 py-2.5 text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] hover:bg-white/[0.05] hover:text-white transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)]"
+                className="group flex h-11 w-full items-center gap-3 rounded-[var(--node)] px-4 text-[length:var(--step-1)] font-medium text-[var(--ink-muted)] hover:bg-[var(--tone-2)] hover:text-[var(--ink)] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
               >
                 <AnimatedLogOut
                   size={16}
@@ -2200,17 +2199,16 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
           {/* PAINEL DIREITO - Theme Surface Style */}
           <main
             ref={mainScrollRef}
-            className="flex-1 rounded-[var(--radius-panel)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] overflow-y-auto no-scrollbar relative shadow-[0_32px_64px_rgba(0,0,0,0.6)] [box-shadow:var(--surface-chamfer)] transform-gpu transition-colors duration-300"
+            className="flex-1 rounded-[var(--corner-lg)] bg-[var(--tone-1)] overflow-y-auto no-scrollbar relative"
             style={{ contain: "layout paint" }}
           >
-            <div className="p-7 sm:p-8 md:p-9 space-y-7 w-full max-w-[760px]">
+            <div className="p-8 md:p-10 space-y-8 w-full max-w-[760px]">
               {/* ABA GERAL */}
               {activeTab === "general" && (
                 <div className="space-y-6 animate-in fade-in duration-300">
                   <section>
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <SlidersHorizontal className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
-                      <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                         {shellCopy.general}
                       </h2>
                     </div>
@@ -2290,7 +2288,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                     <div className="mb-6">
                       <div className="flex items-center gap-2.5">
                         <Palette className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
-                        <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">
+                        <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                           {t("themes")}
                         </h2>
                       </div>
@@ -2431,9 +2429,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                   <div className="h-px w-full bg-[var(--color-surface)]" />
 
                   <section>
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <Volume2 className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
-                      <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                         {detailCopy.audioTitle}
                       </h2>
                     </div>
@@ -2526,9 +2523,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
               {activeTab === "performance" && (
                 <div className="space-y-6 animate-in fade-in duration-300">
                   <section>
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <Gauge className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
-                      <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                         {shellCopy.performance}
                       </h2>
                     </div>
@@ -2674,9 +2670,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
               {activeTab === "account" && (
                 <div className="space-y-6 animate-in fade-in duration-300">
                   <section>
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <User className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
-                      <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                         {shellCopy.account}
                       </h2>
                     </div>
@@ -2738,9 +2733,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                   <div className="h-px w-full bg-white/[0.06]" />
 
                   <section>
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <ShieldCheck className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
-                      <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                         {detailCopy.security}
                       </h2>
                     </div>
@@ -2787,9 +2781,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
               {activeTab === "connections" && (
                 <div className="space-y-8 animate-in fade-in duration-300">
                   <section>
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <Globe className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
-                      <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                         {t("connectedAccounts")}
                       </h2>
                     </div>
@@ -3047,9 +3040,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                   <div className="h-px w-full bg-white/[0.06]" />
 
                   <section>
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <ShieldCheck className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
-                      <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                         {shellCopy.privacy}
                       </h2>
                     </div>
@@ -3101,9 +3093,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
               {activeTab === "controller" && (
                 <div className="space-y-8 animate-in fade-in duration-300">
                   <section>
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <Gamepad2 className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
-                      <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                         {controllerCopy[0]}
                       </h2>
                     </div>
@@ -3263,9 +3254,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
               {activeTab === "voice" && (
                 <div className="space-y-8 animate-in fade-in duration-300">
                   <section>
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <Mic className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
-                      <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                         {voiceCopy.ioTitle}
                       </h2>
                     </div>
@@ -3499,9 +3489,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                   <div className="h-px w-full bg-white/[0.06]" />
 
                   <section>
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <SlidersHorizontal className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
-                      <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                         {voiceCopy.processingTitle}
                       </h2>
                     </div>
@@ -3657,9 +3646,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                   <div className="h-px w-full bg-white/[0.06]" />
 
                   <section>
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <Phone className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
-                      <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                         {voiceCopy.callOverlayTitle}
                       </h2>
                     </div>
@@ -3688,9 +3676,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
               {activeTab === "notifications" && (
                 <div className="space-y-8 animate-in fade-in duration-300">
                   <section>
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <Bell className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
-                      <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                         {achievementNotificationCopy.title}
                       </h2>
                     </div>
@@ -3760,9 +3747,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                   <div className="h-px w-full bg-white/[0.06]" />
 
                   <section>
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <Sparkles className="h-4 w-4 text-[var(--ink-muted)] shrink-0" />
-                      <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-wide">
+                    <div className="flex items-center gap-3 mb-6">
+                      <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
                         {detailCopy.overlayLab}
                       </h2>
                     </div>
