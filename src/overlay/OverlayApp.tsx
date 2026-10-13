@@ -1,4 +1,5 @@
 import { IntroMascot } from "./components/IntroMascot";
+import { messageNotificationPreview } from "../services/voiceCall/inviteMessage";
 import { announceNotchEvent } from "../components/notch/notchEvent";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -2231,7 +2232,7 @@ const OverlayApp: React.FC = () => {
                                       </button>
                                     </div>
                                   )}
-                                  {msg.text && <p className="break-words leading-relaxed">{msg.text}</p>}
+                                  {msg.text && <p className="break-words leading-relaxed">{messageNotificationPreview(msg.text, false)}</p>}
                                   {msg.failed ? (
                                     <div className="mt-1.5 flex items-center justify-between gap-2 pt-1 border-t border-rose-500/20 text-[9px]">
                                       <span className="font-bold text-rose-400">Falha ao enviar</span>

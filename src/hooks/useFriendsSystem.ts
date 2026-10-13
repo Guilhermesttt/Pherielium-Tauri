@@ -143,7 +143,7 @@ export function useFriendsSystem({
           const isActiveChat = Boolean(cleanActiveId && cleanSenderId && cleanActiveId === cleanSenderId);
 
           if (!isActiveChat) {
-            const displayContent = messageNotificationPreview(msg.text, isImage);
+            const displayContent = messageNotificationPreview(msg.text, isImage, senderName);
 
             if (notchEnabledRef.current) {
               announceNotchEvent({
@@ -174,7 +174,8 @@ export function useFriendsSystem({
             // In-game overlay notification
             void window.electronAPI?.showFriendMessageOverlay({
               senderName,
-              messageText: msg.text,
+              // Texto legível: o cartão de convite é JSON e não pode aparecer cru no overlay do jogo.
+              messageText: isImage ? msg.text : displayContent,
               avatarUrl,
               friendId: `cp-friend:${msg.senderId}`,
               contentKind: isImage ? "image" : "text",
