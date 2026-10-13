@@ -2345,3 +2345,15 @@ html[data-ui-style="refined"] :focus-visible {
 html[data-ui-style="refined"] * {
   scrollbar-color: var(--tone-4) transparent;
 }
+
+/* Modais: entram com a mola do sistema e o painel se separa do fundo só pelo tom (sem borda). */
+html[data-ui-style="refined"] .t-modal {
+  --modal-ease: var(--spring);
+  --modal-open-dur: var(--dur-3);
+  --modal-close-dur: var(--dur-2);
+  border-color: transparent !important;
+}
+html[data-ui-style="refined"] .t-modal.t-modal-panel:not(.is-open):not(.is-closing),
+html[data-ui-style="refined"] .t-modal.t-modal-panel.is-closing {
+  filter: none;
+}
