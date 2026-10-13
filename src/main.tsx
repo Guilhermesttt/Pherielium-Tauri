@@ -29,6 +29,7 @@ const AppRoot = lazy(() => import("./App"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 // Laboratório de design: só em desenvolvimento (não entra no instalador).
 const DesignLab = import.meta.env.DEV ? lazy(() => import("./pages/DesignLab")) : null;
+const DesignLabSettings = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabSettings")) : null;
 
 // In Tauri, we are always in desktop mode
 const isDesktopRuntime = true;
@@ -97,13 +98,21 @@ const desktopRoutes = [
           </Suspense>
         ),
       },
-      ...(DesignLab
+      ...(DesignLab && DesignLabSettings
         ? [
             {
               path: "design-lab",
               element: (
                 <Suspense fallback={routeFallback}>
                   <DesignLab />
+                </Suspense>
+              ),
+            },
+            {
+              path: "design-lab/settings",
+              element: (
+                <Suspense fallback={routeFallback}>
+                  <DesignLabSettings />
                 </Suspense>
               ),
             },
