@@ -54,7 +54,7 @@ const DownloadPage = () => {
               </div>
             </div>
 
-            <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-2xl">
+            <div className="rounded-[var(--corner-lg)] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-2xl">
               <div className="space-y-5">
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10">

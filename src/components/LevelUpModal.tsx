@@ -552,14 +552,14 @@ export const LevelUpModal: React.FC = () => {
               y: reduceMotion ? 0 : 10,
             }}
             transition={{ duration: reduceMotion ? 0 : 0.55, ease: [0.16, 1, 0.3, 1] }}
-            className="bg-[var(--tone-1)] relative w-full max-w-[530px] overflow-hidden rounded-[28px] border border-[var(--color-border)] px-7 pb-7 pt-8 text-center shadow-[0_40px_120px_rgba(0,0,0,.95)] select-none"
+            className="bg-[var(--tone-1)] relative w-full max-w-[530px] overflow-hidden rounded-[var(--corner-lg)] border border-[var(--color-border)] px-7 pb-7 pt-8 text-center shadow-[0_40px_120px_rgba(0,0,0,.95)] select-none"
           >
             {isTierPromotion && !reduceMotion && (
               <motion.div
                 initial={{ opacity: 0.65 }}
                 animate={{ opacity: 0 }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="absolute inset-0 bg-white pointer-events-none z-50 rounded-[28px]"
+                className="absolute inset-0 bg-white pointer-events-none z-50 rounded-[var(--corner-lg)]"
               />
             )}
 

@@ -365,7 +365,7 @@ const RailButton: React.FC<NavButtonProps> = ({
       data-sidebar-item={id}
       whileTap={{ scale: 0.95 }}
       transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
-      className="relative group flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-[12px] border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)]"
+      className="relative group flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-[var(--corner-sm)] border border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)]"
       style={{
         background: active
           ? "var(--selection-bg, rgb(var(--launcher-accent) / 0.14))"
@@ -384,7 +384,7 @@ const RailButton: React.FC<NavButtonProps> = ({
           aria-hidden
           layoutId="sidebar-rail-glide"
           transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
-          className="absolute inset-0 rounded-[12px] bg-white/8 shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]"
+          className="absolute inset-0 rounded-[var(--corner-sm)] bg-white/8 shadow-[inset_0_1px_0_rgba(255,255,255,0.09)]"
         />
       )}
 
@@ -511,7 +511,7 @@ const OverlayButton: React.FC<NavButtonProps> = ({
       data-sidebar-item={id}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
-      className={`relative group flex h-11 w-full cursor-pointer items-center gap-3 px-3 rounded-[12px] border border-transparent text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)] ${
+      className={`relative group flex h-11 w-full cursor-pointer items-center gap-3 px-3 rounded-[var(--corner-sm)] border border-transparent text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)] ${
         isFocused ? "ring-2 ring-white/70 bg-white/10" : ""
       }`}
       style={{
@@ -524,7 +524,7 @@ const OverlayButton: React.FC<NavButtonProps> = ({
           aria-hidden
           layoutId="sidebar-active-pill"
           transition={{ type: "spring", bounce: 0.18, duration: 0.35 }}
-          className="absolute inset-0 rounded-[12px] border shadow-[0_4px_16px_rgba(0,0,0,0.35),var(--surface-chamfer,inset_0_1px_0_rgba(255,255,255,0.18))]"
+          className="absolute inset-0 rounded-[var(--corner-sm)] border shadow-[0_4px_16px_rgba(0,0,0,0.35),var(--surface-chamfer,inset_0_1px_0_rgba(255,255,255,0.18))]"
           style={{
             background: "var(--selection-bg, rgb(var(--launcher-accent) / 0.16))",
             borderColor: "var(--selection-border, rgba(255, 255, 255, 0.12))",
@@ -538,7 +538,7 @@ const OverlayButton: React.FC<NavButtonProps> = ({
           aria-hidden
           layoutId="sidebar-hover-glide"
           transition={{ type: "spring", bounce: 0.15, duration: 0.25 }}
-          className="absolute inset-0 rounded-[12px] bg-white/[0.07] border border-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+          className="absolute inset-0 rounded-[var(--corner-sm)] bg-white/[0.07] border border-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
         />
       )}
 
@@ -1047,7 +1047,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 tabIndex={0}
                 className="relative mb-6 flex cursor-pointer items-center gap-3 px-1 group"
               >
-                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--tone-2)] shadow-[0_4px_16px_rgba(0,0,0,0.2)] transition-colors group-hover:bg-[var(--tone-3)]">
+                <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--corner-sm)] bg-[var(--tone-2)] shadow-[0_4px_16px_rgba(0,0,0,0.2)] transition-colors group-hover:bg-[var(--tone-3)]">
                   <img
                     src={PHERIELIUM_LOGO_PATH}
                     alt="Pherielium"

@@ -50,11 +50,11 @@ export const HomeOverviewPanels = React.memo(function HomeOverviewPanels({
           whileTap={{ scale: 0.98 }}
           transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
           onClick={onOpenFriends}
-          className="pointer-events-auto group w-72 rounded-[28px] border border-white/[0.08] bg-[var(--tone-2)]/75 p-3.5 shadow-[0_24px_48px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] flex items-center gap-3.5 cursor-pointer"
+          className="pointer-events-auto group w-72 rounded-[var(--corner-lg)] border border-white/[0.08] bg-[var(--tone-2)]/75 p-3.5 shadow-[0_24px_48px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] flex items-center gap-3.5 cursor-pointer"
           style={{ backdropFilter: "blur(40px) saturate(180%)", WebkitBackdropFilter: "blur(40px) saturate(180%)" }}
         >
           {/* Inner Icon: R_inner (14px) = R_outer (28px) - Padding (14px) */}
-          <div className="relative w-11 h-11 rounded-[14px] bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0 group-hover:border-white/20 transition-colors">
+          <div className="relative w-11 h-11 rounded-[var(--corner-sm)] bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0 group-hover:border-white/20 transition-colors">
             <SfUsersIcon className="h-5 w-5 text-[var(--ink)] group-hover:text-white transition-colors" />
             <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#1C1C1E] shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
           </div>

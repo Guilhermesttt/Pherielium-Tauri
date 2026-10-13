@@ -15,7 +15,7 @@ export interface RequestsPanelProps {
 export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept, onReject, onAddFriend, playSound }) => {
   if (requests.length === 0) {
     return (
-      <div className="mx-auto max-w-xl rounded-[22px] bg-[var(--surface-raised)] p-10 text-center ring-1 ring-[color:var(--border-subtle)]">
+      <div className="mx-auto max-w-xl rounded-[var(--corner-md)] bg-[var(--surface-raised)] p-10 text-center ring-1 ring-[color:var(--border-subtle)]">
         <UserPlus className="mx-auto h-8 w-8 text-[var(--ink-faint)]" />
         <h2 className="mt-4 font-display text-[length:var(--step-3)] font-bold text-white">Nenhum convite pendente</h2>
         <p className="mt-1 text-[length:var(--step-1)] text-[var(--ink-muted)]">Quando alguém pedir para ser seu amigo, o convite aparece aqui.</p>
@@ -31,7 +31,7 @@ export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept
   }
 
   return (
-    <section aria-label="Convites de amizade" className="mx-auto max-w-3xl rounded-[22px] bg-[var(--surface-raised)] p-4 ring-1 ring-[color:var(--border-subtle)]">
+    <section aria-label="Convites de amizade" className="mx-auto max-w-3xl rounded-[var(--corner-md)] bg-[var(--surface-raised)] p-4 ring-1 ring-[color:var(--border-subtle)]">
       <header className="mb-3 px-1">
         <h2 className="font-display text-[length:var(--step-3)] font-bold leading-tight text-white">Convites de amizade</h2>
         <p className="text-[length:var(--step-0)] text-[var(--ink-muted)]">

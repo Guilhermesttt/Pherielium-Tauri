@@ -230,7 +230,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: isModal ? 0.96 : 1, y: isModal ? 0 : -12 }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className={`rounded-[22px] bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)] p-5 sm:p-6 relative overflow-hidden ${
+      className={`rounded-[var(--corner-md)] bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)] p-5 sm:p-6 relative overflow-hidden ${
         isModal
           ? "w-full max-w-5xl max-h-[85vh] overflow-y-auto thin-scrollbar"
           : "mx-6 sm:mx-10 mb-8"

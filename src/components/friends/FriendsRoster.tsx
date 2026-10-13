@@ -229,7 +229,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
         </div>
 
         {visible.length === 0 ? (
-          <p className="rounded-[24px] bg-[var(--surface-raised)] px-6 py-14 text-center text-[length:var(--step-1)] text-[var(--ink-faint)] border border-white/[0.10]">
+          <p className="rounded-[var(--corner-lg)] bg-[var(--surface-raised)] px-6 py-14 text-center text-[length:var(--step-1)] text-[var(--ink-faint)] border border-white/[0.10]">
             Ninguém por aqui com esse filtro. Tente outro nome ou volte para Todos.
           </p>
         ) : (
@@ -256,7 +256,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
                         aria-current={f.id === selectedId}
                         onMouseEnter={() => playSound?.("hover")}
                         onClick={() => pick(f)}
-                        className={`flex w-full items-center gap-3.5 rounded-[20px] p-3 text-left ring-1 transition-colors focus-visible:ring-2 focus-visible:ring-white/50 ${
+                        className={`flex w-full items-center gap-3.5 rounded-[var(--corner-md)] p-3 text-left ring-1 transition-colors focus-visible:ring-2 focus-visible:ring-white/50 ${
                           f.id === selectedId ? "bg-[var(--surface-overlay)] ring-white/30" : "bg-[var(--surface-raised)] ring-[color:var(--border-subtle)] hover:bg-[var(--surface-overlay)]"
                         }`}
                       >
@@ -309,7 +309,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
         )}
 
         {discord && (
-          <div className="mt-8 flex items-center justify-between gap-3 rounded-[20px] bg-[var(--surface-raised)] px-5 py-3.5 text-[length:var(--step-1)] border border-white/[0.10]">
+          <div className="mt-8 flex items-center justify-between gap-3 rounded-[var(--corner-md)] bg-[var(--surface-raised)] px-5 py-3.5 text-[length:var(--step-1)] border border-white/[0.10]">
             <span className="flex items-center gap-2.5 text-[var(--ink-muted)]">
               <FontAwesomeIcon icon={faDiscord} className="h-[18px] w-[18px] shrink-0 text-[#8c9eff]" aria-hidden />
               {discord.connected ? "Discord conectado" : "Veja seus amigos do Discord aqui"}
@@ -344,7 +344,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
             playSound={playSound}
           />
         ) : (
-          <div className="flex min-h-[18rem] items-center justify-center rounded-[28px] bg-[var(--surface-raised)] px-8 text-center text-[length:var(--step-1)] text-[var(--ink-faint)] border border-white/[0.10]">
+          <div className="flex min-h-[18rem] items-center justify-center rounded-[var(--corner-lg)] bg-[var(--surface-raised)] px-8 text-center text-[length:var(--step-1)] text-[var(--ink-faint)] border border-white/[0.10]">
             Selecione um amigo para conversar, ligar ou ver o perfil.
           </div>
         )}
@@ -361,7 +361,7 @@ const GameBlock: React.FC<{
   unread: (f: SocialFriend) => number;
 }> = ({ group, selectedId, onPick, unread }) => {
   return (
-    <article className="overflow-hidden rounded-[26px] bg-[var(--surface-raised)] border border-white/[0.10]">
+    <article className="overflow-hidden rounded-[var(--corner-lg)] bg-[var(--surface-raised)] border border-white/[0.10]">
       <div
         className="relative h-[120px] overflow-hidden"
         style={{ background: "linear-gradient(120deg, var(--surface-overlay), var(--surface-raised))" }}
@@ -425,7 +425,7 @@ const FriendDrawer: React.FC<{
     "inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-white/[0.09] px-4 text-[length:var(--step-0)] font-semibold text-white transition hover:bg-white/[0.16] active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-white/50";
 
   return (
-    <div className="overflow-hidden rounded-[28px] bg-[var(--surface-raised)] border border-white/[0.10]">
+    <div className="overflow-hidden rounded-[var(--corner-lg)] bg-[var(--surface-raised)] border border-white/[0.10]">
       {/* Capa: avatar e nome ficam juntos na base, alinhados pelo centro */}
       <div className="relative h-[168px] overflow-hidden bg-[var(--surface-overlay)]">
         {banner ? (
@@ -501,7 +501,7 @@ const FriendDrawer: React.FC<{
         </div>
 
         {/* Nível: o número é o destaque, o rank dá a cor */}
-        <div className="rounded-[20px] bg-[var(--surface-base)] p-4">
+        <div className="rounded-[var(--corner-md)] bg-[var(--surface-base)] p-4">
           <div className="flex items-end justify-between gap-3">
             <div>
               <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">Nível</p>

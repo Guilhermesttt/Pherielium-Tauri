@@ -174,7 +174,7 @@ function ToastIcon({ type }: { type: string | undefined }) {
         <span
             data-slot="toast-icon"
             className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] shadow-sm transition-colors",
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--corner-sm)] shadow-sm transition-colors",
                 colorClass
             )}
         >

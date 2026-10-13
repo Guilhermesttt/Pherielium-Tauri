@@ -601,7 +601,7 @@ const LoginContent: React.FC = () => {
     return (
       <div className="min-h-screen w-full bg-[var(--tone-0)] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
         <PlasmaHeroBackground opacity={0.45} />
-        <div className="relative z-10 flex flex-col items-center gap-6 p-8 md:p-10 rounded-[32px] border border-white/[0.08] bg-[var(--tone-1)]/80 backdrop-blur-2xl shadow-2xl">
+        <div className="relative z-10 flex flex-col items-center gap-6 p-8 md:p-10 rounded-[var(--corner-lg)] border border-white/[0.08] bg-[var(--tone-1)]/80 backdrop-blur-2xl shadow-2xl">
           <img src={pherieliumLogo} alt="Pherielium" className="w-16 h-16 object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.4)] animate-pulse" />
           <LoadingState label="Verificando sessão..." variant="breathing" />
         </div>

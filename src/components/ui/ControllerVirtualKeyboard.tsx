@@ -50,7 +50,7 @@ const ControllerVirtualKeyboard: React.FC = () => {
       zIndexClassName="z-[300]"
       containerClassName="items-end justify-center p-2 md:items-center md:justify-end md:p-3"
       backdropClassName="pointer-events-none bg-transparent backdrop-blur-none"
-      className="rounded-[22px] border border-white/12 bg-[var(--tone-1)] p-6 shadow-2xl"
+      className="rounded-[var(--corner-md)] border border-white/12 bg-[var(--tone-1)] p-6 shadow-2xl"
       ariaLabel="Teclado virtual do controle"
       gamepadPriority={200}
     >

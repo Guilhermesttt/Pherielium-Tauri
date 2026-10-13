@@ -68,7 +68,7 @@ const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ release, onClose }) => {
       backdropClassName="bg-black/85 backdrop-blur-xl"
       ariaLabel={`Novidades da versão ${release.version}`}
       gamepadPriority={260}
-      className="overflow-hidden rounded-[32px] border border-white/[0.08] bg-[var(--tone-1)] p-0 shadow-[0_36px_100px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)]"
+      className="overflow-hidden rounded-[var(--corner-lg)] border border-white/[0.08] bg-[var(--tone-1)] p-0 shadow-[0_36px_100px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)]"
     >
       <div className="relative p-6 sm:p-8 overflow-hidden select-none">
         {/* Ambient Top Glow */}
@@ -122,7 +122,7 @@ const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ release, onClose }) => {
           {primaryHighlight && (
             <motion.div
               variants={itemVariants}
-              className="md:col-span-2 relative overflow-hidden rounded-[24px] bg-[var(--tone-2)] border border-white/[0.07] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] hover:border-white/15 transition-all group"
+              className="md:col-span-2 relative overflow-hidden rounded-[var(--corner-lg)] bg-[var(--tone-2)] border border-white/[0.07] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] hover:border-white/15 transition-all group"
             >
               <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-white/[0.03] to-transparent rounded-bl-full pointer-events-none" />
 
@@ -158,7 +158,7 @@ const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ release, onClose }) => {
           {/* Bento Card 2: Hub Integration (Col Span 1) */}
           <motion.div
             variants={itemVariants}
-            className="md:col-span-1 relative overflow-hidden rounded-[24px] bg-[var(--tone-2)] border border-white/[0.07] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] hover:border-white/15 transition-all flex flex-col justify-between"
+            className="md:col-span-1 relative overflow-hidden rounded-[var(--corner-lg)] bg-[var(--tone-2)] border border-white/[0.07] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] hover:border-white/15 transition-all flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center justify-between mb-3">
@@ -190,7 +190,7 @@ const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ release, onClose }) => {
               variants={itemVariants}
               className={`${
                 idx === 0 && secondaryHighlights.length === 2 ? "md:col-span-2" : "md:col-span-1"
-              } relative overflow-hidden rounded-[24px] bg-[var(--tone-2)] border border-white/[0.07] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] hover:border-white/15 transition-all`}
+              } relative overflow-hidden rounded-[var(--corner-lg)] bg-[var(--tone-2)] border border-white/[0.07] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] hover:border-white/15 transition-all`}
             >
               <div className="flex items-center gap-2 mb-2.5">
                 <div className="p-1.5 rounded-lg bg-white/[0.05] border border-white/[0.08]">
@@ -209,7 +209,7 @@ const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ release, onClose }) => {
           {/* Bento Card: Unified Libraries Strip if space remains */}
           <motion.div
             variants={itemVariants}
-            className="md:col-span-3 relative overflow-hidden rounded-[20px] bg-[var(--tone-1)] border border-white/[0.05] p-3.5 flex items-center justify-between text-xs text-[var(--ink-faint)] font-mono"
+            className="md:col-span-3 relative overflow-hidden rounded-[var(--corner-md)] bg-[var(--tone-1)] border border-white/[0.05] p-3.5 flex items-center justify-between text-xs text-[var(--ink-faint)] font-mono"
           >
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />

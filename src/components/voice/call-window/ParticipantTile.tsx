@@ -47,7 +47,7 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
       style={{
         cornerShape: "squircle",
       } as React.CSSProperties}
-      className={`group relative flex items-center gap-2.5 px-3 py-2 rounded-[18px] select-none cursor-pointer transition-colors duration-200 shrink-0 min-w-[130px] max-w-[190px] h-[52px] outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
+      className={`group relative flex items-center gap-2.5 px-3 py-2 rounded-[var(--corner-md)] select-none cursor-pointer transition-colors duration-200 shrink-0 min-w-[130px] max-w-[190px] h-[52px] outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
         isFocused
           ? "bg-white/[0.12] text-white border border-white/40 shadow-[0_4px_16px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)]"
           : isPresenting

@@ -152,7 +152,7 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
             type="button"
             onClick={onOpenPrivacy}
             style={{ cornerShape: "squircle" } as React.CSSProperties}
-            className={`hidden md:inline-flex items-center gap-1.5 text-[length:var(--step-0)] font-medium px-2.5 py-1 rounded-[10px] border transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
+            className={`hidden md:inline-flex items-center gap-1.5 text-[length:var(--step-0)] font-medium px-2.5 py-1 rounded-[var(--corner-sm)] border transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
               session.isPrivate || roomConfig?.isPrivate
                 ? "bg-amber-500/10 border-amber-500/25 text-amber-300 hover:bg-amber-500/20"
                 : "bg-white/[0.05] border-white/10 text-[var(--ink-muted)] hover:bg-white/[0.09] hover:text-white"
@@ -194,7 +194,7 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
           <button
             type="button"
             onClick={onToggleRoomChat}
-            className={`h-8 w-8 flex items-center justify-center rounded-[10px] transition cursor-pointer ${
+            className={`h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] transition cursor-pointer ${
               roomChatOpen ? "bg-white text-black" : "text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08]"
             }`}
             title="Texto da sala"
@@ -224,7 +224,7 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
             type="button"
             onClick={onToggleCompactMode}
             style={{ cornerShape: "squircle" } as React.CSSProperties}
-            className={`h-8 w-8 flex items-center justify-center rounded-[10px] transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
+            className={`h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
               isCompactMode
                 ? "bg-white text-black font-semibold shadow-sm"
                 : "text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08]"
@@ -241,7 +241,7 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
           type="button"
           onClick={onToggleFullscreen}
           style={{ cornerShape: "squircle" } as React.CSSProperties}
-          className="h-8 w-8 flex items-center justify-center rounded-[10px] text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+          className="h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
           title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
           aria-label={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
         >
@@ -257,7 +257,7 @@ export const CallHeader: React.FC<CallHeaderProps> = ({
           type="button"
           onClick={onClose}
           style={{ cornerShape: "squircle" } as React.CSSProperties}
-          className="h-8 w-8 flex items-center justify-center rounded-[10px] text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+          className="h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
           title="Ocultar janela (a chamada continuará ativa no hub)"
           aria-label="Ocultar janela de chamada"
         >

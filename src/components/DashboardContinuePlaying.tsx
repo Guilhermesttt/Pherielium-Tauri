@@ -164,7 +164,7 @@ const ContinueCard = React.memo<ContinueCardProps>(({
         }}
       >
         <motion.div
-          className="pointer-events-none absolute -inset-px rounded-[22px] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          className="pointer-events-none absolute -inset-px rounded-[var(--corner-md)] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
           style={{
             background: useMotionTemplate`
               radial-gradient(

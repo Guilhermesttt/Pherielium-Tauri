@@ -74,7 +74,7 @@ const WelcomeLogoPreview: React.FC<{ shouldReduceMotion?: boolean | null }> = ({
       <img
         src={desktopIcon}
         alt="Símbolo Pherielium"
-        className="h-24 w-24 sm:h-28 sm:w-28 rounded-[24px] object-cover border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_18px_40px_rgba(0,0,0,0.7)]"
+        className="h-24 w-24 sm:h-28 sm:w-28 rounded-[var(--corner-lg)] object-cover border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_18px_40px_rgba(0,0,0,0.7)]"
         draggable={false}
       />
     </motion.div>
@@ -143,7 +143,7 @@ const LibraryPreview: React.FC<{ shouldReduceMotion?: boolean | null }> = ({
               ? { duration: 0.2 }
               : { type: "spring", bounce: 0.15, duration: 0.4 }
           }
-          className="relative z-20 flex h-[94px] w-[68px] flex-col items-center justify-center rounded-[18px] border border-white/20 bg-gradient-to-b from-[#2D2D2D] via-[#1C1C1C] to-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_16px_36px_rgba(0,0,0,0.75)]"
+          className="relative z-20 flex h-[94px] w-[68px] flex-col items-center justify-center rounded-[var(--corner-md)] border border-white/20 bg-gradient-to-b from-[#2D2D2D] via-[#1C1C1C] to-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_16px_36px_rgba(0,0,0,0.75)]"
         >
           <Gamepad2 className="h-7 w-7 text-[var(--ink)]" strokeWidth={1.75} />
 
@@ -256,7 +256,7 @@ const TrophyXPPreview: React.FC<TrophyXPPreviewProps> = ({
         className="relative z-10"
       >
         {/* Acabamento uniforme para eliminar ruído da textura azul */}
-        <div className="relative flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center overflow-hidden rounded-[20px] border border-white/20 bg-gradient-to-b from-[#2A2A2A] via-[#1E1E1E] to-[#121212] shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_14px_32px_rgba(0,0,0,0.7)]">
+        <div className="relative flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center overflow-hidden rounded-[var(--corner-md)] border border-white/20 bg-gradient-to-b from-[#2A2A2A] via-[#1E1E1E] to-[#121212] shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_14px_32px_rgba(0,0,0,0.7)]">
           <img
             src={platinaLogo}
             alt="Emblema Platina Pherielium"
@@ -709,7 +709,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({
       backdropClassName="bg-black/80 backdrop-blur-md"
       ariaLabel="Tour de Boas-Vindas ao Pherielium"
       gamepadPriority={260}
-      className="overflow-hidden rounded-[28px] border border-white/10 bg-[var(--tone-2)] p-0 shadow-[0_32px_90px_rgba(0,0,0,0.8)]"
+      className="overflow-hidden rounded-[var(--corner-lg)] border border-white/10 bg-[var(--tone-2)] p-0 shadow-[0_32px_90px_rgba(0,0,0,0.8)]"
     >
       <div className="relative overflow-hidden">
         {/* Banner superior com iluminação adaptativa e altura ampliada estável */}

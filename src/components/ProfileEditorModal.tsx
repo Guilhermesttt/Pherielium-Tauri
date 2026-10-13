@@ -193,7 +193,7 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
         zIndexClassName="z-[250]"
         ariaLabel="Editar perfil"
       >
-        <div className="relative max-h-[85vh] w-full overflow-y-auto rounded-[22px] border border-white/12 bg-[var(--tone-1)] p-6 shadow-2xl thin-scrollbar text-white">
+        <div className="relative max-h-[85vh] w-full overflow-y-auto rounded-[var(--corner-md)] border border-white/12 bg-[var(--tone-1)] p-6 shadow-2xl thin-scrollbar text-white">
           <header className="mb-6 flex items-start justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Conta Phelierium</p>

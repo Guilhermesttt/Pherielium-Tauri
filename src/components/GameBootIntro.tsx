@@ -370,7 +370,7 @@ const SkipHint = React.memo(function SkipHint({
           <button
             type="button"
             onClick={onSkip}
-            className="group flex items-center gap-2.5 px-4 py-2 rounded-[10px] border border-white/20 bg-white/4 hover:bg-white/10 hover:border-white/40 transition-all duration-200 cursor-pointer backdrop-blur-md active:scale-95"
+            className="group flex items-center gap-2.5 px-4 py-2 rounded-[var(--corner-sm)] border border-white/20 bg-white/4 hover:bg-white/10 hover:border-white/40 transition-all duration-200 cursor-pointer backdrop-blur-md active:scale-95"
           >
             <span className="text-[length:var(--step-0)] font-mono tracking-[0.16em] uppercase text-[var(--ink-muted)] group-hover:text-white transition-colors">
               Pular Introdução

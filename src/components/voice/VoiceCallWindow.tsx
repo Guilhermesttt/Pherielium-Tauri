@@ -972,8 +972,8 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             } as React.CSSProperties}
             className={`relative flex flex-col w-full overflow-hidden bg-[var(--tone-1)] border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.8)] transition duration-300 ${
               isCompactMode
-                ? "max-w-xl h-[440px] sm:h-[460px] rounded-[24px]"
-                : "max-w-5xl h-[84vh] rounded-[28px]"
+                ? "max-w-xl h-[440px] sm:h-[460px] rounded-[var(--corner-lg)]"
+                : "max-w-5xl h-[84vh] rounded-[var(--corner-lg)]"
             }`}
           >
             {/* AREA 1: HEADER */}

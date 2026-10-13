@@ -373,7 +373,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
               isHovered
             />
           </div>
-          <div className="relative min-w-0 flex-1 rounded-[22px] rounded-bl-md border border-white/10 bg-[var(--tone-2)]/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl">
+          <div className="relative min-w-0 flex-1 rounded-[var(--corner-md)] rounded-bl-md border border-white/10 bg-[var(--tone-2)]/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl">
             <p className="text-[length:var(--step-0)] font-medium tabular-nums text-[var(--ink-faint)]">
               {index + 1} de {total}
             </p>

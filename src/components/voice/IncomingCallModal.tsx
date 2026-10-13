@@ -139,7 +139,7 @@ export const IncomingCallModal: React.FC<IncomingCallModalProps> = ({
     >
       <animated.div
         style={panel}
-        className="relative flex w-full max-w-[360px] flex-col items-center overflow-hidden rounded-[30px] border border-white/10 bg-[var(--tone-1)]/95 px-8 pb-8 pt-9 shadow-[0_30px_90px_rgba(0,0,0,0.75)]"
+        className="relative flex w-full max-w-[360px] flex-col items-center overflow-hidden rounded-[var(--corner-lg)] border border-white/10 bg-[var(--tone-1)]/95 px-8 pb-8 pt-9 shadow-[0_30px_90px_rgba(0,0,0,0.75)]"
       >
         <div className="pointer-events-none absolute -top-28 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-white/[0.05] blur-[80px]" />
 

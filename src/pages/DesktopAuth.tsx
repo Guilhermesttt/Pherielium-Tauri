@@ -44,7 +44,7 @@ const DesktopAuth: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full bg-[var(--tone-0)] text-white flex items-center justify-center p-6 font-sans">
-      <div className="w-full max-w-md border border-white/[0.08] bg-[var(--tone-1)] rounded-[32px] p-8 md:p-10 shadow-2xl flex flex-col items-center text-center">
+      <div className="w-full max-w-md border border-white/[0.08] bg-[var(--tone-1)] rounded-[var(--corner-lg)] p-8 md:p-10 shadow-2xl flex flex-col items-center text-center">
         <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mb-6 shadow-inner">
           {status === "done" ? (
             <CheckCircle2 className="w-7 h-7 text-white" />

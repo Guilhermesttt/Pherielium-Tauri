@@ -297,7 +297,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: -10 }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="glass-panel relative z-10 w-full max-w-xl overflow-hidden rounded-[16px] border border-white/[0.12] shadow-[0_24px_70px_rgba(0,0,0,0.85)] flex flex-col"
+            className="glass-panel relative z-10 w-full max-w-xl overflow-hidden rounded-[var(--corner-md)] border border-white/[0.12] shadow-[0_24px_70px_rgba(0,0,0,0.85)] flex flex-col"
           >
             {/* Search Input Bar */}
             <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.08] bg-white/[0.02]">

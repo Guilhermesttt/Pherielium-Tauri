@@ -46,7 +46,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
   const [isVolOpen, setIsVolOpen] = useState(false);
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-[24px] bg-[var(--tone-1)]/80 border border-[#161616] shadow-[0_20px_60px_rgba(0,0,0,0.8)]">
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-[var(--corner-lg)] bg-[var(--tone-1)]/80 border border-[#161616] shadow-[0_20px_60px_rgba(0,0,0,0.8)]">
       {/* Stream Video Render */}
       {feed.stream ? (
         <VideoRenderer
@@ -68,7 +68,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
         {/* Identificador de Transmissão */}
         <div
           style={{ cornerShape: "squircle" } as React.CSSProperties}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-[14px] bg-[var(--tone-1)]/80 border border-[#161616] backdrop-blur-xl shadow-lg pointer-events-auto select-none"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-[var(--corner-sm)] bg-[var(--tone-1)]/80 border border-[#161616] backdrop-blur-xl shadow-lg pointer-events-auto select-none"
         >
           <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-xs font-semibold text-white tracking-tight">
@@ -82,7 +82,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
         {/* Toolbar de Ações da Stream */}
         <div
           style={{ cornerShape: "squircle" } as React.CSSProperties}
-          className="flex items-center gap-1 p-1 rounded-[14px] bg-[var(--tone-1)]/80 border border-[#161616] backdrop-blur-xl shadow-lg pointer-events-auto select-none"
+          className="flex items-center gap-1 p-1 rounded-[var(--corner-sm)] bg-[var(--tone-1)]/80 border border-[#161616] backdrop-blur-xl shadow-lg pointer-events-auto select-none"
         >
           {/* Controle de Volume do Streamer Remoto */}
           {!feed.isLocal && onChangeStreamerVolume && (
@@ -91,7 +91,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
                 type="button"
                 onClick={() => setIsVolOpen((prev) => !prev)}
                 aria-label={`Volume da transmissão (${streamerVolume}%)`}
-                className={`h-8 w-8 flex items-center justify-center rounded-[10px] transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40 ${
+                className={`h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40 ${
                   isVolOpen
                     ? "bg-white text-black"
                     : "text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08]"
@@ -110,7 +110,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
               {isVolOpen && (
                 <div
                   style={{ cornerShape: "squircle" } as React.CSSProperties}
-                  className="absolute top-10 right-0 p-3 w-48 rounded-[16px] bg-[var(--tone-1)]/95 border border-[#161616] shadow-2xl z-30 space-y-2 backdrop-blur-2xl"
+                  className="absolute top-10 right-0 p-3 w-48 rounded-[var(--corner-md)] bg-[var(--tone-1)]/95 border border-[#161616] shadow-2xl z-30 space-y-2 backdrop-blur-2xl"
                 >
                   <div className="flex justify-between text-[length:var(--step-0)] font-bold text-white">
                     <span>Volume</span>
@@ -145,7 +145,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
                   "info"
                 );
               }}
-              className="flex items-center gap-1 h-8 px-2.5 rounded-[10px] text-xs font-semibold text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
+              className="flex items-center gap-1 h-8 px-2.5 rounded-[var(--corner-sm)] text-xs font-semibold text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
               title="Silenciar / Ativar áudio transmitido da tela"
             >
               {localScreenStream.getAudioTracks()[0]?.enabled === false ? (
@@ -167,7 +167,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
               type="button"
               onClick={onToggleFocus}
               aria-label={isFocused ? "Desafixar transmissão" : "Fixar transmissão"}
-              className={`h-8 w-8 flex items-center justify-center rounded-[10px] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40 ${
+              className={`h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40 ${
                 isFocused
                   ? "bg-white text-black shadow-sm"
                   : "text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08]"
@@ -183,7 +183,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
             type="button"
             onClick={onToggleFitMode}
             aria-label={fitMode === "contain" ? "Preencher janela (Zoom)" : "Ajustar à janela (Fit)"}
-            className="h-8 w-8 flex items-center justify-center rounded-[10px] text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40"
+            className="h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40"
             title={fitMode === "contain" ? "Preencher janela (Zoom)" : "Ajustar à janela (Fit)"}
           >
             {fitMode === "contain" ? (
@@ -198,7 +198,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
             type="button"
             onClick={onTogglePip}
             aria-label="Ativar Mini-player flutuante (PiP)"
-            className="h-8 w-8 flex items-center justify-center rounded-[10px] text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40"
+            className="h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40"
             title="Mini-player flutuante (PiP)"
           >
             <PictureInPicture2 className="h-4 w-4" aria-hidden="true" />
@@ -209,7 +209,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
             type="button"
             onClick={onRequestFullscreen}
             aria-label="Tela cheia da transmissão"
-            className="h-8 w-8 flex items-center justify-center rounded-[10px] text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40"
+            className="h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40"
             title="Tela cheia da transmissão"
           >
             <Maximize2 className="h-4 w-4" aria-hidden="true" />

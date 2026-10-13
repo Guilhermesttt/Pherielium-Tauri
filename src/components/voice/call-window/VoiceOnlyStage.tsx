@@ -124,7 +124,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
               onContextMenu?.(e as any, single);
             }
           }}
-          className={`relative group flex flex-col items-center justify-center rounded-[30px] bg-white/[0.04] ring-1 transition-[background-color,box-shadow] duration-300 w-64 sm:w-72 h-[290px] sm:h-[310px] p-5 text-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 overflow-hidden ${
+          className={`relative group flex flex-col items-center justify-center rounded-[var(--corner-lg)] bg-white/[0.04] ring-1 transition-[background-color,box-shadow] duration-300 w-64 sm:w-72 h-[290px] sm:h-[310px] p-5 text-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 overflow-hidden ${
             isSpeaking
               ? "ring-white/45 shadow-[0_0_44px_rgba(255,255,255,0.1)]"
               : "ring-white/[0.07] hover:ring-white/15 hover:bg-white/[0.06]"
@@ -286,7 +286,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                     onOpenInvite();
                   }}
                   style={{ cornerShape: "squircle" } as React.CSSProperties}
-                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[12px] bg-white/[0.06] hover:bg-white/[0.12] text-white border border-white/[0.08] text-xs font-semibold shadow-sm transition active:scale-96 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[var(--corner-sm)] bg-white/[0.06] hover:bg-white/[0.12] text-white border border-white/[0.08] text-xs font-semibold shadow-sm transition active:scale-96 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                 >
                   <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Convidar Amigos</span>
@@ -341,7 +341,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                 width: tileWidth,
                 height: tileHeight,
               } as React.CSSProperties}
-              className="group relative flex items-center justify-center rounded-[24px] overflow-hidden bg-[var(--tone-0)] border border-sky-400/50 shadow-[0_0_30px_rgba(56,189,248,0.22),inset_0_1px_0_rgba(255,255,255,0.06)] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60"
+              className="group relative flex items-center justify-center rounded-[var(--corner-lg)] overflow-hidden bg-[var(--tone-0)] border border-sky-400/50 shadow-[0_0_30px_rgba(56,189,248,0.22),inset_0_1px_0_rgba(255,255,255,0.06)] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60"
             >
               {screenFeed.stream ? (
                 <VideoRenderer stream={screenFeed.stream} fitMode="cover" muted className="h-full w-full opacity-90" />
@@ -378,7 +378,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
               <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center gap-2 z-10">
                 <div
                   style={{ cornerShape: "squircle" } as React.CSSProperties}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[10px] bg-black/50 border border-sky-400/30 backdrop-blur-md text-sky-300 text-xs font-semibold tracking-tight truncate"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[var(--corner-sm)] bg-black/50 border border-sky-400/30 backdrop-blur-md text-sky-300 text-xs font-semibold tracking-tight truncate"
                 >
                   <Monitor className="h-3 w-3 shrink-0" aria-hidden="true" />
                   <span className="truncate">{screenFeed.title} está transmitindo</span>
@@ -421,7 +421,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                     onContextMenu?.(e as any, feed);
                   }
                 }}
-                className={`group relative flex flex-col items-center justify-center rounded-[28px] bg-white/[0.04] ring-1 transition-[background-color,box-shadow] duration-300 text-center outline-none focus-visible:ring-2 focus-visible:ring-white/40 overflow-hidden ${
+                className={`group relative flex flex-col items-center justify-center rounded-[var(--corner-lg)] bg-white/[0.04] ring-1 transition-[background-color,box-shadow] duration-300 text-center outline-none focus-visible:ring-2 focus-visible:ring-white/40 overflow-hidden ${
                   isPresenting
                     ? "ring-sky-400/60 shadow-[0_0_28px_rgba(56,189,248,0.2)] cursor-pointer"
                     : isSpeaking
@@ -464,7 +464,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                 {isPresenting && (
                   <div
                     style={{ cornerShape: "squircle" } as React.CSSProperties}
-                    className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-[10px] bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[length:var(--step-0)] font-bold z-30 backdrop-blur-md"
+                    className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-[var(--corner-sm)] bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[length:var(--step-0)] font-bold z-30 backdrop-blur-md"
                     title={`${feed.title} está compartilhando a tela — clique para focar`}
                   >
                     <Monitor className="h-2.5 w-2.5" aria-hidden="true" />

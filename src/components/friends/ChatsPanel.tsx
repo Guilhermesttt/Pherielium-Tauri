@@ -46,7 +46,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
 
   if (friends.length === 0) {
     return (
-      <div className="mx-auto max-w-xl rounded-[22px] bg-[var(--surface-raised)] p-10 text-center ring-1 ring-[color:var(--border-subtle)]">
+      <div className="mx-auto max-w-xl rounded-[var(--corner-md)] bg-[var(--surface-raised)] p-10 text-center ring-1 ring-[color:var(--border-subtle)]">
         <MessageSquare className="mx-auto h-8 w-8 text-[var(--ink-faint)]" />
         <h2 className="mt-4 font-display text-[length:var(--step-3)] font-bold text-white">Nenhuma conversa ainda</h2>
         <p className="mt-1 text-[length:var(--step-1)] text-[var(--ink-muted)]">Adicione um amigo para começar a conversar.</p>
@@ -62,7 +62,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
   }
 
   return (
-    <section aria-label="Conversas" className="mx-auto max-w-3xl rounded-[22px] bg-[var(--surface-raised)] p-4 ring-1 ring-[color:var(--border-subtle)]">
+    <section aria-label="Conversas" className="mx-auto max-w-3xl rounded-[var(--corner-md)] bg-[var(--surface-raised)] p-4 ring-1 ring-[color:var(--border-subtle)]">
       <header className="mb-3 flex items-center gap-3 px-1">
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-[length:var(--step-3)] font-bold leading-tight text-white">Conversas</h2>

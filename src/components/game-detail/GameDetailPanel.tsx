@@ -663,7 +663,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
             zIndexClassName="z-[160]"
             reducedEffects
           >
-            <div className="w-full max-w-[340px] mx-auto bg-[var(--color-surface)]  rounded-[32px] overflow-hidden border border-[var(--color-ui-detail)] shadow-[0_32px_64px_rgba(0,0,0,0.6)] p-8 flex flex-col items-center">
+            <div className="w-full max-w-[340px] mx-auto bg-[var(--color-surface)]  rounded-[var(--corner-lg)] overflow-hidden border border-[var(--color-ui-detail)] shadow-[0_32px_64px_rgba(0,0,0,0.6)] p-8 flex flex-col items-center">
 
               {/* Animated Trash Icon Area */}
               <div className="relative w-32 h-32 flex items-center justify-center mb-2">
@@ -701,7 +701,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                 >
                   <div className="w-8 h-1.5 bg-[#48484A] rounded-t-md absolute -top-1.5 z-10" />
                   <div className="w-[84px] h-3 bg-[#48484A] rounded-full border-[3px] border-[#2C2C2E] shadow-sm relative z-20" />
-                  <div className="w-[68px] h-20 bg-gradient-to-b from-[#3A3A3C] to-[#1C1C1E] rounded-b-[18px] border-[3px] border-t-0 border-[#2C2C2E] relative -top-1 flex justify-evenly pt-2 pb-3 px-2">
+                  <div className="w-[68px] h-20 bg-gradient-to-b from-[#3A3A3C] to-[#1C1C1E] rounded-b-[var(--corner-md)] border-[3px] border-t-0 border-[#2C2C2E] relative -top-1 flex justify-evenly pt-2 pb-3 px-2">
                     <div className="w-1.5 h-full bg-black/40 rounded-full" />
                     <div className="w-1.5 h-full bg-black/40 rounded-full" />
                     <div className="w-1.5 h-full bg-black/40 rounded-full" />

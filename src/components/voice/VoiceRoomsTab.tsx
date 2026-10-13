@@ -176,7 +176,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
   return (
     <div className="space-y-6 select-none">
       {/* Header with Stats & Actions */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-[22px] bg-[var(--surface-raised)] p-5 md:p-6 ring-1 ring-[color:var(--border-subtle)]">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 rounded-[var(--corner-md)] bg-[var(--surface-raised)] p-5 md:p-6 ring-1 ring-[color:var(--border-subtle)]">
         <div className="flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--surface-base)] text-white">
             <Radio className="h-6 w-6 text-white" />
@@ -229,7 +229,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between p-4 rounded-[22px] bg-[var(--surface-overlay)] ring-1 ring-[color:var(--border-strong)]"
+          className="flex items-center justify-between p-4 rounded-[var(--corner-md)] bg-[var(--surface-overlay)] ring-1 ring-[color:var(--border-strong)]"
         >
           <div className="flex items-center gap-3.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white border border-white/15">
@@ -320,14 +320,14 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
               return (
                 <div
                   key={room.id}
-                  className={`group relative flex flex-col justify-between p-4.5 rounded-[22px] border transition-colors duration-200 ${
+                  className={`group relative flex flex-col justify-between p-4.5 rounded-[var(--corner-md)] border transition-colors duration-200 ${
                     isCurrent
                       ? "bg-[var(--surface-overlay)] border-white/40"
                       : "bg-[var(--surface-raised)] hover:bg-[var(--surface-overlay)] border-white/[0.07] hover:border-white/20"
                   }`}
                 >
                   {room.bannerUrl ? (
-                    <img src={room.bannerUrl} alt="" loading="lazy" className="-mx-4.5 -mt-4.5 mb-3 aspect-[3/1] w-[calc(100%+2.25rem)] max-w-none rounded-t-[22px] object-cover" />
+                    <img src={room.bannerUrl} alt="" loading="lazy" className="-mx-4.5 -mt-4.5 mb-3 aspect-[3/1] w-[calc(100%+2.25rem)] max-w-none rounded-t-[var(--corner-md)] object-cover" />
                   ) : null}
                   <div className="space-y-2.5">
                     <div className="flex items-start justify-between gap-2">
@@ -437,7 +437,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
         </h3>
 
         {globalOtherRooms.length === 0 && !isLoading && (
-          <div className="flex flex-col items-center justify-center p-10 rounded-[22px] bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)] text-center space-y-3">
+          <div className="flex flex-col items-center justify-center p-10 rounded-[var(--corner-md)] bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)] text-center space-y-3">
             <Radio className="h-8 w-8 text-[var(--ink-faint)]" />
             <div>
               <p className="text-sm font-bold text-[var(--ink)]">Nenhuma outra sala pública ativa no momento</p>
@@ -456,7 +456,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
             return (
               <div
                 key={room.id}
-                className={`flex flex-col justify-between p-4.5 rounded-[22px] border transition-colors duration-200 ${
+                className={`flex flex-col justify-between p-4.5 rounded-[var(--corner-md)] border transition-colors duration-200 ${
                   isCurrent
                     ? "bg-[var(--surface-overlay)] border-white/40"
                     : isFull
@@ -465,7 +465,7 @@ export const VoiceRoomsTab: React.FC<VoiceRoomsTabProps> = ({
                 }`}
               >
                 {room.bannerUrl ? (
-                    <img src={room.bannerUrl} alt="" loading="lazy" className="-mx-4.5 -mt-4.5 mb-3 aspect-[3/1] w-[calc(100%+2.25rem)] max-w-none rounded-t-[22px] object-cover" />
+                    <img src={room.bannerUrl} alt="" loading="lazy" className="-mx-4.5 -mt-4.5 mb-3 aspect-[3/1] w-[calc(100%+2.25rem)] max-w-none rounded-t-[var(--corner-md)] object-cover" />
                   ) : null}
                 <div className="space-y-2.5">
                   <div className="flex items-start justify-between gap-2">

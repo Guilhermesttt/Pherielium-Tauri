@@ -261,7 +261,7 @@ const MetricsCluster: React.FC<{
   copy: { games: string; hours: string; favorites: string };
   compact?: boolean;
 }> = ({ games, hours, favorites, copy, compact = false }) => (
-  <dl className={`grid grid-cols-3 gap-px overflow-hidden rounded-[20px] bg-white/[0.06] ${compact ? "text-[length:var(--step-3)]" : "text-[length:var(--step-4)]"}`}>
+  <dl className={`grid grid-cols-3 gap-px overflow-hidden rounded-[var(--corner-md)] bg-white/[0.06] ${compact ? "text-[length:var(--step-3)]" : "text-[length:var(--step-4)]"}`}>
     {[
       [games, copy.games],
       [hours, copy.hours],
@@ -291,7 +291,7 @@ const Section: React.FC<SectionProps> = ({
   compact = false,
 }) => (
   <section
-    className={`${compact ? "rounded-[22px] p-4 md:p-5" : "rounded-[22px] p-5 md:p-6"} bg-[var(--surface-raised)] border border-white/[0.10] ${className}`}
+    className={`${compact ? "rounded-[var(--corner-md)] p-4 md:p-5" : "rounded-[var(--corner-md)] p-5 md:p-6"} bg-[var(--surface-raised)] border border-white/[0.10] ${className}`}
   >
     <div className={`${compact ? "mb-3" : "mb-4"} flex items-center gap-2.5`}>
       {icon && (
@@ -682,7 +682,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
 
       <div className={`relative mx-auto max-w-6xl ${compactProfile ? "space-y-4" : "space-y-6"}`}>
         {/* HERO: capa com avatar e nome alinhados pelo centro na base; o resto vem abaixo */}
-        <section className="relative overflow-hidden rounded-[28px] bg-[var(--surface-raised)] border border-white/[0.10]">
+        <section className="relative overflow-hidden rounded-[var(--corner-lg)] bg-[var(--surface-raised)] border border-white/[0.10]">
           <div
             className={`relative ${compactProfile ? "h-[190px]" : "h-[240px]"}`}
             style={{
@@ -1036,7 +1036,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
         </section>
 
         {isPrivateProfile ? (
-          <section className="bg-[var(--surface-raised)] border border-white/[0.10] flex flex-col items-center justify-center rounded-[22px] p-12 text-center">
+          <section className="bg-[var(--surface-raised)] border border-white/[0.10] flex flex-col items-center justify-center rounded-[var(--corner-md)] p-12 text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-white/15 bg-white/[0.06] text-[var(--ink-muted)] shadow-inner">
               <Lock className="h-8 w-8 text-[var(--ink)]" />
             </div>

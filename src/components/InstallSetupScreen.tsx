@@ -155,7 +155,7 @@ export const InstallSetupScreen: React.FC<InstallSetupScreenProps> = ({ onFinish
           <img
             src={desktopIcon}
             alt=""
-            className="relative h-[120px] w-[120px] rounded-[28px] object-cover shadow-[0_24px_64px_rgba(0,0,0,0.65)]"
+            className="relative h-[120px] w-[120px] rounded-[var(--corner-lg)] object-cover shadow-[0_24px_64px_rgba(0,0,0,0.65)]"
             draggable={false}
           />
         </motion.div>

@@ -412,7 +412,7 @@ const TypingBubble: React.FC<{ friendName: string; avatarUrl?: string | null }> 
         iconClassName="h-3.5 w-3.5"
         className="ring-1 ring-white/10"
       />
-      <span className="flex h-[34px] items-center rounded-[18px] rounded-bl-[6px] bg-white/[0.08] px-3.5">
+      <span className="flex h-[34px] items-center rounded-[var(--corner-md)] rounded-bl-[6px] bg-white/[0.08] px-3.5">
         <TypingDots />
       </span>
     </animated.div>
@@ -475,8 +475,8 @@ const ChatMessageRow: React.FC<{
 
   const reactions = Object.entries(msg.reactions || {}).filter(([, users]) => (users?.length || 0) > 0);
   const radius = isMe
-    ? `rounded-[18px] rounded-br-[6px] ${startsGroup ? "" : "rounded-tr-[6px]"}`
-    : `rounded-[18px] rounded-bl-[6px] ${startsGroup ? "" : "rounded-tl-[6px]"}`;
+    ? `rounded-[var(--corner-md)] rounded-br-[6px] ${startsGroup ? "" : "rounded-tr-[6px]"}`
+    : `rounded-[var(--corner-md)] rounded-bl-[6px] ${startsGroup ? "" : "rounded-tl-[6px]"}`;
 
   return (
     <animated.div style={{ ...spring, transformOrigin: bubbleOrigin(isMe) }} className={rowSpacing}>
@@ -1293,7 +1293,7 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
         containerClassName={
           controllerKeyboardOpen ? "items-start justify-center p-2 md:items-center md:justify-start md:p-3" : undefined
         }
-        className="t-modal-panel overflow-hidden rounded-[26px] border border-white/10 bg-black p-0"
+        className="t-modal-panel overflow-hidden rounded-[var(--corner-lg)] border border-white/10 bg-black p-0"
         ariaLabel={`Conversa com ${friend.name}`}
       >
         <div className="flex h-[calc(100dvh-2rem)] max-h-200 min-h-140 w-full flex-col bg-[var(--tone-0)] md:h-[calc(100dvh-4rem)]">

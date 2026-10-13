@@ -26,6 +26,12 @@ describe("migrate (tokens do Pherielium Refined)", () => {
     expect(migrate("divtext-white/50")).toBe("divtext-white/50");
   });
 
+  it("reduz os raios escritos à mão aos três cantos do sistema", () => {
+    expect(migrate("rounded-[22px] rounded-t-[32px] rounded-[14px] rounded-[6px]")).toBe(
+      "rounded-[var(--corner-md)] rounded-t-[var(--corner-lg)] rounded-[var(--corner-sm)] rounded-[6px]",
+    );
+  });
+
   it("é idempotente", () => {
     const once = migrate("text-white/40 text-[11px] bg-[#111111]");
     expect(migrate(once)).toBe(once);

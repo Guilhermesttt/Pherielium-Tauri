@@ -336,7 +336,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 12 }}
           transition={{ type: "spring", stiffness: 380, damping: 28 }}
-          className="relative z-10 flex w-full max-w-[720px] max-h-[90vh] flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[var(--tone-1)] shadow-[0_40px_120px_rgba(0,0,0,0.82)]"
+          className="relative z-10 flex w-full max-w-[720px] max-h-[90vh] flex-col overflow-hidden rounded-[var(--corner-lg)] border border-white/10 bg-[var(--tone-1)] shadow-[0_40px_120px_rgba(0,0,0,0.82)]"
           style={{ boxShadow: `0 40px 120px rgba(0,0,0,0.82), 0 0 0 1px ${themeColor}22, 0 24px 80px ${themeColor}18` }}
         >
           <div

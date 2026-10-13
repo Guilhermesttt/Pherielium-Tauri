@@ -6,6 +6,7 @@
  *   - text-[10px..36px]        -> text-[length:var(--step-N)]  (piso de 13px; 9px ou menos fica: contadores)
  *   - bg-[#cinza]              -> bg-[var(--tone-N)]           (pela luminância; mantém o /opacidade)
  *   - text-[#cinza claro]      -> var(--ink*)  ;  text-[#cinza escuro] -> var(--tone-0)
+ *   - rounded-[10px..40px]     -> rounded-[var(--corner-sm|md|lg)]  (18 raios diferentes viram 3)
  *
  * Por que um script: são ~3.000 ocorrências em ~250 arquivos; à mão erraria e não daria para revisar.
  * Idempotente (rodar de novo não muda nada). Fica de fora o que não faz parte do hub
@@ -74,6 +75,13 @@ function textNeutralFor(lum) {
   return null;
 }
 
+/** Raio em px -> canto do sistema (12, 20, 28). Abaixo de 10px fica: detalhes pequenos (badges, barras). */
+function cornerFor(px) {
+  if (px < 16) return "var(--corner-sm)";
+  if (px < 24) return "var(--corner-md)";
+  return "var(--corner-lg)";
+}
+
 // Só dentro de classes (precedido de início, espaço, aspas, crase ou ":" de variante).
 const B = "(?<=^|[\\s\"'`:])";
 
@@ -97,6 +105,11 @@ export function migrate(source) {
     const lum = neutral(hex);
     const ink = lum === null ? null : textNeutralFor(lum);
     return ink ? `text-[${ink}]` : m;
+  });
+  s = s.replace(new RegExp(`${B}(rounded(?:-[trblse]{1,2})?)-\\[(\\d{1,2})px\\]`, "g"), (m, prefix, n) => {
+    const px = Number(n);
+    if (px < 10 || px > 40) return m;
+    return `${prefix}-[${cornerFor(px)}]`;
   });
   return s;
 }
