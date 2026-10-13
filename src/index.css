@@ -2393,3 +2393,17 @@ html[data-ui-style="refined"] [data-slot="tooltip-content"] svg.fill-foreground 
   fill: var(--tone-3);
   background: var(--tone-3);
 }
+
+/* Sem sobretítulo: rótulos pequenos em caixa-alta e espaçados viram texto normal (o tamanho e o peso já hierarquizam). */
+html[data-ui-style="refined"] .uppercase {
+  text-transform: none;
+}
+html[data-ui-style="refined"] :is(.tracking-wide, .tracking-wider, .tracking-widest, [class*="tracking-[0."], [class*="tracking-[.1"], [class*="tracking-[.2"], [class*="tracking-[.3"]) {
+  letter-spacing: 0;
+}
+
+/* Sem monoespaçada: números alinham com algarismos tabulares da Inter. */
+html[data-ui-style="refined"] .font-mono {
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
