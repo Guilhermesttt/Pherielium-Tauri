@@ -2483,3 +2483,9 @@ html[data-ui-style="refined"] .platform-hint:focus-visible {
   border-color: transparent;
   background: var(--tone-2);
 }
+
+/* Brilhos em gradiente branco (reflexo no topo de cartões, linhas que somem nas pontas) saem.
+   Os degradês escuros (from-black, scrims) ficam: protegem a leitura do texto sobre imagens. */
+html[data-ui-style="refined"] :is([class*="bg-gradient-"], [class*="bg-linear-"]):is([class*="from-white/"], [class*="via-white/"]):not(.bg-clip-text) {
+  background-image: none !important;
+}
