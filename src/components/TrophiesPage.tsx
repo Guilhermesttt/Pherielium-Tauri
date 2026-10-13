@@ -1054,6 +1054,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
               {searchTerm && (
                 <button
                   onClick={handleClearSearch}
+                  aria-label="Limpar busca"
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white p-0.5 transition-colors cursor-pointer"
                 >
                   <X className="h-3.5 w-3.5" />

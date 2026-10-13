@@ -118,7 +118,7 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
     <AnimatePresence>
       <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md select-none">
         {/* Backdrop Dismiss */}
-        <div className="absolute inset-0" onClick={onClose} />
+        <div className="absolute inset-0" aria-hidden="true" onClick={onClose} />
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 12 }}
@@ -141,6 +141,7 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
             <button
               type="button"
               onClick={onClose}
+              aria-label="Fechar configurações da chamada"
               className="h-7 w-7 flex items-center justify-center rounded-lg text-white/50 hover:text-white hover:bg-white/8 transition cursor-pointer"
             >
               <X className="h-4 w-4" />
@@ -357,6 +358,7 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                     </div>
                     <input
                       type="range"
+                      aria-label="Volume do microfone"
                       min={0}
                       max={200}
                       value={micGain}
@@ -399,6 +401,7 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                     </div>
                     <input
                       type="range"
+                      aria-label="Sensibilidade de voz"
                       min={0}
                       max={100}
                       value={voiceSensitivity}
