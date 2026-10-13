@@ -31,6 +31,7 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const DesignLab = import.meta.env.DEV ? lazy(() => import("./pages/DesignLab")) : null;
 const DesignLabSettings = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabSettings")) : null;
 const DesignLabTrophies = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabTrophies")) : null;
+const DesignLabMods = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabMods")) : null;
 
 // In Tauri, we are always in desktop mode
 const isDesktopRuntime = true;
@@ -99,7 +100,7 @@ const desktopRoutes = [
           </Suspense>
         ),
       },
-      ...(DesignLab && DesignLabSettings && DesignLabTrophies
+      ...(DesignLab && DesignLabSettings && DesignLabTrophies && DesignLabMods
         ? [
             {
               path: "design-lab",
@@ -122,6 +123,14 @@ const desktopRoutes = [
               element: (
                 <Suspense fallback={routeFallback}>
                   <DesignLabTrophies />
+                </Suspense>
+              ),
+            },
+            {
+              path: "design-lab/mods",
+              element: (
+                <Suspense fallback={routeFallback}>
+                  <DesignLabMods />
                 </Suspense>
               ),
             },
