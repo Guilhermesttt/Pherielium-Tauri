@@ -377,11 +377,11 @@ const GameRow = React.memo<GameRowProps>(
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         onMouseEnter={handleMouseEnter}
-        className="group relative flex flex-col gap-3 rounded-2xl p-4 sm:p-5 transition-all duration-300 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+        className="group relative flex flex-col gap-3 rounded-2xl p-4 sm:p-5 transition duration-300 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
       >
         {/* Glow ambiente externo expansivo e suave no card inteiro */}
         <div
-          className="absolute -inset-1.5 sm:-inset-2 rounded-3xl blur-2xl opacity-0 group-hover:opacity-75 transition-all duration-500 pointer-events-none z-0"
+          className="absolute -inset-1.5 sm:-inset-2 rounded-3xl blur-2xl opacity-0 group-hover:opacity-75 transition duration-500 pointer-events-none z-0"
           style={{
             background:
               gameTier === "platinum"
@@ -507,7 +507,7 @@ const GameRow = React.memo<GameRowProps>(
               {/* Emblema 3D com a marca Pherielium nos 4 metais nobres */}
               <div className="relative flex items-center justify-center shrink-0">
                 <div
-                  className="absolute -inset-3 rounded-full blur-xl pointer-events-none opacity-40 group-hover:opacity-95 group-hover:scale-125 transition-all duration-500"
+                  className="absolute -inset-3 rounded-full blur-xl pointer-events-none opacity-40 group-hover:opacity-95 group-hover:scale-125 transition duration-500"
                   style={{
                     background:
                       gameTier === "platinum"
@@ -820,7 +820,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
         <section className="relative rounded-3xl border border-white/[0.08] p-6 sm:p-8 shadow-[0_32px_64px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] overflow-hidden bg-[#0B0B0B]">
 
           <div
-            className="absolute -top-32 -left-32 w-80 h-80 rounded-full blur-[100px] opacity-25 pointer-events-none transition-all duration-700"
+            className="absolute -top-32 -left-32 w-80 h-80 rounded-full blur-[100px] opacity-25 pointer-events-none transition duration-700"
             style={{ background: tierInfo.gradientFrom }}
           />
 
@@ -914,7 +914,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                   return (
                     <div
                       key={item.type}
-                      className={`relative flex flex-col items-center justify-center p-3 rounded-xl transition-all group min-w-[78px] ${isCurrentTier
+                      className={`relative flex flex-col items-center justify-center p-3 rounded-xl transition group min-w-[78px] ${isCurrentTier
                         ? `${style.borderColor} ${style.bgActive} ${style.ringActive}`
                         : "border border-white/5 bg-white/[0.02] opacity-75 hover:opacity-100 hover:border-white/15"
                         }`}
@@ -953,7 +953,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                 whileTap={{ scale: 0.95 }}
                 onClick={() => handleFilterSelect(f.id)}
                 onMouseEnter={() => playSound?.("hover")}
-                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer whitespace-nowrap focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${filter === f.id
+                className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer whitespace-nowrap focus-visible:ring-2 focus-visible:ring-white/50 outline-none ${filter === f.id
                   ? "bg-white text-black shadow-md"
                   : "bg-transparent text-neutral-400 hover:text-white hover:bg-white/5"
                   }`}
@@ -975,7 +975,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
               <button
                 onClick={() => setIsSortOpen((prev) => !prev)}
                 onMouseEnter={() => playSound?.("hover")}
-                className="flex items-center gap-2 rounded-2xl border border-white/10 bg-neutral-900/60 px-3.5 py-2 text-xs font-bold text-neutral-300 transition-all hover:border-white/20 hover:text-white cursor-pointer"
+                className="flex items-center gap-2 rounded-2xl border border-white/10 bg-neutral-900/60 px-3.5 py-2 text-xs font-bold text-neutral-300 transition hover:border-white/20 hover:text-white cursor-pointer"
                 title="Ordenar jogos"
               >
                 <ArrowUpDown className="h-3.5 w-3.5 text-neutral-400" />
@@ -1009,7 +1009,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
               <button
                 onClick={() => setIsPlatformFilterOpen((prev) => !prev)}
                 onMouseEnter={() => playSound?.("hover")}
-                className={`flex items-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-bold transition-all cursor-pointer ${filterByPlat !== "all"
+                className={`flex items-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-bold transition cursor-pointer ${filterByPlat !== "all"
                   ? "border-[#38bdf8]/40 bg-[#38bdf8]/10 text-[#38bdf8]"
                   : "border-white/10 bg-neutral-900/60 text-neutral-300 hover:border-white/20 hover:text-white"
                   }`}
@@ -1049,7 +1049,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                 value={searchTerm}
                 onChange={handleSearchChange}
                 placeholder="Buscar jogos..."
-                className="h-10 w-56 sm:w-64 rounded-2xl border border-white/10 bg-neutral-900/60 pl-10 pr-8 text-xs font-medium text-white placeholder:text-neutral-500 outline-none transition-all focus:border-white/30"
+                className="h-10 w-56 sm:w-64 rounded-2xl border border-white/10 bg-neutral-900/60 pl-10 pr-8 text-xs font-medium text-white placeholder:text-neutral-500 outline-none transition focus:border-white/30"
               />
               {searchTerm && (
                 <button

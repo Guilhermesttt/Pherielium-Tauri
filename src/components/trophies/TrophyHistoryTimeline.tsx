@@ -227,13 +227,13 @@ const TimelineTrophyRow = React.memo<{
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(idx, 8) * 0.02 }}
       title={formatFullDate(trophy.unlocked_at)}
-      className={`group relative flex items-center justify-between gap-4 rounded-xl border border-white/[0.05] bg-[#0E1012]/70 p-3 sm:p-3.5 hover:bg-[#131519] hover:border-white/10 transition-all ${tierAccent.borderL}`}
+      className={`group relative flex items-center justify-between gap-4 rounded-xl border border-white/[0.05] bg-[#0E1012]/70 p-3 sm:p-3.5 hover:bg-[#131519] hover:border-white/10 transition ${tierAccent.borderL}`}
     >
       <div className="flex items-center gap-3.5 min-w-0 flex-1">
         {/* Insígnia 3D Hero Flutuante */}
         <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
           <div
-            className="absolute -inset-1.5 rounded-full blur-md opacity-40 group-hover:opacity-80 group-hover:scale-125 transition-all duration-300 pointer-events-none"
+            className="absolute -inset-1.5 rounded-full blur-md opacity-40 group-hover:opacity-80 group-hover:scale-125 transition duration-300 pointer-events-none"
             style={{ background: tierAccent.glow }}
           />
           <img
@@ -298,7 +298,7 @@ const TimelineXpRow = React.memo<{
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(idx, 8) * 0.02 }}
       title={formatFullDate(event.created_at)}
-      className="group relative flex items-center justify-between gap-4 rounded-xl border border-white/[0.05] bg-[#0E1012]/70 p-3 sm:p-3.5 hover:bg-[#131519] hover:border-white/10 transition-all border-l-2 border-l-emerald-400/80"
+      className="group relative flex items-center justify-between gap-4 rounded-xl border border-white/[0.05] bg-[#0E1012]/70 p-3 sm:p-3.5 hover:bg-[#131519] hover:border-white/10 transition border-l-2 border-l-emerald-400/80"
     >
       <div className="flex items-center gap-3.5 min-w-0 flex-1">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-105 transition-transform">

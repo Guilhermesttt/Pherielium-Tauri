@@ -273,7 +273,7 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                       return (
                         <div
                           key={i}
-                          className={`flex-1 h-full rounded-xs transition-all duration-75 ${
+                          className={`flex-1 h-full rounded-xs transition duration-75 ${
                             isLit ? zoneColor : "bg-white/6"
                           }`}
                         />

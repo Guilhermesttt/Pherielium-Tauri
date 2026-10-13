@@ -152,7 +152,7 @@ const ModGameCard = React.memo<ModGameCardProps>(
         aria-label={`Gerenciar mods de ${game.title}`}
         onClick={handleCardClick}
         onKeyDown={handleKeyDown}
-        className="group relative rounded-2xl bg-[#0C0D10] hover:bg-[#101217] border border-white/10 hover:border-white/20 p-3.5 transition-all duration-200 hover:-translate-y-0.5 shadow-[0_8px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.06)] flex flex-col justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 cursor-pointer text-left"
+        className="group relative rounded-2xl bg-[#0C0D10] hover:bg-[#101217] border border-white/10 hover:border-white/20 p-3.5 transition duration-200 hover:-translate-y-0.5 shadow-[0_8px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.06)] flex flex-col justify-between focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 cursor-pointer text-left"
       >
         <div>
           {/* Game Artwork Thumbnail */}
@@ -208,7 +208,7 @@ const ModGameCard = React.memo<ModGameCardProps>(
         {/* Manage Action Button */}
         <div className="mt-4 pt-2.5 border-t border-white/[0.06]">
           <div
-            className="w-full h-9 rounded-xl border border-white/10 bg-white/[0.05] group-hover:bg-white/[0.12] active:scale-98 text-white text-xs font-semibold transition-all duration-150 flex items-center justify-center gap-1.5 shadow-sm pointer-events-none"
+            className="w-full h-9 rounded-xl border border-white/10 bg-white/[0.05] group-hover:bg-white/[0.12] active:scale-98 text-white text-xs font-semibold transition duration-150 flex items-center justify-center gap-1.5 shadow-sm pointer-events-none"
           >
             {!hasFolder ? (
               <>
@@ -615,7 +615,7 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
                 target="_blank"
                 rel="noreferrer"
                 onMouseEnter={() => playSound?.("hover")}
-                className="cursor-pointer shrink-0 px-5 py-2.5 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 text-white text-xs font-body font-bold uppercase tracking-wider flex items-center gap-2 transition-all active:scale-95"
+                className="cursor-pointer shrink-0 px-5 py-2.5 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 text-white text-xs font-body font-bold uppercase tracking-wider flex items-center gap-2 transition active:scale-95"
               >
                 <span>EXPLORAR NEXUS MODS</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />

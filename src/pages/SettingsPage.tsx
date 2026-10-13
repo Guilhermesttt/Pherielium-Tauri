@@ -953,7 +953,7 @@ export const SettingsChoice: React.FC<{
     aria-pressed={active}
     onClick={onClick}
     onMouseEnter={onHover}
-    className="relative flex flex-col justify-between cursor-pointer overflow-hidden rounded-2xl border px-4 py-3 text-left transition-all duration-200 hover:scale-[1.015] hover:border-white/30 hover:bg-white/8 hover:shadow-[0_0_20px_rgba(255,255,255,0.06)] active:scale-[0.985]"
+    className="relative flex flex-col justify-between cursor-pointer overflow-hidden rounded-2xl border px-4 py-3 text-left transition duration-200 hover:scale-[1.015] hover:border-white/30 hover:bg-white/8 hover:shadow-[0_0_20px_rgba(255,255,255,0.06)] active:scale-[0.985]"
     style={{
       background: active
         ? "var(--launcher-accent-soft)"
@@ -1024,7 +1024,7 @@ export const SettingsSelect = <T extends string>({
           <button
             type="button"
             className={cn(
-              "flex items-center justify-between w-full bg-[var(--color-surface)] hover:bg-[#222222] border border-white/10 hover:border-white/20 text-white text-[12px] font-medium rounded-xl px-3 py-1.5 transition-all outline-none focus-visible:ring-1 focus-visible:ring-white/30 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm active:scale-[0.98]",
+              "flex items-center justify-between w-full bg-[var(--color-surface)] hover:bg-[#222222] border border-white/10 hover:border-white/20 text-white text-[12px] font-medium rounded-xl px-3 py-1.5 transition outline-none focus-visible:ring-1 focus-visible:ring-white/30 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm active:scale-[0.98]",
               triggerClassName,
             )}
           >
@@ -1046,7 +1046,7 @@ export const SettingsSelect = <T extends string>({
                 glideId={opt.value}
                 onClick={() => onChange(opt.value)}
                 className={cn(
-                  "flex items-center justify-between gap-2 px-3 py-2 text-[12px] rounded-lg cursor-pointer transition-all outline-none select-none",
+                  "flex items-center justify-between gap-2 px-3 py-2 text-[12px] rounded-lg cursor-pointer transition outline-none select-none",
                   isSelected
                     ? "bg-[var(--color-surface)] text-white font-semibold"
                     : "text-white/70 hover:text-white hover:bg-[#222222]",
@@ -2160,7 +2160,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                     onClick={() => selectTab(id)}
                     onMouseEnter={() => setHoveredTab(id)}
                     onMouseLeave={() => setHoveredTab(null)}
-                    className={`group flex w-full items-center gap-3 rounded-[var(--radius-control)] px-3.5 py-2.5 text-[12.5px] font-medium transition-all duration-200 cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)] ${
+                    className={`group flex w-full items-center gap-3 rounded-[var(--radius-control)] px-3.5 py-2.5 text-[12.5px] font-medium transition duration-200 cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-selected)] ${
                       isActive
                         ? "bg-[var(--selection-bg)] text-[var(--selection-text)] border-[var(--selection-border)] shadow-sm font-semibold"
                         : "text-white/60 border-transparent hover:bg-white/[0.05] hover:text-white"
@@ -2370,7 +2370,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                               type="button"
                               onClick={onPreviewSound}
                               onMouseEnter={() => playSound("hover")}
-                              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 border border-white/10 text-white text-xs font-semibold transition-all cursor-pointer shadow-sm"
+                              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 border border-white/10 text-white text-xs font-semibold transition cursor-pointer shadow-sm"
                             >
                               <Volume2 className="h-3.5 w-3.5 text-white/70" />
                               <span>Ouvir amostra de som</span>
@@ -2757,7 +2757,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             !user?.email ||
                             passwordResetSent
                           }
-                          className="px-3.5 py-1.5 bg-[var(--color-surface)] hover:bg-[#222222] border border-white/10 rounded-xl text-[12px] font-medium text-white transition-all disabled:opacity-50 active:scale-95 cursor-pointer"
+                          className="px-3.5 py-1.5 bg-[var(--color-surface)] hover:bg-[#222222] border border-white/10 rounded-xl text-[12px] font-medium text-white transition disabled:opacity-50 active:scale-95 cursor-pointer"
                         >
                           {passwordResetSent
                             ? detailCopy.emailSent
@@ -3331,7 +3331,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             setIsTestingMic(!isTestingMic);
                             playSound("hover");
                           }}
-                          className={`px-3.5 py-1.5 text-[12px] rounded-xl font-medium transition-all cursor-pointer active:scale-95 flex items-center gap-2 ${
+                          className={`px-3.5 py-1.5 text-[12px] rounded-xl font-medium transition cursor-pointer active:scale-95 flex items-center gap-2 ${
                             isTestingMic
                               ? "bg-red-500/15 text-red-300 border border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.2)]"
                               : "bg-white/10 hover:bg-white/20 text-white border border-white/15"
@@ -3442,7 +3442,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             onClick={() =>
                               setIsVideoPreviewOn(!isVideoPreviewOn)
                             }
-                            className={`px-3 py-1.5 border rounded-xl text-[12px] font-medium transition-all cursor-pointer active:scale-95 ${
+                            className={`px-3 py-1.5 border rounded-xl text-[12px] font-medium transition cursor-pointer active:scale-95 ${
                               isVideoPreviewOn
                                 ? "bg-white text-black border-white shadow-sm"
                                 : "bg-[var(--color-surface)] hover:bg-[#222222] border-white/10 text-white"
@@ -3770,7 +3770,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                       <button
                         onClick={onTestOverlayWelcome}
                         onMouseEnter={() => playSound("hover")}
-                        className="p-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-left transition-all active:scale-[0.98] cursor-pointer"
+                        className="p-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-left transition active:scale-[0.98] cursor-pointer"
                       >
                         <span className="block text-[13px] font-medium text-white">
                           {detailCopy.testWelcome}
@@ -3782,7 +3782,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                       <button
                         onClick={() => onTestOverlayAchievement("bronze")}
                         onMouseEnter={() => playSound("hover")}
-                        className="p-3.5 bg-amber-700/10 hover:bg-amber-700/20 border border-amber-600/30 rounded-xl text-left transition-all active:scale-[0.98] cursor-pointer"
+                        className="p-3.5 bg-amber-700/10 hover:bg-amber-700/20 border border-amber-600/30 rounded-xl text-left transition active:scale-[0.98] cursor-pointer"
                       >
                         <span className="block text-[13px] font-medium text-amber-500">
                           {detailCopy.testBronze}
@@ -3794,7 +3794,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                       <button
                         onClick={() => onTestOverlayAchievement("silver")}
                         onMouseEnter={() => playSound("hover")}
-                        className="p-3.5 bg-slate-300/10 hover:bg-slate-300/20 border border-slate-300/25 rounded-xl text-left transition-all active:scale-[0.98] cursor-pointer"
+                        className="p-3.5 bg-slate-300/10 hover:bg-slate-300/20 border border-slate-300/25 rounded-xl text-left transition active:scale-[0.98] cursor-pointer"
                       >
                         <span className="block text-[13px] font-medium text-slate-300">
                           {detailCopy.testSilver}
@@ -3806,7 +3806,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                       <button
                         onClick={() => onTestOverlayAchievement("gold")}
                         onMouseEnter={() => playSound("hover")}
-                        className="p-3.5 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-400/35 rounded-xl text-left transition-all active:scale-[0.98] cursor-pointer"
+                        className="p-3.5 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-400/35 rounded-xl text-left transition active:scale-[0.98] cursor-pointer"
                       >
                         <span className="block text-[13px] font-medium text-yellow-400">
                           {detailCopy.testGold}
@@ -3818,7 +3818,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                       <button
                         onClick={() => onTestOverlayAchievement("platinum")}
                         onMouseEnter={() => playSound("hover")}
-                        className="p-3.5 col-span-2 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/40 rounded-xl text-left transition-all active:scale-[0.98] cursor-pointer"
+                        className="p-3.5 col-span-2 bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/40 rounded-xl text-left transition active:scale-[0.98] cursor-pointer"
                       >
                         <span className="block text-[13px] font-medium text-sky-300">
                           {detailCopy.testPlatinum}

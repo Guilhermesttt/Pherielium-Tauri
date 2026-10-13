@@ -292,7 +292,7 @@ export const NotchSettingsTab: React.FC = () => {
                       playSound("hover");
                     }}
                     className={cn(
-                      "h-8 w-8 rounded-full border-2 transition-all cursor-pointer",
+                      "h-8 w-8 rounded-full border-2 transition cursor-pointer",
                       selected ? "border-white scale-110 shadow-lg shadow-white/10" : "border-transparent hover:scale-105",
                     )}
                     style={hex ? { backgroundColor: hex } : { backgroundImage: "linear-gradient(#34343a,#16161a)" }}
@@ -347,7 +347,7 @@ export const NotchSettingsTab: React.FC = () => {
                 playSound("hover");
               }}
               className={cn(
-                "flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 transition-all cursor-pointer",
+                "flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 transition cursor-pointer",
                 appliedMood === null
                   ? "border-white/40 bg-white/[0.08]"
                   : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:scale-[1.03]",
@@ -367,7 +367,7 @@ export const NotchSettingsTab: React.FC = () => {
                   playSound("hover");
                 }}
                 className={cn(
-                  "flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 transition-all cursor-pointer",
+                  "flex flex-col items-center gap-1.5 rounded-xl border px-2 py-3 transition cursor-pointer",
                   appliedMood === id
                     ? "border-white/40 bg-white/[0.08]"
                     : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:scale-[1.03]",

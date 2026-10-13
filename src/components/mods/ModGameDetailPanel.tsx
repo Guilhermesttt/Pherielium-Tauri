@@ -1511,7 +1511,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             const displayedEnabled = optimisticModStates[mod.id] ?? mod.enabled;
                             const isBusy = modActionIds.has(mod.id);
                             return (
-                            <div key={mod.id} className="group relative flex flex-wrap items-center gap-3 rounded-xl border border-white/[0.08] bg-[#0E0E0E] p-3.5 transition-all hover:border-white/20 hover:bg-[#151515] sm:flex-nowrap sm:gap-4">
+                            <div key={mod.id} className="group relative flex flex-wrap items-center gap-3 rounded-xl border border-white/[0.08] bg-[#0E0E0E] p-3.5 transition hover:border-white/20 hover:bg-[#151515] sm:flex-nowrap sm:gap-4">
                               <HudCornerMarkers className="opacity-0 group-hover:opacity-100 transition-opacity" />
                               <div className="h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-[#171717]">
                                 {mod.pictureUrl && <img src={mod.pictureUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />}

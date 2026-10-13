@@ -956,7 +956,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-          className={`fixed top-9 inset-x-0 bottom-0 z-40 flex items-center justify-center p-3 sm:p-5 select-none transition-all duration-300 ${
+          className={`fixed top-9 inset-x-0 bottom-0 z-40 flex items-center justify-center p-3 sm:p-5 select-none transition duration-300 ${
             isCompactMode ? "bg-black/35 backdrop-blur-md" : "bg-black/50 backdrop-blur-2xl"
           }`}
         >
@@ -970,7 +970,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             style={{
               cornerShape: "squircle",
             } as React.CSSProperties}
-            className={`relative flex flex-col w-full overflow-hidden bg-[#0c0c0e] border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.8)] transition-all duration-300 ${
+            className={`relative flex flex-col w-full overflow-hidden bg-[#0c0c0e] border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.8)] transition duration-300 ${
               isCompactMode
                 ? "max-w-xl h-[440px] sm:h-[460px] rounded-[24px]"
                 : "max-w-5xl h-[84vh] rounded-[28px]"

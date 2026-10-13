@@ -103,7 +103,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
               type="button"
               onClick={onRefocusStream}
               style={{ cornerShape: "squircle" } as React.CSSProperties}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold backdrop-blur-md shadow-lg transition-all active:scale-95 cursor-pointer"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold backdrop-blur-md shadow-lg transition active:scale-95 cursor-pointer"
             >
               <MonitorUp className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Transmissão ao vivo em andamento</span>
@@ -210,7 +210,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
 
                 {/* Avatar Central (Mais presente, integrado sem quadrado escuro por trás) */}
                 <div
-                  className={`absolute h-[92px] w-[92px] rounded-full overflow-hidden border transition-all duration-200 z-10 bg-[#0E0E0E] flex items-center justify-center ${
+                  className={`absolute h-[92px] w-[92px] rounded-full overflow-hidden border transition duration-200 z-10 bg-[#0E0E0E] flex items-center justify-center ${
                     isSpeaking
                       ? "border-white/70 shadow-[0_0_14px_rgba(255,255,255,0.28)]"
                       : "border-white/12"
@@ -286,7 +286,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                     onOpenInvite();
                   }}
                   style={{ cornerShape: "squircle" } as React.CSSProperties}
-                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[12px] bg-white/[0.06] hover:bg-white/[0.12] text-white border border-white/[0.08] text-xs font-semibold shadow-sm transition-all active:scale-96 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[12px] bg-white/[0.06] hover:bg-white/[0.12] text-white border border-white/[0.08] text-xs font-semibold shadow-sm transition active:scale-96 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                 >
                   <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Convidar Amigos</span>
@@ -571,7 +571,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
 
                       {/* Avatar Central (Mais presente, integrado sem quadrado escuro por trás) */}
                       <div
-                        className={`absolute rounded-full overflow-hidden border transition-all duration-200 z-10 bg-[#0E0E0E] flex items-center justify-center ${
+                        className={`absolute rounded-full overflow-hidden border transition duration-200 z-10 bg-[#0E0E0E] flex items-center justify-center ${
                           isSpeaking
                             ? "border-white/70 shadow-[0_0_14px_rgba(255,255,255,0.28)]"
                             : "border-white/12"
