@@ -5,6 +5,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { useNotification } from "../components/NotificationCenter";
 import { usePreferences } from "./PreferencesContext";
 import { useVoiceCall, type UseVoiceCallNotify } from "../hooks/useVoiceCall";
+import { isPoorLink } from "../services/voiceCall/livekitHealth";
 import { EMPTY_INVITE_STATE, isInviteNotificationsOn } from "../services/voiceCall/inviteState";
 import { diffInviteOverlay, inviteNotificationId, inviteOverlayPayload } from "../services/voiceCall/inviteSurfaces";
 import { IncomingCallModal } from "../components/voice/IncomingCallModal";
@@ -316,7 +317,9 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({
                     voiceCall.isReconnecting ||
                     voiceCall.channelConnectionStatus === "reconnecting"
                   ? "reconnecting"
-                  : voiceCall.callState === "connecting" ||
+                  : voiceCall.callState === "active" && isPoorLink(voiceCall.linkQuality)
+                    ? "poor"
+                    : voiceCall.callState === "connecting" ||
                       voiceCall.callState === "ringing-out"
                     ? "connecting"
                     : voiceCall.callState === "active"
@@ -555,6 +558,7 @@ const safeFallbackVoiceCallContext: Partial<VoiceCallContextType> = {
   startTestCall: async () => {},
   answerCall: async () => {},
   inviteStore: EMPTY_INVITE_STATE,
+  linkQuality: "unknown" as const,
   pendingInvite: null,
   acceptPendingInvite: () => {},
   dismissPendingInvite: () => {},

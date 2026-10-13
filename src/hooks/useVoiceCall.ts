@@ -100,6 +100,7 @@ import {
 } from "../services/voiceCall/screenShare";
 import { startDesktopAudioCapture } from "../services/voiceCall/desktopAudioCapture";
 import type { NotificationOptions } from "../components/NotificationCenter";
+import { planOnDisconnect, toLinkQuality, type LinkQuality } from "../services/voiceCall/livekitHealth";
 import {
   inviteHandling,
   inviteNotificationId,
@@ -348,6 +349,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
   const [isVoiceWindowOpen, setIsVoiceWindowOpen] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [linkQuality, setLinkQuality] = useState<LinkQuality>("unknown");
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [iceConnectionState, setIceConnectionState] = useState("new");
   const [peerConnectionCount, setPeerConnectionCount] = useState(0);
@@ -1824,6 +1826,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     }
     reconnectAttemptsRef.current = 0;
     setIsReconnecting(false);
+    setLinkQuality("unknown");
     setIsDisconnecting(false);
     setIceConnectionState("new");
     setPeerConnectionCount(0);
@@ -2328,6 +2331,26 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
           syncRemoteScreenSharingFlag();
         });
 
+        // Saúde da conexão (sem isto a interface não via quedas no meio da chamada): reconectando, qualidade e queda definitiva.
+        room.on(LiveKitRoomEvent.Reconnecting, () => {
+          if (livekitRoomRef.current === room) setIsReconnecting(true);
+        });
+        room.on(LiveKitRoomEvent.Reconnected, () => {
+          if (livekitRoomRef.current === room) setIsReconnecting(false);
+        });
+        room.on(LiveKitRoomEvent.ConnectionQualityChanged, (quality, participant) => {
+          if (participant?.isLocal) setLinkQuality(toLinkQuality(quality));
+        });
+        room.on(LiveKitRoomEvent.Disconnected, (reason) => {
+          // Só vale para a sala atual; trocar de sala ou desligar também dispara este evento (CLIENT_INITIATED).
+          if (livekitRoomRef.current !== room) return;
+          const plan = planOnDisconnect(typeof reason === "number" ? reason : undefined);
+          if (plan.action === "ignore") return;
+          console.warn("[LiveKit] desconectado pelo servidor/rede, motivo:", reason);
+          notify(plan.message, "error");
+          cleanUpCall();
+        });
+
         await room.connect(serverUrl, token);
         livekitRoomRef.current = room;
         livekitConnectedRef.current = true;
@@ -2431,7 +2454,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
         throw err;
       }
     },
-    [selectedAudioOutput, setupVoiceAnalyzer, notify, applyAudioProcessingChain, replaceActiveMicrophoneTrack],
+    [selectedAudioOutput, setupVoiceAnalyzer, notify, applyAudioProcessingChain, replaceActiveMicrophoneTrack, cleanUpCall],
   );
 
   // ICE Preflight Connectivity Check com cache de 10 min e timeout rápido
@@ -5145,6 +5168,8 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     setIsVoiceWindowOpen,
     callDuration,
     isReconnecting,
+    /** Qualidade do meu enlace com o servidor de voz (LiveKit); "unknown" até a primeira medição. */
+    linkQuality,
     inputMode,
     setInputMode,
     pushToTalkKey,
