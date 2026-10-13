@@ -2444,3 +2444,42 @@ html[data-ui-style="refined"] div:is([class*=" border-white/[0.08] "],[class$=" 
 html[data-ui-style="refined"] div:is([class*=" border-white/[0.1] "],[class$=" border-white/[0.1]"],[class^="border-white/[0.1] "],[class*=" border border-white/[0.1]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]) {
   border-color: transparent;
 }
+
+/* Início e Biblioteca: os controles ficam sobre a arte do jogo, então usam tom quase opaco
+   (legível sobre qualquer capa) em vez de vidro com blur. Rótulos com piso de 13px. */
+html[data-ui-style="refined"] {
+  --fs-label: clamp(0.8125rem, 0.62vw, 1.0625rem);
+  --fs-caption: clamp(0.8125rem, 0.66vw, 1.125rem);
+  --tracking-label: 0;
+  --elev-pill: none;
+  --elev-button: none;
+  --ease-focus: var(--spring);
+}
+html[data-ui-style="refined"] :is(.ctl-circle, .ctl-pill) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--tone-2) 88%, transparent);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+html[data-ui-style="refined"] .ctl-circle {
+  color: var(--ink-muted);
+}
+html[data-ui-style="refined"] .ctl-circle:hover {
+  background: var(--tone-3);
+  color: var(--ink);
+}
+html[data-ui-style="refined"] .ctl-circle[data-active="true"] {
+  background: var(--ink);
+  color: var(--tone-0);
+}
+html[data-ui-style="refined"] .btn-play {
+  border-color: transparent;
+  box-shadow: none;
+  border-radius: var(--node);
+}
+html[data-ui-style="refined"] .platform-hint:hover,
+html[data-ui-style="refined"] .platform-hint:focus-visible {
+  border-color: transparent;
+  background: var(--tone-2);
+}

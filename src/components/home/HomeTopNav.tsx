@@ -122,14 +122,14 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
           title="Abrir menu lateral"
           aria-label="Menu principal Pherielium"
         >
-          <div className="flex h-[var(--control-h)] w-[var(--control-h)] shrink-0 items-center justify-center rounded-[var(--radius-control)] bg-white/[0.05] border border-[color:var(--edge-subtle)] group-hover:border-[color:var(--edge-strong)] group-hover:bg-white/[0.09] transition-[background-color,border-color,transform] duration-[var(--dur-focus)] ease-[var(--ease-focus)] active:scale-95">
+          <div className="flex h-[var(--control-h)] w-[var(--control-h)] shrink-0 items-center justify-center rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-2)_88%,transparent)] group-hover:bg-[var(--tone-3)] transition-[background-color,transform] duration-[var(--dur-focus)] ease-[var(--ease-focus)] active:scale-95">
             <img
               src={PHERIELIUM_LOGO_PATH}
               alt=""
               className="ctl-icon object-contain grayscale brightness-200 opacity-90 group-hover:opacity-100 transition-opacity"
             />
           </div>
-          <span className="font-display font-bold text-[length:var(--fs-heading)] leading-none tracking-tight bg-gradient-to-b from-[color:var(--color-text-main)] to-[color:var(--color-text-sub)] bg-clip-text text-transparent">
+          <span className="font-display font-semibold text-[length:var(--fs-heading)] leading-none tracking-[-0.03em] text-[var(--ink)]">
             Pherielium
           </span>
         </button>
@@ -260,13 +260,13 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                     <RefreshCw className={`ctl-icon ${isSyncingLibraries ? "animate-spin" : ""}`} />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" sideOffset={10} className="min-w-[220px] rounded-[var(--radius-panel)] border border-[color:var(--edge-subtle)] bg-[color-mix(in_srgb,var(--surface-overlay)_95%,transparent)] p-1.5 backdrop-blur-xl">
+                <DropdownMenuContent align="end" sideOffset={10} className="min-w-[220px] rounded-[var(--corner-md)] border-0 bg-[var(--tone-3)] p-1.5">
                   <DropdownMenuItem
                     onSelect={() => {
                       onSyncLibraries();
                       playSound("select");
                     }}
-                    className="cursor-pointer gap-2.5 rounded-[var(--radius-control)] px-3 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-white/10"
+                    className="cursor-pointer gap-2.5 rounded-[var(--node)] px-3.5 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-[var(--tone-4)]"
                   >
                     <RefreshCw className="h-4 w-4 text-[var(--ink-muted)]" />
                     Sincronizar tudo
@@ -278,7 +278,7 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                         onSyncSteam();
                         playSound("select");
                       }}
-                      className="cursor-pointer gap-2.5 rounded-[var(--radius-control)] px-3 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-white/10"
+                      className="cursor-pointer gap-2.5 rounded-[var(--node)] px-3.5 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-[var(--tone-4)]"
                     >
                       <SteamBrandIcon className="h-4 w-4 text-[var(--ink-muted)]" />
                       <span className="flex min-w-0 flex-col leading-tight">
@@ -294,7 +294,7 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                         onSyncEpic();
                         playSound("select");
                       }}
-                      className="cursor-pointer gap-2.5 rounded-[var(--radius-control)] px-3 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-white/10"
+                      className="cursor-pointer gap-2.5 rounded-[var(--node)] px-3.5 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-[var(--tone-4)]"
                     >
                       <EpicBrandIcon className="h-4 w-4 text-[var(--ink-muted)]" />
                       <span className="flex min-w-0 flex-col leading-tight">
