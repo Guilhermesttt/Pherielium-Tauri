@@ -67,8 +67,8 @@ export const GameDetailHeader: React.FC<GameDetailHeaderProps> = React.memo(({
                 </span>
               )}
               {isRunning && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[length:var(--step-0)] font-semibold tracking-wider text-emerald-400 uppercase">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--tone-3)] text-[length:var(--step-0)] font-semibold text-[var(--ink)]">
+                  <span aria-hidden="true" className="w-2 h-2 rounded-full bg-[var(--live)] motion-safe:animate-pulse" />
                   {copy.running}
                 </span>
               )}
