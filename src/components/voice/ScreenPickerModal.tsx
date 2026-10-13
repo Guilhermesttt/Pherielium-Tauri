@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MonitorSmartphone, Radio, Volume2, X } from "lucide-react";
+import { MonitorSmartphone, X } from "lucide-react";
 import type { ScreenShareOptions } from "../../hooks/useVoiceCall";
 import { BITRATE_CHOICES_MBPS } from "../../services/voiceCall/screenShare";
+import { RefinedButton, Segmented, SettingRow, Toggle } from "../ui/refined";
 
 interface ScreenPickerModalProps {
   isOpen: boolean;
@@ -70,141 +71,97 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
     onSelectSource(options);
   };
 
+  const bitrateOptions = BITRATE_CHOICES_MBPS.map((value) => ({
+    value: String(value),
+    label: value === "auto" ? "Auto" : `${value}M`,
+  }));
+
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-xl">
+      <div
+        className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 p-4"
+        onKeyDown={(event) => {
+          if (event.key === "Escape") onClose();
+        }}
+      >
         <motion.div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="screen-picker-title"
           initial={{ scale: 0.96, opacity: 0, y: 12 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.98, opacity: 0, y: 8 }}
           transition={springTransition}
           style={squircleStyle}
-          className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-[28px] border border-[#161616] bg-[#0F0F0F] shadow-[0_30px_90px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.06)]"
+          className="relative flex w-full max-w-[640px] flex-col overflow-hidden rounded-[var(--corner-lg)] bg-[var(--tone-1)] text-[var(--ink)]"
         >
-          <div className="flex items-center justify-between border-b border-[#161616] px-6 py-4">
-            <div className="flex items-center gap-3">
-              <div
-                style={squircleStyle}
-                className="flex h-9 w-9 items-center justify-center rounded-[14px] border border-[#161616] bg-white/[0.05] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
-              >
-                <Radio className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold tracking-tight text-white">Compartilhar tela</h3>
-                <p className="text-xs font-normal text-white/50">
-                  Ajuste qualidade e áudio. A seleção da tela abre no seletor nativo do Windows.
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-[12px] text-white/50 transition hover:bg-white/10 hover:text-white"
-              aria-label="Fechar"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="space-y-4 p-6">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-semibold tracking-wide text-white/45">Qualidade</span>
-                <div className="grid grid-cols-3 gap-1 rounded-[14px] border border-[#161616] bg-white/[0.04] p-1">
-                  {(["720p", "1080p", "source"] as const).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setResolution(value)}
-                      className={`cursor-pointer rounded-[10px] py-1.5 text-xs font-semibold transition ${
-                        resolution === value ? "bg-white text-black" : "text-white/50 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      {value === "source" ? "Fonte" : value}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-semibold tracking-wide text-white/45">Taxa de quadros</span>
-                <div className="grid grid-cols-2 gap-1 rounded-[14px] border border-[#161616] bg-white/[0.04] p-1">
-                  {([30, 60] as const).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setFps(value)}
-                      className={`cursor-pointer rounded-[10px] py-1.5 text-xs font-semibold transition ${
-                        fps === value ? "bg-white text-black" : "text-white/50 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      {value} FPS
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-semibold tracking-wide text-white/45">Áudio da stream</span>
-                <label className="flex h-[34px] cursor-pointer items-center gap-2.5 rounded-[14px] border border-[#161616] bg-white/[0.04] px-3">
-                  <input
-                    type="checkbox"
-                    checked={withAudio}
-                    onChange={(event) => setWithAudio(event.target.checked)}
-                    className="h-4 w-4 cursor-pointer rounded accent-white"
-                  />
-                  <Volume2 className="h-3.5 w-3.5 text-white/55" />
-                  <span className="text-xs font-semibold text-white/90">Áudio do PC (todos os apps, menos o Pherielium)</span>
-                </label>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-semibold tracking-wide text-white/45">Bitrate do vídeo</span>
-              <div className="grid grid-cols-7 gap-1 rounded-[14px] border border-[#161616] bg-white/[0.04] p-1">
-                {BITRATE_CHOICES_MBPS.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setBitrateMbps(value)}
-                    className={`cursor-pointer rounded-[10px] py-1.5 text-xs font-semibold transition ${
-                      bitrateMbps === value ? "bg-white text-black" : "text-white/50 hover:bg-white/5 hover:text-white"
-                    }`}
-                  >
-                    {value === "auto" ? "Auto" : `${value}M`}
-                  </button>
-                ))}
-              </div>
-              <p className="text-[11px] leading-relaxed text-white/40">
-                Auto escolhe pela qualidade e pela taxa de quadros. Mais bitrate melhora a imagem em movimento, mas exige mais internet de quem transmite e de quem assiste.
+          <div className="flex items-start justify-between gap-6 px-8 pt-8">
+            <div>
+              <h3 id="screen-picker-title" className="font-display text-[length:var(--step-4)] font-semibold tracking-[-0.03em]">
+                Transmitir a tela
+              </h3>
+              <p className="mt-2 max-w-[44ch] text-[length:var(--step-1)] leading-relaxed text-[var(--ink-muted)]">
+                Escolha a qualidade aqui; a tela ou janela é escolhida no seletor do Windows em seguida.
               </p>
             </div>
-
-            <p className="rounded-[14px] border border-white/8 bg-white/[0.03] px-3 py-2 text-[11px] leading-relaxed text-white/45">
-              Compartilhar a tela não silencia o jogo, o sistema nem a chamada.
-              O áudio enviado é o do computador, sem o som do próprio Pherielium.
-            </p>
+            <RefinedButton variant="quiet" size="sm" aria-label="Fechar" onClick={onClose} icon={<X className="h-4 w-4" />} />
           </div>
 
-          <div className="flex items-center justify-between gap-3 border-t border-[#161616] bg-black/20 p-5">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-[14px] px-4 py-2 text-xs font-semibold text-white/60 transition hover:bg-white/10 hover:text-white"
+          <div className="px-8 pt-4">
+            <SettingRow
+              title="Qualidade"
+              control={() => (
+                <Segmented
+                  label="Qualidade"
+                  value={resolution}
+                  onChange={setResolution}
+                  options={[
+                    { value: "720p", label: "720p" },
+                    { value: "1080p", label: "1080p" },
+                    { value: "source", label: "Fonte" },
+                  ]}
+                />
+              )}
+            />
+            <SettingRow
+              title="Quadros por segundo"
+              control={() => (
+                <Segmented
+                  label="Quadros por segundo"
+                  value={String(fps) as "30" | "60"}
+                  onChange={(value) => setFps(value === "30" ? 30 : 60)}
+                  options={[
+                    { value: "30", label: "30" },
+                    { value: "60", label: "60" },
+                  ]}
+                />
+              )}
+            />
+            <SettingRow
+              title="Áudio do PC"
+              description="Todos os apps, menos o Pherielium. O jogo, o sistema e a chamada não são silenciados."
+              control={(labelId) => <Toggle aria-labelledby={labelId} checked={withAudio} onCheckedChange={setWithAudio} />}
+            />
+            <SettingRow
+              title="Bitrate do vídeo"
+              description="Auto escolhe pela qualidade e pelos quadros. Mais bitrate melhora o movimento e pede mais internet."
             >
+              <Segmented
+                label="Bitrate do vídeo"
+                value={String(bitrateMbps)}
+                onChange={(value) => setBitrateMbps(value === "auto" ? "auto" : Number(value))}
+                options={bitrateOptions}
+              />
+            </SettingRow>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 px-8 pb-8 pt-4">
+            <RefinedButton variant="quiet" onClick={onClose}>
               Cancelar
-            </button>
-            <motion.button
-              type="button"
-              onClick={handleStart}
-              whileTap={{ scale: 0.96 }}
-              transition={springTransition}
-              style={squircleStyle}
-              className="flex cursor-pointer items-center gap-2 rounded-[16px] bg-white px-5 py-2.5 text-xs font-semibold tracking-tight text-black shadow-[0_8px_24px_rgba(255,255,255,0.12)] hover:bg-white/90"
-            >
-              <MonitorSmartphone className="h-4 w-4" />
-              Abrir seletor nativo
-            </motion.button>
+            </RefinedButton>
+            <RefinedButton variant="primary" onClick={handleStart} icon={<MonitorSmartphone className="h-4 w-4" />}>
+              Escolher tela
+            </RefinedButton>
           </div>
         </motion.div>
       </div>

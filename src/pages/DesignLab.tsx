@@ -6,6 +6,8 @@ import tierGold from "../assets/Pherielium_Tier_Ouro.png";
 import tierPlatinum from "../assets/Pherielium_Tier_Platina.png";
 import tierSilver from "../assets/Pherielium_Tier_Prata.png";
 import logo from "../assets/Pherielium_logo.png";
+import { useSearchParams } from "react-router-dom";
+import { ScreenPickerModal } from "../components/voice/ScreenPickerModal";
 import callVideo from "../assets/BG-Video-Calling.webm";
 
 /**
@@ -83,6 +85,10 @@ const DesignLab: React.FC = () => {
   const [alerts, setAlerts] = useState(true);
   const [muted, setMuted] = useState(false);
   const [view, setView] = useState<"all" | "active" | "nofolder">("all");
+
+  // `#/design-lab?modal=stream` abre o modal real de transmissão para revisão.
+  const [params, setParams] = useSearchParams();
+  const streamModalOpen = params.get("modal") === "stream";
 
   const mods = MODS.filter((m) => (view === "active" ? m.active > 0 : view === "nofolder" ? !m.folder : true));
 
@@ -331,6 +337,7 @@ const DesignLab: React.FC = () => {
           </Surface></Reveal>
         </section>
       </div>
+      <ScreenPickerModal isOpen={streamModalOpen} onClose={() => setParams({})} onSelectSource={() => setParams({})} />
     </div>
   );
 };
