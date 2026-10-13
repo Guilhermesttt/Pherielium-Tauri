@@ -4,6 +4,7 @@ import { Search, UserPlus, Check, X, Users, Radio, Send } from "lucide-react";
 import type { SocialFriend, UserProfile, VoiceCallSession } from "../../types/domain";
 import { sendChatMessage } from "../../services/chat";
 import { sendCallInvite } from "../../services/voiceCall";
+import { isChannelInviteRingOn } from "../../services/voiceCall/inviteState";
 import { APP_PROTOCOL_VERSION } from "../../lib/protocolVersion";
 import { callCapacityMessage, canAcceptNewParticipant } from "../../services/voiceCall/limits";
 
@@ -58,8 +59,9 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
     try {
       const avatarUrl = userProfile?.photoURL?.startsWith("data:") ? null : (userProfile?.photoURL || null);
       
-      // 1. Send realtime call invite popup if online
-      void sendCallInvite(friendUid, {
+      // 1. Aviso de ligação em tempo real: só com a flag (padrão desligada). O convite de canal vai como cartão no chat;
+      //    o aviso fazia o app do amigo tocar como ligação (docs/invite-notifications.md).
+      if (isChannelInviteRingOn()) void sendCallInvite(friendUid, {
         callerId: userProfile?.uid || "",
         callerName: userProfile?.displayName || "Jogador",
         callerAvatar: avatarUrl,

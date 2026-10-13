@@ -10,7 +10,7 @@
  *
  * Tudo aqui é puro (sem React, sem relógio): o chamador informa `nowMs`.
  */
-import { isFlagOn } from "../../lib/featureFlags";
+import { isFlagOn, type FlagStorage } from "../../lib/featureFlags";
 import type { CallInvitePayload } from "./types";
 
 /** Validade de um convite (espelha o valor planejado para o servidor: 15 min). */
@@ -22,6 +22,13 @@ export const INVITE_DEDUPE_WINDOW_MS = 10_000;
 
 /** `pherielium_invite_notifications`: desligada na primeira release. Ligada, o convite vira notificação e não toca como ligação. */
 export const isInviteNotificationsOn = (): boolean => isFlagOn("invite_notifications", false);
+
+/**
+ * `pherielium_channel_invite_ring`: o remetente de um convite de CANAL também dispara o aviso de ligação em tempo real
+ * (`call:invite`), que no app do receptor toca e abre o modal de atender. Padrão **desligado**: o convite vai só como cartão no chat
+ * (e a notificação de mensagem). Vale para qualquer receptor, inclusive o 1.0.2. A ligação 1:1 não é afetada.
+ */
+export const isChannelInviteRingOn = (storage?: FlagStorage | null): boolean => isFlagOn("channel_invite_ring", false, storage);
 
 export type InviteStatus = "pending" | "expired" | "cancelled";
 

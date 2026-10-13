@@ -65,6 +65,7 @@ Se aparecer, o motivo (`wrong-chat`, `sender-not-peer`, `unknown-host`...) diz o
 
 | Flag | Padrão | Efeito |
 | --- | --- | --- |
+| `channel_invite_ring` | desligada | no **remetente**: `1` volta a enviar o aviso de ligação junto com o convite de canal (o receptor toca como chamada); desligada, só o cartão no chat |
 | `p2p_fallback` | desligada | `1` permite cair para P2P quando o LiveKit falha para um lado (o código P2P não foi apagado) |
 | `call_invite_first` | ligada | `0` volta a enviar o convite só depois de a mídia conectar |
 

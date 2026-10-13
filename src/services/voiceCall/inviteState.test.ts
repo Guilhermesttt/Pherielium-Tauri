@@ -7,6 +7,7 @@ import {
   inviteKey,
   inviteRemainingMs,
   inviteState,
+  isChannelInviteRingOn,
   isInviteCancelled,
   reduceInvites,
 } from "./inviteState";
@@ -100,5 +101,19 @@ describe("reduceInvites", () => {
     const pruned = reduceInvites(state, { type: "prune", nowMs: INVITE_TTL_MS });
     expect(pruned.pending).toHaveLength(0);
     expect(pruned.seen).toEqual({});
+  });
+});
+
+describe("isChannelInviteRingOn (sender side)", () => {
+  const storage = (value: string | null) => ({ getItem: () => value });
+
+  it("is OFF by default: channel invites go as a chat card, not as a ringing call", () => {
+    expect(isChannelInviteRingOn(storage(null))).toBe(false);
+    expect(isChannelInviteRingOn(storage("garbage"))).toBe(false);
+  });
+
+  it("can be turned back on", () => {
+    expect(isChannelInviteRingOn(storage("1"))).toBe(true);
+    expect(isChannelInviteRingOn(storage("off"))).toBe(false);
   });
 });

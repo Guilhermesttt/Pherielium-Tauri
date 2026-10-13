@@ -35,6 +35,7 @@ Este build inclui o DevTools (F12) para os testes; o instalador oficial não ter
 | `dm_ping_only` | ligada | `0` volta a enviar o texto da DM no canal público |
 | `presence_global_bus` | desligada | `1` volta a publicar no canal global de presença |
 | `call_invite_first` | ligada | `0` envia o convite só depois da mídia |
+| `channel_invite_ring` | desligada | remetente: `1` volta a tocar como ligação no convite de canal; desligada, só o cartão no chat |
 | `p2p_fallback` | desligada | `1` permite cair para P2P se o LiveKit falhar |
 | `stream_debug` | desligada | diagnóstico de transmissão, áudio e `displaySurface` |
 | `presence_debug` | desligada | diagnóstico de presença |

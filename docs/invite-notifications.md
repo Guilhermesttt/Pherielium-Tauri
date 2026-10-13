@@ -2,6 +2,16 @@
 
 Fatia **front-only e não autoritativa**: não há validação no servidor. A versão com servidor (expiração e cancelamento autoritativos, `server_now`) é a fatia I (`docs/backend-audit/PLAN.md` §17), ainda bloqueada por schema e código da API.
 
+## Convite de canal: só o cartão no chat, sem ligação (remetente)
+
+Relato (rc.2): o amigo, mesmo na versão mais recente, recebia o convite de canal **como chamada** (toque e modal de atender), em vez de só o cartão no chat.
+Causa [VERIFICADA em `ChannelInviteModal.tsx`]: o remetente sempre enviava duas coisas, o cartão (mensagem de chat) **e** o aviso de ligação em tempo real (`call:invite`). Quem recebe trata o aviso como ligação, a menos que tenha a flag `invite_notifications` ligada (padrão desligada).
+
+Correção: flag **`pherielium_channel_invite_ring`**, padrão **desligada**, lida **no remetente**. Desligada, o convite de canal vai só como **cartão no chat** (mais a notificação de mensagem do receptor, que agora mostra "📞 Convidou você para uma call" em vez do JSON cru). Vale para qualquer receptor, inclusive o 1.0.2. Ligada (`localStorage.setItem("pherielium_channel_invite_ring","1")`), volta o aviso de ligação antigo.
+- **A ligação 1:1** não muda (`startCall` continua enviando o aviso).
+- **Efeito sobre a N-invite:** o convite como notificação/notch/overlay reage ao aviso `call:invite`. Com `channel_invite_ring` desligada, o convite de **canal** não gera esse aviso, então só aparece o cartão e a notificação de mensagem. A N-invite continua valendo para quem usar `channel_invite_ring=1` e para convites que ainda chegam como aviso.
+- **Testar:** convide um amigo para um canal (receptor no rc ou 1.0.2): não deve tocar nem abrir o modal; o cartão aparece no chat e a notificação diz "Convidou você para uma call". Com a flag em `1` no remetente, volta o toque.
+
 ## O que muda (só com a flag ligada)
 
 Flag **`pherielium_invite_notifications`**, **desligada** na primeira release. Desligada, nada muda.
