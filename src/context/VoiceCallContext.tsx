@@ -366,6 +366,8 @@ export const VoiceCallProvider: React.FC<{ children: React.ReactNode }> = ({
         onSetPeerMuted={voiceCall.setPeerMuted}
         isReconnecting={voiceCall.isReconnecting}
         mediaTransport={voiceCall.mediaTransport}
+        linkQuality={voiceCall.linkQuality}
+        peerLinkQuality={voiceCall.peerLinkQuality}
         inputMode={voiceCall.inputMode}
         setInputMode={voiceCall.setInputMode}
         pushToTalkKey={voiceCall.pushToTalkKey}
@@ -559,6 +561,7 @@ const safeFallbackVoiceCallContext: Partial<VoiceCallContextType> = {
   answerCall: async () => {},
   inviteStore: EMPTY_INVITE_STATE,
   linkQuality: "unknown" as const,
+  peerLinkQuality: {} as Record<string, never>,
   pendingInvite: null,
   acceptPendingInvite: () => {},
   dismissPendingInvite: () => {},

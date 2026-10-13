@@ -18,6 +18,22 @@ export function isPoorLink(quality: LinkQuality): boolean {
   return quality === "poor" || quality === "lost";
 }
 
+/** Como mostrar a qualidade de um participante: só "ruim" e "perdida" aparecem; o resto fica discreto (só no tooltip). */
+export function linkQualityPresentation(quality: LinkQuality): { show: boolean; tone: "warn" | "bad" | "none"; label: string } {
+  switch (quality) {
+    case "poor":
+      return { show: true, tone: "warn", label: "Conexão ruim" };
+    case "lost":
+      return { show: true, tone: "bad", label: "Sem conexão" };
+    case "excellent":
+      return { show: false, tone: "none", label: "Conexão excelente" };
+    case "good":
+      return { show: false, tone: "none", label: "Conexão boa" };
+    default:
+      return { show: false, tone: "none", label: "Conexão ainda não medida" };
+  }
+}
+
 // Valores do `DisconnectReason` do protocolo do LiveKit (@livekit/protocol).
 const REASON_CLIENT_INITIATED = 1;
 const REASON_DUPLICATE_IDENTITY = 2;

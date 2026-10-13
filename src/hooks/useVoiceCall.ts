@@ -354,6 +354,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     ((roomName: string, identity: string, displayName: string, avatarUrl?: string) => Promise<unknown>) | null
   >(null);
   const [linkQuality, setLinkQuality] = useState<LinkQuality>("unknown");
+  const [peerLinkQuality, setPeerLinkQuality] = useState<Record<string, LinkQuality>>({});
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [iceConnectionState, setIceConnectionState] = useState("new");
   const [peerConnectionCount, setPeerConnectionCount] = useState(0);
@@ -1832,6 +1833,7 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     reconnectAttemptsRef.current = 0;
     setIsReconnecting(false);
     setLinkQuality("unknown");
+    setPeerLinkQuality({});
     setIsDisconnecting(false);
     setIceConnectionState("new");
     setPeerConnectionCount(0);
@@ -2332,6 +2334,10 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
         });
 
         room.on(LiveKitRoomEvent.ParticipantDisconnected, (participant) => {
+          setPeerLinkQuality((prev) => {
+            if (!(participant.identity in prev)) return prev;
+            return Object.fromEntries(Object.entries(prev).filter(([uid]) => uid !== participant.identity));
+          });
           prunePeer(participant.identity);
           syncRemoteScreenSharingFlag();
         });
@@ -2344,7 +2350,12 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
           if (livekitRoomRef.current === room) setIsReconnecting(false);
         });
         room.on(LiveKitRoomEvent.ConnectionQualityChanged, (quality, participant) => {
-          if (participant?.isLocal) setLinkQuality(toLinkQuality(quality));
+          if (participant?.isLocal) {
+            setLinkQuality(toLinkQuality(quality));
+          } else if (participant?.identity) {
+            const identity = participant.identity;
+            setPeerLinkQuality((prev) => ({ ...prev, [identity]: toLinkQuality(quality) }));
+          }
         });
         room.on(LiveKitRoomEvent.Disconnected, (reason) => {
           // Só vale para a sala atual; trocar de sala ou desligar também dispara este evento (CLIENT_INITIATED).
@@ -5202,6 +5213,8 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     isReconnecting,
     /** Qualidade do meu enlace com o servidor de voz (LiveKit); "unknown" até a primeira medição. */
     linkQuality,
+    /** Qualidade do enlace de cada participante remoto (por identity). */
+    peerLinkQuality,
     inputMode,
     setInputMode,
     pushToTalkKey,

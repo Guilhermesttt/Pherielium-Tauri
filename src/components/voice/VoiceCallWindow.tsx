@@ -40,6 +40,10 @@ import { CallControlDock } from "./call-window/CallControlDock";
 import { CallSettingsPopover } from "./call-window/CallSettingsPopover";
 import { VideoRenderer } from "./call-window/VideoRenderer";
 import { MediaTransportProvider } from "./call-window/MediaTransportContext";
+import { PeerQualityProvider } from "./call-window/PeerQualityContext";
+import type { LinkQuality } from "../../services/voiceCall/livekitHealth";
+
+const EMPTY_PEER_QUALITY: Record<string, LinkQuality> = {};
 import type { MediaTransport } from "@/services/voiceCall/feedAudioPolicy";
 import { OrbloomCustomizerModal } from "./call-window/OrbloomCustomizerModal";
 
@@ -119,6 +123,9 @@ interface VoiceCallWindowProps {
   isReconnecting?: boolean;
   /** Transporte de mídia da chamada; define se os <video> tocam áudio (sob LiveKit ficam mutados). */
   mediaTransport?: MediaTransport;
+  /** Qualidade do meu enlace e dos outros (LiveKit); alimenta o indicador de cada participante. */
+  linkQuality?: LinkQuality;
+  peerLinkQuality?: Record<string, LinkQuality>;
   inputMode?: "voice-activity" | "push-to-talk";
   setInputMode?: (mode: "voice-activity" | "push-to-talk") => void;
   pushToTalkKey?: string;
@@ -202,6 +209,8 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
   onSetPeerMuted,
   isReconnecting = false,
   mediaTransport = "none",
+  linkQuality = "unknown",
+  peerLinkQuality = EMPTY_PEER_QUALITY,
   inputMode = "voice-activity",
   setInputMode,
   pushToTalkKey = "F8",
@@ -919,6 +928,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
 
   return (
     <MediaTransportProvider transport={mediaTransport}>
+      <PeerQualityProvider local={linkQuality} peers={peerLinkQuality}>
     <AnimatePresence>
       {isOpen && !isDisconnecting && (
         <motion.div
@@ -1314,6 +1324,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
         </motion.div>
       )}
     </AnimatePresence>
+      </PeerQualityProvider>
     </MediaTransportProvider>
   );
 };

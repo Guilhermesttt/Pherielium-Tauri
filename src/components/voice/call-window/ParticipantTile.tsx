@@ -1,8 +1,10 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { MicOff, VolumeX, Camera, Monitor, Pin } from "lucide-react";
+import { MicOff, VolumeX, Camera, Monitor, Pin, WifiOff } from "lucide-react";
 import type { CallFeed } from "../VoiceCallWindow";
 import { VideoRenderer } from "./VideoRenderer";
+import { usePeerLinkQuality } from "./PeerQualityContext";
+import { linkQualityPresentation } from "../../../services/voiceCall/livekitHealth";
 
 interface ParticipantTileProps {
   feed: CallFeed;
@@ -20,6 +22,7 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
   onContextMenu,
 }) => {
   const isSpeaking = Boolean(feed.isSpeaking);
+  const quality = linkQualityPresentation(usePeerLinkQuality(feed));
 
   return (
     <motion.div
@@ -114,6 +117,16 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
             <span className="text-white/80 font-medium">Falando</span>
           ) : (
             <span className="text-white/50">Conectado</span>
+          )}
+
+          {quality.show && (
+            <span
+              className={`flex items-center gap-1 shrink-0 ${quality.tone === "bad" ? "text-rose-400" : "text-amber-300"}`}
+              title={quality.label}
+            >
+              <WifiOff className="h-2.5 w-2.5" aria-hidden="true" />
+              <span className="sr-only">{quality.label}</span>
+            </span>
           )}
 
           {feed.isCamera && !feed.cameraStream && (

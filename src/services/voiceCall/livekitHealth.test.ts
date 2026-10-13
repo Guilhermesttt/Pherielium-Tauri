@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPoorLink, planOnDisconnect, toLinkQuality } from "./livekitHealth";
+import { isPoorLink, linkQualityPresentation, planOnDisconnect, toLinkQuality } from "./livekitHealth";
 
 describe("toLinkQuality / isPoorLink", () => {
   it.each([
@@ -13,6 +13,14 @@ describe("toLinkQuality / isPoorLink", () => {
   ] as const)("%s -> %s (poor=%s)", (raw, quality, poor) => {
     expect(toLinkQuality(raw)).toBe(quality);
     expect(isPoorLink(toLinkQuality(raw))).toBe(poor);
+  });
+});
+
+describe("linkQualityPresentation", () => {
+  it("shows an indicator only for poor and lost links", () => {
+    expect(linkQualityPresentation("poor")).toMatchObject({ show: true, tone: "warn" });
+    expect(linkQualityPresentation("lost")).toMatchObject({ show: true, tone: "bad" });
+    for (const q of ["excellent", "good", "unknown"] as const) expect(linkQualityPresentation(q).show).toBe(false);
   });
 });
 
