@@ -13,12 +13,18 @@ export interface ReleaseHighlights {
 }
 
 export const LATEST_RELEASE: ReleaseHighlights = {
-  version: "1.0.3-rc.6",
-  title: "Pherielium 1.0.3 (versão de teste)",
+  version: "1.0.3",
+  title: "Pherielium 1.0.3",
   description:
-    "Chamadas que se recuperam sozinhas, transmissão com qualidade à sua escolha e convites como notificação.",
+    "Um visual novo para o hub inteiro, chamadas que se recuperam sozinhas, transmissão com qualidade à sua escolha e convites como notificação.",
   releaseUrl: "https://github.com/Guilhermesttt/Pherielium-Tauri/releases",
   highlights: [
+    {
+      id: "ui",
+      title: "Visual novo",
+      description:
+        "O hub inteiro foi redesenhado: superfícies limpas, botões em pílula, texto mais legível (nada abaixo de 13px) e movimento suave. Troféus, Mods e Configurações ganharam telas novas.",
+    },
     {
       id: "voice",
       title: "Chamadas que se recuperam",
@@ -29,19 +35,13 @@ export const LATEST_RELEASE: ReleaseHighlights = {
       id: "stability",
       title: "Transmissão do seu jeito",
       description:
-        "Escolha a qualidade (720p, 1080p ou Fonte, até 4K), os 30 ou 60 quadros e o bitrate. O áudio do PC sai sem a voz da chamada voltar em eco, e o volume obedece de 0 a 100%.",
-    },
-    {
-      id: "ui",
-      title: "Quem está assistindo",
-      description:
-        "Quem transmite vê quantas pessoas estão assistindo à tela.",
+        "Escolha a qualidade (720p, 1080p ou Fonte, até 4K), os 30 ou 60 quadros e o bitrate, e veja quantas pessoas estão assistindo. O áudio do PC sai sem a voz da chamada voltar em eco.",
     },
     {
       id: "security",
-      title: "Convites como notificação",
+      title: "Convites e segurança",
       description:
-        "Ligar ou convidar para uma sala chega como convite, com notificação no notch e no jogo, em vez de tocar como ligação. O convite vale por 15 minutos.",
+        "Ligar ou convidar para uma sala chega como convite, com notificação no notch e no jogo. E o app agora pede ao Windows só as permissões que de fato usa.",
     },
   ],
 };
