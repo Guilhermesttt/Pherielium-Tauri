@@ -5,9 +5,10 @@ import "./lib/tauriAPI";
 
 import { StrictMode, Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
-import "@fontsource/archivo-black/400.css";
-import "@fontsource/stix-two-text/400.css";
-import "@fontsource/stix-two-text/700.css";
+// Fontes embutidas (antes vinham do Google Fonts a cada abertura; Archivo Black e STIX não eram usadas por nenhuma tela).
+import "@fontsource-variable/inter/opsz.css";
+import "@fontsource-variable/sora";
+import "@fontsource-variable/unbounded";
 import "./index.css";
 import { applyUiStyle, readUiStyle } from "./lib/uiStyle";
 

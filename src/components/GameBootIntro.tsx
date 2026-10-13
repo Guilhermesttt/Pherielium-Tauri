@@ -323,7 +323,7 @@ const TitleReveal = React.memo(function TitleReveal({
             : { opacity: 0, letterSpacing: "0px", filter: "blur(15px)", y: 15 }
       }
       className="relative flex flex-col items-center select-none pointer-events-none mt-2"
-      style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+      style={{ fontFamily: "var(--font-display)" }}
     >
       <span
         className="font-bold text-3xl sm:text-4xl md:text-5xl uppercase tracking-[inherit]"

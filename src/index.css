@@ -626,20 +626,20 @@ html[data-launcher-theme="xbox360"] {
 
 @theme {
   /* Títulos, Headings e Elementos de Destaque (Impacto Máximo) */
-  --font-display: 'Inter', system-ui, sans-serif;
+  --font-display: 'Inter Variable', 'Inter', system-ui, sans-serif;
   /* Aplicar font-weight: 900 */
-  --font-heading: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Inter Variable', 'Inter', system-ui, sans-serif;
   /* Aplicar font-weight: 900 */
-  --font-space: 'Inter', system-ui, sans-serif;
+  --font-space: 'Inter Variable', 'Inter', system-ui, sans-serif;
   /* Aplicar font-weight: 900 */
-  --font-title: 'Inter', system-ui, sans-serif;
+  --font-title: 'Inter Variable', 'Inter', system-ui, sans-serif;
   /* Aplicar font-weight: 900 */
 
   /* Textos de Interface, Corpo, Menus e Legendas (Legibilidade Apple) */
-  --font-body: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-  --font-ui: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-  --font-inter: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+  --font-body: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', sans-serif;
+  --font-ui: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', sans-serif;
+  --font-sans: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', sans-serif;
+  --font-inter: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', sans-serif;
 
   --color-bg-main: var(--color-bg-main);
   --color-surface: var(--color-surface);
