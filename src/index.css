@@ -2286,3 +2286,62 @@ html[data-ui-style="refined"] {
   /* o único acento de cor: "ao vivo" (online, falando, transmitindo) */
   --live: #30d158;
 }
+
+/* ========================================================
+   Pherielium Refined: regras globais do hub inteiro
+   Valem só no estilo refinado. Em vez de editar 250 arquivos, a camada abaixo
+   desliga os enfeites que o sistema não usa (sombra em repouso, vidro, texto em
+   gradiente) e leva a escala do Tailwind para a do sistema (piso de 13px, cantos).
+   Janelas que não marcam data-ui-style (overlay do jogo, notch) continuam como estão.
+   ======================================================== */
+html[data-ui-style="refined"] {
+  /* escala do Tailwind -> escala do sistema */
+  --text-xs: var(--step-0);
+  --text-xs--line-height: 1.45;
+  --radius-xl: var(--corner-sm);
+  --radius-2xl: var(--corner-md);
+  --radius-3xl: var(--corner-lg);
+
+  /* superfícies dos temas -> tons */
+  --surface-base: var(--tone-0);
+  --surface-raised: var(--tone-1);
+  --surface-overlay: var(--tone-2);
+  --radius-panel: var(--corner-lg);
+  --radius-card: var(--corner-md);
+  --radius-control: var(--corner-sm);
+  --elev-card: none;
+  --elev-focus: 0 0 0 1.5px var(--ink);
+  --surface-chamfer: 0 0 #0000;
+}
+
+/* Sem sombra em repouso: zera só a sombra (anéis de foco do Tailwind continuam, usam outra variável). */
+html[data-ui-style="refined"] [class*="shadow-"] {
+  --tw-shadow: 0 0 #0000 !important;
+}
+html[data-ui-style="refined"] :is(.theme-panel, .theme-card-surface) {
+  box-shadow: none;
+}
+
+/* Sem vidro: o blur custa GPU de quem está jogando e o sistema separa por tom. */
+html[data-ui-style="refined"] [class*="backdrop-blur"],
+html[data-ui-style="refined"] [class*="backdrop-filter"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Texto em gradiente vira tinta cheia (o gradiente some, o texto continua legível). */
+html[data-ui-style="refined"] .bg-clip-text.text-transparent {
+  background-image: none !important;
+  color: var(--ink) !important;
+}
+
+/* O anel de foco é o "nó": tinta cheia, afastado do controle. */
+html[data-ui-style="refined"] :focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Barras de rolagem discretas, no tom do fundo. */
+html[data-ui-style="refined"] * {
+  scrollbar-color: var(--tone-4) transparent;
+}
