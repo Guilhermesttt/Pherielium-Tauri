@@ -12,14 +12,24 @@ import {
   type NotchEvent,
   type NotchEventKind,
 } from "./notchEvent";
+import { isNotchEventMuted, scaledNotchEventDuration } from "../../mascot/notchEventPrefs";
+
+/** Preferências do usuário para os avisos (ver `mascot/notchEventPrefs.ts`). */
+export interface NotchEventPrefs {
+  muted: readonly string[];
+  durationScale: number;
+}
 
 /**
  * Evento ativo (ou null). Escuta a janela e, no Tauri, o evento vindo do hub; mantém uma
  * fila curta e mostra um por vez. Com `hold` (painel expandido) a fila espera sem perder nada.
  */
-export function useNotchEvent(enabled: boolean, hold = false): NotchEvent | null {
+export function useNotchEvent(enabled: boolean, hold = false, prefs?: NotchEventPrefs): NotchEvent | null {
   const [queue, setQueue] = useState<NotchEvent[]>([]);
   const seen = useRef<string[]>([]);
+  // As preferências mudam sem religar os ouvintes: o ouvinte lê sempre o valor mais recente.
+  const prefsRef = useRef<NotchEventPrefs | undefined>(prefs);
+  prefsRef.current = prefs;
 
   useEffect(() => {
     if (!enabled) {
@@ -29,6 +39,7 @@ export function useNotchEvent(enabled: boolean, hold = false): NotchEvent | null
     const push = (raw: unknown) => {
       const next = parseNotchEvent(raw);
       if (!next) return;
+      if (isNotchEventMuted(next.kind, prefsRef.current?.muted ?? [])) return;
       // a mesma janela recebe CustomEvent e Tauri emit: o id impede mostrar duas vezes
       if (seen.current.includes(next.id)) return;
       seen.current = [...seen.current.slice(-19), next.id];
@@ -59,7 +70,9 @@ export function useNotchEvent(enabled: boolean, hold = false): NotchEvent | null
   const activeKind = active?.kind ?? null;
   useEffect(() => {
     if (hold || activeAt === null || activeKind === null) return;
-    const id = window.setTimeout(() => setQueue((q) => q.slice(1)), notchEventDuration(activeKind, active?.tier));
+    const id = window.setTimeout(() => setQueue((q) => q.slice(1)),
+      scaledNotchEventDuration(notchEventDuration(activeKind, active?.tier), prefsRef.current?.durationScale ?? 1),
+    );
     return () => window.clearTimeout(id);
   }, [activeAt, activeKind, hold]);
 

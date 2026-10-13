@@ -1,5 +1,11 @@
 import { SHAPES } from "./engine/skins";
 import { normalizeHex, resolveBodyColor } from "./mascotColor";
+import {
+  DEFAULT_EVENT_DURATION_SCALE,
+  EVENT_DURATION_SCALE_RANGE,
+  sanitizeMutedEvents,
+  type MutableNotchEventKind,
+} from "./notchEventPrefs";
 
 /**
  * Configuração do notch (barra no topo do overlay) e do mascote Pherie.
@@ -43,6 +49,10 @@ export interface NotchConfig {
   backgroundOpacity: number | null;
   /** Cantos chanfrados (cortados), ou `null` = o do tema. */
   chamfer: boolean | null;
+  /** Tipos de aviso informativo escondidos do notch (mensagens, pedidos e conquistas nunca se escondem). */
+  mutedEvents: MutableNotchEventKind[];
+  /** Fator de duração dos avisos (0,5x a 2x). */
+  eventDurationScale: number;
 }
 
 export type HatId = "none" | "witch" | "party" | "crown" | "beanie" | "top";
@@ -92,6 +102,8 @@ export const DEFAULT_NOTCH_CONFIG: NotchConfig = {
   glowIntensity: null,
   backgroundOpacity: null,
   chamfer: null,
+  mutedEvents: [],
+  eventDurationScale: DEFAULT_EVENT_DURATION_SCALE,
 };
 
 /** Formas disponíveis, com rótulo em pt-BR (os ids vêm do bloub, em francês). */
@@ -183,6 +195,11 @@ export function sanitizeNotchConfig(raw: unknown, base: NotchConfig = DEFAULT_NO
       BACKGROUND_OPACITY_RANGE.max,
     ),
     chamfer: v.chamfer === null ? null : typeof v.chamfer === "boolean" ? v.chamfer : base.chamfer,
+    mutedEvents: sanitizeMutedEvents(v.mutedEvents, base.mutedEvents),
+    eventDurationScale:
+      typeof v.eventDurationScale === "number" && Number.isFinite(v.eventDurationScale)
+        ? clamp(v.eventDurationScale, EVENT_DURATION_SCALE_RANGE.min, EVENT_DURATION_SCALE_RANGE.max)
+        : base.eventDurationScale,
   };
 }
 

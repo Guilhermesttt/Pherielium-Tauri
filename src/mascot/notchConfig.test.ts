@@ -74,3 +74,24 @@ describe("catálogos", () => {
     expect(notchConfigsEqual(DEFAULT_NOTCH_CONFIG, { ...DEFAULT_NOTCH_CONFIG, enabled: false })).toBe(false);
   });
 });
+
+describe("avisos do notch (mutedEvents e eventDurationScale)", () => {
+  it("o padrão não esconde nada e mantém a duração", () => {
+    expect(DEFAULT_NOTCH_CONFIG.mutedEvents).toEqual([]);
+    expect(DEFAULT_NOTCH_CONFIG.eventDurationScale).toBe(1);
+  });
+
+  it("aceita só tipos silenciáveis e limita o fator", () => {
+    const c = sanitizeNotchConfig({ mutedEvents: ["capture-saved", "message", "xyz"], eventDurationScale: 5 });
+    expect(c.mutedEvents).toEqual(["capture-saved"]);
+    expect(c.eventDurationScale).toBe(2);
+    expect(sanitizeNotchConfig({ eventDurationScale: 0.1 }).eventDurationScale).toBe(0.5);
+    expect(sanitizeNotchConfig({ eventDurationScale: "rápido" }).eventDurationScale).toBe(1);
+  });
+
+  it("notchConfigsEqual compara a lista de tipos silenciados", () => {
+    const a = { ...DEFAULT_NOTCH_CONFIG, mutedEvents: ["welcome" as const] };
+    expect(notchConfigsEqual(a, { ...DEFAULT_NOTCH_CONFIG, mutedEvents: ["welcome" as const] })).toBe(true);
+    expect(notchConfigsEqual(a, DEFAULT_NOTCH_CONFIG)).toBe(false);
+  });
+});

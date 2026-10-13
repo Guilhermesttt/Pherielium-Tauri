@@ -931,7 +931,10 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   // Controle conectou/desconectou: o notch encena o aviso em vez de um popup no hub.
   const controllerFlash = useControllerFlash(config.enabled);
   // Eventos do ecossistema (pedido de amizade, mensagem, conquista...): esperam o painel fechar.
-  const notchEvent = useNotchEvent(config.enabled, isExpanded);
+  const notchEvent = useNotchEvent(config.enabled, isExpanded, {
+    muted: config.mutedEvents,
+    durationScale: config.eventDurationScale,
+  });
   const isAchievement = notchEvent?.kind === "achievement";
 
   // Chamada recebendo (janela principal): o notch mostra quem liga com atender/recusar

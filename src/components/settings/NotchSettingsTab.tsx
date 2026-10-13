@@ -13,6 +13,12 @@ import {
 } from "../../mascot/notchConfig";
 import { saveNotchConfig, useNotchConfig } from "../../mascot/useNotchConfig";
 import { MascotCustomizer } from "../../mascot/MascotCustomizer";
+import {
+  EVENT_DURATION_SCALE_RANGE,
+  MUTABLE_NOTCH_EVENT_KINDS,
+  MUTABLE_NOTCH_EVENT_LABELS,
+  type MutableNotchEventKind,
+} from "../../mascot/notchEventPrefs";
 
 /** Linha de configuração (mesma aparência do `SettingsRow` da página; copiada para não criar import circular). */
 const Row: React.FC<{
@@ -201,6 +207,56 @@ export const NotchSettingsTab: React.FC = () => {
       </section>
 
       <section className={cn("space-y-6", off && "opacity-60")}>
+        <Card
+          title="Avisos no notch"
+          hint="Escolha quais avisos informativos aparecem e por quanto tempo ficam na tela. Mensagens, pedidos de amizade e conquistas sempre aparecem."
+        >
+          {MUTABLE_NOTCH_EVENT_KINDS.map((kind: MutableNotchEventKind) => {
+            const label = MUTABLE_NOTCH_EVENT_LABELS[kind];
+            const shown = !draft.mutedEvents.includes(kind);
+            return (
+              <Row
+                key={kind}
+                disabled={off}
+                title={label.title}
+                description={label.description}
+                action={
+                  <Switch
+                    aria-label={label.title}
+                    checked={shown}
+                    disabled={off}
+                    onCheckedChange={(checked) =>
+                      update({
+                        mutedEvents: checked
+                          ? draft.mutedEvents.filter((k) => k !== kind)
+                          : [...draft.mutedEvents, kind],
+                      })
+                    }
+                  />
+                }
+              />
+            );
+          })}
+          <Row
+            disabled={off}
+            hasBorder={false}
+            title="Tempo na tela"
+            description={`Os avisos ficam ${draft.eventDurationScale.toFixed(1).replace(".", ",")}x o tempo padrão.`}
+          >
+            <input
+              type="range"
+              aria-label="Tempo dos avisos na tela"
+              min={EVENT_DURATION_SCALE_RANGE.min}
+              max={EVENT_DURATION_SCALE_RANGE.max}
+              step={0.1}
+              value={draft.eventDurationScale}
+              disabled={off}
+              onChange={(e) => update({ eventDurationScale: Number(e.target.value) })}
+              className="w-full accent-white"
+            />
+          </Row>
+        </Card>
+
         <Card title="Pherie">
           <Row
             title="Mostrar a Pherie"
