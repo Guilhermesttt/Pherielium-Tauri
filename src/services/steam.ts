@@ -7,6 +7,7 @@ import {
 } from "./api";
 import type { Game, SteamOwnedGame } from "../types/domain";
 import type { LauncherLanguage } from "../context/PreferencesContext";
+import { isCacheFresh } from "./achievementTier";
 import {
   bulkUpsertLibraryGames,
   listLibraryGames,
@@ -374,11 +375,14 @@ export const invalidateSteamAchievementCache = (
   achievementMemoryCache.delete(cacheKey);
 };
 
+/** Validade padrão do cache de conquistas. O modal de detalhes pede menos (`maxAgeMs`) para não mostrar conquistas antigas. */
+const ACHIEVEMENT_CACHE_MAX_AGE_MS = 1000 * 60 * 15;
+
 export const fetchSteamAchievementDetails = async (
   steamId: string,
   appId: string,
   language: LauncherLanguage = "pt-BR",
-  options: { bypassCache?: boolean } = {},
+  options: { bypassCache?: boolean; maxAgeMs?: number } = {},
 ): Promise<{
   achievements: SteamAchievement[];
   total: number;
@@ -389,7 +393,7 @@ export const fetchSteamAchievementDetails = async (
   if (
     !options.bypassCache
     && cached
-    && Date.now() - cached.timestamp < 1000 * 60 * 15
+    && isCacheFresh(cached.timestamp, Date.now(), options.maxAgeMs ?? ACHIEVEMENT_CACHE_MAX_AGE_MS)
   ) {
     return cached;
   }

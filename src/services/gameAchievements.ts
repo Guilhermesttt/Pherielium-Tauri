@@ -285,7 +285,8 @@ async function loadSteamAchievements(
         options.steamId,
         resolvedAppId,
         language,
-        { bypassCache: options.bypassSteamCache },
+        // 60 s: abrir o modal logo depois de um desbloqueio não pode mostrar os dados de até 15 min atrás
+        { bypassCache: options.bypassSteamCache, maxAgeMs: 60_000 },
       )
       : await fetchSteamAchievementSchema(resolvedAppId, language);
 
