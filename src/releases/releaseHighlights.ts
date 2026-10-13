@@ -13,7 +13,7 @@ export interface ReleaseHighlights {
 }
 
 export const LATEST_RELEASE: ReleaseHighlights = {
-  version: "1.0.3-rc.2",
+  version: "1.0.3-rc.3",
   title: "Pherielium 1.0.3 (versão de teste)",
   description:
     "Chamadas e transmissão mais confiáveis: volume que obedece, áudio do PC na tela inteira e convites de chamada como notificação.",
