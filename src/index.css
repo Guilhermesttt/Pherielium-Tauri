@@ -2407,3 +2407,40 @@ html[data-ui-style="refined"] .font-mono {
   font-family: var(--font-body);
   font-variant-numeric: tabular-nums;
 }
+
+/* Botões secundários com contorno fino viram o botão tonal do sistema (sem linha).
+   Só os que não guardam estado: seleção (aria-pressed/selected/checked/current, data-state, role)
+   ou borda inline (cor dinâmica) continuam como estão, porque ali a borda informa. */
+html[data-ui-style="refined"] button[class*="border-white/"]:not([aria-pressed]):not([aria-selected]):not([aria-checked]):not([aria-current]):not([data-state]):not([role]):not([style*="border"]) {
+  border-color: transparent !important;
+}
+html[data-ui-style="refined"] button[class*="border-white/"]:not([class^="bg-"]):not([class*=" bg-"]):not([aria-pressed]):not([aria-selected]):not([aria-checked]):not([aria-current]):not([data-state]):not([role]):not([style*="border"]) {
+  background-color: var(--tone-3);
+}
+html[data-ui-style="refined"] button[class*="border-white/"]:not([class^="bg-"]):not([class*=" bg-"]):not([aria-pressed]):not([aria-selected]):not([aria-checked]):not([aria-current]):not([data-state]):not([role]):not([style*="border"]):hover:not(:disabled) {
+  background-color: var(--tone-4);
+}
+
+/* Selos em pílula com contorno: um degrau de tom no lugar da linha. */
+html[data-ui-style="refined"] span[class*="rounded-full"][class*="border-white/"]:not([style*="border"]) {
+  border-color: transparent !important;
+}
+html[data-ui-style="refined"] span[class*="rounded-full"][class*="border-white/"]:not([class^="bg-"]):not([class*=" bg-"]):not([style*="border"]) {
+  background-color: var(--tone-3);
+}
+
+
+/* Cartões com linha quase invisível (5–10%) e fundo próprio: o tom já separa, a linha sai.
+   Bordas de seleção (20% ou mais) e bordas inline (cor dinâmica) ficam. */
+html[data-ui-style="refined"] div:is([class*=" border-white/5 "],[class$=" border-white/5"],[class^="border-white/5 "],[class*=" border border-white/5"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/6 "],[class$=" border-white/6"],[class^="border-white/6 "],[class*=" border border-white/6"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/8 "],[class$=" border-white/8"],[class^="border-white/8 "],[class*=" border border-white/8"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/10 "],[class$=" border-white/10"],[class^="border-white/10 "],[class*=" border border-white/10"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.04] "],[class$=" border-white/[0.04]"],[class^="border-white/[0.04] "],[class*=" border border-white/[0.04]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.05] "],[class$=" border-white/[0.05]"],[class^="border-white/[0.05] "],[class*=" border border-white/[0.05]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.06] "],[class$=" border-white/[0.06]"],[class^="border-white/[0.06] "],[class*=" border border-white/[0.06]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.07] "],[class$=" border-white/[0.07]"],[class^="border-white/[0.07] "],[class*=" border border-white/[0.07]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.08] "],[class$=" border-white/[0.08]"],[class^="border-white/[0.08] "],[class*=" border border-white/[0.08]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.1] "],[class$=" border-white/[0.1]"],[class^="border-white/[0.1] "],[class*=" border border-white/[0.1]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]) {
+  border-color: transparent;
+}
