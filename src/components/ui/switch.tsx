@@ -30,7 +30,7 @@ function Switch({
       checked={checked}
       onCheckedChange={handleCheckedChange}
       className={cn(
-        't-toggle peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--launcher-accent))] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-[rgb(var(--launcher-accent))] data-[state=unchecked]:bg-white/20',
+        't-toggle peer inline-flex h-8 w-[52px] shrink-0 cursor-pointer items-center rounded-[var(--node)] border-4 border-transparent [--toggle-travel:20px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--tone-0)] disabled:cursor-not-allowed disabled:opacity-40 data-[state=checked]:bg-[var(--ink)] data-[state=unchecked]:bg-[var(--tone-4)]',
         isInit ? 'is-init' : '',
         className,
       )}
@@ -38,7 +38,7 @@ function Switch({
     >
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
-        className="t-toggle-thumb pointer-events-none block h-4 w-4 rounded-full shadow-lg data-[state=checked]:bg-black data-[state=unchecked]:bg-white"
+        className="t-toggle-thumb pointer-events-none block h-6 w-6 rounded-[var(--node)] data-[state=checked]:bg-[var(--tone-0)] data-[state=unchecked]:bg-[var(--ink)]"
       />
     </SwitchPrimitive.Root>
   )
