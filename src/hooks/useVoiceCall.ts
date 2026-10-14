@@ -1844,6 +1844,11 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     mediaPendingRef.current = null;
     rejoinEpochRef.current += 1; // aborta tentativas de religar a sala em andamento
     stopRingtone();
+    // "Ouvir o próprio microfone (Retorno)" nunca era desligado ao encerrar/trocar de chamada:
+    // o AudioContext do monitoramento ficava aberto para sempre (o preset persiste em
+    // localStorage, então quem ligava isso uma vez acumulava um AudioContext por chamada —
+    // o navegador tem um teto baixo de contextos simultâneos; ao estourar, o áudio quebra).
+    stopMicMonitoring();
     if (callDurationTimerRef.current) {
       window.clearInterval(callDurationTimerRef.current);
       callDurationTimerRef.current = null;
