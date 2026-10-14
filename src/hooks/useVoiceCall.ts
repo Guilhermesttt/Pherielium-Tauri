@@ -79,6 +79,7 @@ import {
   LiveKitConnectError,
 } from "../services/voiceCall/livekitConnectPolicy";
 import { installCallFailureReport, logCallFailure } from "../services/voiceCall/callFailureLog";
+import { MediaTimeoutError, withTimeout } from "../services/voiceCall/mediaTimeout";
 import { getAppVersionCached } from "../lib/protocolVersion";
 import { getChatId, sendChatMessage } from "../services/chat";
 import { buildOneOnOneInviteCardText } from "../services/voiceCall/inviteMessage";
@@ -146,6 +147,12 @@ import {
 
 const LOCAL_TEST_CHAT_IDS = new Set(["simulated_call_test", "test-echo-session"]);
 const LOCAL_TEST_PEER_IDS = new Set(["echo-bot", "ghost_tester_uid"]);
+
+/** `getUserMedia` pode travar sem nunca resolver (driver de áudio preso, permissão do Windows
+ * sem resposta). Sem prazo, `answerCall`/`joinRoom` ficam presos em "connecting" para sempre:
+ * o `catch` nunca roda, `cleanUpCall()` nunca roda, e todo "atender" seguinte mostra "Você já
+ * está em uma chamada." (bug recorrente). Ver src/services/voiceCall/mediaTimeout.ts. */
+const AUDIO_ACQUIRE_TIMEOUT_MS = 12000;
 
 const isLocalTestCall = (chatId?: string | null, friendUid?: string | null) =>
   Boolean(
@@ -1363,14 +1370,20 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
       };
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        const stream = await withTimeout(
+          navigator.mediaDevices.getUserMedia(constraints),
+          AUDIO_ACQUIRE_TIMEOUT_MS,
+          "microfone",
+        );
         setDeviceError(null);
         isAcquiringMediaRef.current = false;
         return stream;
       } catch (err: any) {
         console.warn("[useVoiceCall] getUserMedia primary failed:", err);
         let errorMsg = "Erro ao acessar o microfone.";
-        if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+        if (err instanceof MediaTimeoutError) {
+          errorMsg = "O microfone não respondeu a tempo. Feche outros apps que possam estar usando-o e tente de novo.";
+        } else if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
           errorMsg = "Permissão de microfone negada. Verifique as configurações de privacidade do Windows.";
         } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
           errorMsg = "Nenhum microfone encontrado. Conecte um microfone e tente novamente.";
@@ -1382,12 +1395,23 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
         setDeviceError(errorMsg);
         notify(errorMsg, "error");
 
+        // Travou no timeout: o driver/permissão já não respondeu uma vez, tentar de novo (mesmo
+        // relaxado) só prolongaria o travamento. Desiste direto e segue sem microfone (mutado).
+        if (err instanceof MediaTimeoutError) {
+          isAcquiringMediaRef.current = false;
+          return null;
+        }
+
         // Fallback genérico com constraints relaxadas
         try {
-          const fallbackStream = await navigator.mediaDevices.getUserMedia({
-            audio: targetDeviceId ? { deviceId: { ideal: targetDeviceId } } : true,
-            video: false,
-          });
+          const fallbackStream = await withTimeout(
+            navigator.mediaDevices.getUserMedia({
+              audio: targetDeviceId ? { deviceId: { ideal: targetDeviceId } } : true,
+              video: false,
+            }),
+            AUDIO_ACQUIRE_TIMEOUT_MS,
+            "microfone (modo de compatibilidade)",
+          );
           setDeviceError(null);
           isAcquiringMediaRef.current = false;
           notify("Microfone iniciado em modo de compatibilidade básica.", "info");
@@ -3565,6 +3589,13 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
       console.warn("[useVoiceCall] answerCall canceled: missing user or invite", { uid: user?.uid, invite, currentState });
       return;
     }
+    // Discord-style: atender enquanto já se está em OUTRA chamada desliga essa primeiro em vez de
+    // bloquear. "ringing-in" não conta: é o próprio convite tocando sendo atendido agora, não uma
+    // segunda chamada (acceptPendingInviteRef e joinActiveCall já desligam antes de chegar aqui
+    // quando a chamada em andamento é mesmo outra; chamar de novo é inofensivo).
+    if (currentState !== "idle" && currentState !== "ringing-in") {
+      cleanUpCall();
+    }
     const { callerId, callerName, callerAvatar, chatId, hasVideo } = invite;
 
     try {
@@ -3742,9 +3773,9 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
       notify("Convite inválido ou expirado.", "info");
       return;
     }
+    // Discord-style: aceitar uma chamada nova desliga a atual primeiro, não bloqueia com aviso.
     if (callStateRef.current !== "idle") {
-      notify("Você já está em uma chamada.", "info");
-      return;
+      cleanUpCall();
     }
     void answerCall(entry.invite);
   };
@@ -3754,13 +3785,13 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
     async (roomId: string, password?: string) => {
       if (!user?.uid) return;
       if (callState !== "idle") {
-        // já está nesta sala: só reabre a janela; em outra chamada, avisa em vez de não fazer nada
+        // já está nesta sala: só reabre a janela; em outra chamada, desliga dela primeiro
+        // e entra na nova (Discord-style), em vez de bloquear com aviso.
         if (sessionRef.current?.chatId === roomId) {
           setIsVoiceWindowOpen(true);
-        } else {
-          notify("Você já está em uma chamada. Saia dela para entrar nesta sala.", "info");
+          return;
         }
-        return;
+        cleanUpCall();
       }
 
       try {
@@ -3912,9 +3943,10 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
   const joinActiveCall = useCallback(
     async (invite: CallInviteMeta, password?: string) => {
       if (!user?.uid) return;
+      // Discord-style: entrar numa chamada nova desliga a atual primeiro (joinRoom e answerCall
+      // abaixo também desligam por conta própria; chamar de novo aqui é inofensivo).
       if (callState !== "idle") {
-        notify("Você já está em uma chamada.", "info");
-        return;
+        cleanUpCall();
       }
 
       const chatId = String(invite.chatId || "").trim();
