@@ -2295,24 +2295,26 @@ html[data-ui-style="refined"] {
    Janelas que não marcam data-ui-style (overlay do jogo, notch) continuam como estão.
    ======================================================== */
 html[data-ui-style="refined"] {
-  /* escala do Tailwind -> escala do sistema */
+  /* escala do Tailwind -> escala do sistema (tokens genéricos do Tailwind, não do sistema de temas) */
   --text-xs: var(--step-0);
   --text-xs--line-height: 1.45;
   --radius-xl: var(--corner-sm);
   --radius-2xl: var(--corner-md);
   --radius-3xl: var(--corner-lg);
-
-  /* superfícies dos temas -> tons */
-  --surface-base: var(--tone-0);
-  --surface-raised: var(--tone-1);
-  --surface-overlay: var(--tone-2);
-  --radius-panel: var(--corner-lg);
-  --radius-card: var(--corner-md);
-  --radius-control: var(--corner-sm);
-  --elev-card: none;
-  --elev-focus: 0 0 0 1.5px var(--ink);
-  --surface-chamfer: 0 0 #0000;
 }
+
+/* IMPORTANTE: não sobrescrever aqui --surface-base/raised/overlay, --radius-panel/card/control
+   nem --elev-*: são tokens de TEMA (cada data-launcher-theme os define, veja PS5/Xbox/Cyberpunk/
+   etc. mais acima neste arquivo) e têm a mesma especificidade deste seletor. Sobrescrevê-los aqui
+   venceria a cascata por ordem e achataria todo tema para o mesmo visual neutro — foi exatamente
+   isso que quebrou a troca de tema numa rodada anterior do redesign. As telas já redesenhadas
+   (Configurações, Troféus, Mods, Sidebar, barra de título) usam --tone-0..4 diretamente, que são
+   tokens do sistema novo (definidos sempre, acima) e não dependem disto.
+
+   Pelo mesmo motivo, a regra "sem blur" também não é global: os componentes redesenhados já
+   tiraram backdrop-blur do próprio JSX (não restam classes para pegar); nuking `[class*="backdrop-
+   blur"]` em todo o app quebrava o filtro de biblioteca/plataforma e os modais ainda não
+   redesenhados, que dependem do blur para o fundo ficar legível. */
 
 /* Sem sombra em repouso: zera só a sombra (anéis de foco do Tailwind continuam, usam outra variável). */
 html[data-ui-style="refined"] [class*="shadow-"] {
@@ -2320,13 +2322,6 @@ html[data-ui-style="refined"] [class*="shadow-"] {
 }
 html[data-ui-style="refined"] :is(.theme-panel, .theme-card-surface) {
   box-shadow: none;
-}
-
-/* Sem vidro: o blur custa GPU de quem está jogando e o sistema separa por tom. */
-html[data-ui-style="refined"] [class*="backdrop-blur"],
-html[data-ui-style="refined"] [class*="backdrop-filter"] {
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
 }
 
 /* Texto em gradiente vira tinta cheia (o gradiente some, o texto continua legível). */

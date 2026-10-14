@@ -190,8 +190,9 @@ const ModalShell: React.FC<ModalShellProps> = ({
       <div
         onClick={() => onClose()}
         className={cn(
-          // Fundo opaco o bastante para ler o painel sem blur (blur custa GPU de quem está jogando).
-          "absolute inset-0 bg-black/75 transition-opacity",
+          // bg-black/70 + blur leve: separa o painel do que está atrás (capa do jogo, prévia
+          // cheia de detalhe) sem usar um blur pesado (GPU de quem está jogando).
+          "absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity",
           shouldReduceEffects ? "duration-0" : "duration-[var(--dur-2)] ease-[var(--spring)]",
           renderState === "open" ? "opacity-100" : "opacity-0",
           backdropClassName
