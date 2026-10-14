@@ -1,0 +1,10 @@
+# O C: deste PC vive perto do limite (já ficou em menos de 100 MB livres com o target do
+# src-tauri sozinho ocupando ~96 GB). Compilar no F:, que tem mais de 100 GB livres, evita o
+# "Espaço insuficiente no disco" do linker (os error 112) sem precisar lembrar de passar
+# CARGO_TARGET_DIR toda vez — vale para `cargo build`, `cargo check`, `cargo clippy`,
+# `cargo test` e `npm run tauri dev`/`build`, rodados daqui (src-tauri) ou da raiz do projeto.
+#
+# Se o F: não existir nesta máquina, apague este arquivo (ou troque o caminho) para voltar ao
+# padrão (target/ dentro de src-tauri).
+[build]
+target-dir = "F:/pherielium-target"
