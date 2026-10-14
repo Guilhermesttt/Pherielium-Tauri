@@ -8,7 +8,7 @@ let roomsChannel: any = null;
 let currentTrackedRoom: PublicVoiceRoom | null = null;
 let voiceRoomsTableChannel: ReturnType<typeof supabase.channel> | null = null;
 
-const friendlyRoomError = (message?: string, code?: string): string => {
+export const friendlyRoomError = (message?: string, code?: string): string => {
   // Erro de ambiente não pode se disfarçar de erro de validação: PGRST202 é
   // "função não encontrada", ou seja, migration de sala de voz não aplicada.
   if (code === "PGRST202") {
@@ -17,6 +17,12 @@ const friendlyRoomError = (message?: string, code?: string): string => {
   const m = (message || "").toLowerCase();
   if (m.includes("does not exist") && m.includes("crypt")) {
     return "O banco está sem a extensão pgcrypto no search_path (migration 20261009130000).";
+  }
+  // 23514 = check_violation no Postgres. O app sempre pede até 10 participantes
+  // (MAX_CALL_PARTICIPANTS); se o banco ainda tiver a constraint antiga (até 4), toda
+  // criação de sala falha aqui. Migration que corrige: 20261009140000_voice_rooms_max_participants.
+  if (code === "23514" || m.includes("voice_rooms_max_participants_check")) {
+    return "O banco está desatualizado: aplique a migration 20261009140000_voice_rooms_max_participants (limite de participantes).";
   }
   if (m.includes("nao e o dono")) return "Só o dono da sala pode editá-la.";
   if (m.includes("exige uma senha")) return "Uma sala privada precisa de senha.";
@@ -116,7 +122,9 @@ const createVoiceRoomViaSupabase = async (config: {
   });
 
   if (error || !data) {
-    throw new Error(error?.message || "Não foi possível criar a sala de voz.");
+    throw new Error(
+      friendlyRoomError(error?.message, error?.code) || "Não foi possível criar a sala de voz.",
+    );
   }
 
   const session = await supabase.auth.getSession();
