@@ -69,7 +69,7 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
           {/* 2. Estatísticas e plataforma */}
           <div className="flex items-center gap-[var(--gap-inline)] flex-wrap text-[length:var(--fs-caption)] text-[var(--ink)] font-medium">
             {isRunning && (
-              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-1)_88%,transparent)] px-4 text-[var(--ink)]">
+              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--surface-base)_55%,transparent)] px-4 text-[var(--ink)]">
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--live)] opacity-60 motion-reduce:hidden" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--live)]" />
@@ -79,19 +79,19 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
             )}
 
             {platformInfo && (
-              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-1)_88%,transparent)] px-4">
+              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--surface-base)_55%,transparent)] px-4">
                 <platformInfo.icon className="w-3.5 h-3.5 text-[var(--ink)] shrink-0" />
                 <span className="font-semibold text-[var(--ink)]">{platformInfo.label}</span>
               </span>
             )}
 
-            <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-1)_88%,transparent)] px-4">
+            <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--surface-base)_55%,transparent)] px-4">
               <Clock className="w-3.5 h-3.5 text-[var(--ink-muted)] shrink-0" />
               <span>{formattedHours} jogadas</span>
             </span>
 
             {Boolean(game.totalAchievements && game.totalAchievements > 0) && (
-              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-1)_88%,transparent)] px-4">
+              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--surface-base)_55%,transparent)] px-4">
                 <Trophy className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                 <span>
                   {game.completedAchievements || 0}/{game.totalAchievements} Conquistas
@@ -100,7 +100,7 @@ export const HeroGame: React.FC<HeroGameProps> = React.memo(({
             )}
 
             {game.isFavorite && (
-              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-1)_88%,transparent)] px-4 text-[var(--ink)]">
+              <span className="inline-flex h-[var(--control-h)] shrink-0 items-center gap-1.5 rounded-[var(--node)] bg-[color-mix(in_srgb,var(--surface-base)_55%,transparent)] px-4 text-[var(--ink)]">
                 <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
                 <span className="font-semibold">Favorito</span>
               </span>

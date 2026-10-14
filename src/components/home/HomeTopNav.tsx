@@ -122,7 +122,7 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
           title="Abrir menu lateral"
           aria-label="Menu principal Pherielium"
         >
-          <div className="flex h-[var(--control-h)] w-[var(--control-h)] shrink-0 items-center justify-center rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-2)_88%,transparent)] group-hover:bg-[var(--tone-3)] transition-[background-color,transform] duration-[var(--dur-focus)] ease-[var(--ease-focus)] active:scale-95">
+          <div className="flex h-[var(--control-h)] w-[var(--control-h)] shrink-0 items-center justify-center rounded-[var(--node)] bg-[color-mix(in_srgb,var(--surface-base)_88%,transparent)] group-hover:bg-[color-mix(in_srgb,var(--color-text-main)_10%,transparent)] transition-[background-color,transform] duration-[var(--dur-focus)] ease-[var(--ease-focus)] active:scale-95">
             <img
               src={PHERIELIUM_LOGO_PATH}
               alt=""
@@ -260,13 +260,13 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                     <RefreshCw className={`ctl-icon ${isSyncingLibraries ? "animate-spin" : ""}`} />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" sideOffset={10} className="min-w-[220px] rounded-[var(--corner-md)] border-0 bg-[var(--tone-3)] p-1.5">
+                <DropdownMenuContent align="end" sideOffset={10} className="min-w-[220px] rounded-[var(--corner-md)] border-0 bg-[color-mix(in_srgb,var(--surface-overlay)_95%,transparent)] p-1.5">
                   <DropdownMenuItem
                     onSelect={() => {
                       onSyncLibraries();
                       playSound("select");
                     }}
-                    className="cursor-pointer gap-2.5 rounded-[var(--node)] px-3.5 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-[var(--tone-4)]"
+                    className="cursor-pointer gap-2.5 rounded-[var(--node)] px-3.5 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-[color-mix(in_srgb,var(--color-text-main)_10%,transparent)]"
                   >
                     <RefreshCw className="h-4 w-4 text-[var(--ink-muted)]" />
                     Sincronizar tudo
@@ -278,7 +278,7 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                         onSyncSteam();
                         playSound("select");
                       }}
-                      className="cursor-pointer gap-2.5 rounded-[var(--node)] px-3.5 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-[var(--tone-4)]"
+                      className="cursor-pointer gap-2.5 rounded-[var(--node)] px-3.5 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-[color-mix(in_srgb,var(--color-text-main)_10%,transparent)]"
                     >
                       <SteamBrandIcon className="h-4 w-4 text-[var(--ink-muted)]" />
                       <span className="flex min-w-0 flex-col leading-tight">
@@ -294,7 +294,7 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                         onSyncEpic();
                         playSound("select");
                       }}
-                      className="cursor-pointer gap-2.5 rounded-[var(--node)] px-3.5 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-[var(--tone-4)]"
+                      className="cursor-pointer gap-2.5 rounded-[var(--node)] px-3.5 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-[color-mix(in_srgb,var(--color-text-main)_10%,transparent)]"
                     >
                       <EpicBrandIcon className="h-4 w-4 text-[var(--ink-muted)]" />
                       <span className="flex min-w-0 flex-col leading-tight">

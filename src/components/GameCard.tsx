@@ -244,7 +244,7 @@ const GameCard: React.FC<GameCardProps> = ({
           boxShadow: isActive ? "0 0 0 2px var(--ink)" : "none",
           transition: "box-shadow var(--transition-focus)",
         }}
-        className={`relative isolate bg-[var(--tone-2)] transform-gpu will-change-transform flex flex-col justify-between ${
+        className={`relative isolate bg-[var(--surface-raised)] transform-gpu will-change-transform flex flex-col justify-between ${
           isActive ? "z-20" : "z-10"
         }`}
       >
@@ -300,7 +300,7 @@ const GameCard: React.FC<GameCardProps> = ({
           <div className="flex items-center gap-1.5 pointer-events-auto ml-auto">
             {isFavorite && (
               <div
-                className="flex h-7 w-7 items-center justify-center rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-1)_90%,transparent)] pointer-events-none"
+                className="flex h-7 w-7 items-center justify-center rounded-[var(--node)] bg-[color-mix(in_srgb,var(--surface-base)_90%,transparent)] pointer-events-none"
                 aria-label="Favorito"
               >
                 <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
@@ -338,7 +338,7 @@ const GameCard: React.FC<GameCardProps> = ({
                   e.preventDefault();
                   onMenuClick(e);
                 }}
-                className="relative flex h-8 w-8 items-center justify-center rounded-[var(--node)] bg-[color-mix(in_srgb,var(--tone-1)_90%,transparent)] hover:bg-[var(--tone-3)] text-[var(--ink)] cursor-pointer transition-colors duration-200"
+                className="relative flex h-8 w-8 items-center justify-center rounded-[var(--node)] bg-[color-mix(in_srgb,var(--surface-base)_90%,transparent)] hover:bg-[color-mix(in_srgb,var(--color-text-main)_14%,transparent)] text-[var(--ink)] cursor-pointer transition-colors duration-200"
                 aria-label={isMenuOpen ? "Fechar opções" : `Opções de ${title}`}
                 title={isMenuOpen ? "Fechar opções" : "Opções do jogo"}
               >
@@ -389,7 +389,7 @@ const GameCard: React.FC<GameCardProps> = ({
             transition={{ type: "spring", bounce: 0.3, duration: 0.3 }}
             className="flex h-12 w-12 items-center justify-center rounded-[var(--node)] bg-[var(--ink)]"
           >
-            <Play className="ml-0.5 h-4 w-4 fill-[var(--tone-0)] text-[var(--tone-0)]" aria-hidden="true" />
+            <Play className="ml-0.5 h-4 w-4 fill-[var(--surface-base)] text-[var(--surface-base)]" aria-hidden="true" />
           </motion.div>
         </motion.div>
 
