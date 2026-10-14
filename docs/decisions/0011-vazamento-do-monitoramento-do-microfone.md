@@ -1,7 +1,7 @@
-# ADR-0011: Fecha o monitoramento do próprio microfone ao encerrar a chamada
+# ADR-0011: Fecha o monitoramento do próprio microfone e separa voz de áudio da tela no P2P
 
 - Status: **Aceito** (pedido do dono, 2026-10-14: "separar as faixas de áudio para não ter
-  retorno nas chamadas e nem nos canais de voz").
+  retorno nas chamadas e nem nos canais de voz"; confirmado explicitamente para o P2P no mesmo dia).
 
 ## Contexto
 `cleanUpCall()` (`useVoiceCall.ts`) nunca chamava `stopMicMonitoring()`. "Ouvir o próprio
@@ -23,30 +23,42 @@ false`, exatamente para não recapturar a voz da própria chamada) e cada trilha
 (`attachLiveKitAudioOnce`, `getLiveKitTrackKey`) — não achei um ponto onde essas trilhas se
 misturam na via principal (LiveKit SFU).
 
-**Encontrado, mas fora do alcance desta correção:** no modo de contorno P2P (mesh, usado só
-quando o LiveKit está fora do ar ou a flag manual `pherielium_p2p_fallback` está ligada — **desligada
-por padrão**, ADR-0006), o manipulador de `ontrack` de áudio (`useVoiceCall.ts`, por volta da linha
-2685) mantém só uma trilha de áudio por participante: ao chegar uma trilha nova, remove a anterior
-do `MediaStream` do peer. Se alguém compartilha a tela com áudio do PC **e** fala ao mesmo tempo
-nesse modo de contorno, uma trilha substitui a outra (quem chegou por último "ganha"), em vez de as
-duas coexistirem. Não mexido agora: é o caminho de contorno, não o principal, e separar as trilhas
-exigiria um `MediaStream` por tipo de trilha por participante em todo o pipeline de áudio P2P
-(reprodução, medidor de fala, volume) — mudança maior do que o pedido cobre, e esse caminho é o que
-a instrução anterior do dono marcou como "já funcionando" para não mexer.
+**Achado e também corrigido nesta ADR:** no modo de contorno P2P (mesh, usado só quando o LiveKit
+está fora do ar ou a flag manual `pherielium_p2p_fallback` está ligada — **desligada por padrão**,
+ADR-0006), o manipulador de `ontrack` de áudio (`useVoiceCall.ts`, `pc.ontrack`) mantinha só uma
+trilha de áudio por participante: ao chegar uma trilha nova, removia a anterior do `MediaStream` do
+peer. O P2P não rotula a origem da trilha como o LiveKit faz (`ScreenShareAudio` vs microfone), então
+se alguém compartilha a tela com áudio do PC **e** fala ao mesmo tempo nesse modo de contorno, uma
+trilha substituía a outra — quem chegasse por último "ganhava", a voz sumia ou o áudio da tela nunca
+entrava.
 
 ## Decisão
-`cleanUpCall()` chama `stopMicMonitoring()` logo depois de `stopRingtone()`, fechando o
-`AudioContext` do monitoramento (se estiver aberto) toda vez que uma chamada termina ou é trocada
-por outra. O ajuste "Ouvir o próprio microfone" continua salvo entre chamadas (preferência da
-pessoa), só o recurso de verdade (o `AudioContext`) passa a não vazar.
+1. `cleanUpCall()` chama `stopMicMonitoring()` logo depois de `stopRingtone()`, fechando o
+   `AudioContext` do monitoramento (se estiver aberto) toda vez que uma chamada termina ou é trocada
+   por outra. O ajuste "Ouvir o próprio microfone" continua salvo entre chamadas (preferência da
+   pessoa), só o recurso de verdade (o `AudioContext`) passa a não vazar.
+2. No `ontrack` de áudio do P2P, uma trilha só é removida do `MediaStream` do peer quando ela
+   mesma já **encerrou** (`readyState !== "live"`) — nunca mais por causa de uma trilha diferente
+   chegando. As duas (voz e áudio da tela) ficam vivas no mesmo stream; o elemento que reproduz o
+   stream mixa as duas automaticamente (comportamento padrão de `<audio>`/`<video>` com várias
+   trilhas de áudio). Ganhou também `onmute`/`onunmute` (como o vídeo já tinha): parar a
+   transmissão usa `replaceTrack(null)` no lado de quem envia, que nunca dispara `onended` no
+   receptor, só deixa a trilha muda — sem isso ela ficava presa, viva e muda, para sempre.
+   **Não mexido:** vídeo da câmera vs. vídeo da tela no P2P tem a mesma colisão (um substitui o
+   outro), mas é um caso raro (câmera ligada *e* compartilhando tela ao mesmo tempo) e não foi o
+   que foi pedido — só áudio.
 
 ## Consequências
 - Uma sessão com várias chamadas não acumula mais `AudioContext`s abertos pelo monitoramento.
 - Ligar "Ouvir o próprio microfone" numa chamada nova continua exigindo o toggle de novo (preset
   salvo, mas o pipeline em si nunca religava sozinho — comportamento não mudou aqui).
-- Em aberto: o retorno descrito pode também vir do caminho P2P (acima) ou de uma causa acústica
-  (microfone captando o próprio alto-falante, sem fone) que nenhuma mudança neste repositório
-  resolve sozinha. Se o problema persistir depois desta correção, preciso saber: acontece com
-  fone de ouvido ou caixa de som; só quando VOCÊ compartilha a tela, só quando é OUTRA PESSOA que
-  compartilha, ou nos dois casos; e se o LiveKit está ativo nessa hora (`window.pherieliumCallFailures()`
-  diria se caiu para P2P).
+- Falar e compartilhar a tela com áudio do PC ao mesmo tempo no modo de contorno P2P não derruba
+  mais uma das duas faixas.
+- Sem controle de volume independente entre voz e áudio da tela no P2P (as duas tocam juntas, um
+  só volume) — o LiveKit SFU, caminho principal, já tinha isso corretamente (`attachLiveKitAudioOnce`);
+  o P2P nunca teve, e dar isso a ele exigiria manter as duas em `MediaStream`s separados com
+  elementos de reprodução próprios — maior que o pedido cobre.
+- Se o retorno/eco ainda aparecer depois desta correção, provavelmente é outra causa: acústica
+  (microfone captando o próprio alto-falante, sem fone) ou algo do lado do LiveKit (caminho
+  principal), não mais este bug específico do P2P. Me diga se persiste e em que cenário exatamente
+  (fone ou caixa, você ou a outra pessoa compartilhando, 1:1 ou canal com várias pessoas).

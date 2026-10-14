@@ -2682,14 +2682,35 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
               setRemoteStreams(new Map(remoteStreamsRef.current));
             };
           } else if (event.track.kind === "audio") {
+            // Só tira do stream uma trilha de áudio já MORTA (encerrada) do mesmo peer — nunca
+            // uma trilha ainda viva. O P2P não rotula a origem (ao contrário do LiveKit, que
+            // marca ScreenShareAudio): se alguém fala *e* compartilha a tela com áudio do PC ao
+            // mesmo tempo, chegam duas trilhas de áudio vivas por `ontrack` separados. Antes, a
+            // segunda substituía a primeira no stream (removeTrack + nunca mais voltava) — então
+            // a voz sumia ao compartilhar a tela, ou o áudio da tela nunca entrava se a voz já
+            // estava lá. Mantendo as duas no mesmo stream, o elemento que reproduz mixa as duas.
             stream.getAudioTracks().forEach((at) => {
-              if (at !== event.track) {
+              if (at !== event.track && at.readyState !== "live") {
                 try { stream.removeTrack(at); } catch { }
               }
             });
             if (!stream.getTracks().includes(event.track)) {
               stream.addTrack(event.track);
             }
+            event.track.onended = () => {
+              try { stream.removeTrack(event.track); } catch { }
+              setRemoteStreams(new Map(remoteStreamsRef.current));
+            };
+            // detachScreenTracksFromPeers() para a transmissão com replaceTrack(null): o emissor
+            // nunca manda "ended" para o receptor, só "muted" (o m-line continua, sem mídia).
+            // Sem isto a trilha ficava viva e muda no stream para sempre depois de parar de
+            // compartilhar a tela.
+            event.track.onmute = () => {
+              setRemoteStreams(new Map(remoteStreamsRef.current));
+            };
+            event.track.onunmute = () => {
+              setRemoteStreams(new Map(remoteStreamsRef.current));
+            };
           }
         }
 
