@@ -1,0 +1,9 @@
+{
+  // rust-analyzer roda um "cargo check" próprio em segundo plano. Sem isto, ele usa a MESMA pasta
+  // de build que `npm run tauri dev`/`build` (src-tauri/.cargo/config.toml -> F:/pherielium-target)
+  // e os dois disputam a mesma trava do Cargo — um fica esperando o outro ("Blocking waiting for
+  // file lock on build directory"), o que parece o dev travar ou parar de compilar sem motivo.
+  // Com isto, o rust-analyzer usa F:/pherielium-target/rust-analyzer: pasta própria, mesmo disco,
+  // sem disputar trava com o build de verdade. https://rust-analyzer.github.io/book/configuration
+  "rust-analyzer.cargo.targetDir": true
+}
