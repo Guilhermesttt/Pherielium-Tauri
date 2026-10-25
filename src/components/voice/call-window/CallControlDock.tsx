@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { CallControlButton } from "./CallControlButton";
+import { IconSwap } from "../../ui/IconSwap";
 
 interface CallControlDockProps {
   isMuted: boolean;
@@ -92,7 +93,7 @@ export const CallControlDock: React.FC<CallControlDockProps> = ({
         />
 
         <CallControlButton
-          icon={isDeafened ? <VolumeX className="h-4.5 w-4.5" /> : <Volume2 className="h-4.5 w-4.5" />}
+          icon={<IconSwap active={isDeafened} a={<Volume2 className="h-4.5 w-4.5" />} b={<VolumeX className="h-4.5 w-4.5" />} />}
           tooltip={isDeafened ? "Reativar áudio da chamada" : "Silenciar saída de áudio (Deafen)"}
           variant={isDeafened ? "muted" : "default"}
           onClick={onToggleDeafen}
@@ -118,7 +119,7 @@ export const CallControlDock: React.FC<CallControlDockProps> = ({
 
         {onToggleScreenShare && (
           <CallControlButton
-            icon={isSharingScreen ? <MonitorOff className="h-4.5 w-4.5" /> : <MonitorUp className="h-4.5 w-4.5" />}
+            icon={<IconSwap active={isSharingScreen} a={<MonitorUp className="h-4.5 w-4.5" />} b={<MonitorOff className="h-4.5 w-4.5" />} />}
             tooltip={isSharingScreen ? "Interromper transmissão de tela" : "Compartilhar tela ou aplicativo"}
             variant={isSharingScreen ? "active" : "default"}
             onClick={onToggleScreenShare}

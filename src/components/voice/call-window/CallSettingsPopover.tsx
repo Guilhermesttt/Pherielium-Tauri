@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { GhostSelect } from "../../ui/GhostSelect";
 import type { CallDiagnosticsSnapshot } from "../../../services/voiceCall/callDiagnostics";
+import { dropdownMotion } from "../../../design-system/motion";
 
 interface CallSettingsPopoverProps {
   isOpen: boolean;
@@ -97,7 +98,6 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<"devices" | "audio" | "activation" | "status">("devices");
 
-  if (!isOpen) return null;
 
   const defaultInputLabel =
     audioInputDevices.find((d) => d.deviceId === "default" && d.label)?.label ||
@@ -116,15 +116,13 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
 
   return (
     <AnimatePresence>
+      {isOpen && (
       <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md select-none">
         {/* Backdrop Dismiss */}
         <div className="absolute inset-0" aria-hidden="true" onClick={onClose} />
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 12 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 8 }}
-          transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
+          {...dropdownMotion}
           style={{ cornerShape: "squircle" } as React.CSSProperties}
           className="relative flex flex-col w-full max-w-lg max-h-[85vh] overflow-hidden rounded-3xl bg-[var(--tone-1)]/95 backdrop-blur-2xl border border-[#161616] shadow-[0_30px_90px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.05)] z-10"
         >
@@ -562,6 +560,7 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
           </div>
         </motion.div>
       </div>
+    )}
     </AnimatePresence>
   );
 };

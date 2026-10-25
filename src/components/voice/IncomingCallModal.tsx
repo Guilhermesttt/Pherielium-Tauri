@@ -1,9 +1,9 @@
 import React from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { animated, useSpring } from "@react-spring/web";
-import { Phone, PhoneOff, Video } from "lucide-react";
-import { OrbloomOrb } from "./OrbloomOrb";
-import { SPRINGS } from "../../design-system/motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { Clock, LoaderCircle, Phone, PhoneOff, Video } from "lucide-react";
+import { modalBackdropMotion, modalMotion } from "../../design-system/motion";
+import { IconSwap } from "../ui/IconSwap";
+import { TextSwap } from "../ui/TextSwap";
 import type { CallInvitePayload } from "../../services/voiceCall";
 
 // Ring timeout in seconds — must match incomingTimeoutTimerRef in useVoiceCall (35s),
@@ -17,59 +17,18 @@ interface IncomingCallModalProps {
   onReject: () => void;
 }
 
-/** Ondas que saem do avatar enquanto toca (uma só mola em loop; parado com "reduzir movimento"). */
-const Ripple: React.FC<{ delay: number; reduce: boolean }> = ({ delay, reduce }) => {
-  const style = useSpring({
-    loop: !reduce,
-    from: { scale: 0.9, opacity: reduce ? 0 : 0.28 },
-    to: { scale: 1.55, opacity: 0 },
-    delay,
-    config: { duration: 2200 },
-  });
-  return (
-    <animated.span
-      aria-hidden
-      style={style}
-      className="pointer-events-none absolute inset-6 rounded-full border border-white/25"
-    />
-  );
-};
-
-const RoundAction: React.FC<{
-  label: string;
-  tone: "danger" | "accept";
-  disabled: boolean;
-  onClick: () => void;
-  autoFocus?: boolean;
-  children: React.ReactNode;
-}> = ({ label, tone, disabled, onClick, autoFocus, children }) => (
-  <div className="flex flex-col items-center gap-2">
-    <motion.button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      autoFocus={autoFocus}
-      aria-label={label}
-      whileHover={{ scale: 1.06 }}
-      whileTap={{ scale: 0.9 }}
-      transition={{ type: "spring", stiffness: 520, damping: 22 }}
-      className={`flex h-16 w-16 cursor-pointer items-center justify-center rounded-full text-white outline-none transition-[filter] focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c0c0e] disabled:cursor-default disabled:opacity-50 ${
-        tone === "danger" ? "bg-[#ff453a] hover:brightness-110" : "bg-[#30d158] hover:brightness-110"
-      }`}
-    >
-      {children}
-    </motion.button>
-    <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)]">{label}</span>
-  </div>
-);
-
+/**
+ * Chamada recebida, no formato de cartão do estúdio de transições (Event Card): uma faixa no topo,
+ * o avatar sobreposto à faixa como o selo de data, nome grande, linhas de detalhe, divisor e dois
+ * botões. O cartão entra como um modal (0.96 → 1, 250ms) e sai mais rápido (150ms); o texto dos
+ * botões troca no lugar ao atender/recusar; o toque do botão é de 0.99. Ver src/index.css (`.ic-*`).
+ */
 export const IncomingCallModal: React.FC<IncomingCallModalProps> = ({
   isOpen,
   invite,
   onAccept,
   onReject,
 }) => {
-  const reduce = Boolean(useReducedMotion());
   const [isAccepting, setIsAccepting] = React.useState(false);
   const [isRejecting, setIsRejecting] = React.useState(false);
   const [secondsLeft, setSecondsLeft] = React.useState(RING_TIMEOUT_S);
@@ -104,16 +63,6 @@ export const IncomingCallModal: React.FC<IncomingCallModalProps> = ({
     return () => window.clearInterval(interval);
   }, [invite?.callerId, isOpen, onReject]);
 
-  // O cartão sobe com uma mola; o avatar "respira" de leve até atender/recusar.
-  const panel = useSpring({
-    from: reduce ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 28, scale: 0.94 },
-    to: { opacity: 1, y: 0, scale: 1 },
-    config: SPRINGS.soft,
-  });
-  const avatarSpring = useSpring({ scale: isAccepting ? 1.07 : 1, config: SPRINGS.bouncy });
-
-  if (!isOpen || !invite) return null;
-
   const handleAccept = () => {
     setIsAccepting(true);
     onAccept();
@@ -124,91 +73,82 @@ export const IncomingCallModal: React.FC<IncomingCallModalProps> = ({
     onReject();
   };
 
-  // Anel fino de contagem regressiva ao redor do avatar
-  const radius = 84;
-  const circumference = 2 * Math.PI * radius;
-  const dashOffset = circumference * (1 - secondsLeft / RING_TIMEOUT_S);
   const busy = isRejecting || isAccepting;
 
   return (
-    <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 p-4 backdrop-blur-xl select-none"
-      role="alertdialog"
-      aria-modal="true"
-      aria-label={`${invite.callerName} está te ligando`}
-    >
-      <animated.div
-        style={panel}
-        className="relative flex w-full max-w-[360px] flex-col items-center overflow-hidden rounded-[var(--corner-lg)] border border-white/10 bg-[var(--tone-1)]/95 px-8 pb-8 pt-9 shadow-[0_30px_90px_rgba(0,0,0,0.75)]"
-      >
-        <div className="pointer-events-none absolute -top-28 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-white/[0.05] blur-[80px]" />
-
-        {/* avatar + anel de tempo + ondas */}
-        <div className="relative flex h-[192px] w-[192px] items-center justify-center">
-          {!busy && (
-            <>
-              <Ripple delay={0} reduce={reduce} />
-              <Ripple delay={1100} reduce={reduce} />
-            </>
-          )}
-          <svg className="pointer-events-none absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 192 192" aria-hidden>
-            <circle cx="96" cy="96" r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2" />
-            <circle
-              cx="96"
-              cy="96"
-              r={radius}
-              fill="none"
-              stroke="rgba(255,255,255,0.34)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={dashOffset}
-              style={{ transition: "stroke-dashoffset 1s linear" }}
-            />
-          </svg>
-
-          <animated.div style={avatarSpring} className="relative flex items-center justify-center">
-            <OrbloomOrb
-              size={152}
-              orbState="listening"
-              participantId={invite.callerId}
-              ambientMotion={false}
-              label={`Chamada de ${invite.callerName}`}
-              color="#D4D4D8"
-              customConfig={{
-                preset: "deep-field-blue-01",
-                appearance: { intensity: 0.8, detail: 0.5, glass: 0.2, glow: 0.65 },
-                motion: { speed: 0.35, drift: 0.2 },
-              }}
-            />
-            <div className="pointer-events-none absolute z-10 flex h-[88px] w-[88px] items-center justify-center overflow-hidden rounded-full border border-white/15 bg-[var(--tone-1)] shadow-[0_8px_32px_rgba(0,0,0,0.85)]">
-              {invite.callerAvatar ? (
-                <img src={invite.callerAvatar} alt="" className="h-full w-full rounded-full object-cover" />
-              ) : (
-                <span className="text-2xl font-semibold tracking-tight text-white">
-                  {invite.callerName.slice(0, 2).toUpperCase()}
-                </span>
+    <AnimatePresence>
+      {isOpen && invite && (
+        <motion.div
+          {...modalBackdropMotion}
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 p-4 backdrop-blur-xl select-none"
+          role="alertdialog"
+          aria-modal="true"
+          aria-label={`${invite.callerName} está te ligando`}
+        >
+          <motion.div {...modalMotion} className="ic-card w-full max-w-[340px]">
+            {/* faixa do topo: as ondas saem do avatar enquanto toca */}
+            <div className="ic-band" aria-hidden="true">
+              {!busy && (
+                <>
+                  <span className="ic-ripple" />
+                  <span className="ic-ripple" style={{ animationDelay: "1.1s" }} />
+                </>
               )}
+              {/* tempo restante: a barra encolhe de 1 em 1 segundo */}
+              <span className="ic-timer" style={{ transform: `scaleX(${secondsLeft / RING_TIMEOUT_S})` }} />
             </div>
-          </animated.div>
-        </div>
 
-        <h2 className="mt-3 max-w-full truncate text-[length:var(--step-3)] font-semibold tracking-tight text-white">{invite.callerName}</h2>
-        <p className="mt-1 flex items-center gap-1.5 text-[length:var(--step-1)] text-[var(--ink-muted)]">
-          {invite.hasVideo ? <Video className="h-3.5 w-3.5" aria-hidden /> : null}
-          {invite.hasVideo ? "Chamada de vídeo" : "Chamada de voz"}
-        </p>
+            <div className="ic-body">
+              <div className="ic-avatar">
+                {invite.callerAvatar ? (
+                  <img src={invite.callerAvatar} alt="" className="h-full w-full object-cover" draggable={false} />
+                ) : (
+                  <span className="text-[length:var(--step-3)] font-semibold tracking-tight text-[var(--ink)]">
+                    {invite.callerName.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
+              </div>
 
-        <div className="mt-8 flex w-full items-start justify-center gap-14">
-          <RoundAction label="Recusar" tone="danger" disabled={busy} onClick={handleReject}>
-            <PhoneOff className="h-6 w-6" />
-          </RoundAction>
-          <RoundAction label="Atender" tone="accept" disabled={busy} onClick={handleAccept} autoFocus>
-            <Phone className="h-6 w-6" />
-          </RoundAction>
-        </div>
-      </animated.div>
-    </div>
+              <h2 className="ic-title">{invite.callerName}</h2>
+
+              <div className="ic-meta">
+                <p className="ic-row">
+                  {invite.hasVideo ? <Video className="h-4 w-4 shrink-0" aria-hidden /> : <Phone className="h-4 w-4 shrink-0" aria-hidden />}
+                  <span>{invite.hasVideo ? "Chamada de vídeo" : "Chamada de voz"}</span>
+                </p>
+                <p className="ic-row">
+                  <Clock className="h-4 w-4 shrink-0" aria-hidden />
+                  <span>
+                    Toca por mais <span className="font-metric">{secondsLeft}</span> s
+                  </span>
+                </p>
+              </div>
+
+              <div className="ic-divider" />
+
+              <div className="ic-actions">
+                <button type="button" onClick={handleAccept} disabled={busy} autoFocus className="ic-press ic-accept">
+                  <IconSwap
+                    active={isAccepting}
+                    a={invite.hasVideo ? <Video className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
+                    b={<LoaderCircle className="h-4 w-4 animate-spin" />}
+                  />
+                  <TextSwap text={isAccepting ? "Entrando…" : "Atender"} />
+                </button>
+                <button type="button" onClick={handleReject} disabled={busy} className="ic-press ic-decline">
+                  <IconSwap
+                    active={isRejecting}
+                    a={<PhoneOff className="h-4 w-4" />}
+                    b={<LoaderCircle className="h-4 w-4 animate-spin" />}
+                  />
+                  <TextSwap text={isRejecting ? "Recusando…" : "Recusar"} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

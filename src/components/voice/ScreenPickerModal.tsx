@@ -4,6 +4,8 @@ import { MonitorSmartphone, X } from "lucide-react";
 import type { ScreenShareOptions } from "../../hooks/useVoiceCall";
 import { BITRATE_CHOICES_MBPS } from "../../services/voiceCall/screenShare";
 import { RefinedButton, Segmented, SettingRow, Toggle } from "../ui/refined";
+import { modalBackdropMotion, modalMotion } from "../../design-system/motion";
+import { useModalSounds } from "../../hooks/useModalSounds";
 
 interface ScreenPickerModalProps {
   isOpen: boolean;
@@ -12,7 +14,6 @@ interface ScreenPickerModalProps {
 }
 
 const squircleStyle = { cornerShape: "squircle" } as React.CSSProperties;
-const springTransition = { type: "spring" as const, bounce: 0, duration: 0.4 };
 
 const STORAGE_KEY = "pherielium_screen_share_prefs";
 
@@ -39,6 +40,7 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
   onClose,
   onSelectSource,
 }) => {
+  useModalSounds(isOpen);
   const [resolution, setResolution] = useState<"720p" | "1080p" | "source">("1080p");
   const [fps, setFps] = useState<30 | 60>(60);
   const [withAudio, setWithAudio] = useState(true);
@@ -53,7 +55,6 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
     setBitrateMbps(stored.bitrateMbps ?? "auto");
   }, [isOpen]);
 
-  if (!isOpen) return null;
 
   const handleStart = () => {
     const options: ScreenShareOptions = {
@@ -78,7 +79,8 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div
+      {isOpen && (
+      <motion.div {...modalBackdropMotion}
         className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 p-4"
         onKeyDown={(event) => {
           if (event.key === "Escape") onClose();
@@ -88,10 +90,7 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="screen-picker-title"
-          initial={{ scale: 0.96, opacity: 0, y: 12 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.98, opacity: 0, y: 8 }}
-          transition={springTransition}
+          {...modalMotion}
           style={squircleStyle}
           className="relative flex w-full max-w-[640px] flex-col overflow-hidden rounded-[var(--corner-lg)] bg-[var(--tone-1)] text-[var(--ink)]"
         >
@@ -164,7 +163,8 @@ export const ScreenPickerModal: React.FC<ScreenPickerModalProps> = ({
             </RefinedButton>
           </div>
         </motion.div>
-      </div>
+      </motion.div>
+    )}
     </AnimatePresence>
   );
 };

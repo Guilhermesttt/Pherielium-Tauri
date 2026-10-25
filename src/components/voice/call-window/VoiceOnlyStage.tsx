@@ -1,5 +1,5 @@
 import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   MicOff,
   VolumeX,
@@ -17,6 +17,7 @@ import { OrbloomOrb, mapCallToOrbState } from "../OrbloomOrb";
 import { VideoRenderer } from "./VideoRenderer";
 import { useAdaptiveGrid } from "./useAdaptiveGrid";
 import { gridSpring, tileEnter } from "./motionTokens";
+import { spotlightMotion } from "./spotlight";
 
 interface VoiceOnlyStageProps {
   feeds: CallFeed[];
@@ -69,6 +70,9 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
   onVideoElement,
 }) => {
   const peopleFeeds = feeds.filter((f) => !f.isScreen);
+  const reduceMotion = Boolean(useReducedMotion());
+  // Destaque no falante: só faz sentido com mais de uma pessoa na grade
+  const anySpeaking = peopleFeeds.length > 1 && peopleFeeds.some((f) => f.isSpeaking);
   const isAlone = peopleFeeds.length <= 1 && screenFeeds.length === 0;
 
   const findScreenFeedFor = (peerId?: string) =>
@@ -398,7 +402,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                 key={feed.id}
                 layout
                 initial={tileEnter.initial}
-                animate={tileEnter.animate}
+                animate={{ ...tileEnter.animate, ...spotlightMotion(isSpeaking, anySpeaking, reduceMotion) }}
                 exit={tileEnter.exit}
                 transition={tileEnter.transition}
                 role="button"
@@ -408,6 +412,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                   cornerShape: "squircle",
                   width: tileWidth,
                   height: tileHeight,
+                  zIndex: isSpeaking && anySpeaking ? 2 : 1,
                 } as React.CSSProperties}
                 onClick={() => {
                   if (isPresenting && presentingScreen && onFocusScreen) {

@@ -12,6 +12,16 @@ describe("messageNotificationPreview", () => {
     expect(messageNotificationPreview(invite, false, "Ana")).toBe("Ana convidou para uma chamada.");
   });
 
+  it("announces the night (game, cinema...) in the notification instead of a generic call", () => {
+    const night = JSON.stringify({ __type: "call_invite", chatId: "c", callerName: "Gui", roomName: "Noite de cinema: Duna", nightKind: "movie" });
+    expect(messageNotificationPreview(night, false)).toBe("Gui chamou você para a Noite de cinema: Duna.");
+    expect(messageNotificationPreview(night, false, "Ana")).toBe("Gui chamou você para a Noite de cinema: Duna.");
+    // sem o nome de quem convidou, usa o do amigo da lista; sem nenhum, a frase continua inteira
+    const anon = JSON.stringify({ __type: "call_invite", chatId: "c", roomName: "Noite de jogo: Hades II", nightKind: "game" });
+    expect(messageNotificationPreview(anon, false, "Ana")).toBe("Ana chamou você para a Noite de jogo: Hades II.");
+    expect(messageNotificationPreview(anon, false)).toBe("Chamou você para a Noite de jogo: Hades II.");
+  });
+
   it("keeps normal text and images as before", () => {
     expect(messageNotificationPreview("oi", false)).toBe("oi");
     expect(messageNotificationPreview("oi", true)).toBe("📷 Enviou uma imagem");

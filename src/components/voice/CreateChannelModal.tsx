@@ -37,6 +37,9 @@ import {
 } from "lucide-react";
 import type { RoomCategory, CallRoomConfig } from "../../types/voice-governance";
 import type { UserProfile } from "../../types/domain";
+import { modalBackdropMotion, modalMotion } from "../../design-system/motion";
+import { IconSwap } from "../ui/IconSwap";
+import { useModalSounds } from "../../hooks/useModalSounds";
 
 interface CreateChannelModalProps {
   isOpen: boolean;
@@ -144,6 +147,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
   isEditing = false,
   onCreateChannel,
 }) => {
+  useModalSounds(isOpen);
   const [roomName, setRoomName] = useState("");
   const [category, setCategory] = useState<RoomCategory>("resenha_games");
   const [selectedIcon, setSelectedIcon] = useState("gamepad");
@@ -323,19 +327,13 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
       >
         {/* Backdrop: escurece e borra tudo atrás, padrão de modal */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
+          {...modalBackdropMotion}
           onClick={onClose}
           className="absolute inset-0 bg-black/80 backdrop-blur-2xl"
         />
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 18 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 12 }}
-          transition={{ type: "spring", stiffness: 380, damping: 28 }}
+          {...modalMotion}
           className="relative z-10 flex w-full max-w-[720px] max-h-[90vh] flex-col overflow-hidden rounded-[var(--corner-lg)] border border-white/10 bg-[var(--tone-1)] shadow-[0_40px_120px_rgba(0,0,0,0.82)]"
           style={{ boxShadow: `0 40px 120px rgba(0,0,0,0.82), 0 0 0 1px ${themeColor}22, 0 24px 80px ${themeColor}18` }}
         >
@@ -661,7 +659,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                     onClick={() => setShowPassword((prev) => !prev)}
                     className="absolute right-3 text-[var(--ink-faint)] transition hover:text-white cursor-pointer"
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <IconSwap active={showPassword} a={<Eye className="h-4 w-4" />} b={<EyeOff className="h-4 w-4" />} />
                   </button>
                 </div>
               </motion.div>
