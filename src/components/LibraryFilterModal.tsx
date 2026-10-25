@@ -5,6 +5,8 @@ import type { Game } from "../types/domain";
 import { getGamePlayedHours } from "../utils/playtime";
 import { useGamepad, useGamepadButton, playHapticPattern } from "../context/GamepadContext";
 import { ControllerButtonGlyph } from "./ui/ControllerButtonGlyph";
+import { modalBackdropMotion, modalMotion } from "../design-system/motion";
+import { useModalSounds } from "../hooks/useModalSounds";
 
 export interface LibraryFilters {
   launchers: string[];
@@ -39,6 +41,7 @@ const LibraryFilterModal: React.FC<LibraryFilterModalProps> = ({
   games,
   currentFilters,
 }) => {
+  useModalSounds(isOpen);
   const { isGamepadConnected, gamepadFamily } = useGamepad();
   const [filters, setFilters] = useState<LibraryFilters>({ ...currentFilters });
   const [searchGenre, setSearchGenre] = useState("");
@@ -191,9 +194,7 @@ const LibraryFilterModal: React.FC<LibraryFilterModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          {...modalBackdropMotion}
           className="fixed inset-0 z-[100] flex items-center justify-center"
           onClick={onClose}
         >
@@ -202,10 +203,7 @@ const LibraryFilterModal: React.FC<LibraryFilterModalProps> = ({
 
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            {...modalMotion}
             onClick={(e) => e.stopPropagation()}
             className="bg-[var(--tone-1)] relative z-10 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-3xl border border-white/[0.08] shadow-[0_24px_80px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.06)] thin-scrollbar"
           >

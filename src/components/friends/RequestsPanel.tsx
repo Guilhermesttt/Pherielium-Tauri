@@ -17,12 +17,12 @@ export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept
     return (
       <div className="mx-auto max-w-xl rounded-[var(--corner-md)] bg-[var(--surface-raised)] p-10 text-center ring-1 ring-[color:var(--border-subtle)]">
         <UserPlus className="mx-auto h-8 w-8 text-[var(--ink-faint)]" />
-        <h2 className="mt-4 font-display text-[length:var(--step-3)] font-bold text-white">Nenhum convite pendente</h2>
+        <h2 className="mt-4 font-display text-[length:var(--step-3)] font-bold text-[var(--ink)]">Nenhum convite pendente</h2>
         <p className="mt-1 text-[length:var(--step-1)] text-[var(--ink-muted)]">Quando alguém pedir para ser seu amigo, o convite aparece aqui.</p>
         <button
           type="button"
           onClick={onAddFriend}
-          className="mt-5 h-11 rounded-full bg-white px-6 text-[length:var(--step-0)] font-semibold text-black active:scale-95"
+          className="mt-5 h-11 rounded-full bg-[var(--ink)] px-6 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] active:scale-95"
         >
           Adicionar amigo
         </button>
@@ -33,7 +33,7 @@ export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept
   return (
     <section aria-label="Convites de amizade" className="mx-auto max-w-3xl rounded-[var(--corner-md)] bg-[var(--surface-raised)] p-4 ring-1 ring-[color:var(--border-subtle)]">
       <header className="mb-3 px-1">
-        <h2 className="font-display text-[length:var(--step-3)] font-bold leading-tight text-white">Convites de amizade</h2>
+        <h2 className="font-display text-[length:var(--step-3)] font-bold leading-tight text-[var(--ink)]">Convites de amizade</h2>
         <p className="text-[length:var(--step-0)] text-[var(--ink-muted)]">
           {requests.length === 1 ? "1 pessoa quer ser sua amiga" : `${requests.length} pessoas querem ser suas amigas`}
         </p>
@@ -41,7 +41,7 @@ export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept
       <ul className="flex flex-col gap-1">
         {requests.map((r) => (
           <li key={r.uid} className="flex items-center gap-3.5 rounded-2xl bg-[var(--surface-base)] px-3.5 py-3">
-            <span className="h-12 w-12 shrink-0 overflow-hidden rounded-[28%] bg-white/[0.06]">
+            <span className="h-12 w-12 shrink-0 overflow-hidden rounded-[28%] bg-[var(--tone-3)]">
               {r.photoURL ? (
                 <img src={r.photoURL} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
               ) : (
@@ -51,7 +51,7 @@ export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept
               )}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[length:var(--step-1)] font-semibold text-white">{r.displayName || "Jogador"}</span>
+              <span className="block truncate text-[length:var(--step-1)] font-semibold text-[var(--ink)]">{r.displayName || "Jogador"}</span>
               <span className="text-[length:var(--step-0)] text-[var(--ink-muted)]">Quer ser seu amigo</span>
             </span>
             <button
@@ -60,7 +60,7 @@ export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept
                 playSound?.("back");
                 onReject(r.uid);
               }}
-              className="h-10 rounded-full bg-white/[0.08] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] hover:bg-white/[0.14] hover:text-white focus-visible:ring-2 focus-visible:ring-white/40"
+              className="h-10 rounded-full bg-[var(--tone-3)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
             >
               Recusar
             </button>
@@ -70,7 +70,7 @@ export const RequestsPanel: React.FC<RequestsPanelProps> = ({ requests, onAccept
                 playSound?.("select");
                 onAccept(r.uid);
               }}
-              className="h-10 rounded-full bg-white px-5 text-[length:var(--step-0)] font-semibold text-black active:scale-95 focus-visible:ring-2 focus-visible:ring-white/60"
+              className="h-10 rounded-full bg-[var(--ink)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] active:scale-95"
             >
               Aceitar
             </button>

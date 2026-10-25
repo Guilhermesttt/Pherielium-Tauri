@@ -69,3 +69,35 @@ export function formatLastSeen(lastSeen: SocialFriend["lastSeen"], now = Date.no
   if (h < 24) return `há ${h} h`;
   return `há ${Math.round(h / 24)} d`;
 }
+
+export interface RailSections {
+  playing: SocialFriend[];
+  /** em uma chamada de voz: dá para chamar para a sua sala, mas não adianta convidar para jogar agora */
+  inCall: SocialFriend[];
+  online: SocialFriend[];
+  /** offline, os vistos mais recentemente primeiro; entram na lista (dá para convidar e abrir o chat) */
+  offline: SocialFriend[];
+}
+
+/**
+ * Seções do painel de amigos: quem está jogando primeiro (é o que um launcher quer ver), depois quem
+ * está em chamada e online, e por fim os offline (com quando foram vistos), para dar para chamar
+ * qualquer amigo, esteja ele online ou não.
+ */
+const seenAt = (friend: SocialFriend): number => {
+  const value = friend.lastSeen;
+  if (value == null || value === "") return 0;
+  const time = typeof value === "number" ? value : new Date(value).getTime();
+  return Number.isFinite(time) ? time : 0;
+};
+
+export function railSections(friends: readonly SocialFriend[]): RailSections {
+  const byName = (a: SocialFriend, b: SocialFriend) => a.name.localeCompare(b.name);
+  const byRecentlySeen = (a: SocialFriend, b: SocialFriend) => seenAt(b) - seenAt(a) || byName(a, b);
+  return {
+    playing: friends.filter((f) => f.status === "playing").sort(byName),
+    inCall: friends.filter((f) => f.status === "in_call").sort(byName),
+    online: friends.filter((f) => isFriendOnline(f) && f.status !== "playing" && f.status !== "in_call").sort(byName),
+    offline: friends.filter((f) => !isFriendOnline(f)).sort(byRecentlySeen),
+  };
+}

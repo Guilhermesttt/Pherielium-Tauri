@@ -1,12 +1,12 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { WheelListbox } from "./ui/WheelListbox";
+import { ExpandingSearch } from "./ui/ExpandingSearch";
 import {
   Trophy,
   Clock,
-  Search,
   ChevronRight,
   ArrowUpDown,
-  X,
   Zap,
   Filter
 } from "lucide-react";
@@ -22,6 +22,7 @@ import {
   type PSNTier,
 } from "../utils/trophyTiers";
 import { getHubAggregateCounts, getUserUnifiedLevel } from "../utils/hubTrophies";
+import { closestToPlatinum } from "../utils/trophyGoals";
 import { progressionEventBus } from "../services/progressionEvents";
 import { useAuth } from "../auth/AuthProvider";
 import { useGamepadNavigation } from "../hooks/useGamepadNavigation";
@@ -36,7 +37,8 @@ import PherieliumTierBronze from "../assets/Pherielium_Tier_Bronze.png";
 import PherieliumTierSilver from "../assets/Pherielium_Tier_Prata.png";
 import PherieliumTierGold from "../assets/Pherielium_Tier_Ouro.png";
 import PherieliumTierPlatinum from "../assets/Pherielium_Tier_Platina.png";
-import tierLevelClickSound from "../sounds/Phelierium Default/ui_tierLevel_click.mp3";
+import tierLevelClickSound from "../sounds/Phelierium Default/Deck UI Default Activation.mp3";
+import { GAMEPAD_PRIORITY } from "../context/gamepadSubscribers";
 
 interface TrophiesPageProps {
   games: Game[];
@@ -60,7 +62,7 @@ const getAchievementPercentsForGame = (
 // ============================================================
 
 /**
- * Metais do Pherielium Refined. A cor do metal só aparece onde informa (o emblema e a barra de progresso);
+ * Metais do Pherielium Refined (tokens `--tier-*`). A cor do metal só aparece onde informa (o emblema e a barra de progresso);
  * o texto fica em tinta. Sem brilho nem drop-shadow: a imagem do emblema já carrega o metal.
  */
 const TIER_VISUAL_STYLES = {
@@ -68,28 +70,28 @@ const TIER_VISUAL_STYLES = {
     trophyImage: PherieliumLogoBronze,
     tierImage: PherieliumTierBronze,
     image: PherieliumTierBronze,
-    hex: "#cd7f32",
+    color: "rgb(var(--tier-bronze))",
     label: "Bronze",
   },
   silver: {
     trophyImage: PherieliumLogoSilver,
     tierImage: PherieliumTierSilver,
     image: PherieliumTierSilver,
-    hex: "#cbd5e1",
+    color: "rgb(var(--tier-silver))",
     label: "Prata",
   },
   gold: {
     trophyImage: PherieliumLogoGold,
     tierImage: PherieliumTierGold,
     image: PherieliumTierGold,
-    hex: "#fbbf24",
+    color: "rgb(var(--tier-gold))",
     label: "Ouro",
   },
   platinum: {
     trophyImage: PherieliumLogoPlatinum,
     tierImage: PherieliumTierPlatinum,
     image: PherieliumTierPlatinum,
-    hex: "#38bdf8",
+    color: "rgb(var(--tier-platinum))",
     label: "Platina",
   },
 };
@@ -190,7 +192,7 @@ const RankProgressionRail = React.memo<{
         initial={{ width: 0 }}
         animate={{ width: `${value}%` }}
         transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
-        style={{ backgroundColor: TIER_VISUAL_STYLES[currentTier].hex }}
+        style={{ backgroundColor: TIER_VISUAL_STYLES[currentTier].color }}
       />
     </div>
   );
@@ -408,6 +410,9 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
     });
   }, [gamesWithAchievements]);
 
+  // Jogo mais perto da Platina (vira o atalho "Próximo objetivo")
+  const platinumGoal = useMemo(() => closestToPlatinum(enrichedGames), [enrichedGames]);
+
   // Estatísticas Globais do Jogador e Nível Unificado
   const totalStats = useMemo(() => {
     const gamesForAggregate = gamesWithAchievements.map((g) => ({
@@ -508,14 +513,6 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
     setFilterByPlat(e.target.value as FilterByPlat);
   }, []);
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  }, []);
-
-  const handleClearSearch = useCallback(() => {
-    setSearchTerm("");
-  }, []);
-
 
   const plataformsTab = useMemo(() => {
     return enrichedGames.filter((g) => filterByPlat === "all" || g.game.launcherType?.toLowerCase() === filterByPlat.toLowerCase());
@@ -550,15 +547,15 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
     const currentIndex = TROPHY_FILTER_ORDER.indexOf(filter);
     const prevIndex = (currentIndex - 1 + TROPHY_FILTER_ORDER.length) % TROPHY_FILTER_ORDER.length;
     setFilter(TROPHY_FILTER_ORDER[prevIndex]);
-    playSound?.("select");
-  });
+    playSound?.("tabSwitch");
+  }, true, GAMEPAD_PRIORITY.page);
 
   useGamepadButton("R1", () => {
     const currentIndex = TROPHY_FILTER_ORDER.indexOf(filter);
     const nextIndex = (currentIndex + 1) % TROPHY_FILTER_ORDER.length;
     setFilter(TROPHY_FILTER_ORDER[nextIndex]);
-    playSound?.("select");
-  });
+    playSound?.("tabSwitch");
+  }, true, GAMEPAD_PRIORITY.page);
 
   const tierStyle = TIER_VISUAL_STYLES[levelInfo.tier] || TIER_VISUAL_STYLES.bronze;
   const selectedSortLabel = sortOptions.find((opt) => opt.value === sortBy)?.label || "Maior %";
@@ -566,9 +563,6 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", bounce: 0, duration: 0.4 }}
       className="relative flex min-h-0 flex-1 flex-col text-[var(--ink)] font-sans"
       style={{ contain: "layout paint", transform: "translate3d(0,0,0)", willChange: "transform" }}
     >
@@ -622,7 +616,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                   >
                     <motion.div
                       className="absolute inset-y-0 left-0 rounded-[var(--node)]"
-                      style={{ backgroundColor: tierStyle.hex }}
+                      style={{ backgroundColor: tierStyle.color }}
                       initial={{ width: 0 }}
                       animate={{ width: `${levelInfo.progress}%` }}
                       transition={{ duration: 1, ease: [0.32, 0.72, 0, 1] }}
@@ -687,6 +681,67 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
             </div>
           </div>
         </section>
+
+        {/* Próximo objetivo: o jogo mais perto da Platina, um clique para abrir */}
+        {platinumGoal && (
+          <section aria-label="Próximo objetivo" className="rounded-[var(--corner-lg)] bg-[var(--tone-1)] p-3">
+            <button
+              type="button"
+              onClick={() => {
+                playSound?.("select");
+                onOpenGame?.(platinumGoal.game);
+              }}
+              onMouseEnter={() => playSound?.("hover")}
+              className="group flex w-full cursor-pointer items-center gap-5 rounded-[var(--corner-md)] p-3 text-left transition-colors duration-150 hover:bg-[var(--tone-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
+            >
+              {platinumGoal.game.cardImage || platinumGoal.game.image ? (
+                <img
+                  src={platinumGoal.game.cardImage || platinumGoal.game.image}
+                  alt=""
+                  className="h-24 w-16 shrink-0 rounded-[var(--corner-sm)] object-cover"
+                  draggable={false}
+                />
+              ) : (
+                <span className="flex h-24 w-16 shrink-0 items-center justify-center rounded-[var(--corner-sm)] bg-[var(--tone-3)] text-[var(--ink-faint)]">
+                  <Trophy className="h-6 w-6" aria-hidden="true" />
+                </span>
+              )}
+              <span className="min-w-0 flex-1">
+                <span className="block text-[length:var(--step-0)] font-semibold" style={{ color: "rgb(var(--tier-platinum))" }}>
+                  Mais perto da Platina
+                </span>
+                <span className="mt-0.5 block truncate text-[length:var(--step-3)] font-semibold tracking-[-0.02em] text-[var(--ink)]">
+                  {platinumGoal.game.title}
+                </span>
+                <span className="mt-1 block text-[length:var(--step-0)] text-[var(--ink-muted)]">
+                  Faltam <span className="font-metric text-[var(--ink)]">{platinumGoal.remaining}</span>{" "}
+                  {platinumGoal.remaining === 1 ? "conquista" : "conquistas"} de{" "}
+                  <span className="font-metric">{platinumGoal.total}</span>
+                </span>
+                <span
+                  role="progressbar"
+                  aria-label={`Progresso em ${platinumGoal.game.title}`}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={platinumGoal.percent}
+                  className="mt-3 block h-1.5 w-full overflow-hidden rounded-[var(--node)] bg-[var(--tone-3)]"
+                >
+                  <span
+                    className="block h-full rounded-[var(--node)]"
+                    style={{ width: `${platinumGoal.percent}%`, backgroundColor: "rgb(var(--tier-platinum))" }}
+                  />
+                </span>
+              </span>
+              <span className="font-metric shrink-0 text-[length:var(--step-4)] font-semibold text-[var(--ink)]">
+                {platinumGoal.percent}%
+              </span>
+              <ChevronRight
+                className="h-5 w-5 shrink-0 text-[var(--ink-faint)] transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-[var(--ink)]"
+                aria-hidden="true"
+              />
+            </button>
+          </section>
+        )}
 
         {/* Filtros e busca */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -759,54 +814,35 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                 <span>{filterByPlat === "all" ? "Plataforma" : selectedPlatformLabel}</span>
               </button>
 
-              {isPlataformFilterOpen && (
-                <div role="listbox" aria-label="Filtrar por plataforma" className="absolute right-0 top-full z-20 mt-2 w-52 overflow-hidden rounded-[var(--corner-md)] bg-[var(--tone-3)] p-1.5">
-                  {platformOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      role="option"
-                      aria-selected={filterByPlat === opt.value}
-                      onClick={() => {
-                        playSound?.("select");
-                        setFilterByPlat(opt.value);
-                        setIsPlatformFilterOpen(false);
-                      }}
-                      className={`flex h-10 w-full cursor-pointer items-center rounded-[var(--node)] px-3.5 text-left text-[length:var(--step-0)] transition-colors ${
-                        filterByPlat === opt.value
-                          ? "bg-[var(--tone-4)] font-semibold text-[var(--ink)]"
-                          : "text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <AnimatePresence>
+                {isPlataformFilterOpen && (
+                  <WheelListbox
+                    key="platform-wheel"
+                    ariaLabel="Filtrar por plataforma"
+                    options={platformOptions}
+                    value={filterByPlat}
+                    onFocusChange={() => playSound?.("navigate")}
+                    onSelect={(next) => {
+                      playSound?.("select");
+                      setFilterByPlat(next);
+                      setIsPlatformFilterOpen(false);
+                    }}
+                    onClose={() => setIsPlatformFilterOpen(false)}
+                    className="absolute right-0 top-full z-20 mt-2 w-64"
+                  />
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Busca */}
-            <div className="group relative">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-faint)] transition-colors group-focus-within:text-[var(--ink)]" aria-hidden="true" />
-              <input
-                type="search"
-                value={searchTerm}
-                onChange={handleSearchChange}
-                placeholder="Buscar jogos"
-                aria-label="Buscar jogos"
-                className="h-11 w-56 rounded-[var(--node)] bg-[var(--tone-2)] pl-11 pr-9 text-[length:var(--step-0)] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--ink-faint)] focus:bg-[var(--tone-3)] focus-visible:ring-2 focus-visible:ring-[var(--ink)] sm:w-64 [&::-webkit-search-cancel-button]:hidden"
-              />
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={handleClearSearch}
-                  aria-label="Limpar busca"
-                  className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[var(--node)] text-[var(--ink-faint)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
-                >
-                  <X className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
-              )}
-            </div>
+            <ExpandingSearch
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Buscar jogos"
+              ariaLabel="Buscar jogos"
+              width={256}
+              onOpenChange={(open) => playSound?.(open ? "select" : "back")}
+            />
           </div>
         </div>
 

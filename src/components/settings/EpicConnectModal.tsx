@@ -9,6 +9,8 @@ import { PHERIELIUM_LOGO_PATH } from "../../constants/assets";
 
 import type { PlatformOperationState } from "../../types/platformOperations";
 import { getPlatformPhaseLabel } from "../../utils/platformOperationReducer";
+import { modalBackdropMotion, modalMotion } from "../../design-system/motion";
+import { useModalSounds } from "../../hooks/useModalSounds";
 
 interface EpicConnectModalProps {
   isOpen: boolean;
@@ -27,6 +29,7 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
   playSound,
   operationState,
 }) => {
+  useModalSounds(isOpen);
   const [sid, setSid] = useState("");
   const [loading, setLoading] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -212,17 +215,13 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
       {isOpen && (
         <>
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...modalBackdropMotion}
             onClick={handleModalClose}
             className="fixed inset-0 bg-black/60 backdrop-blur-[32px] z-50"
           />
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            {...modalMotion}
             className="glass-panel fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg border border-white/8 rounded-3xl shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_30px_100px_rgba(0,0,0,0.55)] z-50 overflow-hidden font-sans"
           >
             <div className="p-6">

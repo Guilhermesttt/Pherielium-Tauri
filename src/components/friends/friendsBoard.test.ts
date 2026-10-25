@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBoard, formatLastSeen, groupPlaying, titleHue } from "./friendsBoard";
+import { buildBoard, formatLastSeen, groupPlaying, railSections, titleHue } from "./friendsBoard";
 import type { Game, SocialFriend } from "../../types/domain";
 
 const f = (id: string, status: SocialFriend["status"], playing?: string): SocialFriend => ({ id, name: id, status, playing });
@@ -49,5 +49,33 @@ describe("helpers", () => {
     expect(formatLastSeen(now - 3 * 3_600_000, now)).toBe("há 3 h");
     expect(formatLastSeen(now - 2 * 86_400_000, now)).toBe("há 2 d");
     expect(formatLastSeen(undefined, now)).toBe("");
+  });
+});
+
+describe("railSections", () => {
+  it("separa jogando, online e só conta os offline", () => {
+    const rail = railSections([
+      f("zeca", "playing", "Hades II"),
+      f("ana", "playing", "CS2"),
+      f("bia", "online"),
+      f("caio", "idle"),
+      f("duda", "offline"),
+      f("edu", "offline"),
+      f("fabi", "in_call"),
+    ]);
+    expect(rail.playing.map((x) => x.id)).toEqual(["ana", "zeca"]);
+    expect(rail.inCall.map((x) => x.id)).toEqual(["fabi"]);
+    expect(rail.online.map((x) => x.id)).toEqual(["bia", "caio"]);
+    expect(rail.offline.map((x) => x.id)).toEqual(["duda", "edu"]);
+  });
+
+  it("os offline vistos há menos tempo vêm primeiro; sem data, por nome no fim", () => {
+    const seen = (uid: string, lastSeen?: number): SocialFriend => ({ ...f(uid, "offline"), lastSeen });
+    const rail = railSections([seen("ana", 1000), seen("bia", 3000), seen("caio"), seen("duda", 2000)]);
+    expect(rail.offline.map((x) => x.id)).toEqual(["bia", "duda", "ana", "caio"]);
+  });
+
+  it("lista vazia não quebra", () => {
+    expect(railSections([])).toEqual({ playing: [], inCall: [], online: [], offline: [] });
   });
 });

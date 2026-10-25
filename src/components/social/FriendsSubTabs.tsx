@@ -10,7 +10,6 @@ export interface FriendsSubTabsProps {
   onTabChange: (tab: SocialSubTab) => void;
   incomingRequestsCount: number;
   totalFriendsCount: number;
-  onlineCount: number;
   unreadCount: number;
   playSound?: (type: SoundEffectType) => void;
 }
@@ -19,7 +18,6 @@ export const FriendsSubTabs: React.FC<FriendsSubTabsProps> = ({
   activeTab,
   onTabChange,
   incomingRequestsCount,
-  onlineCount,
   unreadCount,
   playSound,
 }) => {
@@ -34,7 +32,7 @@ export const FriendsSubTabs: React.FC<FriendsSubTabsProps> = ({
     <div className="w-full flex justify-center mb-6 z-10 relative">
       {/* Abas sobre superfície sólida */}
       <div
-        className="flex items-center justify-between px-2 py-1.5 rounded-full ring-1 ring-[color:var(--border-subtle)]"
+        className="flex items-center rounded-full px-2 py-2 ring-1 ring-[color:var(--border-subtle)]"
         style={{ background: "var(--surface-raised)" }}
       >
         {/* Abas de Navegação */}
@@ -47,7 +45,7 @@ export const FriendsSubTabs: React.FC<FriendsSubTabsProps> = ({
             }
           }}
           className="!bg-transparent !p-0 gap-1 border-0"
-          tabClassName="flex items-center gap-2 px-5 py-2 !h-auto text-[length:var(--step-0)] font-semibold tracking-wide"
+          tabClassName="flex items-center gap-2 !px-6 !py-3 !h-auto text-[length:var(--step-0)] font-semibold tracking-wide"
           tabs={tabs.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -60,8 +58,8 @@ export const FriendsSubTabs: React.FC<FriendsSubTabsProps> = ({
                   {tab.badge !== undefined && tab.badge > 0 && (
                     <span
                       className={`ml-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1.5 text-[length:var(--step-0)] font-bold ${isActive
-                          ? "bg-white/20 text-white"
-                          : "bg-white/10 text-[var(--ink-muted)]"
+                        ? "bg-[var(--tabs-badge-active-bg)] text-[var(--tabs-badge-active-text)]"
+                        : "bg-[var(--tone-4)] text-[var(--ink-muted)]"
                         }`}
                     >
                       {tab.badge}
@@ -73,15 +71,6 @@ export const FriendsSubTabs: React.FC<FriendsSubTabsProps> = ({
           })}
         />
 
-        {/* Status Badge "ONLINE X" à direita */}
-        <div className="pl-4 pr-2">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.05] shadow-inner">
-            <span className="w-2 h-2 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
-            <span className="text-[length:var(--step-0)] font-bold text-[var(--ink)] tracking-widest uppercase">
-              Online {onlineCount}
-            </span>
-          </div>
-        </div>
       </div>
     </div>
   );

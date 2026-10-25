@@ -36,7 +36,7 @@ export const PriceAlertsPage: React.FC<PriceAlertsPageProps> = React.memo(({
   };
 
   return (
-    <SystemPageShell eyebrow="Deals" title={t("priceAlerts")}>
+    <SystemPageShell title={t("priceAlerts")}>
       <section className="mb-5 rounded-2xl border border-white/10 bg-black/35 p-6 backdrop-blur-3xl">
         <SettingsHeader
           icon={<Bell className="h-5 w-5 text-[var(--ink-muted)]" />}
