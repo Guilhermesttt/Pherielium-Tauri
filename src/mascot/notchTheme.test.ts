@@ -17,7 +17,7 @@ describe("resolveNotchStyle", () => {
       expect(s.surfaceOpacity).toBe(1);
       expect(s.borderColor).toBeNull();
       expect(s.glow).toBe(0);
-      expect(s.cornerRadius).toBe(14);
+      expect(s.cornerRadius).toBe(20);
       expect(s.chamfer).toBe(false);
       expect(s.isDefault).toBe(true);
     }
@@ -40,7 +40,7 @@ describe("resolveNotchStyle", () => {
       expect(s.glow, theme).toBe(0);
       expect(s.surface, theme).toBe(DEFAULT_NOTCH_SURFACE);
       expect(s.chamfer, theme).toBe(false);
-      expect(s.cornerRadius, theme).toBe(14);
+      expect(s.cornerRadius, theme).toBe(20);
       expect(s.accent, theme).not.toBe("#ffffff");
     }
     expect(resolveNotchStyle("tema-inexistente").isDefault).toBe(true);

@@ -28,8 +28,8 @@ export interface NotchStyle {
   isDefault: boolean;
 }
 
-/** Coucou: raio 14 px compacto, 22 px expandido. */
-export const EXPANDED_RADIUS_BONUS = 8;
+/** Raio compacto 20 px, expandido 40 px: = raio dos cartões internos (24) + respiro do painel (16). */
+export const EXPANDED_RADIUS_BONUS = 20;
 export const DEFAULT_NOTCH_SURFACE = "#000000";
 
 type StyleOverrides = Pick<
@@ -43,7 +43,7 @@ const DEFAULT_STYLE: NotchStyle = {
   borderColor: null,
   glowColor: "rgba(255,255,255,0)",
   glow: 0,
-  cornerRadius: 14,
+  cornerRadius: 20,
   chamfer: false,
   accent: "#ffffff",
   isDefault: true,

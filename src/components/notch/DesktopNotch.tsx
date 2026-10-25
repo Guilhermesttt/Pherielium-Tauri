@@ -32,6 +32,7 @@ import {
 } from "../../mascot/notchTheme";
 import { CLOSE_TRANSITION, OPEN_SPRING, VIEW_IN_S, VIEW_OUT_S, geometryTransition } from "../../mascot/motion";
 import { playNotchSound, type NotchSoundId } from "./notchSounds";
+import { usePreferences } from "../../context/PreferencesContext";
 import { useNotchDropzone } from "./useNotchDropzone";
 import { RetroBubble } from "./RetroBubble";
 import { ControllerFlashBar, FLASH_MASCOT_MOOD, useControllerFlash } from "./ControllerFlashBar";
@@ -89,6 +90,8 @@ export interface DesktopNotchProps {
   config?: NotchConfig;
   /** Volume dos efeitos do launcher (0..1) para os sons do notch. */
   soundVolume?: number;
+  /** Tema sonoro do launcher: os sons do notch seguem o mesmo pacote da interface. */
+  soundTheme?: string;
 }
 
 export interface DetectedMediaState {
@@ -398,13 +401,16 @@ const CARD_WASH = {
   neutral: "255,255,255",
 } as const;
 
-/** Cartão do painel: raio 20, hairline e um brilho radial na cor de status (de baixo para cima). */
+/**
+ * Cartão do painel: raio 24 (= raio externo do notch 40 − respiro de 16px, então os cantos
+ * ficam concêntricos), hairline interna e um brilho radial na cor de status.
+ */
 export const NotchCard: React.FC<{
   tone?: keyof typeof CARD_WASH;
   children: React.ReactNode;
 }> = ({ tone = "neutral", children }) => (
   <section
-    className="overflow-hidden rounded-[20px] border border-white/[0.035] bg-[#141518] p-3"
+    className="overflow-hidden rounded-[24px] bg-[#171717] p-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]"
     style={{
       backgroundImage: `radial-gradient(120% 140% at 50% 130%, rgba(${CARD_WASH[tone]}, ${tone === "neutral" ? 0.08 : 0.38}) 0%, transparent 62%)`,
     }}
@@ -427,6 +433,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   onOverlayOpenCall,
   config: configProp,
   soundVolume,
+  soundTheme,
 }) => {
   const voiceCall = useVoiceCallContext();
   // Configuração viva (Configurações → Mascote e Notch). O overlay não tem
@@ -444,9 +451,9 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   // Sons de interação do notch (cada ação tem o seu; mutar/desligar tocam no hook de voz).
   const notchSound = useCallback(
     (id: NotchSoundId) => {
-      if (config.sounds) playNotchSound(id, soundVolume);
+      if (config.sounds) playNotchSound(id, soundVolume, soundTheme);
     },
-    [config.sounds, soundVolume],
+    [config.sounds, soundVolume, soundTheme],
   );
   const notchSoundRef = useRef(notchSound);
   notchSoundRef.current = notchSound;
@@ -1504,7 +1511,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             backdropFilter: frosted ? "blur(18px)" : undefined,
             WebkitBackdropFilter: frosted ? "blur(18px)" : undefined,
           }}
-          className="relative text-white"
+          className="relative text-white [corner-shape:var(--squircle)]"
         >
           <div
             style={
@@ -1794,7 +1801,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                   {/* ── Nada acontecendo ── */}
                   {!hasAnySection && (
                     <section
-                      className="flex flex-col items-center gap-3 rounded-[24px] border border-white/[0.035] bg-[#141518] px-5 pb-4 pt-5"
+                      className="flex flex-col items-center gap-3 rounded-[24px] bg-[#171717] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] px-5 pb-4 pt-5"
                       style={{ backgroundImage: "radial-gradient(70% 90% at 50% 38%, rgba(255,255,255,0.075) 0%, transparent 70%)" }}
                     >
                       {config.showMascot && panelMascot(92)}
@@ -1832,5 +1839,6 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 /** Notch respeitando "Ativar o notch" das configurações (usado fora do overlay, ex.: dev no navegador). */
 export const ConfiguredDesktopNotch: React.FC = () => {
   const config = useNotchConfig();
-  return config.enabled ? <DesktopNotch config={config} /> : null;
+  const { soundTheme } = usePreferences();
+  return config.enabled ? <DesktopNotch config={config} soundTheme={soundTheme} /> : null;
 };
