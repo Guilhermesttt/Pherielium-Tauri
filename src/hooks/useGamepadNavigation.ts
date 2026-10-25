@@ -1,6 +1,13 @@
 import { useEffect, useRef } from "react";
 import { useGamepadButton } from "../context/GamepadContext";
 import { activateElementWithController } from "../utils/controllerTextInput";
+import { GAMEPAD_PRIORITY } from "../context/gamepadSubscribers";
+
+/**
+ * Prioridade padrão do X/O de uma página: acima da Home. Na mesma prioridade, a Home e a página
+ * respondiam juntas e o X clicava duas vezes no item em foco.
+ */
+export const DEFAULT_NAVIGATION_PRIORITY = GAMEPAD_PRIORITY.page;
 
 interface UseGamepadNavigationProps {
   onClose?: () => void;
@@ -64,7 +71,7 @@ export function useGamepadNavigation({
   disableX = false,
   disableO = false,
   enabled = true,
-  priority = 0,
+  priority = DEFAULT_NAVIGATION_PRIORITY,
 }: UseGamepadNavigationProps = {}) {
   useGamepadButton(
     "X",
