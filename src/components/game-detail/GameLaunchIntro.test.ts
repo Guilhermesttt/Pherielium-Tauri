@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MIN_LAUNCH_SCREEN_MS } from "../../types/gameDetail";
 import { LAUNCH_INTRO_TIMELINE } from "./GameLaunchIntro";
-import { NOTCH_SOUNDS } from "../notch/notchSounds";
+import { NOTCH_SOUNDS, resolveNotchSoundSrc } from "../notch/notchSounds";
 
 describe("linha do tempo da intro de lançamento", () => {
   const t = LAUNCH_INTRO_TIMELINE;
@@ -25,9 +25,11 @@ describe("linha do tempo da intro de lançamento", () => {
     expect(t.hideHub).toBeLessThan(MIN_LAUNCH_SCREEN_MS);
   });
 
-  it("os sons da intro existem e são próprios (não repetem os do notch)", () => {
-    expect(NOTCH_SOUNDS.headphonesSnap.src).toBeTruthy();
-    expect(NOTCH_SOUNDS.hubFold.src).toBeTruthy();
-    expect(NOTCH_SOUNDS.headphonesSnap.src).not.toBe(NOTCH_SOUNDS.hubFold.src);
+  it("os sons da intro existem em qualquer tema e são efeitos diferentes", () => {
+    for (const theme of ["default", "ps5", "xbox360"]) {
+      expect(resolveNotchSoundSrc("headphonesSnap", theme)).toBeTruthy();
+      expect(resolveNotchSoundSrc("hubFold", theme)).toBeTruthy();
+    }
+    expect(NOTCH_SOUNDS.headphonesSnap.type).not.toBe(NOTCH_SOUNDS.hubFold.type);
   });
 });
