@@ -29,6 +29,9 @@ tauri-plugin-os           = "2"
 tauri-plugin-http         = { version = "2", features = ["unsafe-headers"] }
 tauri-plugin-updater      = "2"
 tauri-plugin-process      = "2"
+# nxm:// (links "Mod Manager Download" da Nexus) e instância única, para o link cair no app já aberto
+tauri-plugin-deep-link    = "2"
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 
 # ── Async runtime ─────────────────────────────────────────────────────────────
 tokio = { version = "1", features = ["full"] }
@@ -47,7 +50,9 @@ rusqlite = { version = "0.32", features = ["bundled"] }
 uuid = { version = "1", features = ["v4"] }
 
 # ── Criptografia / Credential Store ──────────────────────────────────────────
-keyring = "3"
+# windows-native é obrigatório: sem uma feature de plataforma o keyring 3 cai no repositório
+# "mock" (só em memória), e a chave da Nexus nunca é gravada de verdade.
+keyring = { version = "3", features = ["windows-native"] }
 base64  = "0.22"
 
 # ── Process / System Info ────────────────────────────────────────────────────
@@ -55,6 +60,8 @@ sysinfo = "0.32"
 
 # ── Arquivos ZIP (Nexus mod installer) ───────────────────────────────────────
 zip = "2"
+# 7z (comum na Nexus): só descompressão e sem senha; LZMA/LZMA2 vêm sempre, o resto é opt-in
+sevenz-rust2 = { version = "0.24", default-features = false, features = ["bzip2", "ppmd", "deflate"] }
 
 # ── Regex ─────────────────────────────────────────────────────────────────────
 regex = "1"
@@ -114,3 +121,7 @@ strip         = true
 
 [profile.dev]
 incremental = true
+
+[dev-dependencies]
+# o escritor de 7z só existe nos testes (para criar arquivos de exemplo)
+sevenz-rust2 = { version = "0.24", default-features = false, features = ["compress"] }
