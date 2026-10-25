@@ -48,6 +48,8 @@ const toProfile = (uid: string, data?: Record<string, any>): UserProfile => {
       data?.profileVisibility === "private" || data?.profile_visibility === "private"
         ? "private"
         : "public",
+    discordDiscoverable:
+      (data?.discordDiscoverable ?? data?.discord_discoverable) !== false,
     bio: data?.bio,
     location: data?.location,
     pronouns: data?.pronouns,
