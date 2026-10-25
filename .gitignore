@@ -40,3 +40,7 @@ test-results
 
 # Instaladores de driver (baixados por scripts/fetch-drivers.mjs)
 src-tauri/windows/drivers/*.exe
+
+# Estado local de ferramentas de design e de IA (caminhos da máquina, caches de hook)
+.gemini/
+.impeccable/
