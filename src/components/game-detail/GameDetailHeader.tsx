@@ -37,7 +37,7 @@ export const GameDetailHeader: React.FC<GameDetailHeaderProps> = React.memo(({
     <>
       {/* Header (Capa + Título + Badges + Botão Jogar) */}
       <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6 sm:gap-8 mb-8">
-        <div className="w-28 sm:w-32 h-40 sm:h-44 rounded-3xl overflow-hidden shrink-0 border border-white/10 -mt-24 relative z-20 bg-black shadow-[0_20px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.12)]">
+        <div className="w-28 sm:w-32 h-40 sm:h-44 rounded-3xl overflow-hidden shrink-0 border border-white/10 -mt-24 relative z-20 bg-black">
           <img
             src={coverImage || undefined}
             alt={game.title}

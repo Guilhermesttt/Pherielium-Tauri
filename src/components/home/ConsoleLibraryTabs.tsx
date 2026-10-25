@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, MoreVertical, Settings2 } from "lucide-react";
+import { Plus, Settings2 } from "lucide-react";
 import type { Game } from "../../types/domain";
 import type { GamepadFamily } from "../../context/GamepadContext";
 import type { SoundEffectType } from "../../hooks/useSoundEffects";
@@ -129,22 +128,15 @@ export const ConsoleLibraryTabs: React.FC<ConsoleLibraryTabsProps> = ({
   return (
     <>
       <div
-        className="ctl-pill hidden lg:flex max-w-full min-w-0 gap-1.5 p-1"
+        className="console-tabs flex max-w-full min-w-0 items-center gap-2"
         role="tablist"
         aria-label="Abas da Biblioteca"
       >
-        {/* L1 / LB Bumper Badge (Only visible when gamepad is connected) */}
+        {/* Aba anterior: LB no controle, Q no teclado (como os chips L1/R1 de console) */}
         {isGamepadConnected && (
-          <div
-            className="flex items-center justify-center p-0.5"
-            title="Pressione L1/LB para voltar aba"
-          >
-            <ControllerButtonGlyph
-              button="LB"
-              gamepadFamily={gamepadFamily}
-              size={18}
-            />
-          </div>
+          <span className="console-bumper" title="Aba anterior" aria-hidden="true">
+            <ControllerButtonGlyph button="LB" gamepadFamily={gamepadFamily} size={16} />
+          </span>
         )}
 
         {/* Tabs */}
@@ -173,23 +165,9 @@ export const ConsoleLibraryTabs: React.FC<ConsoleLibraryTabsProps> = ({
                     }
                   }}
                   title={tab.label}
-                  className={`relative flex h-[calc(var(--control-h)-10px)] items-center gap-1.5 pl-[var(--space-4)] ${"isCustom" in tab && tab.filter ? "pr-8" : "pr-[var(--space-4)]"} rounded-full text-[length:var(--fs-label)] font-semibold whitespace-nowrap transition-colors duration-[var(--dur-focus)] ease-[var(--ease-focus)] cursor-pointer select-none ${
-                    isActive
-                      ? "text-[var(--ink)]"
-                      : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
-                  }`}
+                  data-active={isActive}
+                  className={`console-tab-item relative flex h-[calc(var(--control-h)-12px)] items-center pl-3 ${"isCustom" in tab && tab.filter ? "pr-7" : "pr-3"} rounded-full whitespace-nowrap cursor-pointer select-none`}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeLibraryTab"
-                      className="absolute inset-0 rounded-full bg-[var(--tone-4)] -z-10"
-                      transition={{
-                        type: "spring",
-                        bounce: 0.15,
-                        duration: 0.35,
-                      }}
-                    />
-                  )}
                   <span className="max-w-[18ch] truncate">{tab.label}</span>
 
                 </button>
@@ -216,23 +194,16 @@ export const ConsoleLibraryTabs: React.FC<ConsoleLibraryTabsProps> = ({
           onClick={handleOpenCreate}
           title="Criar novo filtro personalizado"
           aria-label="Criar filtro personalizado"
-          className="flex h-[calc(var(--control-h)-10px)] w-[calc(var(--control-h)-10px)] shrink-0 items-center justify-center rounded-full bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--ink-muted)] hover:text-[var(--ink)] transition-[background-color,color,transform] duration-[var(--dur-focus)] ease-[var(--ease-focus)] cursor-pointer active:scale-90 ml-0.5"
+          className="console-bumper cursor-pointer transition-colors duration-[var(--dur-focus)] hover:text-[var(--ink)] active:scale-90"
         >
-          <Plus className="h-[45%] w-[45%]" />
+          <Plus className="h-3 w-3" />
         </button>
 
-        {/* R1 / RB Bumper Badge (Only visible when gamepad is connected) */}
+        {/* Próxima aba: RB no controle, E no teclado */}
         {isGamepadConnected && (
-          <div
-            className="flex items-center justify-center p-0.5"
-            title="Pressione R1/RB para avançar aba"
-          >
-            <ControllerButtonGlyph
-              button="RB"
-              gamepadFamily={gamepadFamily}
-              size={18}
-            />
-          </div>
+          <span className="console-bumper" title="Próxima aba" aria-hidden="true">
+            <ControllerButtonGlyph button="RB" gamepadFamily={gamepadFamily} size={16} />
+          </span>
         )}
       </div>
 

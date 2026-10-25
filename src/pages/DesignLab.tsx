@@ -269,7 +269,7 @@ const DesignLab: React.FC = () => {
               Mods
             </h2>
             <div className="flex items-center gap-3">
-              <label className="flex h-11 items-center gap-2 rounded-[var(--node)] bg-[var(--tone-2)] px-4 text-[var(--ink-muted)]">
+              <label className="flex h-11 items-center gap-2 rounded-[var(--node)] bg-[var(--tone-2)] px-4 text-[var(--ink-muted)] focus-within:ring-2 focus-within:ring-[var(--ink)]">
                 <Search className="h-4 w-4" aria-hidden="true" />
                 <input
                   aria-label="Pesquisar jogos"

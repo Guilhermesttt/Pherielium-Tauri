@@ -7,8 +7,9 @@ import { StrictMode, Suspense, lazy } from "react";
 import { createRoot } from "react-dom/client";
 // Fontes embutidas (antes vinham do Google Fonts a cada abertura; Archivo Black e STIX não eram usadas por nenhuma tela).
 import "@fontsource-variable/inter/opsz.css";
-import "@fontsource-variable/sora";
 import "@fontsource-variable/unbounded";
+// Números e métricas (ping, FPS, tamanho de arquivo): ver .font-metric em index.css
+import "@fontsource-variable/geist-mono";
 import "./index.css";
 import { applyUiStyle, readUiStyle } from "./lib/uiStyle";
 
@@ -22,6 +23,7 @@ import { Navigate, createHashRouter, RouterProvider, Outlet } from "react-router
 import TitleBar from "./components/layout/TitleBar";
 
 import LoadingState from "./components/ui/loading-state";
+import AsyncLoader from "./components/AsyncLoader";
 
 const Login = lazy(() => import("./pages/Login"));
 const DesktopAuth = lazy(() => import("./pages/DesktopAuth"));
@@ -32,6 +34,12 @@ const DesignLab = import.meta.env.DEV ? lazy(() => import("./pages/DesignLab")) 
 const DesignLabSettings = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabSettings")) : null;
 const DesignLabTrophies = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabTrophies")) : null;
 const DesignLabMods = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabMods")) : null;
+const DesignLabShell = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabShell")) : null;
+const DesignLabDetail = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabDetail")) : null;
+const DesignLabConsole = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabConsole")) : null;
+const DesignLabCall = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabCall")) : null;
+const DesignLabFriends = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabFriends")) : null;
+const DesignLabKeyboard = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabKeyboard")) : null;
 
 // In Tauri, we are always in desktop mode
 const isDesktopRuntime = true;
@@ -40,6 +48,15 @@ const routeFallback = (
   <div className="flex min-h-screen items-center justify-center bg-[var(--tone-0)] text-white">
     <LoadingState label="Iniciando Pherielium" variant="working" />
   </div>
+);
+
+// Quem já está logado abre direto no boot do app: carregamento -> animação de abertura -> hub.
+// Se não houver sessão, o próprio App redireciona para o login. Sem isto, a tela de login
+// aparecia por um instante antes de a sessão ser reconhecida.
+const appRouteElement = (
+  <Suspense fallback={<AsyncLoader immediate />}>
+    <AppRoot />
+  </Suspense>
 );
 
 const RootLayout: React.FC = () => (
@@ -58,7 +75,7 @@ const desktopRoutes = [
     children: [
       {
         index: true,
-        element: <Navigate to="/login" replace />,
+        element: appRouteElement,
       },
       {
         path: "login",
@@ -78,11 +95,7 @@ const desktopRoutes = [
       },
       {
         path: "app",
-        element: (
-          <Suspense fallback={routeFallback}>
-            <AppRoot />
-          </Suspense>
-        ),
+        element: appRouteElement,
       },
       {
         path: "privacy-policy",
@@ -100,7 +113,7 @@ const desktopRoutes = [
           </Suspense>
         ),
       },
-      ...(DesignLab && DesignLabSettings && DesignLabTrophies && DesignLabMods
+      ...(DesignLab && DesignLabSettings && DesignLabTrophies && DesignLabMods && DesignLabShell && DesignLabDetail && DesignLabConsole && DesignLabCall && DesignLabFriends && DesignLabKeyboard
         ? [
             {
               path: "design-lab",
@@ -131,6 +144,54 @@ const desktopRoutes = [
               element: (
                 <Suspense fallback={routeFallback}>
                   <DesignLabMods />
+                </Suspense>
+              ),
+            },
+            {
+              path: "design-lab/shell",
+              element: (
+                <Suspense fallback={routeFallback}>
+                  <DesignLabShell />
+                </Suspense>
+              ),
+            },
+            {
+              path: "design-lab/detail",
+              element: (
+                <Suspense fallback={routeFallback}>
+                  <DesignLabDetail />
+                </Suspense>
+              ),
+            },
+            {
+              path: "design-lab/console",
+              element: (
+                <Suspense fallback={routeFallback}>
+                  <DesignLabConsole />
+                </Suspense>
+              ),
+            },
+            {
+              path: "design-lab/call",
+              element: (
+                <Suspense fallback={routeFallback}>
+                  <DesignLabCall />
+                </Suspense>
+              ),
+            },
+            {
+              path: "design-lab/friends",
+              element: (
+                <Suspense fallback={routeFallback}>
+                  <DesignLabFriends />
+                </Suspense>
+              ),
+            },
+            {
+              path: "design-lab/keyboard",
+              element: (
+                <Suspense fallback={routeFallback}>
+                  <DesignLabKeyboard />
                 </Suspense>
               ),
             },

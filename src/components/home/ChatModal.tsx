@@ -1289,7 +1289,6 @@ export const ChatModal: React.FC<ChatModalProps> = React.memo(
         onClose={handleCloseModal}
         maxWidthClassName={controllerKeyboardOpen ? "max-w-[min(880px,68vw)]" : "max-w-4xl"}
         zIndexClassName="z-[180]"
-        closeDurationMs={320}
         containerClassName={
           controllerKeyboardOpen ? "items-start justify-center p-2 md:items-center md:justify-start md:p-3" : undefined
         }

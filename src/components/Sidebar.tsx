@@ -1,3 +1,4 @@
+import { shouldOpenEdgeDrawer } from "./edgeDrawer";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import {
@@ -66,6 +67,7 @@ import {
 } from "../context/GamepadContext";
 import { ControllerButtonGlyph } from "./ui/ControllerButtonGlyph";
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useOpenCloseSound } from "../hooks/useOpenCloseSound";
 
 export const SteamBrandIcon: React.FC<{
   className?: string;
@@ -256,6 +258,8 @@ export const SIDEBAR_CATEGORIES = CATEGORIES.filter(({ id }) =>
 );
 
 interface SidebarProps {
+  /** Tela do jogo aberta por cima: a gaveta não abre (nem pela borda) e fecha se estava aberta. */
+  locked?: boolean;
   activeCategory: string;
   onCategory: (id: string) => void;
   settingsLabel: string;
@@ -264,6 +268,8 @@ interface SidebarProps {
   language?: LauncherLanguage;
   userDisplay?: string;
   userAvatar?: string;
+  /** Nível do jogador, mostrado em fonte de métrica ao lado do nome. */
+  userLevel?: number;
   platformOperations?: any;
 }
 
@@ -465,7 +471,7 @@ const OverlayButton: React.FC<NavButtonProps> = ({
   }, [isFocused]);
 
   const iconStyle = active
-    ? { color: "var(--ink)", transition: "color var(--dur-2) var(--spring)" }
+    ? { color: "var(--nav-active-ink)", transition: "color var(--dur-2) var(--spring)" }
     : { transition: "color var(--dur-2) var(--spring)" };
 
   const inactiveIconClass = active
@@ -495,7 +501,7 @@ const OverlayButton: React.FC<NavButtonProps> = ({
       className={`relative group flex h-11 w-full cursor-pointer items-center gap-3 px-4 rounded-[var(--node)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] ${
         isFocused ? "ring-2 ring-[var(--ink)]" : ""
       }`}
-      style={{ color: active ? "var(--ink)" : undefined }}
+      style={{ color: active ? "var(--nav-active-ink)" : undefined }}
     >
       {/* Smooth Active Selection Pill (Glides between items) */}
       {active && (
@@ -503,7 +509,7 @@ const OverlayButton: React.FC<NavButtonProps> = ({
           aria-hidden
           layoutId="sidebar-active-pill"
           transition={{ type: "spring", bounce: 0.18, duration: 0.35 }}
-          className="absolute inset-0 rounded-[var(--node)] bg-[var(--tone-3)]"
+          className="absolute inset-0 rounded-[var(--node)] bg-[var(--nav-active-bg)]"
         />
       )}
 
@@ -544,7 +550,7 @@ const OverlayButton: React.FC<NavButtonProps> = ({
         <span
           className={`truncate font-body text-[length:var(--step-1)] ${
             active
-              ? "font-semibold text-[var(--ink)]"
+              ? "font-semibold text-[var(--nav-active-ink)]"
               : "font-medium text-[var(--ink-muted)] group-hover:text-[var(--ink)]"
           }`}
         >
@@ -554,7 +560,9 @@ const OverlayButton: React.FC<NavButtonProps> = ({
         {hasNotifications && (
           <div className="relative flex items-center justify-center shrink-0">
             <span
-              className="flex h-6 min-w-6 items-center justify-center rounded-[var(--node)] bg-[var(--ink)] px-2 text-[length:var(--step-0)] font-semibold tabular-nums text-[var(--tone-0)]"
+              className={`font-metric flex h-6 min-w-6 items-center justify-center rounded-[var(--node)] px-2 text-[length:var(--step-0)] font-semibold ${
+                active ? "bg-[var(--nav-active-ink)] text-[var(--nav-active-bg)]" : "bg-[var(--ink)] text-[var(--tone-0)]"
+              }`}
             >
               {notificationCount > 99 ? "99+" : notificationCount}
             </span>
@@ -566,12 +574,16 @@ const OverlayButton: React.FC<NavButtonProps> = ({
 };
 
 const Sidebar: React.FC<SidebarProps> = ({
+  locked = false,
   activeCategory,
   onCategory,
   settingsLabel,
   playSound,
   notificationCount = 0,
   language = "pt-BR",
+  userDisplay,
+  userAvatar,
+  userLevel,
 }) => {
   const prefersReducedMotion = useReducedMotion();
 
@@ -583,18 +595,9 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   });
 
-  const isInitialMount = useRef(true);
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    if (isExpanded) {
-      playSound("detailOpen");
-    } else {
-      playSound("modalClose");
-    }
-  }, [isExpanded, playSound]);
+  // Só abrir/fechar toca. Com `playSound` nas dependências do efeito, mexer no volume ou trocar o
+  // tema (o `playSound` muda) repetia o som da sidebar sem ninguém ter aberto nada.
+  useOpenCloseSound(isExpanded, playSound, { open: "sidebarOpen", close: "sidebarClose" });
 
   const toggleExpand = () => {
     const next = !isExpanded;
@@ -659,12 +662,18 @@ const Sidebar: React.FC<SidebarProps> = ({
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleOpenSidebar = useCallback(() => {
+    if (locked) return;
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
       closeTimeoutRef.current = null;
     }
     setIsExpanded(true);
-  }, []);
+  }, [locked]);
+
+  // A tela do jogo abriu por cima: se a sidebar estava aberta, fecha
+  useEffect(() => {
+    if (locked) setIsExpanded(false);
+  }, [locked]);
 
   const handleCloseSidebar = useCallback(() => {
     if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
@@ -676,13 +685,13 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Listen to mouse touching the leftmost edge (clientX <= 12)
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (e.clientX <= 12) {
+      if (shouldOpenEdgeDrawer({ locked, side: "left", clientX: e.clientX, viewportWidth: window.innerWidth, edgePx: 12 })) {
         handleOpenSidebar();
       }
     };
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [handleOpenSidebar]);
+  }, [handleOpenSidebar, locked]);
 
   const { isGamepadConnected, gamepadFamily } = useGamepad();
 
@@ -874,6 +883,16 @@ const Sidebar: React.FC<SidebarProps> = ({
         "it-IT": "SOCIAL",
       }[language] || "SOCIAL",
 
+    progress:
+      {
+        "pt-BR": "PROGRESSO",
+        "en-US": "PROGRESS",
+        "es-ES": "PROGRESO",
+        "fr-FR": "PROGRÈS",
+        "de-DE": "FORTSCHRITT",
+        "it-IT": "PROGRESSI",
+      }[language] || "PROGRESSO",
+
     mods:
       {
         "pt-BR": "FERRAMENTAS",
@@ -952,6 +971,12 @@ const Sidebar: React.FC<SidebarProps> = ({
       items: [
         upperNavItems[2], // FRIENDS
         upperNavItems[3], // FEED
+      ],
+    },
+    {
+      key: "progress",
+      title: groupLabels.progress,
+      items: [
         lowerNavItems[0], // TROPHIES
         lowerNavItems[2], // PROFILE
       ],
@@ -969,11 +994,13 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <>
       {/* Invisible edge trigger strip on the far left edge of the screen */}
-      <div
-        onMouseEnter={handleOpenSidebar}
-        className="fixed left-0 top-0 bottom-0 w-3.5 z-40 pointer-events-auto"
-        aria-hidden="true"
-      />
+      {!locked && (
+        <div
+          onMouseEnter={handleOpenSidebar}
+          className="fixed left-0 top-0 bottom-0 w-3.5 z-40 pointer-events-auto"
+          aria-hidden="true"
+        />
+      )}
 
       {/* Auto-hiding Slide-over Sidebar Drawer */}
       <AnimatePresence>
@@ -1000,8 +1027,9 @@ const Sidebar: React.FC<SidebarProps> = ({
               transition={{ type: "spring", bounce: 0, duration: 0.35 }}
               onMouseEnter={handleOpenSidebar}
               onMouseLeave={handleCloseSidebar}
-              className="fixed left-0 top-0 bottom-0 w-[280px] z-50 bg-[var(--tone-1)] p-4 flex flex-col select-none overflow-y-auto no-scrollbar"
+              className="fixed left-0 top-0 bottom-0 w-[280px] z-50 bg-[var(--tone-1)] p-4 flex flex-col select-none overflow-y-auto no-scrollbar shadow-[inset_-1px_0_0_rgb(255_255_255/0.06)]"
               aria-label="Menu de navegação"
+              data-captures-keys
             >
               {/* Header: Logo + Pherielium Brand */}
               <div
@@ -1065,9 +1093,40 @@ const Sidebar: React.FC<SidebarProps> = ({
                 ))}
               </nav>
 
+              {/* Conta: avatar, nome e nível; leva ao perfil */}
+              {userDisplay && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCategory("PROFILE");
+                    playSound("showModal");
+                    setIsExpanded(false);
+                  }}
+                  className="mt-auto flex w-full items-center gap-3 rounded-[var(--corner-md)] bg-[var(--tone-2)] p-3 text-left transition-colors hover:bg-[var(--tone-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
+                  aria-label={`Abrir perfil de ${userDisplay}`}
+                >
+                  {userAvatar ? (
+                    <img src={userAvatar} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover" draggable={false} />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--tone-4)] text-[length:var(--step-1)] font-semibold text-[var(--ink)]"
+                    >
+                      {userDisplay.trim().slice(0, 1).toUpperCase() || "?"}
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[length:var(--step-1)] font-semibold text-[var(--ink)]">{userDisplay}</span>
+                    {typeof userLevel === "number" && (
+                      <span className="font-metric block text-[length:var(--step-0)] text-[var(--ink-muted)]">Nv. {userLevel}</span>
+                    )}
+                  </span>
+                </button>
+              )}
+
               {/* Controller Navigation Hint in Sidebar Footer */}
               {isGamepadConnected && (
-                <div className="mt-auto pt-4 flex items-center justify-between text-[length:var(--step-0)] text-[var(--ink-faint)] select-none">
+                <div className="mt-3 pt-1 flex items-center justify-between text-[length:var(--step-0)] text-[var(--ink-faint)] select-none">
                   <div className="flex items-center gap-1.5">
                     <ControllerButtonGlyph button="DPAD" gamepadFamily={gamepadFamily} size={15} />
                     <span>Navegar</span>

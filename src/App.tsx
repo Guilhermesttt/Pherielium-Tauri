@@ -3,6 +3,7 @@ import { AnimatePresence, MotionConfig } from "framer-motion";
 import { Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import GameBootIntro from "./components/GameBootIntro";
+import { preloadBootIntro } from "./components/boot-intro/bootIntroScenes";
 import AsyncLoader from "./components/AsyncLoader";
 import { AuthProvider, useAuth } from "./auth/AuthProvider";
 import { AuthSessionAlert } from "./components/AuthSessionAlert";
@@ -37,8 +38,8 @@ const menuMusicLoaders: Record<SoundTheme, () => Promise<string | null>> = {
     import("./sounds/PS5_Plus/003. Home Menu.mp3").then((module) => module.default),
   ps4: () => import("./sounds/PS4/01 Main.mp3").then((module) => module.default),
   psp: () => import("./sounds/PSP Sounds/menu_music.mp3").then((module) => module.default),
-  ps2: () =>
-    import("./sounds/PS2 System Sounds/menu_music.mp3").then((module) => module.default),
+  // O pacote do PS2 não traz mais música de menu: sem arquivo, o menu fica sem trilha neste tema.
+  ps2: () => Promise.resolve(null),
   gamecube: () =>
     import("./sounds/Nintendo GameCube Menu SFX/menu_music.mp3").then((module) => module.default),
   xbox360: () =>
@@ -94,7 +95,8 @@ const AppContent: React.FC = () => {
       : "never";
   useControllerLed();
   const [isIntroVisible, setIsIntroVisible] = React.useState<boolean | null>(null);
-  const [isPreloaderVisible, setIsPreloaderVisible] = React.useState<boolean>(false);
+  // Começa ligado: o app abre direto na tela de carregamento, sem um quadro do hub antes dela.
+  const [isPreloaderVisible, setIsPreloaderVisible] = React.useState<boolean>(true);
   const [isInstallSetupVisible, setIsInstallSetupVisible] = React.useState(false);
 
   const musicRef = React.useRef<HTMLAudioElement | null>(null);
@@ -418,60 +420,72 @@ const AppContent: React.FC = () => {
     };
   }, [user?.uid, loading, isIntroVisible, isPreloaderVisible, isInstallSetupVisible, startBackgroundMusic]);
 
-  if (loading) {
-    return <AsyncLoader />;
-  }
+  // Fluxo de abertura: carregamento -> animação de abertura -> hub. O hub só é montado depois
+  // da animação; antes disso a tela é a mesma instância do carregamento (sem piscar entre o
+  // "autenticando" e o "preparando").
+  const handlePreloaderFinish = React.useCallback(() => {
+    if (!user) return;
+    setIsPreloaderVisible(false);
+    if (gameBootIntroEnabled) {
+      setIsIntroVisible(true);
+    } else {
+      // preferência "animação de abertura" desligada: pula direto para o hub
+      completedIntroUserRef.current = user.uid;
+      setIsIntroVisible(false);
+      finishBootSequence();
+    }
+  }, [user, gameBootIntroEnabled, finishBootSequence]);
 
-  if (!user) {
+  if (!loading && !user) {
     return <Navigate to="/login" replace />;
   }
+
+  const isHubReady = !loading && Boolean(user) && !isPreloaderVisible && isIntroVisible === false;
 
   return (
     <MotionConfig reducedMotion={reducedMotionProp}>
       <div className="relative h-full w-full select-none overflow-hidden overscroll-none">
-        <AuthSessionAlert />
-        <React.Suspense fallback={null}>
-          <TrophyUnlockToast userId={user?.uid ?? null} />
-        </React.Suspense>
-        <div className="absolute inset-0">
-          <Home />
-          {!(typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) && (
-            <ConfiguredDesktopNotch />
-          )}
-          <GamepadStatusOverlay />
-          <LevelUpModal />
-          <ControllerVirtualKeyboard />
-          {whatsNewRelease && (
-            <WhatsNewModal release={whatsNewRelease} onClose={dismissWhatsNew} />
-          )}
-        </div>
+        {isHubReady && (
+          <>
+            <AuthSessionAlert />
+            <React.Suspense fallback={null}>
+              <TrophyUnlockToast userId={user?.uid ?? null} />
+            </React.Suspense>
+            <div className="absolute inset-0">
+              <Home />
+              {!(typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) && (
+                <ConfiguredDesktopNotch />
+              )}
+              <GamepadStatusOverlay />
+              <LevelUpModal />
+              <ControllerVirtualKeyboard />
+              {whatsNewRelease && (
+                <WhatsNewModal release={whatsNewRelease} onClose={dismissWhatsNew} />
+              )}
+            </div>
+          </>
+        )}
 
         <AnimatePresence mode="wait">
-          {isPreloaderVisible ? (
+          {loading || isPreloaderVisible ? (
             <AsyncLoader
               key="hub-preloader"
+              immediate
               minDurationMs={2400}
               // Pré-aquece o chunk lazy do toast de troféus durante o boot
               // para a Home não travar no primeiro unlock
-              preload={[() => import("./components/TrophyUnlockToast")]}
-              onFinish={() => {
-                setIsPreloaderVisible(false);
-                if (gameBootIntroEnabled) {
-                  setIsIntroVisible(true);
-                } else {
-                  // preferência "animação de abertura" desligada: pula direto para o hub
-                  completedIntroUserRef.current = user.uid;
-                  setIsIntroVisible(false);
-                  finishBootSequence();
-                }
-              }}
+              preload={[() => import("./components/TrophyUnlockToast"), () => preloadBootIntro(soundTheme)]}
+              // Sem `onFinish` enquanto a sessão ainda carrega: o tempo mínimo só conta depois.
+              onFinish={loading ? undefined : handlePreloaderFinish}
             />
           ) : isIntroVisible ? (
             <MotionConfig key="boot-intro-config" reducedMotion="never">
               <GameBootIntro
                 key="boot-intro"
                 soundEnabled={gameBootIntroSoundEnabled}
+                soundTheme={soundTheme}
                 onFinish={() => {
+                  if (!user) return;
                   completedIntroUserRef.current = user.uid;
                   setIsIntroVisible(false);
                   finishBootSequence();

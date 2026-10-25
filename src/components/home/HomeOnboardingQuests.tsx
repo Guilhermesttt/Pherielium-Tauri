@@ -25,6 +25,7 @@ import {
   type QuestId,
 } from "../../services/userQuests";
 import { progressionEventBus } from "../../services/progressionEvents";
+import { IconSwap } from "../ui/IconSwap";
 
 interface HomeOnboardingQuestsProps {
   userId?: string | null;
@@ -283,7 +284,7 @@ export const HomeOnboardingQuests: React.FC<HomeOnboardingQuestsProps> = ({
             className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-neutral-400 hover:bg-white/10 hover:text-white transition"
             title={isExpanded ? "Recolher missões" : "Expandir missões"}
           >
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            <IconSwap active={isExpanded} a={<ChevronDown className="h-4 w-4" />} b={<ChevronUp className="h-4 w-4" />} />
           </button>
 
           <button

@@ -1,7 +1,8 @@
 import React, { useMemo } from "react";
-import { motion, AnimatePresence, useReducedMotion, useMotionValue, useMotionTemplate } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Gamepad2, ArrowRight, ArrowLeft } from "lucide-react";
 import type { Game } from "../types/domain";
+import type { SoundEffectType } from "../hooks/useSoundEffects";
 import { formatPlayedHours, getGamePlayedHours } from "../utils/playtime";
 import {
   SteamBrandIcon,
@@ -14,7 +15,6 @@ import {
   BattlenetBrandIcon,
   RockstarBrandIcon,
 } from "./Sidebar";
-import { useGameColor } from "../hooks/useGameColor";
 
 interface DashboardContinuePlayingProps {
   continuePlayingGames: Game[];
@@ -22,23 +22,18 @@ interface DashboardContinuePlayingProps {
   onSelectGame?: (game: Game) => void;
   onPlayGame: (game: Game) => void;
   onOpenDetails?: (game: Game) => void;
-  playSound?: (sound: any) => void;
+  playSound?: (sound: SoundEffectType) => void;
 }
 
 const STANDARD_SPRING = {
   type: "spring" as const,
   bounce: 0,
-  duration: 0.4,
+  duration: 0.6,
 };
 
-// How far the cover pops above the card's top edge, and the card's own height.
-// Compact proportions so it acts as a fast-resume strip without overpowering the hero.
-const CARD_HEIGHT = 104;
-const OVERHANG = 32;
-const COVER_WIDTH = 96;
-const COVER_HEIGHT = CARD_HEIGHT + OVERHANG; // 136
-const COVER_LEFT = 14;
-const TEXT_OFFSET = COVER_LEFT + COVER_WIDTH + 14; // reserved space so text never sits under the cover
+// Faixa de retomada compacta: capa pequena e texto, sobre um degrau de tom (sem borda nem brilho).
+const CARD_HEIGHT = 88;
+const COVER_WIDTH = 56;
 
 const getPlatformInfo = (launcherType?: string) => {
   const iconClass = "h-3.5 w-3.5 text-[var(--ink-muted)]";
@@ -75,7 +70,7 @@ interface ContinueCardProps {
   onSelectGame?: () => void;
   onPlay: () => void;
   onOpenDetails: () => void;
-  playSound?: (sound: any) => void;
+  playSound?: (sound: SoundEffectType) => void;
 }
 
 const ContinueCard = React.memo<ContinueCardProps>(({
@@ -90,44 +85,13 @@ const ContinueCard = React.memo<ContinueCardProps>(({
   const prefersReducedMotion = useReducedMotion();
   const hours = getGamePlayedHours(game);
   const platform = useMemo(() => getPlatformInfo(game.launcherType), [game.launcherType]);
-
   const coverArt = game.cardImage || game.image;
-  const dominantColor = useGameColor(coverArt);
 
   const enterTransition = prefersReducedMotion
     ? { duration: 0.12 }
-    : { ...STANDARD_SPRING, delay: Math.min(index * 0.035, 0.14) };
+    : { ...STANDARD_SPRING, delay: Math.min(index * 0.06, 0.3) };
 
-  const accentColor =
-    dominantColor?.hex && dominantColor.hex !== "#ffffff" && dominantColor.hex !== "rgba(255,255,255,1)"
-      ? dominantColor.hex
-      : null;
-
-  // A barra horizontal segue a cor dominante do jogo (color-mix mantém
-  // tudo escuro: 26% da cor sobre a base + borda tingida a 35%).
-  const cardBackground = accentColor
-    ? `linear-gradient(145deg, color-mix(in srgb, ${accentColor} 26%, var(--surface-overlay)) 0%, var(--surface-base) 100%)`
-    : "linear-gradient(145deg, var(--surface-overlay) 0%, var(--surface-base) 100%)";
-  const cardBorderColor = isSelected
-    ? "rgba(255, 255, 255, 0.45)"
-    : accentColor
-      ? `color-mix(in srgb, ${accentColor} 35%, rgba(255, 255, 255, 0.08))`
-      : "rgba(255, 255, 255, 0.08)";
-
-  // Glow no card todo, com coordenadas da superfície visual (a barra
-  // horizontal): o handler resolve o alvo, então pairar sobre texto
-  // ou capa atualiza o spotlight no lugar certo, sem saltos.
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  const handleCardGlow = (e: React.MouseEvent<HTMLElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    mouseX.set(e.clientX - rect.left);
-    mouseY.set(e.clientY - rect.top);
-  };
-
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const activate = () => {
     if (isSelected) {
       onPlay();
     } else {
@@ -136,82 +100,69 @@ const ContinueCard = React.memo<ContinueCardProps>(({
     }
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    activate();
+  };
+
+  // O cartão é um botão: precisa de foco e de Enter/Espaço, não só de clique.
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    e.stopPropagation();
+    activate();
+  };
+
   return (
     <motion.article
-      initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 15 }}
+      initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, x: 12 }}
       animate={{ opacity: 1, x: 0 }}
-      whileHover={prefersReducedMotion ? undefined : { y: -2 }}
       whileTap={{ scale: 0.98 }}
       transition={enterTransition}
       onClick={handleClick}
-      onMouseMove={handleCardGlow}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
       onPointerEnter={() => playSound?.("hover")}
-      className={`group relative shrink-0 cursor-pointer ${cardWidthClass}`}
-      style={{ height: COVER_HEIGHT, scrollSnapAlign: "start" }}
+      className={`group relative flex shrink-0 cursor-pointer items-center gap-4 overflow-hidden rounded-[var(--radius-card)] bg-[var(--tone-2)] p-3 transition-colors hover:bg-[var(--tone-3)] ${cardWidthClass}`}
+      style={{
+        height: CARD_HEIGHT,
+        scrollSnapAlign: "start",
+        // Selecionado = o mesmo anel de tinta dos cartões da biblioteca; em repouso, nada
+        boxShadow: isSelected ? "0 0 0 2px var(--ink)" : "none",
+      }}
       aria-label={`Continuar jogando ${game.title}`}
+      aria-current={isSelected ? "true" : undefined}
     >
-      {/* Card background — cor do jogo + spotlight segue o cursor */}
-      <motion.div
-        className="absolute inset-x-0 bottom-0 overflow-hidden border shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-        style={{
-          height: CARD_HEIGHT,
-          background: cardBackground,
-          borderRadius: 22, /* Squircle */
-          borderColor: cardBorderColor,
-          boxShadow: isSelected
-            ? "0 0 24px rgba(255,255,255,0.12), inset 0 1px 0 rgba(255,255,255,0.25)"
-            : "inset 0 1px 0 rgba(255,255,255,0.08)",
-        }}
-      >
-        <motion.div
-          className="pointer-events-none absolute -inset-px rounded-[var(--corner-md)] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-          style={{
-            background: useMotionTemplate`
-              radial-gradient(
-                320px circle at ${mouseX}px ${mouseY}px,
-                rgba(255,255,255,0.1),
-                transparent 80%
-              )
-            `,
-          }}
-        />
-      </motion.div>
-
-      {/* Text — reserved offset guarantees it never sits under the cover and never truncates */}
       <div
-        className="absolute bottom-0 right-4 flex flex-col justify-center gap-1 overflow-hidden"
-        style={{ height: CARD_HEIGHT, left: TEXT_OFFSET }}
-      >
-        <h3 className="truncate text-[length:var(--fs-title)] font-semibold leading-tight tracking-tight text-[var(--ink)] drop-shadow-sm transition-colors group-hover:text-white">
-          {game.title}
-        </h3>
-        <p className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[length:var(--fs-label)] font-medium text-[var(--ink-muted)]">
-          <span className="shrink-0">{hours > 0 ? `${formatPlayedHours(hours)}h` : "Recente"}</span>
-          <span className="h-1 w-1 shrink-0 rounded-full bg-white/20" />
-          <span className="flex shrink-0 items-center gap-1 truncate max-w-[80px]">{platform.label}</span>
-          <span className="h-1 w-1 shrink-0 rounded-full bg-white/20" />
-          <span
-            className="shrink-0 text-[rgb(var(--launcher-accent))]"
-            style={accentColor ? { color: accentColor } : undefined}
-          >
-            Último Jogo
-          </span>
-        </p>
-      </div>
-
-      {/* Cover — pops above the card, but stays inside the article's own box */}
-      <motion.div
-        className="absolute top-0 z-10 overflow-hidden rounded-[calc(var(--radius-card)-3px)] border border-[color:var(--edge-subtle)] bg-[color:var(--surface-base)] shadow-[var(--elev-card)]"
-        style={{ left: COVER_LEFT, width: COVER_WIDTH, height: COVER_HEIGHT - 10 }}
+        className="h-full shrink-0 overflow-hidden rounded-[var(--corner-sm,10px)] bg-[var(--surface-base)]"
+        style={{ width: COVER_WIDTH }}
       >
         {coverArt ? (
           <img src={coverArt} alt="" className="h-full w-full object-cover" draggable={false} />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <Gamepad2 className="h-7 w-7 text-[var(--ink-faint)]" />
+            <Gamepad2 className="h-5 w-5 text-[var(--ink-faint)]" />
           </div>
         )}
-      </motion.div>
+      </div>
+
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+        <h3 className="truncate text-[length:var(--fs-body)] font-semibold leading-tight tracking-tight text-[var(--ink)]">
+          {game.title}
+        </h3>
+        <p className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[length:var(--fs-label)] font-medium text-[var(--ink-muted)]">
+          <span className="shrink-0 font-metric">{hours > 0 ? `${formatPlayedHours(hours)}h` : "Recente"}</span>
+          <span aria-hidden="true">·</span>
+          <span className="truncate">{platform.label}</span>
+          {index === 0 && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span className="shrink-0 text-[var(--ink)]">Último jogo</span>
+            </>
+          )}
+        </p>
+      </div>
     </motion.article>
   );
 });
@@ -275,8 +226,8 @@ export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> =
 
   const cardWidthClass =
     continuePlayingGames.length >= 5
-      ? "w-[calc((100%-80px)/5)] min-w-[270px] max-w-[350px]"
-      : "w-[300px]";
+      ? "w-[calc((100%-80px)/5)] min-w-[240px] max-w-[320px]"
+      : "w-[280px]";
 
   // O corte seco nas pontas do trilho e resolvido so com mascara: o conteudo
   // some para transparente e quem aparece atras e o fundo real da tela, entao
@@ -298,19 +249,14 @@ export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> =
   if (continuePlayingGames.length === 0) return null;
 
   return (
-    <section aria-label="Continuar jogando" className="px-[var(--safe-x)] pt-[var(--gap-section)] relative group/section">
-      <div className="mb-3 flex flex-col">
-        <p className="text-[length:var(--fs-label)] font-medium text-[var(--ink-faint)]">
-          Retomar
-        </p>
-        <div className="mt-1 flex items-baseline gap-3">
-          <h2 className="text-[length:var(--fs-heading)] font-semibold leading-[1.1] tracking-[-0.02em] text-[var(--ink)]">
-            Continuar jogando
-          </h2>
-          <span className="text-[length:var(--fs-label)] font-medium text-[var(--ink-faint)]">
-            {continuePlayingGames.length} {continuePlayingGames.length === 1 ? "jogo" : "jogos"}
-          </span>
-        </div>
+    <section aria-label="Continuar jogando" className="px-[var(--safe-x)] pt-[calc(var(--gap-section)*1.25)] relative group/section">
+      <div className="mb-[var(--gap-section)] flex items-baseline gap-3">
+        <h2 className="text-[length:var(--fs-heading)] font-semibold leading-[1.1] tracking-[-0.02em] text-[var(--ink)]">
+          Continuar jogando
+        </h2>
+        <span className="text-[length:var(--fs-label)] font-medium text-[var(--ink-faint)]">
+          <span className="font-metric">{continuePlayingGames.length}</span> {continuePlayingGames.length === 1 ? "jogo" : "jogos"}
+        </span>
       </div>
 
       <div className="relative w-full">
@@ -327,7 +273,7 @@ export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> =
               transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
               onClick={handleScrollLeft}
               aria-label="Voltar aos jogos anteriores"
-              className="absolute -left-3 sm:-left-4 top-[56%] -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--surface-raised)_90%,transparent)] hover:bg-[color:var(--surface-overlay)] border border-[color:var(--edge-subtle)] hover:border-[color:var(--edge-strong)] text-white shadow-[var(--elev-pill)] backdrop-blur-2xl transition-colors cursor-pointer"
+              className="absolute -left-3 sm:-left-4 top-1/2 -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--surface-raised)_90%,transparent)] hover:bg-[color:var(--surface-overlay)] border border-[color:var(--edge-subtle)] hover:border-[color:var(--edge-strong)] text-white transition-colors cursor-pointer"
             >
               <ArrowLeft className="h-5 w-5" />
             </motion.button>
@@ -347,7 +293,7 @@ export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> =
               transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
               onClick={handleScrollRight}
               aria-label="Ver mais jogos recentes"
-              className="absolute -right-3 sm:-right-4 top-[56%] -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--surface-raised)_90%,transparent)] hover:bg-[color:var(--surface-overlay)] border border-[color:var(--edge-subtle)] hover:border-[color:var(--edge-strong)] text-white shadow-[var(--elev-pill)] backdrop-blur-2xl transition-colors cursor-pointer"
+              className="absolute -right-3 sm:-right-4 top-1/2 -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--surface-raised)_90%,transparent)] hover:bg-[color:var(--surface-overlay)] border border-[color:var(--edge-subtle)] hover:border-[color:var(--edge-strong)] text-white transition-colors cursor-pointer"
             >
               <ArrowRight className="h-5 w-5" />
             </motion.button>
@@ -357,7 +303,7 @@ export const DashboardContinuePlaying: React.FC<DashboardContinuePlayingProps> =
         {/* Container Horizontal com Scroll Suave e Snap */}
         <motion.div
           ref={scrollRef}
-          className="no-scrollbar flex gap-5 overflow-x-auto overscroll-x-contain pt-2 pb-4 px-1"
+          className="no-scrollbar flex gap-5 overflow-x-auto overscroll-x-contain py-2 px-1"
           style={{
             scrollSnapType: "x mandatory",
             ...maskStyle,

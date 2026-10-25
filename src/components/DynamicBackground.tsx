@@ -1,5 +1,5 @@
 import React from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useTransition, animated, config as springConfig } from "@react-spring/web";
 import { PVideoBackground, useLowPerf } from "./PerformanceComponents";
 import bgVideo from "../assets/karavanbraam_pindown.io.webm";
 
@@ -11,6 +11,9 @@ interface DynamicBackgroundProps {
   style?: React.CSSProperties;
 }
 
+// Mola para a transicao da arte do jogo: entrada suave e cinematografica
+const SPRING_BG = { tension: 60, friction: 20, mass: 2 } as const;
+
 const DynamicBackground: React.FC<DynamicBackgroundProps> = ({
   backgroundImage,
   videoUrl,
@@ -20,6 +23,16 @@ const DynamicBackground: React.FC<DynamicBackgroundProps> = ({
 }) => {
   const low = useLowPerf();
   const noFx = reducedEffects || low;
+
+  // useTransition do React Spring: cada nova imagem entra com mola suave (scale + opacity)
+  // e a anterior sai por fadein rapido — igual ao parallax cinematografico do PS5
+  const transitions = useTransition(backgroundImage || null, {
+    key: backgroundImage || "empty",
+    from:  noFx ? { opacity: 0, scale: 1.02 }  : { opacity: 0, scale: 1.08 },
+    enter: noFx ? { opacity: 0.25, scale: 1.02 } : { opacity: 0.65, scale: 1.04 },
+    leave: noFx ? { opacity: 0, scale: 1.02 }  : { opacity: 0, scale: 1.04 },
+    config: noFx ? springConfig.default : SPRING_BG,
+  });
 
   return (
     <div
@@ -39,41 +52,35 @@ const DynamicBackground: React.FC<DynamicBackgroundProps> = ({
         />
       </div>
 
-      {/* Imagem hero do jogo — tratamento cinematografico (scale + fade + blur atmosferico).
-          Repousa em scale 1.06 para o blur nunca expor as bordas. */}
-      <AnimatePresence mode="popLayout">
-        {backgroundImage ? (
-          noFx ? (
-            <img
-              key={backgroundImage}
-              src={backgroundImage}
-              alt=""
-              loading="eager"
-              decoding="async"
-              className="absolute inset-0 w-full h-full scale-[1.02] object-cover opacity-25"
-            />
-          ) : (
-            <motion.img
-              key={backgroundImage}
-              initial={{ scale: 1.1, opacity: 0 }}
-              animate={{ scale: 1.06, opacity: 0.65 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.5, ease: "easeOut" }}
-              src={backgroundImage}
-              alt=""
-              loading="eager"
-              decoding="async"
-              className="absolute inset-0 h-full w-full object-cover blur-[24px] will-change-transform"
-            />
-          )
-        ) : null}
-      </AnimatePresence>
+      {/* Imagem hero do jogo com Spring: entrada cinematografica (scale + fade com mola).
+          Repousa em scale 1.04 para o blur nunca expor as bordas. */}
+      {transitions((springStyle, src) =>
+        src ? (
+          <animated.img
+            key={src}
+            src={src}
+            alt=""
+            loading="eager"
+            decoding="async"
+            style={{
+              ...springStyle,
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              ...(noFx ? {} : { filter: "blur(24px)" }),
+              willChange: "transform, opacity",
+            }}
+          />
+        ) : null,
+      )}
 
       {/* Overlays cinematicos full-bleed (cobrem a tela toda, inclusive atras da sidebar) */}
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-transparent" />
 
-      {/* Camada atmosférica do console ativo (transição suave sem loop ou custo de render) */}
+      {/* Camada atmosferica do console ativo (transicao suave sem loop ou custo de render) */}
       <div
         className="absolute inset-0 pointer-events-none transition-all duration-700 ease-out"
         style={{ background: "var(--theme-ambient-bg, none)" }}
