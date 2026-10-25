@@ -160,6 +160,8 @@ export interface NexusDownloadedFile {
   id: string;
   gameDomain: string;
   modId: string;
+  /** Vazio quando o nome do arquivo não diz de qual arquivo da Nexus ele veio. */
+  fileId?: string;
   filename: string;
   filePath: string;
   bytes: number;
@@ -221,8 +223,18 @@ export const prepareNexusFreeDownload = async (request: {
   modAuthor: string;
   pictureUrl: string;
   version: string;
-}): Promise<{ prepared: boolean; autoInstall: boolean; expiresAt: number }> =>
+}): Promise<{ prepared: boolean; autoInstall: boolean; expiresAt: number; direct?: boolean }> =>
   requireNexusDesktopBridge().prepareNexusFreeDownload(request);
+
+/** O Pherielium já é o programa que abre links nxm:// (os de "Download lento" da Nexus)? */
+export const getNexusNxmStatus = async (): Promise<{ registered: boolean }> =>
+  requireNexusDesktopBridge().getNexusNxmStatus();
+
+export const registerNexusNxm = async (): Promise<{ registered: boolean }> =>
+  requireNexusDesktopBridge().registerNexusNxm();
+
+export const unregisterNexusNxm = async (): Promise<{ registered: boolean }> =>
+  requireNexusDesktopBridge().unregisterNexusNxm();
 
 export const installNexusDownloadedMod = async (request: {
   gameDomain: string;

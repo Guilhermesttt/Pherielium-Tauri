@@ -24,6 +24,7 @@ import {
 } from "../utils/trophyTiers";
 import { markHubAchievement, incrementHubCount } from "../utils/hubTrophies";
 import { normalizeSteamLookup } from "../types/gameDetail";
+import { readInstalledModsForGame } from "../services/installedMods";
 
 interface UseGameDetailAsyncProps {
   game: Game | null;
@@ -82,6 +83,21 @@ export function useGameDetailAsync({
       game?.epicCatalogId ||
       game?.epicLaunchId) && !isSteamGame,
   );
+
+  // A página de Mods grava a lista no localStorage; sem ler aqui a aba Mods do jogo ficava sempre vazia.
+  // Relê ao abrir o jogo e quando a janela volta ao foco (o mod pode ter sido instalado em segundo plano).
+  React.useEffect(() => {
+    if (!isOpen || !game?.id || !user?.uid) {
+      setGameMods([]);
+      return;
+    }
+    const uid = user.uid;
+    const gameId = game.id;
+    const reload = () => setGameMods(readInstalledModsForGame(uid, gameId));
+    reload();
+    window.addEventListener("focus", reload);
+    return () => window.removeEventListener("focus", reload);
+  }, [game?.id, isOpen, user?.uid]);
 
   const retryAchievements = React.useCallback(() => {
     setRefetchKey((prev) => prev + 1);

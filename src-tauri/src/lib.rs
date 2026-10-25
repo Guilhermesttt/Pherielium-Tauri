@@ -29,6 +29,8 @@ use commands::{
     launcher::*,
     library::*,
     nexus::*,
+    nexus_download::*,
+    secure_storage::*,
     overlay::*,
     process_monitor::*,
     ptt::*,
@@ -43,6 +45,18 @@ use tauri::Manager;
 pub fn run() {
     tauri::Builder::default()
         // ── Plugins ────────────────────────────────────────────────────────
+        // Instância única vem primeiro: um link nxm:// aberto no navegador chega a esta
+        // instância (via deep-link) em vez de abrir um segundo Pherielium.
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            // o deep-link não entrega `nxm` (esquema dinâmico): lê o link direto dos argumentos
+            commands::nexus_download::handle_nxm_args(app, &argv);
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+        }))
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
@@ -103,6 +117,25 @@ pub fn run() {
                 if let Err(e) = tray::create_tray(app) {
                     eprintln!("[Tray] Falha ao criar ícone da bandeja: {e}");
                 }
+            }
+            // Links nxm:// (instalação automática de mods): os que chegam com o app aberto e o que
+            // abriu o app. O protocolo só é registrado quando a pessoa pede (nexus_nxm_register).
+            {
+                use tauri_plugin_deep_link::DeepLinkExt;
+                let handle = app.handle().clone();
+                app.deep_link().on_open_url(move |event| {
+                    for url in event.urls() {
+                        commands::nexus_download::handle_nxm_url(&handle, url.as_str());
+                    }
+                });
+                if let Ok(Some(urls)) = app.deep_link().get_current() {
+                    for url in urls {
+                        commands::nexus_download::handle_nxm_url(app.handle(), url.as_str());
+                    }
+                }
+                // app fechado quando o link chegou: o Windows o abre com o link como argumento
+                let launch_args: Vec<String> = std::env::args().collect();
+                commands::nexus_download::handle_nxm_args(app.handle(), &launch_args);
             }
             commands::overlay::init(app.handle());
             commands::overlay::register_overlay_shortcut(app.handle());
@@ -170,11 +203,21 @@ pub fn run() {
             nexus_connect_personal_key,
             nexus_validate_connection,
             nexus_disconnect,
+            secure_storage_get,
+            secure_storage_set,
+            secure_storage_remove,
             nexus_get_mod_catalog,
             nexus_get_mod_details,
             nexus_get_mod_files,
             nexus_select_game_directory,
             nexus_get_download_state,
+            nexus_prepare_free_download,
+            nexus_install_downloaded_mod,
+            nexus_adopt_installed_mod,
+            nexus_remove_installed_mod,
+            nexus_nxm_status,
+            nexus_nxm_register,
+            nexus_nxm_unregister,
             nexus_list_downloaded_files,
             nexus_open_download_location,
             // Hardware

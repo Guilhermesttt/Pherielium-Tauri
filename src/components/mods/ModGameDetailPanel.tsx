@@ -40,6 +40,8 @@ import {
   onNexusDownloadState,
   openNexusDownloadLocation,
   prepareNexusFreeDownload,
+  getNexusNxmStatus,
+  registerNexusNxm,
   removeNexusInstalledMod,
   validateNexusConnection,
   type NexusConnection,
@@ -49,6 +51,7 @@ import {
 } from "../../services/nexus";
 import { Switch } from "../ui/switch";
 import { usePreferences } from "../../context/PreferencesContext";
+import { formatFileSize, groupNexusFiles } from "../../services/nexusFiles";
 import { useSoundEffects } from "../../hooks/useSoundEffects";
 import { HudCornerMarkers } from "../ui/HudPanel";
 
@@ -174,6 +177,9 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
   const [downloadState, setDownloadState] = React.useState<NexusDownloadState | null>(null);
   const [downloadHistory, setDownloadHistory] = React.useState<NexusDownloadState[]>([]);
   const [awaitingFileId, setAwaitingFileId] = React.useState("");
+  // null = ainda não sei; o Pherielium só instala sozinho quem usa Premium ou deixa ele abrir links nxm://
+  const [nxmRegistered, setNxmRegistered] = React.useState<boolean | null>(null);
+  const [nxmBusy, setNxmBusy] = React.useState(false);
   const [downloadedFileIds, setDownloadedFileIds] = React.useState<Set<string>>(
     () => new Set(),
   );
@@ -351,6 +357,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
             version: catalogMod?.version || "",
             enabled: false,
             status: "downloaded",
+            ...(download.fileId ? { nexusFileId: download.fileId } : {}),
             filePath: download.filePath,
           });
         });
@@ -708,6 +715,95 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
     }
   };
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    getNexusNxmStatus()
+      .then((status) => {
+        if (!cancelled) setNxmRegistered(status.registered);
+      })
+      .catch(() => {
+        if (!cancelled) setNxmRegistered(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  const enableNxm = async () => {
+    setNxmBusy(true);
+    try {
+      const status = await registerNexusNxm();
+      setNxmRegistered(status.registered);
+      setFilesError("");
+    } catch (error) {
+      setFilesError(error instanceof Error ? error.message : "Não foi possível ativar a instalação automática.");
+    } finally {
+      setNxmBusy(false);
+    }
+  };
+
+  // Instalar pega o arquivo principal mais recente; opcionais e versões antigas ficam recolhidos
+  const fileGroups = React.useMemo(() => groupNexusFiles(modFiles), [modFiles]);
+
+  const renderFileCard = (file: NexusModFile, emphasized: boolean) => {
+    if (!selectedMod) return null;
+    const downloadedEntry = installedMods.find((mod) =>
+      mod.id === `${gameDomain}:${getModIdFromPageUrl(selectedMod.modPageUrl)}`
+      && mod.nexusFileId === file.id);
+    const isDownloaded = downloadedFileIds.has(file.id) || Boolean(downloadedEntry);
+    const isInstalled = downloadedEntry?.status === "installed";
+    const waiting = awaitingFileId === file.id;
+    const size = formatFileSize(file.sizeKb);
+    return (
+      <div
+        key={file.id}
+        className={`rounded-[var(--corner-md)] bg-[var(--tone-2)] ${emphasized ? "p-4" : "p-3"}`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className={`truncate font-semibold text-[var(--ink)] ${emphasized ? "text-[length:var(--step-2)]" : "text-[length:var(--step-1)]"}`}>
+              {file.name}
+            </p>
+            <p className="mt-1 text-[length:var(--step-0)] text-[var(--ink-muted)]">
+              <span className="font-metric">{file.version || "Sem versão"}</span>
+              {size && <> · <span className="font-metric">{size}</span></>}
+              {emphasized && <> · Versão mais recente</>}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              playSound("select");
+              void requestFreeNexusDownload(file);
+            }}
+            disabled={waiting || isDownloaded}
+            className={`flex shrink-0 cursor-pointer items-center gap-2 rounded-[var(--node)] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] disabled:cursor-default ${
+              emphasized ? "h-11 px-5 text-[length:var(--step-1)]" : "h-9 px-4 text-[length:var(--step-0)]"
+            } ${
+              isDownloaded
+                ? "bg-[var(--tone-3)] text-[var(--live)]"
+                : "bg-[var(--ink)] text-[var(--tone-0)] hover:opacity-90 disabled:opacity-40"
+            }`}
+          >
+            {waiting
+              ? <LoaderCircle className="h-4 w-4 animate-spin" />
+              : isDownloaded
+                ? <CheckCircle2 className="h-4 w-4" />
+                : <Download className="h-4 w-4" />}
+            {isInstalled ? "Instalado" : isDownloaded ? "Baixado" : waiting ? "Aguardando" : "Instalar"}
+          </button>
+        </div>
+        {emphasized && waiting && (
+          <p className="mt-3 text-[length:var(--step-0)] leading-relaxed text-[var(--ink-muted)]">
+            Na página da Nexus que abriu, clique em <span className="text-[var(--ink)]">Download lento</span>. O resto é
+            automático: o Pherielium baixa e coloca o mod na pasta do jogo.
+          </p>
+        )}
+      </div>
+    );
+  };
+
   const requestFreeNexusDownload = async (file: NexusModFile) => {
     if (!selectedMod) return;
     const modId = getModIdFromPageUrl(selectedMod.modPageUrl);
@@ -721,8 +817,15 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
       setFilesError("Conecte sua conta Nexus em Configurar antes de baixar.");
       return;
     }
+    // Conta grátis: a Nexus só entrega o link pelo "Download lento", que volta como nxm://.
+    // Sem o Pherielium registrado para esse protocolo, o link iria para outro programa.
+    if (!nexusConnection.account?.isPremium && nxmRegistered === false) {
+      setFilesError("Ative a instalação automática abaixo para o Pherielium receber o download da Nexus.");
+      return;
+    }
+    let prepared: { prepared: boolean; autoInstall: boolean; expiresAt: number; direct?: boolean };
     try {
-      await prepareNexusFreeDownload({
+      prepared = await prepareNexusFreeDownload({
         gameDomain,
         modId,
         fileId: file.id,
@@ -742,6 +845,12 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
       }
       return;
     }
+    // Premium: o download já começou, sem abrir a página da Nexus
+    if (prepared.direct) {
+      setAwaitingFileId("");
+      setFilesError(effectiveFolder ? "" : "Pasta do jogo não configurada: o mod será baixado, mas não instalado. Configure a pasta para instalar sozinho.");
+      return;
+    }
     const pageUrl = new URL(selectedMod.modPageUrl);
     pageUrl.searchParams.set("tab", "files");
     pageUrl.searchParams.set("file_id", file.id);
@@ -758,8 +867,8 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
     } else {
       window.open(pageUrl.toString(), "_blank", "noopener,noreferrer");
     }
-    // Fallback: se NXM não disparar em 30s, libera botão
-    setTimeout(() => setAwaitingFileId((cur) => cur === file.id ? "" : cur), 30000);
+    // Quem usa conta grátis leva um tempo para clicar em "Download lento": espera até o pedido expirar (15 min)
+    setTimeout(() => setAwaitingFileId((cur) => cur === file.id ? "" : cur), 15 * 60 * 1000);
   };
 
   const importModFromUrl = async () => {
@@ -1205,8 +1314,8 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        if (selectedMod && modFiles.length > 0) {
-                                          void requestFreeNexusDownload(modFiles[0]);
+                                        if (selectedMod && fileGroups.main) {
+                                          void requestFreeNexusDownload(fileGroups.main);
                                         }
                                       }}
                                       className="rounded-lg bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/40"
@@ -1266,77 +1375,48 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             </p>
                           )}
 
-                          {modFiles.length > 0 && (
-                            <div className="mt-4 space-y-2">
-                              <div className="flex items-center justify-between">
-                                <p className="text-[length:var(--step-0)] font-black uppercase tracking-[0.18em] text-[var(--ink-faint)]">
-                                  Arquivos disponíveis
-                                </p>
-                                <span className="text-[length:var(--step-0)] font-bold text-[var(--ink-faint)]">{modFiles.length}</span>
-                              </div>
-                              {modFiles.slice(0, 8).map((file) => (
-                                (() => {
-                                  const downloadedEntry = installedMods.find((mod) =>
-                                    mod.id === `${gameDomain}:${getModIdFromPageUrl(selectedMod.modPageUrl)}`
-                                    && mod.nexusFileId === file.id);
-                                  const isDownloaded = downloadedFileIds.has(file.id)
-                                    || Boolean(downloadedEntry);
-                                  const isInstalled = downloadedEntry?.status === "installed";
-                                  return (
-                                <div
-                                  key={file.id}
-                                  className="rounded-xl border border-white/8 bg-white/[0.035] p-3"
-                                >
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="min-w-0">
-                                      <p className="truncate text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
-                                        {file.name}
-                                      </p>
-                                      <p className="mt-1 text-[length:var(--step-0)] text-[var(--ink-faint)]">
-                                        {file.version || "Sem versão"} · {file.category || "Arquivo"}
-                                      </p>
-                                    </div>
-                                    {file.primary && (
-                                      <span className="shrink-0 rounded-md bg-emerald-400/10 px-2 py-1 text-[length:var(--step-0)] font-black uppercase text-emerald-300/70">
-                                        Principal
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="mt-2 flex items-center justify-between gap-3">
-                                    <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">
-                                      {file.sizeKb >= 1024
-                                        ? `${(file.sizeKb / 1024).toFixed(1)} MB`
-                                        : `${Math.round(file.sizeKb)} KB`}
-                                    </p>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        playSound("select");
-                                        void requestFreeNexusDownload(file);
-                                      }}
-                                      disabled={awaitingFileId === file.id || isDownloaded}
-                                      className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[length:var(--step-0)] font-black uppercase tracking-wider transition disabled:cursor-default ${
-                                        isDownloaded
-                                          ? "border-emerald-400/15 bg-emerald-400/[0.07] text-emerald-300/65"
-                                          : "border-white/10 bg-white/[0.05] text-[var(--ink-muted)] hover:bg-white/10 hover:text-white disabled:opacity-40"
-                                      }`}
-                                    >
-                                      {awaitingFileId === file.id
-                                        ? <LoaderCircle className="h-3 w-3 animate-spin" />
-                                        : isDownloaded
-                                          ? <CheckCircle2 className="h-3 w-3" />
-                                          : <Download className="h-3 w-3" />}
-                                      {isInstalled
-                                        ? "Instalado"
-                                        : isDownloaded
-                                          ? "Baixado"
-                                          : "Instalar grátis"}
-                                    </button>
-                                  </div>
-                                </div>
-                                  );
-                                })()
-                              ))}
+                          {nxmRegistered === false && !nexusConnection.account?.isPremium && (
+                            <div className="mt-4 rounded-[var(--corner-md)] bg-[var(--tone-2)] p-4">
+                              <p className="text-[length:var(--step-1)] font-semibold text-[var(--ink)]">Ative a instalação automática</p>
+                              <p className="mt-1 text-[length:var(--step-0)] leading-relaxed text-[var(--ink-muted)]">
+                                Com a conta grátis, a Nexus envia o download por um link que abre no navegador. Ativando, o
+                                Pherielium passa a receber esse link, baixa o mod e coloca os arquivos na pasta do jogo. Isso
+                                também tira os links da Nexus de outro gerenciador, como o Vortex.
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => void enableNxm()}
+                                disabled={nxmBusy}
+                                className="mt-3 flex h-10 cursor-pointer items-center gap-2 rounded-[var(--node)] bg-[var(--ink)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] hover:opacity-90 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
+                              >
+                                {nxmBusy && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                                Ativar instalação automática
+                              </button>
+                            </div>
+                          )}
+
+                          {fileGroups.main && (
+                            <div className="mt-4 space-y-3">
+                              <p className="text-[length:var(--step-0)] font-medium text-[var(--ink-faint)]">Arquivo a instalar</p>
+                              {renderFileCard(fileGroups.main, true)}
+
+                              {fileGroups.optional.length > 0 && (
+                                <details className="group">
+                                  <summary className="cursor-pointer list-none text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] hover:text-[var(--ink)]">
+                                    Outros arquivos <span className="font-metric">({fileGroups.optional.length})</span>
+                                  </summary>
+                                  <div className="mt-2 space-y-2">{fileGroups.optional.map((file) => renderFileCard(file, false))}</div>
+                                </details>
+                              )}
+
+                              {fileGroups.old.length > 0 && (
+                                <details className="group">
+                                  <summary className="cursor-pointer list-none text-[length:var(--step-0)] font-medium text-[var(--ink-faint)] hover:text-[var(--ink-muted)]">
+                                    Versões antigas <span className="font-metric">({fileGroups.old.length})</span>
+                                  </summary>
+                                  <div className="mt-2 space-y-2">{fileGroups.old.map((file) => renderFileCard(file, false))}</div>
+                                </details>
+                              )}
                             </div>
                           )}
                         </motion.div>
@@ -1459,7 +1539,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               value={newProfileName}
                               onChange={(e) => setNewProfileName(e.target.value)}
                               placeholder="Nome do perfil"
-                              className="h-8 rounded-lg border border-white/15 bg-black/50 px-2.5 text-xs text-white outline-none"
+                              className="h-8 rounded-lg border border-white/15 bg-black/50 px-2.5 text-xs text-white outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                             />
                             <button
                               type="button"
