@@ -1,5 +1,5 @@
 import ps2RedScreenSound from "../sounds/ps2-red-screen-of-death.mp3";
-import phelieriumClickSound from "../sounds/Phelierium Default/ui_click.wav";
+import phelieriumClickSound from "../sounds/Phelierium Default/Deck UI Default Activation.mp3";
 
 /**
  * CosmicAudio - High-impact Web Audio API Sound Synthesizer + PS2 Death Ambience

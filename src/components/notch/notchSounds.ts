@@ -1,18 +1,8 @@
-import expandSound from "../../sounds/PS5_Plus/deck_ui_side_menu_fly_in.wav";
-import collapseSound from "../../sounds/PS5_Plus/deck_ui_side_menu_fly_out.wav";
-import revealSound from "../../sounds/PS5_Plus/deck_ui_bumper_end.wav";
-import mediaPlaySound from "../../sounds/PS5_Plus/deck_ui_switch_toggle_on.wav";
-import mediaPauseSound from "../../sounds/PS5_Plus/deck_ui_switch_toggle_off.wav";
-import mediaSkipSound from "../../sounds/PS5_Plus/deck_ui_tab_transition_01.wav";
-import mascotPokeSound from "../../sounds/Phelierium Default/ui_click.wav";
-import mascotDizzySound from "../../sounds/PS5_Plus/deck_ui_misc_10.wav";
-import panelOpenSound from "../../sounds/PS5_Plus/deck_ui_show_modal.wav";
-import headphonesSnapSound from "../../sounds/PS5_Plus/deck_ui_bumper_end_02.wav";
-import hubFoldSound from "../../sounds/PS5_Plus/deck_ui_launch_game.wav";
+import { soundThemes, soundTypeGain, type SoundEffectType } from "../../hooks/useSoundEffects";
 
 /**
- * Sons de interação do notch. Cada ação tem um som próprio (abrir/fechar/aparecer,
- * play/pause/pular, cutucar a Pherie, abrir o painel). Mutar/silenciar/desligar NÃO
+ * Sons de interação do notch. Cada ação usa o som do TEMA SONORO escolhido (o mesmo pacote da
+ * interface: PS5, Xbox, PS2...), pelo "tipo de efeito" equivalente. Mutar/silenciar/desligar NÃO
  * estão aqui: já tocam no hook de voz (useVoiceCall) e tocar de novo dobraria o som.
  */
 export type NotchSoundId =
@@ -29,7 +19,8 @@ export type NotchSoundId =
   | "hubFold";
 
 interface NotchSoundDef {
-  src: string;
+  /** qual efeito do tema sonoro esta ação usa */
+  type: SoundEffectType;
   /** ganho relativo ao volume dos efeitos (0..1) — equilibra sons de timbre/volume diferentes */
   gain: number;
   /** intervalo mínimo entre duas reproduções do mesmo som (ms) */
@@ -37,18 +28,33 @@ interface NotchSoundDef {
 }
 
 export const NOTCH_SOUNDS: Record<NotchSoundId, NotchSoundDef> = {
-  expand: { src: expandSound, gain: 0.7, minIntervalMs: 220 },
-  collapse: { src: collapseSound, gain: 0.55, minIntervalMs: 220 },
-  reveal: { src: revealSound, gain: 0.6, minIntervalMs: 400 },
-  mediaPlay: { src: mediaPlaySound, gain: 0.8, minIntervalMs: 120 },
-  mediaPause: { src: mediaPauseSound, gain: 0.8, minIntervalMs: 120 },
-  mediaSkip: { src: mediaSkipSound, gain: 0.75, minIntervalMs: 120 },
-  mascotPoke: { src: mascotPokeSound, gain: 0.9, minIntervalMs: 80 },
-  mascotDizzy: { src: mascotDizzySound, gain: 0.85, minIntervalMs: 800 },
-  panelOpen: { src: panelOpenSound, gain: 0.75, minIntervalMs: 300 },
-  headphonesSnap: { src: headphonesSnapSound, gain: 0.9, minIntervalMs: 500 },
-  hubFold: { src: hubFoldSound, gain: 0.7, minIntervalMs: 800 },
+  expand: { type: "detailOpen", gain: 0.7, minIntervalMs: 220 },
+  collapse: { type: "back", gain: 0.55, minIntervalMs: 220 },
+  reveal: { type: "hover", gain: 0.6, minIntervalMs: 400 },
+  mediaPlay: { type: "switchOn", gain: 0.8, minIntervalMs: 120 },
+  mediaPause: { type: "switchOff", gain: 0.8, minIntervalMs: 120 },
+  mediaSkip: { type: "navigate", gain: 0.75, minIntervalMs: 120 },
+  mascotPoke: { type: "select", gain: 0.9, minIntervalMs: 80 },
+  mascotDizzy: { type: "search", gain: 0.85, minIntervalMs: 800 },
+  panelOpen: { type: "showModal", gain: 0.75, minIntervalMs: 300 },
+  headphonesSnap: { type: "edit", gain: 0.9, minIntervalMs: 500 },
+  hubFold: { type: "play", gain: 0.7, minIntervalMs: 800 },
 };
+
+/** Nomes antigos de tema que ainda podem chegar do overlay/armazenamento. */
+function normalizeTheme(theme: string | undefined): string {
+  if (!theme) return "default";
+  if (theme === "playstation") return "ps2";
+  if (theme === "phelierium" || theme === "checkpoint") return "default";
+  return theme;
+}
+
+/** Arquivo do som no tema escolhido; se o tema não tem esse efeito (ou não existe), usa o padrão. */
+export function resolveNotchSoundSrc(id: NotchSoundId, theme?: string): string | undefined {
+  const { type } = NOTCH_SOUNDS[id];
+  const packs = soundThemes as Record<string, Partial<Record<SoundEffectType, string>>>;
+  return packs[normalizeTheme(theme)]?.[type] ?? packs.default?.[type];
+}
 
 /** Volume final 0..1 (volume dos efeitos × ganho do som); nunca estoura nem fica NaN. */
 export function resolveNotchVolume(effectsVolume: number | undefined, id: NotchSoundId): number {
@@ -63,15 +69,16 @@ export function shouldPlayNotchSound(id: NotchSoundId, nowMs: number, lastAtMs: 
 
 const lastPlayed = new Map<NotchSoundId, number>();
 
-/** Toca o som do notch. `effectsVolume` em 0..1 (o mesmo que o launcher manda ao overlay). */
-export function playNotchSound(id: NotchSoundId, effectsVolume?: number): void {
+/** Toca o som do notch no tema sonoro `theme`. `effectsVolume` em 0..1 (o mesmo que o launcher manda ao overlay). */
+export function playNotchSound(id: NotchSoundId, effectsVolume?: number, theme?: string): void {
   const now = typeof performance !== "undefined" ? performance.now() : Date.now();
   if (!shouldPlayNotchSound(id, now, lastPlayed.get(id))) return;
   lastPlayed.set(id, now);
-  const volume = resolveNotchVolume(effectsVolume, id);
-  if (volume <= 0) return;
+  const volume = resolveNotchVolume(effectsVolume, id) * soundTypeGain(theme, NOTCH_SOUNDS[id].type);
+  const src = resolveNotchSoundSrc(id, theme);
+  if (volume <= 0 || !src) return;
   try {
-    const audio = new Audio(NOTCH_SOUNDS[id].src);
+    const audio = new Audio(src);
     audio.volume = volume;
     void audio.play().catch(() => undefined);
   } catch {
