@@ -9,7 +9,7 @@ import {
   type LegacyAnimationControls,
   type Variants,
   type HTMLMotionProps,
-} from 'motion/react';
+} from 'framer-motion';
 
 import { cn } from '@/lib/utils';
 import { useIsInView } from '@/hooks/use-is-in-view';

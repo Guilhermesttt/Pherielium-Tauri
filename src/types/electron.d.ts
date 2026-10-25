@@ -181,6 +181,7 @@ declare global {
         id: string;
         gameDomain: string;
         modId: string;
+        fileId?: string;
         filename: string;
         filePath: string;
         bytes: number;
@@ -195,7 +196,10 @@ declare global {
         modAuthor: string;
         pictureUrl: string;
         version: string;
-      }) => Promise<{ prepared: boolean; autoInstall: boolean; expiresAt: number }>;
+      }) => Promise<{ prepared: boolean; autoInstall: boolean; expiresAt: number; direct?: boolean }>;
+      getNexusNxmStatus: () => Promise<{ registered: boolean }>;
+      registerNexusNxm: () => Promise<{ registered: boolean }>;
+      unregisterNexusNxm: () => Promise<{ registered: boolean }>;
       installNexusDownloadedMod: (request: {
         gameDomain: string;
         modId: string;

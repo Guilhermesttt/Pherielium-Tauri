@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useGamepadButton } from "@/context/GamepadContext";
 import { activateElementWithController } from "@/utils/controllerTextInput";
+import { useModalSounds } from "@/hooks/useModalSounds";
 
 interface ModalShellProps {
   isOpen: boolean;
@@ -18,7 +19,7 @@ interface ModalShellProps {
   reducedEffects?: boolean;
   ariaLabel?: string;
   gamepadPriority?: number;
-  /** Duração do fechamento em ms — deve bater com a transição CSS de saída. */
+  /** Duração do fechamento em ms — deve bater com `--modal-close-dur` (150ms) em src/index.css. */
   closeDurationMs?: number;
 }
 
@@ -44,8 +45,9 @@ const ModalShell: React.FC<ModalShellProps> = ({
   reducedEffects = false,
   gamepadPriority = 100,
   ariaLabel,
-  closeDurationMs = 220,
+  closeDurationMs = 150,
 }) => {
+  useModalSounds(isOpen);
   const contentRef = React.useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = React.useRef<HTMLElement | null>(null);
   const onCloseRef = React.useRef(onClose);
@@ -192,9 +194,8 @@ const ModalShell: React.FC<ModalShellProps> = ({
         className={cn(
           // bg-black/70 + blur leve: separa o painel do que está atrás (capa do jogo, prévia
           // cheia de detalhe) sem usar um blur pesado (GPU de quem está jogando).
-          "absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity",
-          shouldReduceEffects ? "duration-0" : "duration-[var(--dur-2)] ease-[var(--spring)]",
-          renderState === "open" ? "opacity-100" : "opacity-0",
+          "t-modal-backdrop absolute inset-0 bg-black/70 backdrop-blur-sm",
+          renderState === "open" ? "is-open" : "",
           backdropClassName
         )}
       />

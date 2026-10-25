@@ -22,6 +22,11 @@ interface AsyncLoaderProps {
    */
   preload?: Array<() => Promise<unknown>>;
   preloadTimeoutMs?: number;
+  /**
+   * Aparece já opaco, sem o fade-in. Usado quando outro loader idêntico acabou de sair da tela
+   * (a troca de rota/componente durante o boot não pode piscar).
+   */
+  immediate?: boolean;
 }
 
 const delay = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
@@ -78,6 +83,7 @@ const AsyncLoader: React.FC<AsyncLoaderProps> = ({
   minDurationMs = 2400,
   preload,
   preloadTimeoutMs = 8000,
+  immediate = false,
 }) => {
   const [msgIndex, setMsgIndex] = useState(0);
   // Ref para não reiniciar o gate se o array inline mudar de identidade
@@ -120,7 +126,7 @@ const AsyncLoader: React.FC<AsyncLoaderProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
+      initial={immediate ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.6, ease: "easeInOut" }}

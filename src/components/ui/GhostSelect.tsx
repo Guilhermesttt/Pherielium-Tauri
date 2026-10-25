@@ -118,7 +118,7 @@ export const GhostSelect: React.FC<GhostSelectProps> = ({
                     onBlur={() => setHovered((prev) => (prev === option.value ? null : prev))}
                     role="option"
                     aria-selected={isSelected}
-                    className={`relative flex h-10 w-full cursor-pointer items-center justify-between rounded-[var(--node)] px-3.5 text-[length:var(--step-0)] transition-colors outline-none text-left ${
+                    className={`relative flex h-10 w-full cursor-pointer items-center justify-between rounded-[var(--node)] px-3.5 text-[length:var(--step-0)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-white/40 text-left ${
                       glideOff
                         ? isSelected
                           ? "bg-[var(--tone-4)] text-[var(--ink)] font-semibold"

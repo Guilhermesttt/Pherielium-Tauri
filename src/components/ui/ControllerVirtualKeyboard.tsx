@@ -1,103 +1,111 @@
 import React from "react";
-import { Check, Delete, Space, Trash2 } from "lucide-react";
-import ModalShell from "./ModalShell";
+import VirtualKeyboard from "../keyboard/VirtualKeyboard";
+import { usePreferences } from "../../context/PreferencesContext";
+import { useModalSounds } from "../../hooks/useModalSounds";
+import { useSoundEffects } from "../../hooks/useSoundEffects";
 import {
   CONTROLLER_KEYBOARD_EVENT,
   CONTROLLER_KEYBOARD_VISIBILITY_EVENT,
+  isControllerTextTarget,
   setControllerTextValue,
   type ControllerTextTarget,
 } from "../../utils/controllerTextInput";
 
-const rows = [
-  ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
-  ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
-  ["A", "S", "D", "F", "G", "H", "J", "K", "L", "@"],
-  ["Z", "X", "C", "V", "B", "N", "M", ".", "_", "-"],
-];
+/** Próximo campo de texto visível depois de `current`, na ordem da página. */
+function nextTextTarget(current: ControllerTextTarget): ControllerTextTarget | null {
+  const fields = Array.from(
+    document.querySelectorAll<HTMLElement>("input, textarea"),
+  ).filter((element): element is ControllerTextTarget =>
+    isControllerTextTarget(element) && !element.disabled && element.getClientRects().length > 0,
+  );
+  const index = fields.indexOf(current);
+  return index >= 0 ? fields[index + 1] ?? null : null;
+}
 
+/** "Buscar": confirma o campo como a tecla Enter do teclado de verdade faria. */
+function submitTarget(target: ControllerTextTarget): void {
+  const init = { key: "Enter", code: "Enter", bubbles: true, cancelable: true };
+  target.dispatchEvent(new KeyboardEvent("keydown", init));
+  target.dispatchEvent(new KeyboardEvent("keyup", init));
+  if (target instanceof HTMLInputElement && target.form) target.form.requestSubmit();
+}
+
+/**
+ * Teclado virtual do controle: abre quando o jogador ativa um campo de texto com o controle
+ * (evento `CONTROLLER_KEYBOARD_EVENT`) e escreve direto no campo. O desenho e as regras ficam em
+ * `components/keyboard`.
+ */
 const ControllerVirtualKeyboard: React.FC = () => {
   const [target, setTarget] = React.useState<ControllerTextTarget | null>(null);
-  const [value, setValue] = React.useState("");
+  const [initialValue, setInitialValue] = React.useState("");
+  const { effectsVolume, soundTheme, notificationVolume } = usePreferences();
+  const { playSound } = useSoundEffects(effectsVolume / 100, soundTheme, notificationVolume / 100);
+  const isOpen = Boolean(target);
+  useModalSounds(isOpen);
 
   React.useEffect(() => {
     const handleOpen = (event: Event) => {
       const nextTarget = (event as CustomEvent<{ target: ControllerTextTarget }>).detail.target;
+      setInitialValue(nextTarget.value);
       setTarget(nextTarget);
-      setValue(nextTarget.value);
     };
     window.addEventListener(CONTROLLER_KEYBOARD_EVENT, handleOpen);
     return () => window.removeEventListener(CONTROLLER_KEYBOARD_EVENT, handleOpen);
   }, []);
 
   React.useEffect(() => {
-    window.dispatchEvent(new CustomEvent(CONTROLLER_KEYBOARD_VISIBILITY_EVENT, {
-      detail: { isOpen: Boolean(target) },
-    }));
+    window.dispatchEvent(new CustomEvent(CONTROLLER_KEYBOARD_VISIBILITY_EVENT, { detail: { isOpen } }));
+  }, [isOpen]);
+
+  const close = React.useCallback(() => {
+    // devolve o foco ao campo: quem fechou o teclado continua onde estava
+    target?.focus({ preventScroll: true });
+    setTarget(null);
   }, [target]);
 
-  const commit = React.useCallback((nextValue: string) => {
+  const handleChange = React.useCallback(
+    (value: string, caret: number) => {
+      if (!target) return;
+      setControllerTextValue(target, value);
+      try {
+        target.setSelectionRange(caret, caret);
+      } catch {
+        // alguns tipos de campo (email, number) não aceitam seleção: o texto já foi escrito
+      }
+    },
+    [target],
+  );
+
+  const handleSubmit = React.useCallback(() => {
     if (!target) return;
-    const limitedValue = target.maxLength > -1 ? nextValue.slice(0, target.maxLength) : nextValue;
-    setValue(limitedValue);
-    setControllerTextValue(target, limitedValue);
-  }, [target]);
+    submitTarget(target);
+    close();
+  }, [close, target]);
+
+  const handleTab = React.useCallback(() => {
+    if (!target) return;
+    const next = nextTextTarget(target);
+    if (!next) {
+      close();
+      return;
+    }
+    next.focus({ preventScroll: true });
+    setInitialValue(next.value);
+    setTarget(next);
+  }, [close, target]);
 
   return (
-    <ModalShell
-      isOpen={Boolean(target)}
-      onClose={() => setTarget(null)}
-      maxWidthClassName="max-w-[calc(100vw-1rem)] md:max-w-[58vw]"
-      zIndexClassName="z-[300]"
-      containerClassName="items-end justify-center p-2 md:items-center md:justify-end md:p-3"
-      backdropClassName="pointer-events-none bg-transparent backdrop-blur-none"
-      className="rounded-[var(--corner-md)] border border-white/12 bg-[var(--tone-1)] p-6 shadow-2xl"
-      ariaLabel="Teclado virtual do controle"
-      gamepadPriority={200}
-    >
-      <div className="mb-5 flex items-center justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Entrada pelo controle</p>
-          <h2 className="mt-1 text-2xl font-black text-white">Teclado virtual</h2>
-        </div>
-        <p className="text-xs font-medium text-[var(--ink-muted)]">X seleciona · O conclui</p>
-      </div>
-
-      <div className="mb-5 min-h-14 overflow-hidden rounded-2xl border border-white/10 bg-black/50 px-5 py-4 text-lg font-bold text-white">
-        {target?.type === "password" ? "•".repeat(value.length) : value || <span className="text-[var(--ink-faint)]">Digite usando o controle...</span>}
-      </div>
-
-      <div className="space-y-2">
-        {rows.map((row, rowIndex) => (
-          <div key={rowIndex} className="grid grid-cols-10 gap-2">
-            {row.map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => commit(value + key.toLowerCase())}
-                className="h-12 rounded-xl border border-white/10 bg-white/[0.05] text-sm font-black text-white transition hover:bg-white/10"
-              >
-                {key}
-              </button>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-3 grid grid-cols-[1fr_2fr_1fr_1fr] gap-2">
-        <button type="button" onClick={() => commit(value.slice(0, -1))} className="flex h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] text-xs font-black uppercase text-white">
-          <Delete className="h-4 w-4" /> Apagar
-        </button>
-        <button type="button" onClick={() => commit(value + " ")} className="flex h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] text-xs font-black uppercase text-white">
-          <Space className="h-4 w-4" /> Espaco
-        </button>
-        <button type="button" onClick={() => commit("")} className="flex h-12 items-center justify-center gap-2 rounded-xl border border-red-400/15 bg-red-500/[0.06] text-xs font-black uppercase text-red-200">
-          <Trash2 className="h-4 w-4" /> Limpar
-        </button>
-        <button type="button" onClick={() => setTarget(null)} className="flex h-12 items-center justify-center gap-2 rounded-xl bg-white text-xs font-black uppercase text-black">
-          <Check className="h-4 w-4" /> Pronto
-        </button>
-      </div>
-    </ModalShell>
+    <VirtualKeyboard
+      isOpen={isOpen}
+      initialValue={initialValue}
+      maxLength={target?.maxLength ?? -1}
+      isPassword={target?.type === "password"}
+      onChange={handleChange}
+      onSubmit={handleSubmit}
+      onTab={handleTab}
+      onClose={close}
+      playSound={playSound}
+    />
   );
 };
 

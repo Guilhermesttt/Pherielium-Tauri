@@ -9,6 +9,7 @@ import {
   playHapticPattern,
 } from "../context/GamepadContext";
 import { ControllerButtonGlyph } from "./ui/ControllerButtonGlyph";
+import { dropdownMotion } from "../design-system/motion";
 
 export interface ContextMenuTriggerProps {
   openMenu: (e: React.MouseEvent) => void;
@@ -210,11 +211,10 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
           <motion.div
             ref={menuRef}
             data-context-menu="true"
-            initial={{ opacity: 0, scale: 0.94, x: side === "right" ? -8 : 8 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            exit={{ opacity: 0, scale: 0.94, x: side === "right" ? -8 : 8 }}
-            transition={{ type: "spring", bounce: 0, duration: 0.28 }}
+            {...dropdownMotion}
             style={{
+              // cresce a partir do lado do gatilho
+              transformOrigin: side === "right" ? "top left" : "top right",
               width: MENU_WIDTH,
               top: 0,
               ...(side === "right" ? { left: "calc(100% + 12px)" } : { right: "calc(100% + 12px)" }),
@@ -242,7 +242,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                   onAction("edit");
                 }}
                 onMouseEnter={() => playSound?.("hover")}
-                className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[length:var(--step-0)] font-bold uppercase tracking-wider transition-colors text-left outline-none ${
+                className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[length:var(--step-0)] font-bold uppercase tracking-wider transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
                   isGamepadConnected && focusedIndex === 0
                     ? "bg-white/15 text-white ring-1 ring-white/40"
                     : "text-[var(--ink-muted)] hover:bg-white/10 hover:text-white"
@@ -263,7 +263,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                   size={16}
                   showLabel={true}
                   label={isFavorite ? t("removeFavorite") : t("addFavorite")}
-                  className={`w-full flex items-center justify-start gap-3.5 px-3.5 py-2.5 rounded-xl text-[length:var(--step-0)] font-bold uppercase tracking-wider transition-colors text-left outline-none ${
+                  className={`w-full flex items-center justify-start gap-3.5 px-3.5 py-2.5 rounded-xl text-[length:var(--step-0)] font-bold uppercase tracking-wider transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
                     isGamepadConnected && focusedIndex === 1
                       ? "bg-white/15 text-white ring-1 ring-white/40"
                       : "text-[var(--ink-muted)] hover:bg-white/10 hover:text-white"
@@ -282,7 +282,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
                   onAction("delete");
                 }}
                 onMouseEnter={() => playSound?.("hover")}
-                className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[length:var(--step-0)] font-bold uppercase tracking-wider transition-colors text-left outline-none ${
+                className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[length:var(--step-0)] font-bold uppercase tracking-wider transition-colors text-left outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
                   isGamepadConnected && focusedIndex === 2
                     ? "bg-red-500/20 text-red-300 ring-1 ring-red-400/50"
                     : "text-red-500 hover:bg-red-500/10 hover:text-red-400"
