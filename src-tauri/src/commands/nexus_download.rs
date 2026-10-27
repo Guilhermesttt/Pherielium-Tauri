@@ -14,11 +14,12 @@ use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::{command, AppHandle, Emitter};
 use tauri_plugin_deep_link::DeepLinkExt;
 
+use super::download_control::{content_range_total, range_plan, speed_bps, DownloadControl, RangePlan, Signal};
 use super::mod_install::{self, InstallError, InstallRequest, Limits};
 use super::nexus::{
     load_nexus_key, nexus_client, nexus_download_dir, nexus_get, nexus_status_error, validate_numeric_id, validate_slug,
@@ -190,7 +191,7 @@ pub fn is_safe_game_dir(canon: &Path, windir: Option<&Path>, home: Option<&Path>
     true
 }
 
-fn resolve_game_dir(raw: &str) -> Result<PathBuf, String> {
+pub(crate) fn resolve_game_dir(raw: &str) -> Result<PathBuf, String> {
     let path = Path::new(raw.trim());
     if raw.trim().is_empty() || !path.is_dir() {
         return Err("A pasta do jogo não existe. Escolha a pasta de instalação do jogo.".to_string());
@@ -245,11 +246,19 @@ pub struct DownloadState {
     pub error: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error_code: Option<String>,
+    /// Bytes por segundo, enquanto baixa.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub speed_bps: Option<u64>,
+    /// Só em "waiting_link": até quando o pedido espera o link `nxm://` (ms desde 1970).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<u64>,
     pub updated_at: u64,
 }
 
 #[derive(Debug, Clone)]
 struct Pending {
+    /// Id do cartão na tela: o mesmo desde "esperando o link" até "concluído".
+    id: String,
     game_folder: String,
     mod_name: String,
     mod_author: String,
@@ -262,9 +271,19 @@ struct Pending {
 struct Registry {
     pending: HashMap<String, Pending>,
     current: Option<DownloadState>,
+    /// Downloads que ainda não terminaram (esperando, baixando, pausados): a tela os recupera ao abrir.
+    active: HashMap<String, DownloadState>,
 }
 
 static REGISTRY: Lazy<Mutex<Registry>> = Lazy::new(|| Mutex::new(Registry::default()));
+
+/// Sinal de pausar/cancelar de cada download em andamento.
+static CONTROLS: Lazy<Mutex<HashMap<String, Arc<DownloadControl>>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+
+/// Downloads pausados, com tudo para continuar de onde pararam.
+static PAUSED: Lazy<Mutex<HashMap<String, Job>>> = Lazy::new(|| Mutex::new(HashMap::new()));
+
+const TERMINAL_STATUSES: [&str; 3] = ["completed", "error", "cancelled"];
 
 fn pending_key(domain: &str, mod_id: &str, file_id: &str) -> String {
     format!("{domain}/{mod_id}/{file_id}")
@@ -280,6 +299,11 @@ fn now_ms() -> u64 {
 fn publish(app: &AppHandle, mut state: DownloadState) {
     state.updated_at = now_ms();
     if let Ok(mut registry) = REGISTRY.lock() {
+        if TERMINAL_STATUSES.contains(&state.status.as_str()) {
+            registry.active.remove(&state.id);
+        } else {
+            registry.active.insert(state.id.clone(), state.clone());
+        }
         registry.current = Some(state.clone());
     }
     // emit_to: só a janela principal precisa deste estado
@@ -315,59 +339,170 @@ async fn resolve_download_url(link: &NxmLink, api_key: &str) -> Result<Url, Stri
     validate_cdn_url(uri)
 }
 
+/// Como terminou uma tentativa de baixar.
+enum DownloadEnd {
+    Finished(PathBuf),
+    Paused,
+    Cancelled,
+}
+
+enum DownloadError {
+    /// O link do CDN não vale mais (401/403/410): pede-se um novo.
+    Expired,
+    Failed(String),
+}
+
+impl From<String> for DownloadError {
+    fn from(message: String) -> Self {
+        Self::Failed(message)
+    }
+}
+
+/// Um download que a tela pode pausar, retomar e cancelar.
+struct Job {
+    link: NxmLink,
+    pending: Option<Pending>,
+    state: DownloadState,
+    /// Link do CDN já resolvido; `None` até resolver (ou depois que expira).
+    url: Option<Url>,
+    /// Continua o `.part` que já existe em vez de recomeçar.
+    resume: bool,
+}
+
+impl Job {
+    fn new(link: NxmLink, pending: Option<Pending>) -> Self {
+        let id = pending
+            .as_ref()
+            .map(|p| p.id.clone())
+            .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+        let state = DownloadState {
+            id,
+            status: "resolving".to_string(),
+            game_domain: link.game_domain.clone(),
+            mod_id: link.mod_id.clone(),
+            file_id: link.file_id.clone(),
+            mod_name: pending.as_ref().map(|p| p.mod_name.clone()),
+            mod_author: pending.as_ref().map(|p| p.mod_author.clone()),
+            picture_url: pending.as_ref().map(|p| p.picture_url.clone()),
+            version: pending.as_ref().map(|p| p.version.clone()),
+            ..Default::default()
+        };
+        Self { link, pending, state, url: None, resume: false }
+    }
+}
+
+async fn request_from(url: &Url, from: u64) -> Result<reqwest::Response, reqwest::Error> {
+    let mut request = nexus_client().get(url.clone()).timeout(Duration::from_secs(60 * 60));
+    if from > 0 {
+        request = request.header(reqwest::header::RANGE, format!("bytes={from}-"));
+    }
+    request.send().await
+}
+
+const NO_CONNECTION: &str = "Sem conexão para baixar o mod. Verifique sua internet.";
+
+/// Baixa o arquivo para `<dir>/<nome>.part` e, ao terminar, renomeia. A cada pedaço recebido olha o
+/// sinal: pausar guarda o `.part` (o próximo `resume` pede só o que falta, com `Range`) e cancelar o apaga.
 async fn download_to(
     app: &AppHandle,
-    url: &Url,
+    job: &mut Job,
+    control: &DownloadControl,
     dir: &Path,
-    state: &mut DownloadState,
-) -> Result<PathBuf, String> {
+) -> Result<DownloadEnd, DownloadError> {
+    let url = job.url.clone().ok_or_else(|| DownloadError::Failed("Sem link de download.".to_string()))?;
     tokio::fs::create_dir_all(dir)
         .await
         .map_err(|e| format!("Não foi possível criar a pasta de downloads: {e}"))?;
-    let filename = file_name_from_url(url);
+    let filename = job.state.filename.clone().unwrap_or_else(|| file_name_from_url(&url));
     let final_path = dir.join(&filename);
     let part_path = dir.join(format!("{filename}.part"));
 
-    let mut response = nexus_client()
-        .get(url.clone())
-        .timeout(Duration::from_secs(60 * 60))
-        .send()
-        .await
-        .map_err(|_| "Sem conexão para baixar o mod. Verifique sua internet.".to_string())?;
-    if !response.status().is_success() {
-        return Err(nexus_status_error(response.status()));
+    let existing = if job.resume {
+        tokio::fs::metadata(&part_path).await.map(|m| m.len()).unwrap_or(0)
+    } else {
+        0
+    };
+    let mut from = existing;
+    let mut response = request_from(&url, from).await.map_err(|_| NO_CONNECTION.to_string())?;
+    if response.status().as_u16() == 416 {
+        // o parcial é maior do que o arquivo do servidor: começa de novo
+        from = 0;
+        response = request_from(&url, 0).await.map_err(|_| NO_CONNECTION.to_string())?;
     }
-    let total = response.content_length();
-    if total.map(|t| t > MAX_DOWNLOAD_BYTES).unwrap_or(false) {
-        return Err("O arquivo do mod é grande demais para baixar automaticamente.".to_string());
+    let status = response.status();
+    if matches!(status.as_u16(), 401 | 403 | 410) {
+        return Err(DownloadError::Expired);
+    }
+    if !status.is_success() {
+        return Err(DownloadError::Failed(nexus_status_error(status)));
     }
 
-    state.status = "downloading".to_string();
-    state.filename = Some(filename.clone());
-    state.total_bytes = total;
-    state.received_bytes = Some(0);
-    publish(app, state.clone());
+    let append = range_plan(from, status.as_u16()) == RangePlan::Append;
+    let start = if append { from } else { 0 };
+    let total = if append {
+        response
+            .headers()
+            .get(reqwest::header::CONTENT_RANGE)
+            .and_then(|value| value.to_str().ok())
+            .and_then(content_range_total)
+            .or_else(|| response.content_length().map(|length| length + start))
+    } else {
+        response.content_length()
+    };
+    if total.map(|t| t > MAX_DOWNLOAD_BYTES).unwrap_or(false) {
+        return Err(DownloadError::Failed("O arquivo do mod é grande demais para baixar automaticamente.".to_string()));
+    }
+
+    job.state.status = "downloading".to_string();
+    job.state.filename = Some(filename.clone());
+    job.state.total_bytes = total;
+    job.state.received_bytes = Some(start);
+    job.state.speed_bps = None;
+    publish(app, job.state.clone());
 
     use tokio::io::AsyncWriteExt;
-    let mut file = tokio::fs::File::create(&part_path)
-        .await
-        .map_err(|e| format!("Não foi possível gravar o download: {e}"))?;
-    let mut received: u64 = 0;
+    let mut file = if append {
+        tokio::fs::OpenOptions::new().append(true).open(&part_path).await
+    } else {
+        tokio::fs::File::create(&part_path).await
+    }
+    .map_err(|e| format!("Não foi possível gravar o download: {e}"))?;
+
+    let mut received = start;
     let mut last_emit = Instant::now();
-    while let Some(chunk) = response
-        .chunk()
-        .await
-        .map_err(|_| "A conexão caiu durante o download.".to_string())?
-    {
+    let mut speed_mark = (received, now_ms());
+    loop {
+        match control.get() {
+            Signal::Pause => {
+                file.flush().await.map_err(|e| format!("Erro ao gravar o download: {e}"))?;
+                job.state.received_bytes = Some(received);
+                return Ok(DownloadEnd::Paused);
+            }
+            Signal::Cancel => {
+                drop(file);
+                let _ = tokio::fs::remove_file(&part_path).await;
+                return Ok(DownloadEnd::Cancelled);
+            }
+            Signal::Run => {}
+        }
+        // sem dados por um instante: volta a olhar o sinal em vez de esperar a rede para pausar
+        let chunk = match tokio::time::timeout(Duration::from_millis(400), response.chunk()).await {
+            Err(_) => continue,
+            Ok(result) => result.map_err(|_| "A conexão caiu durante o download.".to_string())?,
+        };
+        let Some(chunk) = chunk else { break };
         received += chunk.len() as u64;
         if received > MAX_DOWNLOAD_BYTES {
             let _ = tokio::fs::remove_file(&part_path).await;
-            return Err("O arquivo do mod é grande demais para baixar automaticamente.".to_string());
+            return Err(DownloadError::Failed("O arquivo do mod é grande demais para baixar automaticamente.".to_string()));
         }
         file.write_all(&chunk).await.map_err(|e| format!("Erro ao gravar o download: {e}"))?;
         if last_emit.elapsed() >= PROGRESS_EVERY {
-            state.received_bytes = Some(received);
-            publish(app, state.clone());
+            let now = now_ms();
+            job.state.received_bytes = Some(received);
+            job.state.speed_bps = Some(speed_bps(speed_mark.0, speed_mark.1, received, now));
+            speed_mark = (received, now);
+            publish(app, job.state.clone());
             last_emit = Instant::now();
         }
     }
@@ -378,7 +513,7 @@ async fn download_to(
     if let Some(expected) = total {
         if received != expected {
             let _ = tokio::fs::remove_file(&part_path).await;
-            return Err("O download veio incompleto. Tente de novo.".to_string());
+            return Err(DownloadError::Failed("O download veio incompleto. Tente de novo.".to_string()));
         }
     }
     // o CDN às vezes serve o arquivo sob um identificador sem extensão: o nome ganha a do conteúdo
@@ -391,9 +526,9 @@ async fn download_to(
     let final_path = match (has_known_ext, mod_install::sniff_archive_extension(&part_path)) {
         (false, Some(ext)) => {
             // sem barras: `sanitize_filename` ficaria só com o que vem depois da última
-            let name = state.mod_name.as_deref().unwrap_or("mod").replace(['/', '\\'], "_");
-            let named = sanitize_filename(&format!("{}-{}-{}", state.mod_id, state.file_id, name));
-            state.filename = Some(format!("{named}.{ext}"));
+            let name = job.state.mod_name.as_deref().unwrap_or("mod").replace(['/', '\\'], "_");
+            let named = sanitize_filename(&format!("{}-{}-{}", job.state.mod_id, job.state.file_id, name));
+            job.state.filename = Some(format!("{named}.{ext}"));
             dir.join(format!("{named}.{ext}"))
         }
         _ => final_path,
@@ -401,8 +536,8 @@ async fn download_to(
     tokio::fs::rename(&part_path, &final_path)
         .await
         .map_err(|e| format!("Não foi possível finalizar o download: {e}"))?;
-    state.received_bytes = Some(received);
-    Ok(final_path)
+    job.state.received_bytes = Some(received);
+    Ok(DownloadEnd::Finished(final_path))
 }
 
 #[derive(Debug)]
@@ -452,50 +587,109 @@ fn install_error_code(error: &InstallError) -> &'static str {
     }
 }
 
-async fn run_pipeline(app: AppHandle, link: NxmLink, pending: Option<Pending>) {
-    let mut state = DownloadState {
-        id: uuid::Uuid::new_v4().to_string(),
-        status: "resolving".to_string(),
-        game_domain: link.game_domain.clone(),
-        mod_id: link.mod_id.clone(),
-        file_id: link.file_id.clone(),
-        mod_name: pending.as_ref().map(|p| p.mod_name.clone()),
-        mod_author: pending.as_ref().map(|p| p.mod_author.clone()),
-        picture_url: pending.as_ref().map(|p| p.picture_url.clone()),
-        version: pending.as_ref().map(|p| p.version.clone()),
-        ..Default::default()
-    };
-    publish(&app, state.clone());
+/// Como terminou o trabalho: concluído (ou falhou, ou foi cancelado), ou parado para continuar depois.
+enum JobEnd {
+    Done,
+    Paused,
+}
+
+async fn run_job(app: AppHandle, mut job: Job) {
+    let id = job.state.id.clone();
+    let control = Arc::new(DownloadControl::new());
+    if let Ok(mut controls) = CONTROLS.lock() {
+        controls.insert(id.clone(), control.clone());
+    }
+    let end = drive_job(&app, &mut job, &control).await;
+    if let Ok(mut controls) = CONTROLS.lock() {
+        controls.remove(&id);
+    }
+    if matches!(end, JobEnd::Paused) {
+        if let Ok(mut paused) = PAUSED.lock() {
+            paused.insert(id, job);
+        }
+    }
+}
+
+async fn drive_job(app: &AppHandle, job: &mut Job, control: &DownloadControl) -> JobEnd {
+    job.state.status = "resolving".to_string();
+    job.state.speed_bps = None;
+    publish(app, job.state.clone());
 
     let Some(api_key) = load_nexus_key() else {
-        return fail(&app, state, "UNKNOWN", "Conecte sua chave da Nexus antes de baixar mods.");
+        fail(app, job.state.clone(), "UNKNOWN", "Conecte sua chave da Nexus antes de baixar mods.");
+        return JobEnd::Done;
     };
+    let dir = nexus_download_dir(&job.link.game_domain);
 
-    let url = match resolve_download_url(&link, &api_key).await {
-        Ok(url) => url,
-        Err(message) => return fail(&app, state, "NETWORK_FAILURE", message),
+    // O link do CDN dura pouco: se vencer no meio (ou numa retomada), pede-se outro uma vez.
+    let mut renewed = false;
+    let path = loop {
+        if job.url.is_none() {
+            match resolve_download_url(&job.link, &api_key).await {
+                Ok(url) => job.url = Some(url),
+                Err(message) if renewed && job.link.key.is_some() => {
+                    // conta grátis: o `key`/`expires` do clique em "Download lento" também vence
+                    let _ = message;
+                    fail(
+                        app,
+                        job.state.clone(),
+                        "LINK_EXPIRED",
+                        "O link da Nexus expirou. Clique em Download lento de novo.",
+                    );
+                    return JobEnd::Done;
+                }
+                Err(message) => {
+                    fail(app, job.state.clone(), "NETWORK_FAILURE", message);
+                    return JobEnd::Done;
+                }
+            }
+        }
+        match download_to(app, job, control, &dir).await {
+            Ok(DownloadEnd::Finished(path)) => break path,
+            Ok(DownloadEnd::Paused) => {
+                job.state.status = "paused".to_string();
+                job.state.speed_bps = None;
+                publish(app, job.state.clone());
+                return JobEnd::Paused;
+            }
+            Ok(DownloadEnd::Cancelled) => {
+                job.state.status = "cancelled".to_string();
+                job.state.speed_bps = None;
+                publish(app, job.state.clone());
+                return JobEnd::Done;
+            }
+            Err(DownloadError::Expired) if !renewed => {
+                renewed = true;
+                job.url = None;
+                job.resume = true; // o que já foi baixado continua valendo
+            }
+            Err(DownloadError::Expired) => {
+                fail(app, job.state.clone(), "LINK_EXPIRED", "O link da Nexus expirou. Clique em Download lento de novo.");
+                return JobEnd::Done;
+            }
+            Err(DownloadError::Failed(message)) => {
+                fail(app, job.state.clone(), "NETWORK_FAILURE", message);
+                return JobEnd::Done;
+            }
+        }
     };
-
-    let dir = nexus_download_dir(&link.game_domain);
-    let path = match download_to(&app, &url, &dir, &mut state).await {
-        Ok(path) => path,
-        Err(message) => return fail(&app, state, "NETWORK_FAILURE", message),
-    };
-    state.file_path = Some(path.to_string_lossy().into_owned());
+    job.state.file_path = Some(path.to_string_lossy().into_owned());
+    job.state.speed_bps = None;
 
     // sem pasta do jogo configurada, o arquivo fica baixado e a pessoa instala depois
-    let game_folder = pending.as_ref().map(|p| p.game_folder.clone()).unwrap_or_default();
+    let game_folder = job.pending.as_ref().map(|p| p.game_folder.clone()).unwrap_or_default();
     if game_folder.trim().is_empty() {
-        state.status = "completed".to_string();
-        state.installed = Some(false);
-        return publish(&app, state);
+        job.state.status = "completed".to_string();
+        job.state.installed = Some(false);
+        publish(app, job.state.clone());
+        return JobEnd::Done;
     }
 
-    state.status = "installing".to_string();
-    publish(&app, state.clone());
+    job.state.status = "installing".to_string();
+    publish(app, job.state.clone());
 
-    let mod_name = state.mod_name.clone().unwrap_or_else(|| format!("Mod {}", link.mod_id));
-    let (domain, mod_id) = (link.game_domain.clone(), link.mod_id.clone());
+    let mod_name = job.state.mod_name.clone().unwrap_or_else(|| format!("Mod {}", job.link.mod_id));
+    let (domain, mod_id) = (job.link.game_domain.clone(), job.link.mod_id.clone());
     let outcome = tokio::task::spawn_blocking(move || {
         let game_dir = resolve_game_dir(&game_folder).map_err(|m| (m, "GAME_FOLDER_NOT_SET"))?;
         install_archive(&path, &game_dir, &domain, &mod_id, &mod_name)
@@ -503,30 +697,32 @@ async fn run_pipeline(app: AppHandle, link: NxmLink, pending: Option<Pending>) {
     })
     .await;
 
-    state.status = "completed".to_string();
+    job.state.status = "completed".to_string();
     match outcome {
         Ok(Ok(done)) => {
-            state.installed = Some(true);
-            state.installed_files = Some(done.installed_files);
-            state.backed_up_files = Some(done.backed_up_files);
-            state.manifest_path = Some(done.manifest_path.to_string_lossy().into_owned());
+            job.state.installed = Some(true);
+            job.state.installed_files = Some(done.installed_files);
+            job.state.backed_up_files = Some(done.backed_up_files);
+            job.state.manifest_path = Some(done.manifest_path.to_string_lossy().into_owned());
         }
         // o download deu certo; só a instalação falhou: o arquivo continua baixado
         Ok(Err((message, _code))) => {
-            state.installed = Some(false);
-            state.installation_error = Some(message);
+            job.state.installed = Some(false);
+            job.state.installation_error = Some(message);
         }
         Err(_) => {
-            state.installed = Some(false);
-            state.installation_error = Some("A instalação foi interrompida.".to_string());
+            job.state.installed = Some(false);
+            job.state.installation_error = Some("A instalação foi interrompida.".to_string());
         }
     }
-    publish(&app, state);
+    publish(app, job.state.clone());
+    JobEnd::Done
 }
 
 fn spawn_pipeline(app: &AppHandle, link: NxmLink, pending: Option<Pending>) {
     let app = app.clone();
-    tauri::async_runtime::spawn(async move { run_pipeline(app, link, pending).await });
+    let job = Job::new(link, pending);
+    tauri::async_runtime::spawn(async move { run_job(app, job).await });
 }
 
 // ── Pedidos vindos da tela ───────────────────────────────────────────────────
@@ -567,6 +763,7 @@ pub async fn nexus_prepare_free_download(app: AppHandle, request: PrepareRequest
     let auto_install = !game_folder.is_empty();
 
     let pending = Pending {
+        id: uuid::Uuid::new_v4().to_string(),
         game_folder,
         mod_name: request.mod_name.chars().take(200).collect(),
         mod_author: request.mod_author.chars().take(200).collect(),
@@ -593,10 +790,29 @@ pub async fn nexus_prepare_free_download(app: AppHandle, request: PrepareRequest
             key: None,
             expires: None,
         };
-        spawn_pipeline(&app, link, Some(pending));
+        spawn_pipeline(&app, link, Some(pending.clone()));
+    } else {
+        // conta grátis: o cartão aparece já, "esperando o link" do Download lento
+        publish(
+            &app,
+            DownloadState {
+                id: pending.id.clone(),
+                status: "waiting_link".to_string(),
+                game_domain: request.game_domain.clone(),
+                mod_id: request.mod_id.clone(),
+                file_id: request.file_id.clone(),
+                mod_name: Some(pending.mod_name.clone()),
+                mod_author: Some(pending.mod_author.clone()),
+                picture_url: Some(pending.picture_url.clone()),
+                version: Some(pending.version.clone()),
+                expires_at: Some(now_ms() + PENDING_TTL.as_millis() as u64),
+                ..Default::default()
+            },
+        );
     }
 
     Ok(serde_json::json!({
+        "id": pending.id,
         "prepared": true,
         "autoInstall": auto_install,
         "direct": premium,
@@ -646,6 +862,91 @@ pub fn handle_nxm_url(app: &AppHandle, raw: &str) {
 #[command]
 pub async fn nexus_get_download_state() -> Result<Option<DownloadState>, String> {
     Ok(REGISTRY.lock().ok().and_then(|registry| registry.current.clone()))
+}
+
+/// Downloads que ainda não terminaram (esperando o link, baixando ou pausados), do mais novo ao mais antigo.
+#[command]
+pub async fn nexus_list_downloads() -> Result<Vec<DownloadState>, String> {
+    let now = now_ms();
+    let mut list: Vec<DownloadState> = REGISTRY
+        .lock()
+        .map(|registry| {
+            registry
+                .active
+                .values()
+                // pedido que esperou o link além da validade: some em vez de ficar "esperando" para sempre
+                .filter(|state| state.status != "waiting_link" || state.expires_at.is_some_and(|at| at > now))
+                .cloned()
+                .collect()
+        })
+        .unwrap_or_default();
+    list.sort_by_key(|state| std::cmp::Reverse(state.updated_at));
+    Ok(list)
+}
+
+fn validate_download_id(id: &str) -> Result<(), String> {
+    uuid::Uuid::parse_str(id).map(|_| ()).map_err(|_| "Download inválido.".to_string())
+}
+
+/// Pausa um download em andamento: o arquivo parcial fica guardado para continuar depois.
+#[command]
+pub async fn nexus_pause_download(id: String) -> Result<(), String> {
+    validate_download_id(&id)?;
+    let control = CONTROLS.lock().ok().and_then(|controls| controls.get(&id).cloned());
+    match control {
+        Some(control) => {
+            control.set(Signal::Pause);
+            Ok(())
+        }
+        None => Err("Esse download não está em andamento.".to_string()),
+    }
+}
+
+/// Continua um download pausado de onde ele parou.
+#[command]
+pub async fn nexus_resume_download(app: AppHandle, id: String) -> Result<(), String> {
+    validate_download_id(&id)?;
+    let job = PAUSED.lock().ok().and_then(|mut paused| paused.remove(&id));
+    let Some(mut job) = job else {
+        return Err("Esse download não está pausado.".to_string());
+    };
+    job.resume = true;
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move { run_job(app, job).await });
+    Ok(())
+}
+
+/// Cancela o download (em andamento, pausado ou esperando o link) e apaga o arquivo parcial.
+#[command]
+pub async fn nexus_cancel_download(app: AppHandle, id: String) -> Result<(), String> {
+    validate_download_id(&id)?;
+    if let Some(control) = CONTROLS.lock().ok().and_then(|controls| controls.get(&id).cloned()) {
+        control.set(Signal::Cancel);
+        return Ok(());
+    }
+    if let Some(mut job) = PAUSED.lock().ok().and_then(|mut paused| paused.remove(&id)) {
+        if let Some(name) = job.state.filename.clone() {
+            let part = nexus_download_dir(&job.link.game_domain).join(format!("{name}.part"));
+            let _ = tokio::fs::remove_file(part).await;
+        }
+        job.state.status = "cancelled".to_string();
+        publish(&app, job.state);
+        return Ok(());
+    }
+    // ainda esperando o link do Download lento: some o pedido
+    let waiting = REGISTRY.lock().ok().and_then(|mut registry| {
+        let state = registry.active.get(&id).cloned()?;
+        registry.pending.retain(|_, pending| pending.id != id);
+        Some(state)
+    });
+    match waiting {
+        Some(mut state) => {
+            state.status = "cancelled".to_string();
+            publish(&app, state);
+            Ok(())
+        }
+        None => Err("Esse download não existe mais.".to_string()),
+    }
 }
 
 // ── Instalar / adotar / remover (arquivos já baixados) ──────────────────────
@@ -782,6 +1083,34 @@ pub async fn nexus_nxm_unregister(app: AppHandle) -> Result<serde_json::Value, S
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_job_keeps_the_card_id_of_the_pending_request() {
+        let pending = Pending {
+            id: "11111111-2222-3333-4444-555555555555".to_string(),
+            game_folder: String::new(),
+            mod_name: "CET".to_string(),
+            mod_author: "x".to_string(),
+            picture_url: String::new(),
+            version: "1".to_string(),
+            created: Instant::now(),
+        };
+        let link = parse_nxm("nxm://cyberpunk2077/mods/107/files/2345?key=a&expires=9").unwrap();
+        let job = Job::new(link.clone(), Some(pending));
+        assert_eq!(job.state.id, "11111111-2222-3333-4444-555555555555");
+        assert_eq!(job.state.mod_name.as_deref(), Some("CET"));
+        assert!(!job.resume);
+        // sem pedido pendente (link aberto direto do navegador) o cartão ganha um id novo
+        let direct = Job::new(link, None);
+        assert!(uuid::Uuid::parse_str(&direct.state.id).is_ok());
+    }
+
+    #[test]
+    fn download_ids_must_be_uuids() {
+        assert!(validate_download_id("11111111-2222-3333-4444-555555555555").is_ok());
+        assert!(validate_download_id("../etc/passwd").is_err());
+        assert!(validate_download_id("").is_err());
+    }
 
     #[test]
     fn download_names_carry_the_mod_and_file_ids() {

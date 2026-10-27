@@ -154,29 +154,12 @@ declare global {
           hourlyRemaining: number | null;
         };
       }>;
-      getNexusDownloadState: () => Promise<{
-        id?: string;
-        status: "resolving" | "downloading" | "installing" | "completed" | "error";
-        gameDomain?: string;
-        modId?: string;
-        fileId?: string;
-        mirror?: string;
-        receivedBytes?: number;
-        totalBytes?: number;
-        filename?: string;
-        filePath?: string;
-        installed?: boolean;
-        installedFiles?: number;
-        backedUpFiles?: number;
-        manifestPath?: string;
-        installationError?: string;
-        modName?: string;
-        modAuthor?: string;
-        pictureUrl?: string;
-        version?: string;
-        error?: string;
-        updatedAt: number;
-      } | null>;
+      getNexusDownloadState: () => Promise<import("../services/nexus").NexusDownloadState | null>;
+      listNexusDownloads: () => Promise<Array<import("../services/nexus").NexusDownloadState>>;
+      pauseNexusDownload: (id: string) => Promise<void>;
+      resumeNexusDownload: (id: string) => Promise<void>;
+      cancelNexusDownload: (id: string) => Promise<void>;
+      checkModScriptLog: (gameFolder: string) => Promise<import("../services/scriptLog").ScriptLogReport>;
       listNexusDownloadedFiles: (gameDomain: string) => Promise<Array<{
         id: string;
         gameDomain: string;
@@ -243,29 +226,7 @@ declare global {
         removeArchive: boolean;
       }) => Promise<{ removedFromGame: boolean; archiveRemoved: boolean }>;
       openNexusDownloadLocation: (gameDomain?: string) => Promise<boolean>;
-      onNexusDownloadState: (callback: (state: {
-        id?: string;
-        status: "resolving" | "downloading" | "installing" | "completed" | "error";
-        gameDomain?: string;
-        modId?: string;
-        fileId?: string;
-        mirror?: string;
-        receivedBytes?: number;
-        totalBytes?: number;
-        filename?: string;
-        filePath?: string;
-        installed?: boolean;
-        installedFiles?: number;
-        backedUpFiles?: number;
-        manifestPath?: string;
-        installationError?: string;
-        modName?: string;
-        modAuthor?: string;
-        pictureUrl?: string;
-        version?: string;
-        error?: string;
-        updatedAt: number;
-      }) => void) => () => void;
+      onNexusDownloadState: (callback: (state: import("../services/nexus").NexusDownloadState) => void) => () => void;
       searchEpicStore: (query: string) => Promise<Array<{
         id: string;
         catalogId: string;

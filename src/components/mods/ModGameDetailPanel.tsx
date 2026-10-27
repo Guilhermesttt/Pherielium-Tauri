@@ -5,6 +5,8 @@ import {
   AlertCircle,
   ArrowLeft,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Download,
   Eye,
   EyeOff,
@@ -27,6 +29,7 @@ import type { Game } from "../../types/domain";
 import { getAntiCheatInfo } from "../../constants/anticheat-games";
 import {
   adoptNexusInstalledMod,
+  cancelNexusDownload,
   connectNexusPersonalKey,
   disconnectNexus,
   fetchAuthenticatedNexusCatalog,
@@ -37,12 +40,15 @@ import {
   getNexusConnection,
   installNexusDownloadedMod,
   listNexusDownloadedFiles,
+  listNexusDownloads,
   onNexusDownloadState,
   openNexusDownloadLocation,
+  pauseNexusDownload,
   prepareNexusFreeDownload,
   getNexusNxmStatus,
   registerNexusNxm,
   removeNexusInstalledMod,
+  resumeNexusDownload,
   validateNexusConnection,
   type NexusConnection,
   type NexusDownloadState,
@@ -50,10 +56,15 @@ import {
   type NexusModSummary,
 } from "../../services/nexus";
 import { Switch } from "../ui/switch";
+import { paginate } from "../../services/pagination";
+import { checkModScriptLog } from "../../services/nexus";
+import { describeScriptIssues, requirementSearchUrl, type ScriptIssue } from "../../services/scriptLog";
+import { DownloadCard } from "./DownloadCard";
+import { FreeDownloadSteps } from "./FreeDownloadSteps";
+import { downloadPhase, isFinished } from "../../services/downloadView";
 import { usePreferences } from "../../context/PreferencesContext";
 import { formatFileSize, groupNexusFiles } from "../../services/nexusFiles";
 import { useSoundEffects } from "../../hooks/useSoundEffects";
-import { HudCornerMarkers } from "../ui/HudPanel";
 
 export interface InstalledModEntry {
   id: string;
@@ -86,7 +97,8 @@ interface ModGameDetailPanelProps {
 type PanelTab = "discover" | "installed" | "downloads" | "setup";
 type CatalogSort = "featured" | "recent" | "downloads" | "endorsements" | "name";
 
-const CATALOG_PAGE_SIZE = 30;
+/** Mods por página no catálogo. */
+const CATALOG_PAGE_SIZE = 15;
 
 const formatBytes = (value: number) => {
   if (!Number.isFinite(value) || value <= 0) return "0 MB";
@@ -147,7 +159,10 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
 
   const [searchTerm, setSearchTerm] = React.useState("");
   const [sortMode, setSortMode] = React.useState<CatalogSort>("featured");
-  const [visibleCount, setVisibleCount] = React.useState(CATALOG_PAGE_SIZE);
+  const [catalogPage, setCatalogPage] = React.useState(1);
+  const [scriptIssues, setScriptIssues] = React.useState<ScriptIssue[]>([]);
+
+  const gridTopRef = React.useRef<HTMLDivElement>(null);
   const [catalogScope, setCatalogScope] = React.useState<
     "recent-30-days" | "curated-feeds" | "public"
   >("public");
@@ -173,6 +188,28 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
   const [folderActionBusy, setFolderActionBusy] = React.useState(false);
   const [modActionIds, setModActionIds] = React.useState<Set<string>>(() => new Set());
   const [optimisticModStates, setOptimisticModStates] = React.useState<Record<string, boolean>>({});
+
+  // O jogo compila os scripts dos mods ao abrir; o log desse início diz se algum mod não achou
+  // outro de que depende. Lê de novo ao abrir "Meus mods" e quando um mod é ativado ou removido.
+  const enabledSignature = installedMods.map((m) => `${m.id}:${optimisticModStates[m.id] ?? m.enabled}`).join("|");
+  React.useEffect(() => {
+    if (activeTab !== "installed" || !gameFolder) {
+      setScriptIssues([]);
+      return;
+    }
+    let cancelled = false;
+    checkModScriptLog(gameFolder)
+      .then((report) => {
+        if (!cancelled) setScriptIssues(describeScriptIssues(report.errors ?? []));
+      })
+      .catch(() => {
+        // jogo sem REDscript ou sem log: não há o que avisar
+        if (!cancelled) setScriptIssues([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, gameFolder, enabledSignature]);
   const [installedActionError, setInstalledActionError] = React.useState("");
   const [downloadState, setDownloadState] = React.useState<NexusDownloadState | null>(null);
   const [downloadHistory, setDownloadHistory] = React.useState<NexusDownloadState[]>([]);
@@ -264,7 +301,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
         if (cancelled) return;
         setCatalogScope(nextScope);
         setMods(items);
-        setVisibleCount(CATALOG_PAGE_SIZE);
+        setCatalogPage(1);
         setSelectedMod((current) =>
           items.find((item) => item.id === current?.id) || items[0] || null);
       } catch (fetchError) {
@@ -377,7 +414,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
         downloadNoticeTimerRef.current = null;
       }
       const noticeKey = `${state.id || "download"}:${state.updatedAt}:${state.status}`;
-      const isTerminal = state.status === "completed" || state.status === "error";
+      const isTerminal = state.status === "completed" || state.status === "error" || state.status === "cancelled";
       if (
         isTerminal
         && sessionStorage.getItem("checkpoint_hidden_nexus_download_notice") === noticeKey
@@ -385,6 +422,11 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
       setDownloadState(state);
       // limpa awaiting para qualquer status ativo, não só terminal
       if (state.fileId) setAwaitingFileId((cur) => cur === state.fileId ? "" : cur);
+      if (state.status === "cancelled") {
+        // cancelado não fica na lista: some junto com o arquivo parcial
+        setDownloadHistory((prev) => prev.filter((item) => item.id !== state.id));
+        return;
+      }
       setDownloadHistory((prev) => {
         const index = prev.findIndex(
           (item) => item.id === state.id || (item.fileId && item.fileId === state.fileId && item.gameDomain === state.gameDomain),
@@ -461,7 +503,13 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
     });
   }, [mods, searchTerm, sortMode]);
 
-  const visibleMods = filteredMods.slice(0, visibleCount);
+  const catalogSlice = paginate(filteredMods, catalogPage, CATALOG_PAGE_SIZE);
+  const visibleMods = catalogSlice.items;
+
+  const goToCatalogPage = (page: number) => {
+    setCatalogPage(page);
+    gridTopRef.current?.scrollIntoView({ block: "start" });
+  };
   const pastedModUrl = parseNexusModPageUrl(searchTerm);
 
   const openModPage = (mod: NexusModSummary) => {
@@ -637,6 +685,78 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
     }
   };
 
+  // Relógio de 1 s só enquanto há download não terminado: a contagem do pedido que espera o link
+  // e a validade dele dependem disso.
+  const [now, setNow] = React.useState(() => Date.now());
+  const hasLiveDownload = downloadHistory.some((item) => !isFinished(downloadPhase(item, now)));
+  React.useEffect(() => {
+    if (!hasLiveDownload) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [hasLiveDownload]);
+
+  // Ao abrir: recupera o que ainda está em andamento (esperando o link, baixando ou pausado)
+  React.useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    void listNexusDownloads()
+      .then((active) => {
+        if (cancelled || active.length === 0) return;
+        setDownloadHistory((prev) => [...active.filter((item) => !prev.some((known) => known.id === item.id)), ...prev]);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  const reportDownloadAction = (error: unknown, fallback: string) => {
+    setFilesError(error instanceof Error ? error.message : fallback);
+  };
+
+  const handlePauseDownload = (id: string) => {
+    playSound("select");
+    void pauseNexusDownload(id).catch((error) => reportDownloadAction(error, "Não foi possível pausar o download."));
+  };
+
+  const handleResumeDownload = (id: string) => {
+    playSound("select");
+    void resumeNexusDownload(id).catch((error) => reportDownloadAction(error, "Não foi possível retomar o download."));
+  };
+
+  const handleCancelDownload = (id: string) => {
+    playSound("back");
+    const target = downloadHistory.find((item) => item.id === id);
+    if (target?.fileId) setAwaitingFileId((current) => (current === target.fileId ? "" : current));
+    void cancelNexusDownload(id).catch((error) => reportDownloadAction(error, "Não foi possível cancelar o download."));
+  };
+
+  /** Abre a página do arquivo na Nexus. Pedido que expirou é preparado de novo antes (o Rust o esqueceu). */
+  const handleReopenDownloadPage = async (download: NexusDownloadState) => {
+    if (!download.gameDomain || !download.modId || !download.fileId) return;
+    const expired = downloadPhase(download, Date.now()) === "expired";
+    try {
+      if (expired) {
+        if (download.id) setDownloadHistory((prev) => prev.filter((item) => item.id !== download.id));
+        await prepareNexusFreeDownload({
+          gameDomain: download.gameDomain,
+          modId: download.modId,
+          fileId: download.fileId,
+          gameFolder: gameFolder || "",
+          modName: download.modName ?? "",
+          modAuthor: download.modAuthor ?? "",
+          pictureUrl: download.pictureUrl ?? "",
+          version: download.version ?? "",
+        });
+      }
+      const pageUrl = `https://www.nexusmods.com/${download.gameDomain}/mods/${download.modId}?tab=files&file_id=${download.fileId}&nmm=1`;
+      if (window.electronAPI?.openExternalUrl) await window.electronAPI.openExternalUrl(pageUrl);
+      else window.open(pageUrl, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      reportDownloadAction(error, "Não foi possível abrir a página da Nexus.");
+    }
+  };
+
   const handleClearCompletedDownloads = () => {
     playSound("select");
     setDownloadHistory((prev) => prev.filter((item) => item.status !== "completed"));
@@ -753,7 +873,13 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
       && mod.nexusFileId === file.id);
     const isDownloaded = downloadedFileIds.has(file.id) || Boolean(downloadedEntry);
     const isInstalled = downloadedEntry?.status === "installed";
-    const waiting = awaitingFileId === file.id;
+    // O estado do botão vem do download desse arquivo (esperando o link, baixando, pausado); a flag
+    // local só cobre o instante entre o clique e o primeiro estado do Rust.
+    const activeDownload = downloadHistory.find(
+      (item) => item.fileId === file.id && item.gameDomain === gameDomain && !isFinished(downloadPhase(item, now)),
+    );
+    const activePhase = activeDownload ? downloadPhase(activeDownload, now) : null;
+    const waiting = awaitingFileId === file.id || activeDownload !== undefined;
     const size = formatFileSize(file.sizeKb);
     return (
       <div
@@ -791,14 +917,23 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
               : isDownloaded
                 ? <CheckCircle2 className="h-4 w-4" />
                 : <Download className="h-4 w-4" />}
-            {isInstalled ? "Instalado" : isDownloaded ? "Baixado" : waiting ? "Aguardando" : "Instalar"}
+            {isInstalled
+              ? "Instalado"
+              : isDownloaded
+                ? "Baixado"
+                : activePhase === "downloading" || activePhase === "resolving"
+                  ? "Baixando"
+                  : activePhase === "paused"
+                    ? "Pausado"
+                    : waiting
+                      ? "Aguardando"
+                      : "Instalar"}
           </button>
         </div>
-        {emphasized && waiting && (
-          <p className="mt-3 text-[length:var(--step-0)] leading-relaxed text-[var(--ink-muted)]">
-            Na página da Nexus que abriu, clique em <span className="text-[var(--ink)]">Download lento</span>. O resto é
-            automático: o Pherielium baixa e coloca o mod na pasta do jogo.
-          </p>
+        {emphasized && (activePhase === "waiting" || (waiting && !activeDownload)) && (
+          <div className="mt-3 rounded-[var(--corner-sm)] bg-[var(--tone-1)] p-3">
+            <FreeDownloadSteps phase="waiting" />
+          </div>
         )}
       </div>
     );
@@ -896,7 +1031,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
       setModFiles([]);
       setFilesError("");
       setSearchTerm("");
-      setVisibleCount(CATALOG_PAGE_SIZE);
+      setCatalogPage(1);
     } catch (importError) {
       setUrlImportError(importError instanceof Error
         ? importError.message
@@ -954,20 +1089,16 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                     onClose();
                   }}
                   aria-label="Voltar para os jogos"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/45 text-[var(--ink-muted)] transition hover:bg-white/10 hover:text-white"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--surface-base)] text-[var(--ink-muted)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </button>
                 <div className="min-w-0">
-                  <div className="mb-1 flex items-center gap-2 text-[length:var(--step-0)] font-black uppercase tracking-[0.24em] text-[var(--ink-faint)]">
-                    <PackageOpen className="h-3.5 w-3.5" />
-                    Nexus Mods
-                  </div>
-                  <h1 className="truncate text-2xl font-display font-black tracking-tight text-white sm:text-3xl">{game.title}</h1>
+                  <h1 className="truncate text-2xl font-display font-semibold tracking-tight text-[var(--ink)] sm:text-3xl">{game.title}</h1>
                 </div>
               </div>
 
-              <div className="flex w-full shrink-0 items-center gap-1 overflow-x-auto rounded-2xl border border-white/10 bg-black/45 p-1.5 backdrop-blur-xl thin-scrollbar xl:w-auto xl:gap-2">
+              <div className="flex w-full shrink-0 items-center gap-1 overflow-x-auto rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--surface-base)] p-1.5 backdrop-blur-xl thin-scrollbar xl:w-auto xl:gap-2">
                 {([
                   ["discover", "Descobrir", Sparkles],
                   ["installed", `Meus mods ${installedMods.length ? `(${installedMods.length})` : ""}`, PackageOpen],
@@ -981,10 +1112,10 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                       playSound("navigate");
                       setActiveTab(id);
                     }}
-                    className={`flex min-w-max flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[length:var(--step-0)] font-black uppercase tracking-wider transition sm:px-4 sm:text-[length:var(--step-0)] xl:flex-none ${
+                    className={`flex min-w-max flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[length:var(--step-0)] font-semibold transition sm:px-4 sm:text-[length:var(--step-0)] xl:flex-none ${
                       activeTab === id
-                        ? "bg-white/12 text-white shadow-lg"
-                        : "text-[var(--ink-faint)] hover:bg-white/[0.06] hover:text-[var(--ink-muted)]"
+                        ? "bg-[var(--tone-4)] text-[var(--ink)] shadow-lg"
+                        : "text-[var(--ink-faint)] hover:bg-[var(--tone-3)] hover:text-[var(--ink-muted)]"
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5" />
@@ -994,7 +1125,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
               </div>
             </header>
 
-            <div className="min-h-0 flex-1 overflow-hidden rounded-3xl border border-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_30px_100px_rgba(0,0,0,0.55)] flex flex-col transform-gpu"
+            <div className="min-h-0 flex-1 overflow-hidden rounded-3xl border border-[color:var(--border-subtle)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_30px_100px_rgba(0,0,0,0.55)] flex flex-col transform-gpu"
               style={{
                 background: "rgba(255, 255, 255, 0.02)",
                 backdropFilter: "blur(20px) saturate(180%)",
@@ -1010,7 +1141,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                     exit={{ opacity: 0, y: -10 }}
                     className="flex flex-1 min-h-0 overflow-hidden flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_clamp(320px,25vw,390px)]"
                   >
-                    <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-b border-white/8 p-4 sm:p-5 xl:border-b-0 xl:border-r xl:p-6">
+                    <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-b border-[color:var(--border-subtle)] p-4 sm:p-5 xl:border-b-0 xl:border-r xl:p-6">
                       <div className="mb-3 flex shrink-0 flex-wrap items-center gap-3">
                         <div className="relative min-w-60 flex-1">
                           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-faint)]" />
@@ -1019,7 +1150,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             onChange={(event) => {
                               setSearchTerm(event.target.value);
                               setUrlImportError("");
-                              setVisibleCount(CATALOG_PAGE_SIZE);
+                              setCatalogPage(1);
                             }}
                             onKeyDown={(event) => {
                               if (event.key === "Enter" && pastedModUrl) {
@@ -1028,7 +1159,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               }
                             }}
                             placeholder="Pesquisar ou colar a URL de um mod"
-                            className="h-12 w-full rounded-2xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white outline-none placeholder:text-[var(--ink-faint)] focus:border-white/25"
+                            className="h-12 w-full rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] pl-11 pr-4 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-[color:var(--border-subtle)]"
                           />
                         </div>
                         {pastedModUrl && (
@@ -1036,7 +1167,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             type="button"
                             onClick={() => void importModFromUrl()}
                             disabled={urlImportLoading}
-                            className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-sky-400/15 bg-sky-400/[0.08] px-4 text-[length:var(--step-0)] font-black uppercase tracking-wider text-sky-100/65 transition hover:bg-sky-400/[0.14] disabled:opacity-40"
+                            className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)] disabled:opacity-40"
                           >
                             {urlImportLoading
                               ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
@@ -1048,10 +1179,10 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           value={sortMode}
                           onChange={(event) => {
                             setSortMode(event.target.value as CatalogSort);
-                            setVisibleCount(CATALOG_PAGE_SIZE);
+                            setCatalogPage(1);
                           }}
                           aria-label="Ordenar catálogo"
-                          className="h-12 rounded-2xl border border-white/10 bg-[var(--tone-1)] px-4 text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-muted)] outline-none focus:border-white/25"
+                          className="h-12 rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-1)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] outline-none focus:border-[color:var(--border-subtle)]"
                         >
                           <option value="featured">Destaques</option>
                           <option value="recent">Mais recentes</option>
@@ -1059,7 +1190,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           <option value="endorsements">Mais apoiados</option>
                           <option value="name">Nome A–Z</option>
                         </select>
-                        <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-faint)]">
+                        <span className="rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-3 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)]">
                           {loading
                             ? "Carregando"
                             : searchTerm.trim()
@@ -1072,12 +1203,12 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           {catalogScope === "recent-30-days"
                             ? "Catálogo recente: destaques e mods com atividade nos últimos 30 dias. O arquivo histórico completo exige acesso de aplicativo aprovado pela Nexus."
                             : catalogScope === "curated-feeds"
-                              ? "Exibindo os feeds oficiais disponíveis para esta chave."
+                              ? "Mostrando os mods em alta, atualizados e novos da Nexus. Para achar outro, cole o link dele na busca."
                               : "Prévia pública limitada aos mods em alta. Conecte sua conta Nexus para ampliar o catálogo."}
                         </p>
                       )}
                       {urlImportError && (
-                        <p className="mb-4 shrink-0 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[length:var(--step-0)] text-red-100/55">
+                        <p className="mb-4 shrink-0 rounded-xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] text-[var(--danger)]">
                           {urlImportError}
                         </p>
                       )}
@@ -1092,7 +1223,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         ) : loading ? (
                           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
                             {Array.from({ length: 6 }).map((_, index) => (
-                              <div key={index} className="h-56 animate-pulse rounded-2xl border border-white/8 bg-white/[0.04]" />
+                              <div key={index} className="h-56 animate-pulse rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)]" />
                             ))}
                           </div>
                         ) : error ? (
@@ -1104,7 +1235,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             onAction={() => setActiveTab("setup")}
                           />
                         ) : (
-                          <div className="pb-4">
+                          <div className="pb-4" ref={gridTopRef}>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
                             {visibleMods.map((mod) => (
                               <button
@@ -1116,11 +1247,11 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                 }}
                                 className={`group overflow-hidden rounded-2xl border text-left transition ${
                                   selectedMod?.id === mod.id
-                                    ? "border-white/30 bg-white/[0.10] shadow-[0_18px_50px_rgba(0,0,0,0.45)]"
-                                    : "border-white/8 bg-white/[0.035] hover:-translate-y-0.5 hover:border-white/18 hover:bg-white/[0.07]"
+                                    ? "border-[color:var(--border-strong)] bg-[var(--tone-4)] shadow-[0_18px_50px_rgba(0,0,0,0.45)]"
+                                    : "border-[color:var(--border-subtle)] bg-[var(--tone-2)] hover:-translate-y-0.5 hover:border-[color:var(--border-strong)] hover:bg-[var(--tone-3)]"
                                 }`}
                               >
-                                <div className="relative h-32 overflow-hidden bg-white/[0.04]">
+                                <div className="relative h-32 overflow-hidden bg-[var(--tone-3)]">
                                   {mod.pictureUrl ? (
                                     <img
                                       src={mod.pictureUrl}
@@ -1134,11 +1265,11 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     </div>
                                   )}
                                   <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent" />
-                                  <span className="absolute bottom-2 left-2 rounded-md border border-white/10 bg-black/55 px-2 py-1 text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-muted)]">
+                                  <span className="absolute bottom-2 left-2 rounded-md border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-2 py-1 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]">
                                     {mod.feed || "Nexus"}
                                   </span>
                                   {installedMods.find((entry) => entry.id === mod.id) && (
-                                    <span className="absolute right-2 top-2 flex items-center gap-1 rounded-md border border-emerald-300/20 bg-emerald-950/85 px-2 py-1 text-[length:var(--step-0)] font-black uppercase tracking-wider text-emerald-200/80">
+                                    <span className="absolute right-2 top-2 flex items-center gap-1 rounded-md border border-[color:color-mix(in_srgb,var(--live)_35%,transparent)] bg-[var(--tone-3)] px-2 py-1 text-[length:var(--step-0)] font-semibold text-[var(--live)]">
                                       <CheckCircle2 className="h-3 w-3" />
                                       {installedMods.find((entry) => entry.id === mod.id)?.status === "installed"
                                         ? "Instalado"
@@ -1147,7 +1278,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                   )}
                                 </div>
                                 <div className="p-3.5">
-                                  <h3 className="line-clamp-1 text-sm font-black text-[var(--ink)]">{mod.name}</h3>
+                                  <h3 className="line-clamp-1 text-sm font-semibold text-[var(--ink)]">{mod.name}</h3>
                                   <p className="mt-1 line-clamp-2 min-h-8 text-[length:var(--step-0)] leading-relaxed text-[var(--ink-faint)]">
                                     {mod.summary || "Sem descrição."}
                                   </p>
@@ -1160,24 +1291,46 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               </button>
                             ))}
                             </div>
-                            {visibleCount < filteredMods.length && (
-                              <button
-                                type="button"
-                                onClick={() => setVisibleCount((count) => count + CATALOG_PAGE_SIZE)}
-                                className="mx-auto mt-5 flex h-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-6 text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-faint)] transition hover:bg-white/10 hover:text-white"
-                              >
-                                Carregar mais ({filteredMods.length - visibleCount})
-                              </button>
+                            {catalogSlice.pageCount > 1 && (
+                              <nav aria-label="Páginas do catálogo" className="mt-5 flex items-center justify-between gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    playSound("select");
+                                    goToCatalogPage(catalogSlice.page - 1);
+                                  }}
+                                  disabled={catalogSlice.page <= 1}
+                                  className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--tone-3)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-[var(--tone-3)] disabled:hover:text-[var(--ink-muted)]"
+                                >
+                                  <ChevronLeft className="h-4 w-4" aria-hidden />
+                                  Anterior
+                                </button>
+                                <p className="font-metric text-[length:var(--step-0)] text-[var(--ink-muted)]" aria-live="polite">
+                                  {catalogSlice.from}–{catalogSlice.to} de {filteredMods.length} · página {catalogSlice.page} de {catalogSlice.pageCount}
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    playSound("select");
+                                    goToCatalogPage(catalogSlice.page + 1);
+                                  }}
+                                  disabled={catalogSlice.page >= catalogSlice.pageCount}
+                                  className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--tone-3)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-[var(--tone-3)] disabled:hover:text-[var(--ink-muted)]"
+                                >
+                                  Próxima
+                                  <ChevronRight className="h-4 w-4" aria-hidden />
+                                </button>
+                              </nav>
                             )}
                           </div>
                         )}
                       </div>
                     </section>
 
-                    <aside className="min-h-0 flex-1 xl:flex-1 overflow-y-auto p-4 sm:p-5 xl:p-6 thin-scrollbar border-t border-white/8 xl:border-t-0">
+                    <aside className="min-h-0 flex-1 xl:flex-1 overflow-y-auto p-4 sm:p-5 xl:p-6 thin-scrollbar border-t border-[color:var(--border-subtle)] xl:border-t-0">
                       {selectedMod ? (
                         <motion.div key={selectedMod.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                          <div className="mb-5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+                          <div className="mb-5 overflow-hidden rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)]">
                             {selectedMod.pictureUrl ? (
                               <img src={selectedMod.pictureUrl} alt="" className="h-48 w-full object-cover" />
                             ) : (
@@ -1186,10 +1339,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               </div>
                             )}
                           </div>
-                          <p className="text-[length:var(--step-0)] font-black uppercase tracking-[0.2em] text-[var(--ink-faint)]">
-                            Mod em destaque
-                          </p>
-                          <h2 className="mt-2 text-2xl font-black leading-tight text-white">{selectedMod.name}</h2>
+                          <h2 className="mt-2 text-2xl font-semibold leading-tight text-[var(--ink)]">{selectedMod.name}</h2>
                           {selectedMod.author && (
                             <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-[var(--ink-faint)]">
                               <UserRound className="h-3.5 w-3.5" />
@@ -1202,21 +1352,21 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
 
                           <div className={`mt-6 rounded-2xl border p-4 ${
                             nexusConnection.connected
-                              ? "border-emerald-400/15 bg-emerald-400/[0.06]"
-                              : "border-amber-400/15 bg-amber-400/[0.06]"
+                              ? "border-[color:color-mix(in_srgb,var(--live)_35%,transparent)] bg-[var(--tone-3)]"
+                              : "border-[color:color-mix(in_srgb,var(--warn)_35%,transparent)] bg-[var(--tone-3)]"
                           }`}>
                             <div className={`flex items-center gap-2 text-xs font-bold ${
-                              nexusConnection.connected ? "text-emerald-100/70" : "text-amber-100/70"
+                              nexusConnection.connected ? "text-[var(--live)]" : "text-[var(--warn)]"
                             }`}>
                               <ShieldCheck className={`h-4 w-4 ${
-                                nexusConnection.connected ? "text-emerald-300/75" : "text-amber-300/75"
+                                nexusConnection.connected ? "text-[var(--live)]" : "text-[var(--warn)]"
                               }`} />
                               {nexusConnection.connected
                                 ? `Conectado como ${nexusConnection.account?.name || "usuário Nexus"}`
                                 : "Conexão Nexus necessária"}
                             </div>
                             <p className={`mt-2 text-[length:var(--step-0)] leading-relaxed ${
-                              nexusConnection.connected ? "text-emerald-100/35" : "text-amber-100/35"
+                              nexusConnection.connected ? "text-[var(--live)]" : "text-[var(--warn)]"
                             }`}>
                               {nexusConnection.connected
                                 ? "A build de avaliação já pode consultar os arquivos deste mod usando a chave armazenada localmente."
@@ -1229,7 +1379,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               type="button"
                               onClick={() => void loadSelectedModFiles()}
                               disabled={!nexusConnection.connected || filesLoading}
-                              className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-3 py-3 text-[length:var(--step-0)] font-black uppercase tracking-wider text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-[var(--ink-faint)]"
+                              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--ink)] px-3 py-3 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-[var(--tone-4)] disabled:text-[var(--ink-faint)]"
                             >
                               {filesLoading
                                 ? <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -1239,18 +1389,18 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             <button
                               type="button"
                               onClick={() => openModPage(selectedMod)}
-                              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-faint)] transition hover:bg-white/10 hover:text-white"
+                              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-2.5 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                             >
                               <ExternalLink className="h-3.5 w-3.5" /> Abrir página na Nexus
                             </button>
                           </div>
 
                           {awaitingFileId && (
-                            <div className="mt-3 rounded-xl border border-sky-400/15 bg-sky-400/[0.06] px-3 py-3">
-                              <p className="text-[length:var(--step-0)] font-bold text-sky-100/70">
+                            <div className="mt-3 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-3">
+                              <p className="text-[length:var(--step-0)] font-bold text-[var(--ink)]">
                                 Escolha o download gratuito na Nexus
                               </p>
-                              <p className="mt-1 text-[length:var(--step-0)] leading-relaxed text-sky-100/35">
+                              <p className="mt-1 text-[length:var(--step-0)] leading-relaxed text-[var(--ink-muted)]">
                                 Na tela aberta, clique em Slow download. Após a contagem, permita que o navegador abra o Phelierium pelo link NXM.
                               </p>
                             </div>
@@ -1260,10 +1410,10 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             && (!downloadState.gameDomain || downloadState.gameDomain === gameDomain) && (
                             <div className={`mt-3 rounded-xl border px-3 py-3 ${
                               downloadState.status === "error"
-                                ? "border-red-400/15 bg-red-400/[0.06]"
+                                ? "border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)]"
                                 : downloadState.status === "completed"
-                                  ? "border-emerald-400/15 bg-emerald-400/[0.06]"
-                                  : "border-sky-400/15 bg-sky-400/[0.06]"
+                                  ? "border-[color:color-mix(in_srgb,var(--live)_35%,transparent)] bg-[var(--tone-3)]"
+                                  : "border-[color:var(--border-subtle)] bg-[var(--tone-3)]"
                             }`}>
                               <div className="flex items-center justify-between gap-3">
                                 <p className="truncate text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
@@ -1282,14 +1432,14 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                 {(downloadState.status === "resolving"
                                   || downloadState.status === "downloading"
                                   || downloadState.status === "installing") && (
-                                  <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-sky-300/70" />
+                                  <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-[var(--ink-muted)]" />
                                 )}
                               </div>
                               {downloadState.status === "downloading" && (
                                 <>
-                                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/35">
+                                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--surface-base)]">
                                     <div
-                                      className="h-full rounded-full bg-sky-300/70 transition-[width]"
+                                      className="h-full rounded-full bg-[var(--tone-3)] transition-[width]"
                                       style={{
                                         width: downloadState.totalBytes
                                           ? `${Math.min(100, (downloadState.receivedBytes || 0) / downloadState.totalBytes * 100)}%`
@@ -1306,8 +1456,8 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                 </>
                               )}
                               {downloadState.status === "error" && (
-                                <div className="mt-2.5 rounded-lg border border-red-500/20 bg-red-500/10 p-2.5 text-left">
-                                  <p className="text-xs leading-relaxed text-red-200/90 font-medium">
+                                <div className="mt-2.5 rounded-lg border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] p-2.5 text-left">
+                                  <p className="text-xs leading-relaxed text-[var(--danger)] font-medium">
                                     {downloadState.error || "Falha durante o download do mod."}
                                   </p>
                                   <div className="mt-2 flex items-center gap-2">
@@ -1318,14 +1468,14 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                           void requestFreeNexusDownload(fileGroups.main);
                                         }
                                       }}
-                                      className="rounded-lg bg-white/10 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/40"
+                                      className="rounded-lg bg-[var(--tone-4)] px-2.5 py-1 text-xs font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)] focus-visible:ring-2 focus-visible:ring-[color:var(--border-strong)]"
                                     >
                                       Tentar novamente
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => void onChooseFolder()}
-                                      className="rounded-lg border border-white/15 px-2.5 py-1 text-xs font-medium text-[var(--ink)] transition hover:bg-white/10"
+                                      className="rounded-lg border border-[color:var(--border-subtle)] px-2.5 py-1 text-xs font-medium text-[var(--ink)] transition hover:bg-[var(--tone-4)]"
                                     >
                                       Verificar pasta
                                     </button>
@@ -1334,7 +1484,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               )}
                               {downloadState.status === "completed"
                                 && downloadState.installationError && (
-                                <div className="mt-2.5 rounded-lg border border-white/15 bg-white/5 p-2.5 text-left">
+                                <div className="mt-2.5 rounded-lg border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-2.5 text-left">
                                   <p className="text-xs leading-relaxed text-[var(--ink)] font-medium">
                                     {downloadState.installationError}
                                   </p>
@@ -1342,14 +1492,14 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     <button
                                       type="button"
                                       onClick={() => void onChooseFolder()}
-                                      className="rounded-lg bg-white/15 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-white/25"
+                                      className="rounded-lg bg-[var(--tone-4)] px-2.5 py-1 text-xs font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)]"
                                     >
                                       Definir pasta do jogo
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => void openNexusDownloadLocation()}
-                                      className="rounded-lg border border-white/10 px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)] transition hover:text-white"
+                                      className="rounded-lg border border-[color:var(--border-subtle)] px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
                                     >
                                       Abrir pasta baixada
                                     </button>
@@ -1360,7 +1510,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => void openNexusDownloadLocation()}
-                                  className="mt-2 flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-[var(--ink)] transition hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/30"
+                                  className="mt-2 flex items-center gap-1.5 rounded-lg border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-2.5 py-1 text-xs font-medium text-[var(--ink)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[color:var(--border-strong)]"
                                 >
                                   <FolderOpen className="h-3.5 w-3.5" />
                                   Mostrar arquivo
@@ -1370,7 +1520,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           )}
 
                           {filesError && (
-                            <p className="mt-3 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-red-200/65">
+                            <p className="mt-3 rounded-xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-[var(--danger)]">
                               {filesError}
                             </p>
                           )}
@@ -1442,8 +1592,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                     <div className="mx-auto max-w-5xl">
                       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                          <p className="text-[length:var(--step-0)] font-black uppercase tracking-[0.22em] text-[var(--ink-faint)]">Gerenciamento local</p>
-                          <h2 className="mt-2 text-2xl font-black text-white">Meus mods</h2>
+                          <h2 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Meus mods</h2>
                           <p className="mt-1 text-xs text-[var(--ink-faint)]">Acompanhe downloads e gerencie os mods já instalados.</p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -1454,14 +1603,14 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               void openDownloadedModsFolder();
                             }}
                             disabled={folderActionBusy}
-                            className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-muted)] transition hover:bg-white/10 hover:text-white disabled:cursor-wait disabled:opacity-50"
+                            className="flex items-center gap-2 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)] disabled:cursor-wait disabled:opacity-50"
                           >
                             {folderActionBusy
                               ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
                               : <FolderOpen className="h-3.5 w-3.5" />}
                             Abrir pasta dos mods
                           </button>
-                          <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[length:var(--step-0)] font-bold text-[var(--ink-faint)]">
+                          <span className="rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] font-bold text-[var(--ink-faint)]">
                             {installedMods.filter((mod) =>
                               (optimisticModStates[mod.id] ?? mod.enabled)).length} ativos
                           </span>
@@ -1473,13 +1622,13 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         const acInfo = getAntiCheatInfo(game?.id, gameDomain);
                         if (!acInfo) return null;
                         return (
-                          <div className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-300 backdrop-blur-md">
-                            <ShieldAlert className="h-5 w-5 shrink-0 text-amber-400 mt-0.5" />
+                          <div className="mb-5 flex items-start gap-3 rounded-2xl border border-[color:color-mix(in_srgb,var(--warn)_35%,transparent)] bg-[var(--tone-3)] p-4 text-[var(--warn)] backdrop-blur-md">
+                            <ShieldAlert className="h-5 w-5 shrink-0 text-[var(--warn)] mt-0.5" />
                             <div>
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-amber-200">
+                              <h4 className="text-xs font-bold text-[var(--warn)]">
                                 Aviso de Proteção Anti-Cheat ({acInfo.antiCheatEngine})
                               </h4>
-                              <p className="mt-1 text-xs text-amber-300/80 leading-relaxed">
+                              <p className="mt-1 text-xs text-[var(--warn)] leading-relaxed">
                                 {acInfo.warningNotice}
                               </p>
                             </div>
@@ -1489,18 +1638,18 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
 
                       {/* AVISO DE CONFLITO DE ARQUIVOS */}
                       {modConflicts.length > 0 && (
-                        <div className="mb-5 flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-red-300 backdrop-blur-md">
-                          <AlertCircle className="h-5 w-5 shrink-0 text-red-400 mt-0.5" />
+                        <div className="mb-5 flex items-start gap-3 rounded-2xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] p-4 text-[var(--danger)] backdrop-blur-md">
+                          <AlertCircle className="h-5 w-5 shrink-0 text-[var(--danger)] mt-0.5" />
                           <div className="flex-1">
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-red-200">
+                            <h4 className="text-xs font-bold text-[var(--danger)]">
                               Conflito de Arquivos Detectado ({modConflicts.length} arquivo{modConflicts.length === 1 ? "" : "s"} afetado{modConflicts.length === 1 ? "" : "s"})
                             </h4>
-                            <p className="mt-1 text-xs text-red-300/80 leading-relaxed">
+                            <p className="mt-1 text-xs text-[var(--danger)] leading-relaxed">
                               Múltiplos mods ativos modificam o mesmo arquivo no jogo. O arquivo do último mod ativado sobrescreverá os anteriores.
                             </p>
                             <div className="mt-2 space-y-1">
                               {modConflicts.slice(0, 3).map((c, i) => (
-                                <div key={i} className="text-[length:var(--step-0)] font-mono text-red-200/60 truncate">
+                                <div key={i} className="text-[length:var(--step-0)] font-mono text-[var(--danger)] truncate">
                                   • {c.relativePath} ({c.mods.map((m) => m.name).join(" vs ")})
                                 </div>
                               ))}
@@ -1510,10 +1659,10 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                       )}
 
                       {/* GERENCIAMENTO DE PERFIS DE MODS */}
-                      <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 flex flex-wrap items-center justify-between gap-3">
+                      <div className="mb-6 rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-4 flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <Settings2 className="h-4 w-4 text-[var(--ink-muted)]" />
-                          <span className="text-xs font-bold uppercase tracking-wider text-white">Perfil de Mods:</span>
+                          <span className="text-xs font-bold text-[var(--ink)]">Perfil de Mods:</span>
                           {modProfiles.length === 0 ? (
                             <span className="text-xs text-[var(--ink-faint)]">Padrão</span>
                           ) : (
@@ -1523,7 +1672,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                   key={prof.id}
                                   type="button"
                                   onClick={() => void handleApplyModProfile(prof)}
-                                  className="cursor-pointer rounded-lg border border-white/10 bg-white/10 px-2.5 py-1 text-[length:var(--step-0)] font-bold text-white transition hover:bg-white/20 active:scale-95"
+                                  className="cursor-pointer rounded-lg border border-[color:var(--border-subtle)] bg-[var(--tone-4)] px-2.5 py-1 text-[length:var(--step-0)] font-bold text-[var(--ink)] transition hover:bg-[var(--tone-4)] active:scale-95"
                                 >
                                   {prof.name}
                                 </button>
@@ -1539,19 +1688,19 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               value={newProfileName}
                               onChange={(e) => setNewProfileName(e.target.value)}
                               placeholder="Nome do perfil"
-                              className="h-8 rounded-lg border border-white/15 bg-black/50 px-2.5 text-xs text-white outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                              className="h-8 rounded-lg border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-2.5 text-xs text-[var(--ink)] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--border-strong)]"
                             />
                             <button
                               type="button"
                               onClick={() => void handleSaveModProfile()}
-                              className="cursor-pointer rounded-lg bg-white px-3 py-1.5 text-[length:var(--step-0)] font-black uppercase text-black transition hover:bg-white/90"
+                              className="cursor-pointer rounded-lg bg-[var(--ink)] px-3 py-1.5 text-[length:var(--step-0)] font-semibold uppercase text-[var(--tone-0)] transition hover:opacity-90"
                             >
                               Salvar
                             </button>
                             <button
                               type="button"
                               onClick={() => setShowProfileSave(false)}
-                              className="cursor-pointer text-[length:var(--step-0)] text-[var(--ink-faint)] hover:text-white"
+                              className="cursor-pointer text-[length:var(--step-0)] text-[var(--ink-faint)] hover:text-[var(--ink)]"
                             >
                               Cancelar
                             </button>
@@ -1560,7 +1709,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           <button
                             type="button"
                             onClick={() => setShowProfileSave(true)}
-                            className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-muted)] transition hover:bg-white/10 hover:text-white"
+                            className="cursor-pointer rounded-lg border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-1.5 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                           >
                             + Salvar como Novo Perfil
                           </button>
@@ -1568,15 +1717,48 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                       </div>
 
                       {folderActionError && (
-                        <p className="mb-4 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-red-200/65">
+                        <p className="mb-4 rounded-xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-[var(--danger)]">
                           {folderActionError}
                         </p>
                       )}
 
                       {installedActionError && (
-                        <p className="mb-4 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-red-200/65">
+                        <p className="mb-4 rounded-xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-[var(--danger)]">
                           {installedActionError}
                         </p>
+                      )}
+
+                      {scriptIssues.length > 0 && (
+                        <div role="alert" className="mb-4 rounded-xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] p-3.5">
+                          <p className="text-[length:var(--step-1)] font-semibold text-[var(--danger)]">
+                            O jogo não conseguiu compilar os scripts dos mods
+                          </p>
+                          <ul className="mt-2 space-y-2">
+                            {scriptIssues.map((issue) => (
+                              <li key={issue.modFolder} className="flex flex-wrap items-center justify-between gap-2 text-[length:var(--step-0)] text-[var(--ink-muted)]">
+                                <span>
+                                  {issue.summary}
+                                  <span className="block text-[var(--ink-faint)]">Log do jogo: {issue.detail}</span>
+                                </span>
+                                {issue.requirement && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      playSound("select");
+                                      void window.electronAPI?.openExternalUrl?.(requirementSearchUrl(gameDomain, issue.requirement ?? ""));
+                                    }}
+                                    className="cursor-pointer rounded-full bg-[var(--tone-4)] px-3 py-1.5 font-semibold text-[var(--ink)] transition-opacity hover:opacity-80"
+                                  >
+                                    Procurar no Nexus
+                                  </button>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="mt-2 text-[length:var(--step-0)] text-[var(--ink-faint)]">
+                            Instale o mod que falta e abra o jogo de novo para o aviso sumir.
+                          </p>
+                        </div>
                       )}
 
                       {installedMods.length === 0 ? (
@@ -1591,42 +1773,40 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             const displayedEnabled = optimisticModStates[mod.id] ?? mod.enabled;
                             const isBusy = modActionIds.has(mod.id);
                             return (
-                            <div key={mod.id} className="group relative flex flex-wrap items-center gap-3 rounded-xl border border-white/[0.08] bg-[var(--tone-1)] p-3.5 transition hover:border-white/20 hover:bg-[var(--tone-2)] sm:flex-nowrap sm:gap-4">
-                              <HudCornerMarkers className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                              <div className="h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-[var(--tone-2)]">
-                                {mod.pictureUrl && <img src={mod.pictureUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />}
+                            <div key={mod.id} className="group flex flex-wrap items-center gap-4 rounded-[var(--corner-md)] bg-[var(--tone-2)] p-3.5 transition-colors hover:bg-[var(--tone-3)]">
+                              <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[var(--node)] bg-[var(--tone-3)]">
+                                {mod.pictureUrl ? (
+                                  <img src={mod.pictureUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                                ) : (
+                                  <PackageOpen className="h-5 w-5 text-[var(--ink-faint)]" aria-hidden />
+                                )}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2 font-mono">
-                                  <span className="text-[var(--ink-faint)] font-bold text-xs select-none">[</span>
-                                  <h3 className="truncate text-xs md:text-sm font-bold text-white tracking-tight">{mod.name}</h3>
-                                  <span className="text-[var(--ink-faint)] text-xs">▶</span>
-                                  <span className="text-[var(--ink-faint)] font-bold text-xs select-none">]</span>
-                                </div>
-                                <p className="mt-1 font-mono text-[length:var(--step-0)] text-[var(--ink-faint)]">
+                                <h3 className="truncate text-[length:var(--step-1)] font-semibold text-[var(--ink)]" title={mod.name}>{mod.name}</h3>
+                                <p className="mt-0.5 truncate text-[length:var(--step-0)] text-[var(--ink-muted)]">
                                   {[
-                                    mod.author ? `AUTHOR: ${mod.author.toUpperCase()}` : null,
-                                    mod.version ? `VER: ${mod.version}` : null,
-                                  ].filter(Boolean).join(" | ")}
+                                    mod.author && mod.author !== "Nexus Mods" ? `por ${mod.author}` : null,
+                                    mod.version ? `v${mod.version}` : null,
+                                  ].filter(Boolean).join(" · ") || "Arquivo baixado da Nexus"}
                                 </p>
                               </div>
-                              <div className="ml-auto flex items-center gap-3 font-mono">
-                                <span className={`text-[length:var(--step-0)] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                              <div className="ml-auto flex items-center gap-3">
+                                <span className={`rounded-full bg-[var(--tone-3)] px-2.5 py-1 text-[length:var(--step-0)] font-semibold ${
                                   displayedEnabled && mod.manifestPath
-                                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                    ? "text-[var(--live)]"
                                     : displayedEnabled
-                                      ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                                    : mod.status === "downloaded"
-                                      ? "border-white/10 bg-white/[0.04] text-[var(--ink-muted)]"
-                                      : "border-white/10 bg-white/[0.04] text-[var(--ink-faint)]"
+                                      ? "text-[var(--warn)]"
+                                      : mod.status === "downloaded"
+                                        ? "text-[var(--ink-muted)]"
+                                        : "text-[var(--ink-faint)]"
                                 }`}>
                                   {isBusy
-                                    ? displayedEnabled ? "ATIVANDO..." : "DESATIVANDO..."
+                                    ? displayedEnabled ? "Ativando…" : "Desativando…"
                                     : displayedEnabled
-                                    ? mod.manifestPath ? "ACTIVE" : "VERIFY"
-                                    : mod.status === "downloaded"
-                                      ? "DOWNLOADED"
-                                      : "DISABLED"}
+                                      ? mod.manifestPath ? "Ativo" : "Verificar"
+                                      : mod.status === "downloaded"
+                                        ? "Baixado"
+                                        : "Desativado"}
                                 </span>
                                 <button
                                   type="button"
@@ -1634,11 +1814,11 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                   disabled={isBusy}
                                   aria-label={`Remover ${mod.name}`}
                                   title="Remover do jogo e apagar o download"
-                                  className="cursor-pointer flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-[var(--ink-faint)] transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-400 disabled:cursor-wait disabled:opacity-40"
+                                  className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-[var(--node)] bg-[var(--tone-3)] text-[var(--ink-faint)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--danger)] disabled:cursor-default disabled:opacity-40"
                                 >
                                   {isBusy
-                                    ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                                    : <Trash2 className="h-3.5 w-3.5" />}
+                                    ? <LoaderCircle className="h-4 w-4 animate-spin" />
+                                    : <Trash2 className="h-4 w-4" />}
                                 </button>
                                 <Switch
                                   checked={displayedEnabled}
@@ -1664,9 +1844,9 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                     exit={{ opacity: 0, y: -10 }}
                     className="flex flex-1 min-h-0 flex-col overflow-y-auto p-4 thin-scrollbar sm:p-6"
                   >
-                    <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
+                    <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[color:var(--border-subtle)] pb-4">
                       <div>
-                        <h2 className="flex items-center gap-2.5 text-lg font-black tracking-tight text-white sm:text-xl">
+                        <h2 className="flex items-center gap-2.5 text-lg font-semibold tracking-tight text-[var(--ink)] sm:text-xl">
                           <Download className="h-5 w-5 text-[var(--ink-muted)]" />
                           Gerenciador de Downloads
                         </h2>
@@ -1679,138 +1859,37 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         <button
                           type="button"
                           onClick={handleClearCompletedDownloads}
-                          className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2 text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-muted)] transition hover:bg-white/10 hover:text-white"
+                          className="flex items-center gap-2 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-4 py-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                         >
-                          <Trash2 className="h-3.5 w-3.5 text-red-400" />
+                          <Trash2 className="h-3.5 w-3.5 text-[var(--danger)]" />
                           Limpar Concluídos
                         </button>
                       )}
                     </div>
 
                     {downloadHistory.length === 0 ? (
-                      <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-8 text-center">
+                      <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-8 text-center">
                         <Download className="mb-3 h-10 w-10 text-[var(--ink-faint)]" />
-                        <p className="text-sm font-black text-[var(--ink-muted)]">Nenhum download registrado</p>
+                        <p className="text-sm font-semibold text-[var(--ink-muted)]">Nenhum download registrado</p>
                         <p className="mt-1 max-w-sm text-xs leading-relaxed text-[var(--ink-faint)]">
                           Ao iniciar um download na Nexus Mods, o progresso e o status de instalação aparecerão aqui automaticamente.
                         </p>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-3">
-                        {downloadHistory.map((item) => {
-                          const isDownloading = item.status === "downloading" || item.status === "resolving";
-                          const isInstalling = item.status === "installing";
-                          const isCompleted = item.status === "completed";
-                          const isError = item.status === "error";
-
-                          const total = item.totalBytes || 0;
-                          const received = item.receivedBytes || 0;
-                          const percent = total > 0 ? Math.min(100, Math.round((received / total) * 100)) : 0;
-
-                          return (
-                            <div
-                              key={item.id}
-                              className="group relative flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-xl transition hover:border-white/20 hover:bg-white/[0.05] sm:flex-row sm:items-center sm:justify-between"
-                            >
-                              <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                                <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/40">
-                                  {item.pictureUrl ? (
-                                    <img src={item.pictureUrl} alt="" className="h-full w-full object-cover" />
-                                  ) : (
-                                    <PackageOpen className="h-5 w-5 text-[var(--ink-faint)]" />
-                                  )}
-                                </div>
-
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <h3 className="truncate text-sm font-black text-white">
-                                      {item.modName || `Mod #${item.modId}`}
-                                    </h3>
-                                    {item.version && (
-                                      <span className="rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[length:var(--step-0)] font-mono text-[var(--ink-muted)]">
-                                        v{item.version}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  <p className="mt-0.5 text-xs text-[var(--ink-faint)]">
-                                    {item.modAuthor ? `por ${item.modAuthor}` : `ID: ${item.modId}`}
-                                  </p>
-
-                                  <div className="mt-2 flex flex-wrap items-center gap-2">
-                                    {item.status === "resolving" && (
-                                      <span className="flex items-center gap-1.5 text-xs font-bold text-sky-400">
-                                        <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                                        Obtendo servidor...
-                                      </span>
-                                    )}
-
-                                    {item.status === "downloading" && (
-                                      <span className="flex items-center gap-1.5 text-xs font-bold text-sky-400">
-                                        <Download className="h-3.5 w-3.5 animate-bounce" />
-                                        Baixando ({percent}%) • {formatBytes(received)} / {formatBytes(total)}
-                                      </span>
-                                    )}
-
-                                    {isInstalling && (
-                                      <span className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
-                                        <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                                        Instalando mod...
-                                      </span>
-                                    )}
-
-                                    {isCompleted && (
-                                      <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
-                                        <CheckCircle2 className="h-3.5 w-3.5" />
-                                        {item.installed ? "Instalado com sucesso" : "Download concluído"}
-                                      </span>
-                                    )}
-
-                                    {isError && (
-                                      <span className="flex items-center gap-1.5 text-xs font-bold text-rose-400">
-                                        <AlertCircle className="h-3.5 w-3.5" />
-                                        {item.error || item.installationError || "Falha no download"}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {isDownloading && (
-                                    <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                                      <div
-                                        className="h-full bg-linear-to-r from-sky-500 to-indigo-500 transition-all duration-300"
-                                        style={{ width: `${percent}%` }}
-                                      />
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-2 self-end sm:self-center">
-                                {item.filePath && (
-                                  <button
-                                    type="button"
-                                    onClick={() => void openNexusDownloadLocation(item.gameDomain || gameDomain)}
-                                    title="Abrir pasta do arquivo"
-                                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[var(--ink-muted)] transition hover:bg-white/10 hover:text-white"
-                                  >
-                                    <FolderOpen className="h-4 w-4" />
-                                  </button>
-                                )}
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (item.id) handleRemoveDownloadCard(item.id);
-                                  }}
-                                  title="Remover do histórico"
-                                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-[var(--ink-muted)] transition hover:bg-red-500/20 hover:text-red-400"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
+                        {downloadHistory.map((item) => (
+                          <DownloadCard
+                            key={item.id}
+                            download={item}
+                            now={now}
+                            onPause={handlePauseDownload}
+                            onResume={handleResumeDownload}
+                            onCancel={handleCancelDownload}
+                            onReopenPage={(download) => void handleReopenDownloadPage(download)}
+                            onOpenFolder={(download) => void openNexusDownloadLocation(download.gameDomain || gameDomain)}
+                            onRemove={handleRemoveDownloadCard}
+                          />
+                        ))}
                       </div>
                     )}
                   </motion.section>
@@ -1826,17 +1905,16 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                   >
                     <div className="mx-auto max-w-3xl space-y-5">
                       <div>
-                        <p className="text-[length:var(--step-0)] font-black uppercase tracking-[0.22em] text-[var(--ink-faint)]">Preparação do jogo</p>
-                        <h2 className="mt-2 text-2xl font-black text-white">Configurar integração</h2>
+                        <h2 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Configurar integração</h2>
                       </div>
 
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                      <div className="rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-5">
                         <div className="mb-3 flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--ink-muted)]">
+                          <div className="flex items-center gap-2 text-xs font-semibold text-[var(--ink-muted)]">
                             <KeyRound className="h-4 w-4" /> Conta Nexus de desenvolvimento
                           </div>
                           {nexusConnection.connected && (
-                            <span className="rounded-md bg-emerald-400/10 px-2 py-1 text-[length:var(--step-0)] font-black uppercase tracking-wider text-emerald-300/75">
+                            <span className="rounded-md bg-[var(--tone-3)] px-2 py-1 text-[length:var(--step-0)] font-semibold text-[var(--live)]">
                               Conectado
                             </span>
                           )}
@@ -1848,13 +1926,13 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             Verificando conexão
                           </div>
                         ) : nexusConnection.connected ? (
-                          <div className="rounded-xl border border-emerald-400/15 bg-emerald-400/[0.05] p-4">
+                          <div className="rounded-xl border border-[color:color-mix(in_srgb,var(--live)_35%,transparent)] bg-[var(--tone-3)] p-4">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                               <div>
-                                <p className="text-sm font-black text-emerald-100/80">
+                                <p className="text-sm font-semibold text-[var(--live)]">
                                   {nexusConnection.account?.name || "Chave pessoal validada"}
                                 </p>
-                                <p className="mt-1 text-[length:var(--step-0)] leading-relaxed text-emerald-100/35">
+                                <p className="mt-1 text-[length:var(--step-0)] leading-relaxed text-[var(--live)]">
                                   A chave está criptografada pelo Windows e permanece somente neste computador.
                                 </p>
                                 {nexusConnection.account?.rateLimit.dailyRemaining !== null
@@ -1868,7 +1946,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                 type="button"
                                 onClick={() => void removeNexusConnection()}
                                 disabled={connectionBusy}
-                                className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 px-4 text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-faint)] transition hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
+                                className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[color:var(--border-subtle)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)] transition hover:bg-[var(--tone-3)] hover:text-[var(--ink)] disabled:opacity-40"
                               >
                                 {connectionBusy
                                   ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
@@ -1884,7 +1962,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               Netlify, Supabase ou aos servidores do Phelierium.
                             </p>
                             {!nexusConnection.encryptionAvailable ? (
-                              <p className="rounded-xl border border-red-400/15 bg-red-400/[0.06] px-4 py-3 text-xs text-red-200/65">
+                              <p className="rounded-xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-4 py-3 text-xs text-[var(--danger)]">
                                 A criptografia segura do sistema operacional não está disponível.
                               </p>
                             ) : (
@@ -1898,13 +1976,13 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     autoComplete="off"
                                     spellCheck={false}
                                     aria-label="Chave pessoal Nexus"
-                                    className="h-12 w-full rounded-xl border border-white/10 bg-black/25 px-4 pr-11 text-sm text-white outline-none placeholder:text-[var(--ink-faint)] focus:border-white/25"
+                                    className="h-12 w-full rounded-xl border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-4 pr-11 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-[color:var(--border-subtle)]"
                                   />
                                   <button
                                     type="button"
                                     onClick={() => setShowPersonalKey((visible) => !visible)}
                                     aria-label={showPersonalKey ? "Ocultar chave" : "Mostrar chave"}
-                                    className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--ink-faint)] transition hover:bg-white/[0.06] hover:text-[var(--ink-muted)]"
+                                    className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--ink-faint)] transition hover:bg-[var(--tone-3)] hover:text-[var(--ink-muted)]"
                                   >
                                     {showPersonalKey
                                       ? <EyeOff className="h-4 w-4" />
@@ -1915,7 +1993,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                   type="button"
                                   onClick={() => void connectPersonalKey()}
                                   disabled={connectionBusy || personalKey.trim().length < 32}
-                                  className="flex h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 text-[length:var(--step-0)] font-black uppercase tracking-wider text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:opacity-35"
+                                  className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--ink)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-35"
                                 >
                                   {connectionBusy && <LoaderCircle className="h-4 w-4 animate-spin" />}
                                   Validar e salvar
@@ -1934,31 +2012,31 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         )}
 
                         {connectionError && (
-                          <p className="mt-3 rounded-xl border border-red-400/15 bg-red-400/[0.06] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-red-200/65">
+                          <p className="mt-3 rounded-xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-[var(--danger)]">
                             {connectionError}
                           </p>
                         )}
                       </div>
 
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                        <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--ink-muted)]">
+                      <div className="rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-5">
+                        <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-[var(--ink-muted)]">
                           <FolderOpen className="h-4 w-4" /> Pasta do jogo
                         </div>
                         <button
                           type="button"
                           onClick={() => void onChooseFolder()}
-                          className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-white/10 bg-black/25 px-4 text-left transition hover:bg-white/[0.06]"
+                          className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-4 text-left transition hover:bg-[var(--tone-3)]"
                         >
                           <HardDrive className="h-4 w-4 shrink-0 text-[var(--ink-faint)]" />
                           <span className="min-w-0 flex-1 truncate text-xs font-bold text-[var(--ink-muted)]">
                             {gameFolder || "Selecionar pasta do jogo"}
                           </span>
-                          {gameFolder && <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />}
+                          {gameFolder && <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--live)]" />}
                         </button>
                       </div>
 
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                        <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--ink-muted)]">
+                      <div className="rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-5">
+                        <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-[var(--ink-muted)]">
                           <PackageOpen className="h-4 w-4" /> Domínio Nexus
                         </div>
                         <p className="mb-4 text-xs leading-relaxed text-[var(--ink-faint)]">
@@ -1970,7 +2048,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             value={domainDraft}
                             onChange={(event) => setDomainDraft(cleanDomain(event.target.value))}
                             placeholder="dominio-do-jogo"
-                            className="h-12 min-w-0 flex-1 rounded-xl border border-white/10 bg-black/25 px-4 text-sm text-white outline-none placeholder:text-[var(--ink-faint)] focus:border-white/25"
+                            className="h-12 min-w-0 flex-1 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-4 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-[color:var(--border-subtle)]"
                           />
                           <button
                             type="button"
@@ -1981,7 +2059,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               setActiveTab("discover");
                             }}
                             disabled={!domainDraft}
-                            className="h-12 rounded-xl bg-white px-5 text-[length:var(--step-0)] font-black uppercase tracking-wider text-black transition hover:bg-white/85 disabled:cursor-not-allowed disabled:opacity-35"
+                            className="h-12 rounded-xl bg-[var(--ink)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-35"
                           >
                             Salvar
                           </button>
@@ -2005,14 +2083,14 @@ const EmptyCatalog: React.FC<{
   description: string;
   onAction: () => void;
 }> = ({ title, description, onAction }) => (
-  <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.025] px-6 text-center">
+  <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[color:var(--border-subtle)] bg-[var(--tone-2)] px-6 text-center">
     <PackageOpen className="mb-3 h-7 w-7 text-[var(--ink-faint)]" />
-    <p className="text-sm font-black text-[var(--ink-muted)]">{title}</p>
+    <p className="text-sm font-semibold text-[var(--ink-muted)]">{title}</p>
     <p className="mt-1 max-w-md text-xs leading-relaxed text-[var(--ink-faint)]">{description}</p>
     <button
       type="button"
       onClick={onAction}
-      className="mt-4 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2 text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-faint)] transition hover:bg-white/10 hover:text-white"
+      className="mt-4 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-4 py-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
     >
       Continuar
     </button>

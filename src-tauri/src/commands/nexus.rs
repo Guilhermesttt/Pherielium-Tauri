@@ -200,13 +200,40 @@ pub async fn nexus_get_mod_catalog(game_domain: String) -> Result<serde_json::Va
     };
 
     validate_slug(&game_domain, "Jogo")?;
-    let endpoint = format!("/games/{game_domain}/mods/trending.json?limit=20");
-    let (val, rate) = nexus_get(&endpoint, &key).await?;
 
-    let mods = val
-        .as_array()
-        .map(|arr| {
-            arr.iter().map(|m| serde_json::json!({
+    // A API v1 só entrega listas curtas (10 mods cada). Juntar as três dá até 30 mods por jogo
+    // com 3 chamadas: "Em alta", "Atualizados" e "Novos". O que se repete entra uma vez só.
+    let feeds = [
+        ("trending", "Em alta"),
+        ("latest_updated", "Atualizados"),
+        ("latest_added", "Novos"),
+    ];
+    let endpoints = feeds.map(|(path, _)| format!("/games/{game_domain}/mods/{path}.json"));
+    let (trending, updated, added) = tokio::join!(
+        nexus_get(&endpoints[0], &key),
+        nexus_get(&endpoints[1], &key),
+        nexus_get(&endpoints[2], &key),
+    );
+    let responses = [trending, updated, added];
+
+    let mut rate = serde_json::Value::Null;
+    let mut seen = std::collections::HashSet::new();
+    let mut mods = Vec::new();
+    let mut first_error = None;
+    for ((_, label), response) in feeds.iter().zip(responses) {
+        let (val, feed_rate) = match response {
+            Ok(ok) => ok,
+            Err(error) => {
+                first_error.get_or_insert(error);
+                continue;
+            }
+        };
+        rate = feed_rate;
+        for m in val.as_array().into_iter().flatten() {
+            if !seen.insert(m["mod_id"].to_string()) {
+                continue;
+            }
+            mods.push(serde_json::json!({
                 "id": m["mod_id"].to_string(),
                 "modId": m["mod_id"].to_string(),
                 "name": m["name"],
@@ -218,10 +245,16 @@ pub async fn nexus_get_mod_catalog(game_domain: String) -> Result<serde_json::Va
                 "downloads": m["mod_downloads"],
                 "endorsements": m["endorsement_count"],
                 "updatedAt": m["updated_time"],
-                "feed": "trending"
-            })).collect::<Vec<_>>()
-        })
-        .unwrap_or_default();
+                "feed": label
+            }));
+        }
+    }
+    // só vira erro se NENHUMA lista veio: uma lista a menos ainda é um catálogo útil
+    if mods.is_empty() {
+        if let Some(error) = first_error {
+            return Err(error);
+        }
+    }
 
     Ok(serde_json::json!({
         "mods": mods,

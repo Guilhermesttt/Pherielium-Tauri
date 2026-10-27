@@ -32,6 +32,34 @@ Organizer). O botão fica na tela de mods e só aparece para conta grátis ainda
 Fluxo: `prepare` (registra o pedido, 15 min de validade) → site da Nexus → `nxm://` → API
 `download_link.json` → download com progresso → instalação → estado `completed`.
 
+## Estados, pausar, retomar e cancelar
+
+O cartão de um download tem **o mesmo id** do pedido até o fim, e o Rust publica cada mudança em
+`nexus:download-state`:
+
+`waiting_link` (conta grátis, com `expiresAt`) → `resolving` → `downloading` (com `speedBps`) →
+`paused` ⇄ `downloading` → `installing` → `completed`, ou `error` / `cancelled`.
+
+| Comando | O que faz |
+|---|---|
+| `nexus_pause_download(id)` | Para de ler a rede e guarda o `.part`. O sinal é conferido a cada pedaço, ou a cada 400 ms sem dados. |
+| `nexus_resume_download(id)` | Continua com `Range: bytes=N-`. Se o CDN responder 200 (ignorou o `Range`) ou 416, o parcial é descartado e o download recomeça. Anexar a uma resposta 200 corromperia o arquivo. |
+| `nexus_cancel_download(id)` | Em andamento, pausado ou esperando o link: apaga o `.part` e o pedido. |
+| `nexus_list_downloads()` | O que ainda não terminou, para a tela recuperar ao abrir. |
+
+O link do CDN vence. Se o CDN recusar (401/403/410), o Pherielium pede outro uma vez e continua do
+ponto em que estava. Se for conta grátis e o `key`/`expires` do *Download lento* também tiver vencido,
+o estado é `error` com `LINK_EXPIRED` e a tela oferece **Tentar de novo**, que prepara o pedido e
+abre a página da Nexus outra vez. Pausas não sobrevivem ao fechamento do app: o `.part` fica no disco,
+mas o link e o pedido são esquecidos.
+
+### Fluxo guiado (conta grátis)
+
+Enquanto o estado é `waiting_link`, a tela mostra quatro passos (página aberta → clique em *Download
+lento* → aceitar abrir o Pherielium → o Pherielium baixa e instala), a contagem do tempo que resta
+e **Abrir a página da Nexus de novo**. As regras ficam em `src/services/downloadView.ts` (puras e
+testadas); a tela em `components/mods/DownloadCard.tsx` e `FreeDownloadSteps.tsx`.
+
 ## Como o mod entra na pasta do jogo
 
 1. **Preparo.** O arquivo (ZIP ou 7z) é extraído para uma pasta temporária. Se estiver corrompido
@@ -87,6 +115,8 @@ nova, para não acumular cópias nem perder o original.
 - A integração com `nxm://` e com a Nexus real **não foi testada com contas reais**; o que está
   coberto por testes automáticos é o motor de instalação, a leitura dos links e a segurança.
 - O registro do protocolo fica no usuário (`HKCU`) e não é removido ao desinstalar o app.
+- Pausar e retomar com `Range` **não foi testado contra o CDN real da Nexus**; o que é testado é a
+  decisão (`range_plan`), o sinal de pausa e as contas de velocidade e tempo restante.
 
 ## Como testar à mão
 
@@ -95,3 +125,16 @@ nova, para não acumular cópias nem perder o original.
    automática e clique em *Download lento* na página que abrir).
 3. Confira os arquivos na pasta do jogo e o manifesto em `…\Pherielium\mod-manifests\`.
 4. Remova o mod e confira que a pasta do jogo voltou ao que era.
+
+## Aviso de mod que falta (Cyberpunk 2077 / REDscript)
+
+Ao abrir **Meus mods** (e quando um mod é ativado ou removido), o hub lê `r6/logs/redscript_rCURRENT.log`
+da pasta do jogo (comando `mods_check_script_log`, somente leitura, até 4 MB). Se o compilador de scripts
+registrou erros, a tela mostra um aviso por mod, por exemplo:
+`INCF-CORE precisa do mod "Mod Settings", que não está instalado.`, com a linha do log e um botão que abre a
+busca do Nexus.
+
+- O nome do mod que falta vem do `unresolved reference 'X'` / `unresolved type 'X'` do log; nomes conhecidos
+  (Mod Settings, Codeware, ArchiveXL, TweakXL…) ganham o nome do Nexus, os demais aparecem como estão.
+- O log é o do **último início do jogo**: depois de instalar o mod que falta, abra o jogo de novo.
+- Limite: o hub não sabe as dependências de um mod (a API v1 do Nexus não as expõe), só reage ao erro.

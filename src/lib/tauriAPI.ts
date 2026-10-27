@@ -378,6 +378,12 @@ export const tauriAPI = {
   getNexusDownloadState: () =>
     invoke<unknown | null>("nexus_get_download_state"),
 
+  listNexusDownloads: () => invoke<unknown[]>("nexus_list_downloads"),
+  pauseNexusDownload: (id: string) => invoke<void>("nexus_pause_download", { id }),
+  resumeNexusDownload: (id: string) => invoke<void>("nexus_resume_download", { id }),
+  cancelNexusDownload: (id: string) => invoke<void>("nexus_cancel_download", { id }),
+  checkModScriptLog: (gameFolder: string) => invoke<unknown>("mods_check_script_log", { gameFolder }),
+
   listNexusDownloadedFiles: (gameDomain: string) =>
     invoke<unknown[]>("nexus_list_downloaded_files", { gameDomain }),
 
