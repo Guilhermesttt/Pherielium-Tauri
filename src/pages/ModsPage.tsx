@@ -21,6 +21,7 @@ import ModGameDetailPanel, {
   type InstalledModEntry,
 } from "../components/mods/ModGameDetailPanel";
 import { GhostSelect } from "../components/ui/GhostSelect";
+import { installedModsStorageKey } from "../services/installedMods";
 import {
   ALL_CATEGORIES,
   MODS_SORT_OPTIONS,
@@ -36,6 +37,10 @@ import {
 interface ModsPageProps {
   uid: string;
   games: Game[];
+  /** Jogo cuja página de mods já abre ao entrar (vindo de "Gerenciar mods completo" na tela do jogo). */
+  initialGameId?: string | null;
+  /** Avisa o Home quando a página de um jogo abre ou fecha, para ele travar as gavetas laterais. */
+  onGameOpenChange?: (isOpen: boolean) => void;
 }
 
 const MODS_PREFS_KEY = "pherielium:mods:filters:v1";
@@ -57,7 +62,7 @@ const readModsPrefs = (): { category: string; status: ModsStatusFilter; sort: Mo
 const storageKeys = {
   folders: (uid: string) => `checkpoint_mod_game_folders_${uid}`,
   domains: (uid: string) => `checkpoint_mod_game_domains_${uid}`,
-  installed: (uid: string) => `checkpoint_installed_mods_${uid}`,
+  installed: installedModsStorageKey,
 };
 
 const readRecord = <T,>(key: string): Record<string, T> => {
@@ -232,7 +237,7 @@ const ModGameCard = React.memo<ModGameCardProps>(
 // PÁGINA PRINCIPAL DE MODS
 // ============================================================
 
-export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
+export const ModsPage: React.FC<ModsPageProps> = ({ uid, games, initialGameId = null, onGameOpenChange }) => {
   const { effectsVolume, soundTheme, notificationVolume } = usePreferences();
   const { playSound } = useSoundEffects(
     effectsVolume / 100,
@@ -244,8 +249,28 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
   const [categoryFilter, setCategoryFilter] = useState<string>(() => readModsPrefs().category);
   const [statusFilter, setStatusFilter] = useState<ModsStatusFilter>(() => readModsPrefs().status);
   const [sortOrder, setSortOrder] = useState<ModsSortOrder>(() => readModsPrefs().sort);
-  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [selectedGame, setSelectedGame] = useState<Game | null>(
+    () => games.find((game) => game.id === initialGameId) ?? null,
+  );
   const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Já na página de mods (biblioteca carregada depois, ou outro jogo pedido): abre o jogo pedido
+  // (uma vez por pedido: depois de fechar a página, uma atualização da biblioteca não a reabre)
+  const appliedInitialRef = React.useRef<string | null>(selectedGame?.id ?? null);
+  useEffect(() => {
+    if (!initialGameId || appliedInitialRef.current === initialGameId) return;
+    const requested = games.find((game) => game.id === initialGameId);
+    if (!requested) return;
+    appliedInitialRef.current = initialGameId;
+    setSelectedGame(requested);
+  }, [initialGameId, games]);
+
+  // O Home trava a sidebar e a gaveta de amigos enquanto a página de um jogo está aberta
+  const isGameOpen = Boolean(selectedGame);
+  useEffect(() => {
+    onGameOpenChange?.(isGameOpen);
+    return () => onGameOpenChange?.(false);
+  }, [isGameOpen, onGameOpenChange]);
 
   useGamepadNavigation({
     scrollRef: scrollRef as React.RefObject<HTMLElement>,
@@ -461,9 +486,6 @@ export const ModsPage: React.FC<ModsPageProps> = ({ uid, games }) => {
     <motion.div
       ref={scrollRef}
       data-system-page
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", bounce: 0, duration: 0.4 }}
       className="flex flex-col min-h-0 flex-1 overflow-y-auto thin-scrollbar hub-scroll"
       style={{ padding: "40px 40px 64px", contain: "layout paint", transform: "translate3d(0,0,0)", willChange: "transform" }}
     >

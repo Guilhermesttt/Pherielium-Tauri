@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+import { invoke } from "@tauri-apps/api/core";
+import { createSecureSessionStorage } from "./secureSessionStorage";
 
 const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || "").trim();
 const publishableKey = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "").trim();
@@ -29,6 +31,26 @@ if (!supabaseKey) {
   );
 }
 
+const isTauriRuntime = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
+/**
+ * No desktop a sessão (JWT + refresh token) fica no cofre do Windows, não no localStorage.
+ * No navegador (dev) não existe cofre, então vale o localStorage.
+ */
+const authStorage = isTauriRuntime
+  ? createSecureSessionStorage(
+      {
+        get: (key) => invoke<string | null>("secure_storage_get", { key }),
+        set: (key, value) => invoke<void>("secure_storage_set", { key, value }),
+        remove: (key) => invoke<void>("secure_storage_remove", { key }),
+      },
+      window.localStorage,
+      (message, error) => console.warn(message, error),
+    )
+  : typeof window !== "undefined"
+    ? window.localStorage
+    : undefined;
+
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: true,
@@ -38,6 +60,6 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     // automaticamente parametros de auth na URL atual.
     detectSessionInUrl: false,
 
-    storage: typeof window !== "undefined" ? window.localStorage : undefined,
+    storage: authStorage,
   },
 });

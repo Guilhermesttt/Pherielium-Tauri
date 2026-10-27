@@ -60,20 +60,22 @@ function DropdownMenuContent({
     [menuId, hoveredId],
   );
   return (
-    <DropdownMenuPrimitive.Portal>
-      <GlideContext.Provider value={glideValue}>
+    // O Provider fica FORA do Portal: o Radix passa a ref do Presence do Portal ao filho direto, e um
+    // Provider no meio a perde, o que desmonta o menu na hora e corta a animação de saída.
+    <GlideContext.Provider value={glideValue}>
+      <DropdownMenuPrimitive.Portal>
         <DropdownMenuPrimitive.Content
           data-slot="dropdown-menu-content"
           sideOffset={sideOffset}
           onMouseLeave={() => setHoveredId(null)}
           className={cn(
-            't-toast bg-popover text-popover-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border p-1 shadow-md isolate',
+            't-dropdown bg-popover text-popover-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border p-1 shadow-md isolate',
             className,
           )}
           {...props}
         />
-      </GlideContext.Provider>
-    </DropdownMenuPrimitive.Portal>
+      </DropdownMenuPrimitive.Portal>
+    </GlideContext.Provider>
   )
 }
 
@@ -299,7 +301,7 @@ function DropdownMenuSubContent({
     <DropdownMenuPrimitive.SubContent
       data-slot="dropdown-menu-sub-content"
         className={cn(
-          't-toast bg-popover text-popover-foreground z-50 min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-md border p-1 shadow-lg',
+          't-dropdown bg-popover text-popover-foreground z-50 min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-md border p-1 shadow-lg',
           className,
         )}
       {...props}

@@ -44,7 +44,7 @@ const TechnicalDetail: React.FC<{ label: string; value?: string | null; fallback
   fallback,
 }) => (
   <div className="flex flex-col">
-    <span className="text-[length:var(--step-0)] font-black tracking-[0.2em] text-[var(--ink-faint)] uppercase mb-1">{label}</span>
+    <span className="text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] mb-1">{label}</span>
     <span className="text-sm font-semibold text-[var(--ink)]">{value || fallback}</span>
   </div>
 );
@@ -86,7 +86,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
     return (
       <div className="w-full flex flex-col gap-6">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-[length:var(--step-0)] font-black tracking-[0.28em] text-[var(--ink-faint)] uppercase">
+          <h3 className="text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]">
             {copy.photoWall} ({localScreenshots.length})
           </h3>
           {localScreenshots.length > 0 && (
@@ -175,7 +175,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-white text-sm truncate">{mod.name}</h4>
                   <span className="text-xs text-[var(--ink-faint)]">
-                    {mod.enabled ? "Ativo no jogo" : "Desativado"}
+                    {mod.enabled ? "Ativo no jogo" : mod.status === "downloaded" ? "Baixado, ainda não instalado" : "Desativado"}
                   </span>
                 </div>
               </div>
@@ -193,7 +193,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
     return (
       <div className="w-full flex flex-col gap-8">
         <div>
-          <h3 className="text-[length:var(--step-0)] font-black tracking-[0.28em] text-[var(--ink-faint)] uppercase mb-4">{copy.about}</h3>
+          <h3 className="text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] mb-4">{copy.about}</h3>
           {isAboutLoading ? (
             <div className="w-full h-32 flex items-center justify-center">
               <LoadingState label="Carregando detalhes..." variant="searching" />
@@ -208,7 +208,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
 
         {sanitizedSupportedLanguagesHtml && (
           <div>
-            <h3 className="text-[length:var(--step-0)] font-black tracking-[0.28em] text-[var(--ink-faint)] uppercase mb-3">
+            <h3 className="text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] mb-3">
               Idiomas Suportados
             </h3>
             <div
@@ -220,7 +220,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
 
         {(sanitizedMinRequirementsHtml || sanitizedRecRequirementsHtml) && (
           <div>
-            <h3 className="text-[length:var(--step-0)] font-black tracking-[0.28em] text-[var(--ink-faint)] uppercase mb-3">
+            <h3 className="text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] mb-3">
               Requisitos de Sistema
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -248,7 +248,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
 
           {metacritic && (
             <div className="flex flex-col">
-              <span className="text-[length:var(--step-0)] font-black tracking-[0.2em] text-[var(--ink-faint)] uppercase mb-2">
+              <span className="text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] mb-2">
                 Metacritic
               </span>
               <span
@@ -267,7 +267,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
 
           {priceOverview && (
             <div className="flex flex-col">
-              <span className="text-[length:var(--step-0)] font-black tracking-[0.2em] text-[var(--ink-faint)] uppercase mb-2">
+              <span className="text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] mb-2">
                 Preço
               </span>
               <span className="text-sm font-semibold text-[var(--ink)]">{priceOverview.final_formatted}</span>
@@ -277,7 +277,7 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
 
         {tags && tags.length > 0 && (
           <div>
-            <h3 className="text-[length:var(--step-0)] font-black tracking-[0.28em] text-[var(--ink-faint)] uppercase mb-3">
+            <h3 className="text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] mb-3">
               {copy.popularTags}
             </h3>
             <div className="flex flex-wrap gap-2">

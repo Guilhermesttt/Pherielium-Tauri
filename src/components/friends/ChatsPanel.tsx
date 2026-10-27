@@ -48,12 +48,12 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
     return (
       <div className="mx-auto max-w-xl rounded-[var(--corner-md)] bg-[var(--surface-raised)] p-10 text-center ring-1 ring-[color:var(--border-subtle)]">
         <MessageSquare className="mx-auto h-8 w-8 text-[var(--ink-faint)]" />
-        <h2 className="mt-4 font-display text-[length:var(--step-3)] font-bold text-white">Nenhuma conversa ainda</h2>
+        <h2 className="mt-4 font-display text-[length:var(--step-3)] font-bold text-[var(--ink)]">Nenhuma conversa ainda</h2>
         <p className="mt-1 text-[length:var(--step-1)] text-[var(--ink-muted)]">Adicione um amigo para começar a conversar.</p>
         <button
           type="button"
           onClick={onAddFriend}
-          className="mt-5 h-11 rounded-full bg-white px-6 text-[length:var(--step-0)] font-semibold text-black active:scale-95"
+          className="mt-5 h-11 rounded-full bg-[var(--ink)] px-6 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] active:scale-95"
         >
           Adicionar amigo
         </button>
@@ -65,7 +65,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
     <section aria-label="Conversas" className="mx-auto max-w-3xl rounded-[var(--corner-md)] bg-[var(--surface-raised)] p-4 ring-1 ring-[color:var(--border-subtle)]">
       <header className="mb-3 flex items-center gap-3 px-1">
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-[length:var(--step-3)] font-bold leading-tight text-white">Conversas</h2>
+          <h2 className="font-display text-[length:var(--step-3)] font-bold leading-tight text-[var(--ink)]">Conversas</h2>
           <p className="text-[length:var(--step-0)] text-[var(--ink-muted)]">{totalUnread > 0 ? `${totalUnread} mensagens novas` : "Tudo em dia"}</p>
         </div>
         <div className="relative w-56">
@@ -75,7 +75,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar conversa"
-            className="h-10 w-full rounded-full bg-[var(--surface-base)] pl-10 pr-4 text-[length:var(--step-0)] text-white outline-none placeholder:text-[var(--ink-faint)] focus:ring-2 focus:ring-white/25"
+            className="h-10 w-full rounded-full bg-[var(--surface-base)] pl-10 pr-4 text-[length:var(--step-0)] text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:ring-2 focus:ring-white/25"
           />
         </div>
       </header>
@@ -97,10 +97,10 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
                     playSound?.("select");
                     onOpenChat(f);
                   }}
-                  className="flex w-full items-center gap-3.5 rounded-2xl px-3 py-2.5 pr-28 text-left transition-colors hover:bg-white/[0.06] focus-visible:ring-2 focus-visible:ring-white/40"
+                  className="flex w-full items-center gap-3.5 rounded-2xl px-3 py-2.5 pr-28 text-left transition-colors hover:bg-[var(--tone-2)]"
                 >
                   <span className="relative h-11 w-11 shrink-0">
-                    <span className={`block h-full w-full overflow-hidden rounded-[28%] bg-white/[0.06] ${ONLINE.has(f.status) ? "" : "opacity-60"}`}>
+                    <span className={`block h-full w-full overflow-hidden rounded-[28%] bg-[var(--tone-3)] ${ONLINE.has(f.status) ? "" : "opacity-60"}`}>
                       {f.avatar ? (
                         <img src={f.avatar} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       ) : (
@@ -111,12 +111,12 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
                     </span>
                     <span
                       className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[var(--surface-raised)] ${
-                        playing ? "bg-[rgb(var(--launcher-accent))]" : ONLINE.has(f.status) ? "bg-white/80" : "bg-white/20"
+                        playing ? "bg-[rgb(var(--launcher-accent))]" : ONLINE.has(f.status) ? "bg-[var(--presence-online)]" : "bg-[var(--presence-offline)]"
                       }`}
                     />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className={`block truncate text-[length:var(--step-1)] ${n > 0 ? "font-bold text-white" : "font-semibold text-[var(--ink)]"}`}>
+                    <span className={`block truncate text-[length:var(--step-1)] ${n > 0 ? "font-bold text-[var(--ink)]" : "font-semibold text-[var(--ink)]"}`}>
                       {f.name}
                     </span>
                     <span className={`flex items-center gap-1 truncate text-[length:var(--step-0)] ${playing ? "text-[rgb(var(--launcher-accent))]" : "text-[var(--ink-muted)]"}`}>
@@ -133,7 +133,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
                     </span>
                   </span>
                   {n > 0 && (
-                    <span className="min-w-6 rounded-full bg-white px-2 text-center text-[length:var(--step-0)] font-bold leading-6 text-black">{n}</span>
+                    <span className="min-w-6 rounded-full bg-[var(--ink)] px-2 text-center text-[length:var(--step-0)] font-bold leading-6 text-[var(--tone-0)]">{n}</span>
                   )}
                 </button>
                 {onStartVoiceCall && (
@@ -143,7 +143,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
                       aria-label={`Ligar para ${f.name}`}
                       title="Ligar"
                       onClick={() => onStartVoiceCall(f, false)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.1] text-white hover:bg-white/[0.18] focus-visible:ring-2 focus-visible:ring-white/50"
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--tone-3)] text-[var(--ink)] hover:bg-[var(--tone-4)]"
                     >
                       <Phone className="h-4 w-4" />
                     </button>
@@ -152,7 +152,7 @@ export const ChatsPanel: React.FC<ChatsPanelProps> = ({
                       aria-label={`Chamada de vídeo com ${f.name}`}
                       title="Chamada de vídeo"
                       onClick={() => onStartVoiceCall(f, true)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.1] text-white hover:bg-white/[0.18] focus-visible:ring-2 focus-visible:ring-white/50"
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--tone-3)] text-[var(--ink)] hover:bg-[var(--tone-4)]"
                     >
                       <Video className="h-4 w-4" />
                     </button>

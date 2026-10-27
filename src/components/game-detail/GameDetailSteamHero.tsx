@@ -53,7 +53,13 @@ export const GameDetailSteamHero: React.FC<GameDetailSteamHeroProps> = React.mem
       />
 
       {/* 2. Cinematic Gradients */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0C0D10] via-[#0C0D10]/35 to-transparent pointer-events-none" />
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(to top, var(--tone-1) 0%, color-mix(in srgb, var(--tone-1) 35%, transparent) 38%, transparent 100%)",
+        }}
+      />
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-transparent pointer-events-none" />
 
       {/* 3. Top-Right Status Bar */}
@@ -102,7 +108,7 @@ export const GameDetailSteamHero: React.FC<GameDetailSteamHeroProps> = React.mem
 
       {/* 5. Online Friends Playing Badge on Bottom-Right of Banner (Like CS2 green badge) */}
       {friendsPlayingCount > 0 && (
-        <div className="absolute bottom-8 right-8 sm:right-14 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500 text-black font-bold text-xs shadow-[0_4px_16px_rgba(16,185,129,0.5)] select-none">
+        <div className="absolute bottom-8 right-8 sm:right-14 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--live)] text-black font-bold text-xs select-none">
           <Users className="w-3.5 h-3.5" />
           <span>{friendsPlayingCount}</span>
         </div>

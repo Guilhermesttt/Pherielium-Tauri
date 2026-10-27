@@ -98,7 +98,7 @@ export const RoomTextPanel: React.FC<{
           value={text}
           onChange={(event) => setText(event.target.value)}
           placeholder="Mensagem da sala"
-          className="w-full rounded-lg border border-[#161616] bg-black px-3 py-2 text-xs text-white outline-none"
+          className="w-full rounded-lg border border-[#161616] bg-black px-3 py-2 text-xs text-white outline-none focus-visible:ring-2 focus-visible:ring-white/40"
         />
       </form>
     </aside>

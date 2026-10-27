@@ -1,23 +1,32 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { SoundTheme } from "../context/PreferencesContext";
 
-import phelieriumSelectSound from "../sounds/Phelierium Default/ui_select.wav";
-import phelieriumClickSound from "../sounds/Phelierium Default/ui_click.wav";
-import phelieriumAlertSound from "../sounds/Phelierium Default/ui_alert.wav";
-import phelieriumNotificationSound from "../sounds/Phelierium Default/ui_notification.wav";
-import phelieriumFriendshipSound from "../sounds/Phelierium Default/ui_friendship_incomming.wav";
-import phelieriumOpenDetailSound from "../sounds/Phelierium Default/ui_open_game_detail.mp3";
-import phelieriumCloseDetailSound from "../sounds/Phelierium Default/ui_close_game_detail.mp3";
-import phelieriumEditSound from "../sounds/Phelierium Default/ui_edit_game.wav";
-import phelieriumDeepSelectSound from "../sounds/Phelierium Default/ui_deep_selection.mp3";
+import phelieriumToastSound from "../sounds/Phelierium Default/Desktop Toast Short.mp3";
+import phelieriumChatNotificationSound from "../sounds/Phelierium Default/Steam Chatroom Notification.mp3";
 import phelieriumAchievementSound from "../sounds/Phelierium Default/Achievment_Unlock.mp3";
 import phelieriumAchievementGoldSound from "../sounds/Phelierium Default/Achievment_Unlock_Gold.mp3";
 import phelieriumAchievementPlatinumSound from "../sounds/Phelierium Default/Achievment_Unlock_Platinum.mp3";
-import phelieriumUiAchievementSound from "../sounds/Phelierium Default/ui_achievment.mp3";
 import phelieriumScreenshotSound from "../sounds/Phelierium Default/37. Take Screenshot Psfx Take Screen.mp3";
-import phelieriumCallEnterSound from "../sounds/Phelierium Default/ui_call_enter.mp3";
-import phelieriumGameStartSound from "../sounds/Phelierium Default/ui_game_start.wav";
-import phelieriumNewChatMessageSound from "../sounds/Phelierium Default/ui_new_chat_message.mp3";
+import phelieriumCallEnterSound from "../sounds/Phelierium Default/Recording Start.mp3";
+
+
+// Tema padrão: os sons "Deck UI" do pacote Phelierium Default (a pasta traz outros sons próprios,
+// usados em chat, amizade, notificação, chamada, captura e conquistas).
+import deckNavigateSound from "../sounds/Phelierium Default/Deck UI Navigation.mp3";
+import deckActivationSound from "../sounds/Phelierium Default/Deck UI Default Activation.mp3";
+import deckOutOfDetailSound from "../sounds/Phelierium Default/Deck UI Out Of Game Detail.mp3";
+import deckMiscSound from "../sounds/Phelierium Default/Deck UI Misc 10.mp3";
+import deckHideModalSound from "../sounds/Phelierium Default/Deck UI Hide Modal.mp3";
+import deckSwitchOnSound from "../sounds/Phelierium Default/Deck UI Switch Toggle On.mp3";
+import deckSwitchOffSound from "../sounds/Phelierium Default/Deck UI Switch Toggle Off.mp3";
+import deckLaunchGameSound from "../sounds/Phelierium Default/Deck UI Launch Game.mp3";
+import deckBumperSound from "../sounds/Phelierium Default/Deck UI Bumper End 02.mp3";
+import deckTabSound from "../sounds/Phelierium Default/Deck UI Tab Transition 01.mp3";
+import deckFlyInSound from "../sounds/Phelierium Default/Deck UI Side Menu Fly In.mp3";
+import deckFlyOutSound from "../sounds/Phelierium Default/Deck UI Side Menu Fly Out.mp3";
+import deckIntoDetailSound from "../sounds/Phelierium Default/Deck UI Into Game Detail.mp3";
+import deckTypingSound from "../sounds/Phelierium Default/Deck UI Typing.mp3";
+import deckShowModalSound from "../sounds/Phelierium Default/Deck UI Show Modal.mp3";
 
 import ps5PlusNavigateSound from "../sounds/PS5_Plus/deck_ui_navigation.wav";
 import ps5PlusHoverSound from "../sounds/PS5_Plus/deck_ui_slider_down.wav";
@@ -89,7 +98,7 @@ import cyberpunkAchievementToastSound from "../sounds/Cyberpunk 2077 UI SFX PACK
 
 import ps2NavigateSound from "../sounds/PS2 System Sounds/deck_ui_navigation.wav";
 import ps2HoverSound from "../sounds/PS2 System Sounds/deck_ui_misc_10.wav";
-import ps2ActivationSound from "../sounds/PS2 System Sounds/deck_ui_default_activation.wav";
+import ps2ActivationSound from "../sounds/PS2 System Sounds/deck_ui_tab_transition_01.wav";
 import ps2BackSound from "../sounds/PS2 System Sounds/deck_ui_out_of_game_detail.wav";
 import ps2EditModalSound from "../sounds/PS2 System Sounds/deck_ui_hide_modal.wav";
 import ps2FavoriteOnSound from "../sounds/PS2 System Sounds/deck_ui_switch_toggle_on.wav";
@@ -114,31 +123,40 @@ import gcShowModalSound from "../sounds/Nintendo GameCube Menu SFX/deck_ui_show_
 
 export const soundThemes = {
   default: {
-    navigate: phelieriumClickSound,
-    hover: phelieriumSelectSound,
-    select: phelieriumSelectSound,
-    back: phelieriumCloseDetailSound,
-    edit: phelieriumEditSound,
-    modalClose: phelieriumCloseDetailSound,
-    favoriteOn: phelieriumClickSound,
-    favoriteOff: phelieriumClickSound,
-    delete: phelieriumAlertSound,
-    play: phelieriumGameStartSound,
-    boot: phelieriumGameStartSound,
-    search: phelieriumSelectSound,
-    detailOpen: phelieriumOpenDetailSound,
-    friendRequest: phelieriumFriendshipSound,
-    chatSent: phelieriumNewChatMessageSound,
-    chatReceived: phelieriumNewChatMessageSound,
-    notification: phelieriumNotificationSound,
+    // seleção de jogos (D-pad / setas); o clique de menu (Ajustes) usa o "Navigation"
+    navigate: deckMiscSound,
+    // o tema padrão não tem som de hover: vazio = silêncio (o notch também fica sem o "reveal")
+    hover: "",
+    select: deckActivationSound,
+    back: deckOutOfDetailSound,
+    edit: deckFlyOutSound,
+    modalClose: deckHideModalSound,
+    favoriteOn: deckSwitchOnSound,
+    favoriteOff: deckSwitchOffSound,
+    delete: deckFlyOutSound,
+    play: deckLaunchGameSound,
+    boot: deckBumperSound,
+    search: deckTabSound,
+    detailOpen: deckIntoDetailSound,
+    friendRequest: phelieriumToastSound,
+    chatSent: deckNavigateSound,
+    chatReceived: phelieriumChatNotificationSound,
+    notification: phelieriumToastSound,
     callEnter: phelieriumCallEnterSound,
-    switchOn: phelieriumClickSound,
-    switchOff: phelieriumClickSound,
+    switchOn: deckSwitchOnSound,
+    switchOff: deckSwitchOffSound,
     screenshot: phelieriumScreenshotSound,
-    showModal: phelieriumDeepSelectSound,
+    showModal: deckShowModalSound,
     overlayAchievement: phelieriumAchievementSound,
     overlayAchievementGold: phelieriumAchievementGoldSound,
     overlayAchievementPlatinum: phelieriumAchievementPlatinumSound,
+    // papéis de navegação (os outros temas herdam um equivalente: ver THEME_FALLBACK_ROLES)
+    menuClick: deckNavigateSound,
+    tabSwitch: deckTabSound,
+    edgeBump: deckBumperSound,
+    sidebarOpen: deckFlyInSound,
+    sidebarClose: deckFlyOutSound,
+    keyTyping: deckTypingSound,
   },
   ps5: {
     navigate: ps5PlusNavigateSound,
@@ -331,7 +349,40 @@ export const soundThemes = {
   },
 };
 
-export type SoundEffectType = keyof (typeof soundThemes)["ps5"];
+export type SoundEffectType = keyof (typeof soundThemes)["default"];
+
+/**
+ * Papéis de navegação que só o tema padrão tem arquivo próprio. Nos outros temas cada um toca o
+ * efeito equivalente que o pacote já traz.
+ */
+const THEME_FALLBACK_ROLES: Partial<Record<SoundEffectType, SoundEffectType>> = {
+  menuClick: "select",
+  tabSwitch: "navigate",
+  edgeBump: "navigate",
+  sidebarOpen: "showModal",
+  sidebarClose: "modalClose",
+  keyTyping: "navigate",
+};
+
+/** Todos os efeitos do tema, completando com o equivalente os papéis que o pacote não tem. */
+export function resolveThemeSounds(theme: string | undefined): Record<SoundEffectType, string> {
+  const packs = soundThemes as Record<string, Partial<Record<SoundEffectType, string>>>;
+  const pack = packs[theme ?? "default"] ?? packs.default;
+  const resolved: Partial<Record<SoundEffectType, string>> = { ...pack };
+  for (const [role, fallback] of Object.entries(THEME_FALLBACK_ROLES) as [SoundEffectType, SoundEffectType][]) {
+    resolved[role] ??= resolved[fallback] ?? packs.default[role];
+  }
+  return resolved as Record<SoundEffectType, string>;
+}
+
+/**
+ * Ganho por tema e por efeito, aplicado por cima do volume do usuário. Serve para nivelar um
+ * arquivo que é bem mais alto que o resto do pacote. Hoje nenhum tema precisa de ajuste.
+ */
+const SOUND_TYPE_GAIN: Partial<Record<SoundTheme, Partial<Record<SoundEffectType, number>>>> = {};
+
+export const soundTypeGain = (theme: string | undefined, type: SoundEffectType): number =>
+  SOUND_TYPE_GAIN[(theme ?? "default") as SoundTheme]?.[type] ?? 1;
 
 // ─── Tipos de som que são notificações ─────────────────────────────────────────
 const notificationSoundTypes = new Set<SoundEffectType>([
@@ -390,6 +441,8 @@ const transitionSoundTypes = new Set<SoundEffectType>([
   "search",
   "delete",
   "edit",
+  "sidebarOpen",
+  "sidebarClose",
 ]);
 
 const isGenericClickSoundType = (type: SoundEffectType) => genericClickSoundTypes.has(type);
@@ -399,6 +452,11 @@ const TRANSITION_SUPPRESSION_WINDOW_MS = 220;
 const GENERIC_CLICK_HOLD_MS = 40;
 
 let lastTransitionSoundAt = 0;
+const lastModalSoundAt = new Map<SoundEffectType, number>();
+const MODAL_SOUND_DEDUPE_MS = 120;
+let lastEdgeBumpAt = 0;
+// um toque na borda por vez: o analógico segurado (ou com drift) repete o aperto a cada ~80 ms
+const EDGE_BUMP_MIN_MS = 800;
 let pendingGenericClickToken = 0;
 
 // ─── Motor de Áudio Web Audio API (Latência Zero & Zero Bugs de Promise) ──────
@@ -489,8 +547,7 @@ export const useSoundEffects = (
   const lastHoverAtRef = useRef(0);
   const activeAudiosRef = useRef<Set<HTMLAudioElement>>(new Set());
 
-  const sounds = soundThemes[theme] ?? soundThemes.default;
-  const soundPaths = useMemo(() => sounds, [sounds]);
+  const soundPaths = useMemo(() => resolveThemeSounds(theme), [theme]);
 
   // Pré-carrega buffers de áudio na memória (once per URL across all hook instances)
   useEffect(() => {
@@ -542,7 +599,10 @@ export const useSoundEffects = (
       }
 
       const baseVolume = isNotification ? notificationVolume : volume;
-      const targetVolume = Math.max(0, Math.min(1, baseVolume * Math.max(0, Math.min(1, volumeMultiplier))));
+      const targetVolume = Math.max(
+        0,
+        Math.min(1, baseVolume * soundTypeGain(theme, type) * Math.max(0, Math.min(1, volumeMultiplier))),
+      );
       if (targetVolume <= 0) return;
 
       // Rate-limit para navegações ultra-rápidas
@@ -554,6 +614,17 @@ export const useSoundEffects = (
       if (type === "hover") {
         if (lastHoverAtRef.current > 0 && now - lastHoverAtRef.current < 40) return;
         lastHoverAtRef.current = now;
+      }
+      // Abrir/fechar modal pode ser pedido por mais de um lugar no mesmo gesto: toca uma vez só.
+      if (type === "showModal" || type === "modalClose") {
+        const last = lastModalSoundAt.get(type) ?? -Infinity;
+        if (now - last < MODAL_SOUND_DEDUPE_MS) return;
+        lastModalSoundAt.set(type, now);
+      }
+      // Bater na borda repetidas vezes (D-pad segurado) não vira metralhadora.
+      if (type === "edgeBump") {
+        if (now - lastEdgeBumpAt < EDGE_BUMP_MIN_MS) return;
+        lastEdgeBumpAt = now;
       }
 
       if (isTransitionSoundType(type)) {
@@ -611,7 +682,7 @@ export const useSoundEffects = (
         void loadAudioBuffer(path);
       }
     },
-    [notificationVolume, soundPaths, volume],
+    [notificationVolume, soundPaths, theme, volume],
   );
 
   const playSound = useCallback(

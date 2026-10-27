@@ -11,6 +11,9 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import type { RoomCategory } from "../../types/voice-governance";
+import { modalBackdropMotion, modalMotion } from "../../design-system/motion";
+import { IconSwap } from "../ui/IconSwap";
+import { useModalSounds } from "../../hooks/useModalSounds";
 
 interface CallPrivacyPanelProps {
   isOpen: boolean;
@@ -28,6 +31,7 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
   currentPassword = "",
   onSavePrivacy,
 }) => {
+  useModalSounds(isOpen);
   const [isPrivate, setIsPrivate] = useState(initialIsPrivate);
   const [password, setPassword] = useState(currentPassword);
   const [showPassword, setShowPassword] = useState(false);
@@ -51,26 +55,23 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
     }
   };
 
-  if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl select-none">
+      {isOpen && (
+      <motion.div {...modalBackdropMotion} className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl select-none">
         {/* Backdrop click dismiss */}
         <div className="absolute inset-0" onClick={onClose} />
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: 10 }}
-          transition={{ type: "spring", stiffness: 380, damping: 28 }}
+          {...modalMotion}
           className="glass-panel relative flex flex-col w-full max-w-sm rounded-3xl border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.95)] z-10 overflow-hidden"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4.5 border-b border-white/8 bg-black/30 backdrop-blur-md">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white border border-white/10 shadow-sm">
-                {isPrivate ? <Lock className="h-5 w-5 text-amber-400" /> : <Unlock className="h-5 w-5 text-[var(--ink)]" />}
+                <IconSwap active={isPrivate} a={<Unlock className="h-5 w-5 text-[var(--ink)]" />} b={<Lock className="h-5 w-5 text-amber-400" />} />
               </div>
               <div>
                 <h3 className="text-sm font-black text-white tracking-tight uppercase">
@@ -94,7 +95,7 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
             <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/8">
               <div className="space-y-0.5">
                 <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  {isPrivate ? <Lock className="h-3.5 w-3.5 text-amber-400" /> : <Unlock className="h-3.5 w-3.5 text-emerald-400" />}
+                  <IconSwap active={isPrivate} a={<Unlock className="h-3.5 w-3.5 text-emerald-400" />} b={<Lock className="h-3.5 w-3.5 text-amber-400" />} />
                   <span>{isPrivate ? "Sala Privada" : "Sala Aberta"}</span>
                 </span>
                 <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">
@@ -153,7 +154,7 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
                     className="absolute right-3 text-[var(--ink-faint)] hover:text-white transition"
                     title={showPassword ? "Ocultar senha" : "Ver senha"}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    <IconSwap active={showPassword} a={<Eye className="h-4 w-4" />} b={<EyeOff className="h-4 w-4" />} />
                   </button>
                 </div>
               </motion.div>
@@ -193,7 +194,8 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
             </button>
           </div>
         </motion.div>
-      </div>
+      </motion.div>
+    )}
     </AnimatePresence>
   );
 };

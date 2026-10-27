@@ -74,11 +74,10 @@ export const AchievementReveal: React.FC<{ event: NotchEvent; mascot?: React.Rea
   const reduce = useReducedMotion();
   const style = tierStyle(event.tier);
   const { rgb } = style;
-  const meta = [event.gameTitle, event.xp ? `+${event.xp} XP` : ""].filter(Boolean).join(" · ");
 
   return (
     <div
-      className="relative overflow-hidden rounded-[20px] bg-[#141518] p-3"
+      className="relative overflow-hidden rounded-[24px] bg-[#171717] p-3"
       style={{
         boxShadow: `inset 0 0 0 1px rgba(${rgb},0.32)`,
         backgroundImage: `radial-gradient(120% 140% at 50% 130%, rgba(${rgb},0.26) 0%, transparent 62%)`,
@@ -93,7 +92,7 @@ export const AchievementReveal: React.FC<{ event: NotchEvent; mascot?: React.Rea
 
       <div className="relative flex items-center gap-3.5">
         <motion.div
-          className="relative h-[68px] w-[68px] shrink-0 overflow-hidden rounded-[18px] bg-black/50"
+          className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[18px] bg-black/50"
           style={{ boxShadow: `0 0 0 2px rgba(${rgb},0.85)` }}
           initial={reduce ? false : { scale: 0.5, opacity: 0, rotate: -10 }}
           animate={{ scale: 1, opacity: 1, rotate: 0 }}
@@ -114,21 +113,22 @@ export const AchievementReveal: React.FC<{ event: NotchEvent; mascot?: React.Rea
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, delay: 0.3 }}
         >
-          <p className="text-[11px] font-semibold" style={{ color: `rgb(${rgb})` }}>
+          <p className="text-[13px] font-semibold" style={{ color: `rgb(${rgb})` }}>
             {style.label}
+            {event.xp ? <span className="font-metric ml-2 text-white/70">+{event.xp} XP</span> : null}
           </p>
-          <p className="truncate text-[15px] font-bold leading-tight text-white">{event.title}</p>
+          <p className="truncate text-[16px] font-bold leading-tight text-white">{event.title}</p>
           {event.description && (
-            <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-white/65">{event.description}</p>
+            <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-white/70">{event.description}</p>
           )}
-          {meta && <p className="mt-1 truncate text-[11px] text-white/40">{meta}</p>}
+          {event.gameTitle && <p className="mt-1 truncate text-[13px] text-white/55">{event.gameTitle}</p>}
         </motion.div>
 
         {mascot && <div className="shrink-0 self-end">{mascot}</div>}
       </div>
       {(event.queued ?? 0) > 0 && (
         <span
-          className="absolute right-2.5 top-2 rounded-full px-2 py-0.5 text-[10.5px] font-bold tabular-nums text-black"
+          className="font-metric absolute right-2.5 top-2 rounded-full px-2 py-0.5 text-[12px] font-bold text-black"
           style={{ backgroundColor: `rgb(${rgb})` }}
           title={`${event.queued} ${event.queued === 1 ? "conquista" : "conquistas"} na fila`}
         >

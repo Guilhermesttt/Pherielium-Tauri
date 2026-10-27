@@ -1,6 +1,7 @@
 import React from "react";
 import { AlertTriangle, Copy, Check } from "lucide-react";
 import ModalShell from "../ui/ModalShell";
+import { IconSwap } from "../ui/IconSwap";
 
 interface AppUpdateErrorModalProps {
   isOpen: boolean;
@@ -49,7 +50,7 @@ export const AppUpdateErrorModal: React.FC<AppUpdateErrorModalProps> = ({
               onClick={handleCopy}
               className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1 text-[length:var(--step-0)] font-bold text-white transition-all hover:bg-white/20 active:scale-95"
             >
-              {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+              <IconSwap active={copied} a={<Copy className="h-3 w-3" />} b={<Check className="h-3 w-3 text-emerald-400" />} />
               {copied ? "Copiado!" : "Copiar"}
             </button>
           </div>

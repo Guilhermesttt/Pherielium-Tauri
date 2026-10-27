@@ -1,4 +1,5 @@
 import { apiUrl } from "./api";
+import type { ScriptLogReport } from "./scriptLog";
 
 export interface NexusModSummary {
   id: string;
@@ -52,7 +53,15 @@ export interface NexusCatalogResult {
 
 export interface NexusDownloadState {
   id?: string;
-  status: "resolving" | "downloading" | "installing" | "completed" | "error";
+  status:
+    | "waiting_link"
+    | "resolving"
+    | "downloading"
+    | "paused"
+    | "installing"
+    | "completed"
+    | "cancelled"
+    | "error";
   gameDomain?: string;
   modId?: string;
   fileId?: string;
@@ -72,6 +81,10 @@ export interface NexusDownloadState {
   version?: string;
   error?: string;
   errorCode?: ModErrorCode;
+  /** Bytes por segundo, enquanto baixa. */
+  speedBps?: number;
+  /** Só em "waiting_link": até quando o pedido espera o link da Nexus (ms desde 1970). */
+  expiresAt?: number;
   updatedAt: number;
 }
 
@@ -88,6 +101,7 @@ export type ModOperationStatus =
 export type ModErrorCode =
   | "DESKTOP_BRIDGE_UNAVAILABLE"
   | "NETWORK_FAILURE"
+  | "LINK_EXPIRED"
   | "INSTALL_FAILED"
   | "GAME_FOLDER_NOT_SET"
   | "CHECKSUM_MISMATCH"
@@ -160,6 +174,8 @@ export interface NexusDownloadedFile {
   id: string;
   gameDomain: string;
   modId: string;
+  /** Vazio quando o nome do arquivo não diz de qual arquivo da Nexus ele veio. */
+  fileId?: string;
   filename: string;
   filePath: string;
   bytes: number;
@@ -207,6 +223,23 @@ export const fetchNexusModDetails = async (
 export const getNexusDownloadState = async (): Promise<NexusDownloadState | null> =>
   requireNexusDesktopBridge().getNexusDownloadState();
 
+/** Downloads que ainda não terminaram: esperando o link, baixando ou pausados. */
+export const listNexusDownloads = async (): Promise<NexusDownloadState[]> =>
+  requireNexusDesktopBridge().listNexusDownloads();
+
+export const pauseNexusDownload = async (id: string): Promise<void> =>
+  requireNexusDesktopBridge().pauseNexusDownload(id);
+
+export const resumeNexusDownload = async (id: string): Promise<void> =>
+  requireNexusDesktopBridge().resumeNexusDownload(id);
+
+export const cancelNexusDownload = async (id: string): Promise<void> =>
+  requireNexusDesktopBridge().cancelNexusDownload(id);
+
+/** Erros de scripts do último início do jogo (o aviso de "faltou um mod"). */
+export const checkModScriptLog = async (gameFolder: string): Promise<ScriptLogReport> =>
+  requireNexusDesktopBridge().checkModScriptLog(gameFolder);
+
 export const listNexusDownloadedFiles = async (
   gameDomain: string,
 ): Promise<NexusDownloadedFile[]> =>
@@ -221,8 +254,18 @@ export const prepareNexusFreeDownload = async (request: {
   modAuthor: string;
   pictureUrl: string;
   version: string;
-}): Promise<{ prepared: boolean; autoInstall: boolean; expiresAt: number }> =>
+}): Promise<{ prepared: boolean; autoInstall: boolean; expiresAt: number; direct?: boolean }> =>
   requireNexusDesktopBridge().prepareNexusFreeDownload(request);
+
+/** O Pherielium já é o programa que abre links nxm:// (os de "Download lento" da Nexus)? */
+export const getNexusNxmStatus = async (): Promise<{ registered: boolean }> =>
+  requireNexusDesktopBridge().getNexusNxmStatus();
+
+export const registerNexusNxm = async (): Promise<{ registered: boolean }> =>
+  requireNexusDesktopBridge().registerNexusNxm();
+
+export const unregisterNexusNxm = async (): Promise<{ registered: boolean }> =>
+  requireNexusDesktopBridge().unregisterNexusNxm();
 
 export const installNexusDownloadedMod = async (request: {
   gameDomain: string;

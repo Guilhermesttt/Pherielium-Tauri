@@ -1,12 +1,18 @@
 import React, { useRef } from "react";
 import { motion } from "framer-motion";
-import { Search, Plus, SlidersHorizontal, X, RefreshCw } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, X, RefreshCw, MoreHorizontal } from "lucide-react";
 import { PHERIELIUM_LOGO_PATH } from "../../constants/assets";
 import { FOCUS_TRANSITION } from "../../styles/motion";
 import { ConsoleLibraryTabs } from "./ConsoleLibraryTabs";
 import { TopBarClock } from "./TopBarClock";
 import { ProfileDropdown } from "../ui/ProfileDropdown";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import { EpicBrandIcon, SteamBrandIcon } from "../Sidebar";
 import type { Game } from "../../types/domain";
 import type { GamepadFamily } from "../../context/GamepadContext";
@@ -23,6 +29,9 @@ function syncAgo(at: number): string {
   const h = Math.round(min / 60);
   return h < 24 ? `Sincronizada há ${h} h` : `Sincronizada há ${Math.round(h / 24)} d`;
 }
+
+const MENU_ITEM =
+  "cursor-pointer gap-2.5 rounded-[var(--node)] px-3.5 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-[var(--tone-4)]";
 
 export interface HomeTopNavProps {
   activeCategory: string;
@@ -110,15 +119,16 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={FOCUS_TRANSITION}
-      className="shrink-0 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-[var(--gap-inline)] px-[var(--safe-x)] pt-[var(--header-pt-safe)] pb-[var(--gap-stack)] relative z-30 select-none will-change-transform"
+      className="shrink-0 flex flex-col gap-[calc(var(--gap-section)*1.4)] px-[var(--safe-x)] pt-[var(--header-pt-safe)] pb-[var(--gap-section)] relative z-30 select-none will-change-transform"
       role="banner"
     >
-      {/* 1. Left: Pherielium Brand Identity */}
-      <div className="flex min-w-0 items-center justify-self-start">
+      {/* 1. Linha de status: marca e hora à esquerda; busca, menu e perfil à direita */}
+      <div className="flex items-center justify-between gap-[var(--gap-inline)]">
+      <div className="flex min-w-0 items-center gap-[var(--gap-inline)]">
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="flex items-center gap-[var(--gap-inline)] group cursor-pointer focus-visible:outline-none"
+          className="flex items-center gap-[var(--gap-inline)] group cursor-pointer"
           title="Abrir menu lateral"
           aria-label="Menu principal Pherielium"
         >
@@ -129,42 +139,122 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
               className="ctl-icon object-contain grayscale brightness-200 opacity-90 group-hover:opacity-100 transition-opacity"
             />
           </div>
-          <span className="font-display font-semibold text-[length:var(--fs-heading)] leading-none tracking-[-0.03em] text-[var(--ink)]">
-            Pherielium
-          </span>
         </button>
+        <TopBarClock />
       </div>
 
-      {/* 2. Center: Console Library Tabs (TODOS OS JOGOS, FAVORITOS, Custom Filters, +).
-          Coluna central do grid (1fr auto 1fr) => centralizada em relacao a tela;
-          max-width impede que muitas abas invadam os grupos laterais. */}
-      <div
-        className="relative z-10 flex w-max min-w-0 items-center justify-center justify-self-center"
-        style={{ maxWidth: "calc(100vw - 2 * var(--safe-x) - 2 * var(--header-side-reserve))" }}
-      >
-        {showTabsAndSearch && (
-          <ConsoleLibraryTabs
-            activeCategory={activeCategory}
-            onSelectTab={onSelectCategory}
-            gamepadFamily={gamepadFamily}
-            isGamepadConnected={isGamepadConnected}
-            playSound={playSound}
-            games={games}
-          />
-        )}
-      </div>
-
-      {/* 3. Right: Secondary Actions (Search, Add, Filters, Clock, Profile) */}
-      <div className="flex min-w-0 items-center justify-end gap-[var(--gap-inline)] justify-self-end">
+      <div className="flex min-w-0 items-center justify-end gap-[var(--gap-inline)]">
         {showTabsAndSearch && (
           <>
-            {/* Search: o slot mantém o tamanho de um botão; a pílula se expande para a
-                direita, por cima de +/filtros/relógio (que somem), sem empurrar o layout
-                nem invadir a pill de abas. */}
+            {/* Controles cobertos pela busca aberta */}
+            <div
+              className={`flex items-center gap-[var(--gap-inline)] transition-opacity duration-[var(--dur-focus)] ease-[var(--ease-focus)] ${
+                searchExpanded ? "pointer-events-none opacity-0" : ""
+              }`}
+              aria-hidden={searchExpanded}
+              // cobertos pela busca: fora da ordem de Tab e do leitor de tela enquanto estão invisíveis
+              inert={searchExpanded}
+            >
+
+            {/* Ações da biblioteca num menu só: adicionar, filtrar e sincronizar */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  title="Biblioteca"
+                  aria-label="Ações da biblioteca"
+                  data-active={hasActiveFilters}
+                  className="ctl-circle"
+                  onPointerEnter={() => playSound("hover")}
+                >
+                  <MoreHorizontal className={`ctl-icon ${isSyncingLibraries ? "animate-pulse" : ""}`} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" sideOffset={10} className="min-w-[240px] rounded-[var(--corner-md)] border-0 bg-[var(--tone-3)] p-1.5">
+                <DropdownMenuItem
+                  onSelect={() => {
+                    onOpenAddGame();
+                    playSound("showModal");
+                  }}
+                  className={MENU_ITEM}
+                >
+                  <Plus className="h-4 w-4 text-[var(--ink-muted)]" />
+                  Adicionar jogo
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    onOpenFilterModal();
+                    playSound("select");
+                  }}
+                  className={MENU_ITEM}
+                >
+                  <SlidersHorizontal className="h-4 w-4 text-[var(--ink-muted)]" />
+                  <span className="flex min-w-0 flex-col leading-tight">
+                    <span>Filtros</span>
+                    {hasActiveFilters && (
+                      <span className="text-[length:var(--fs-label)] font-normal text-[var(--ink-faint)]">Filtros ativos</span>
+                    )}
+                  </span>
+                </DropdownMenuItem>
+                {onSyncLibraries && (
+                  <>
+                    <DropdownMenuSeparator className="bg-[var(--tone-4)]" />
+                    <DropdownMenuItem
+                      disabled={isSyncingLibraries}
+                      onSelect={() => {
+                        onSyncLibraries();
+                        playSound("select");
+                      }}
+                      className={MENU_ITEM}
+                    >
+                      <RefreshCw className={`h-4 w-4 text-[var(--ink-muted)] ${isSyncingLibraries ? "animate-spin" : ""}`} />
+                      {isSyncingLibraries ? "Sincronizando…" : "Sincronizar tudo"}
+                    </DropdownMenuItem>
+                    {onSyncSteam && (
+                      <DropdownMenuItem
+                        disabled={isSyncingSteam}
+                        onSelect={() => {
+                          onSyncSteam();
+                          playSound("select");
+                        }}
+                        className={MENU_ITEM}
+                      >
+                        <SteamBrandIcon className="h-4 w-4 text-[var(--ink-muted)]" />
+                        <span className="flex min-w-0 flex-col leading-tight">
+                          <span>{isSyncingSteam ? "Sincronizando Steam…" : "Só a Steam"}</span>
+                          <span className="text-[length:var(--fs-label)] font-normal text-[var(--ink-faint)]">{syncAgo(lastSteamSyncAt)}</span>
+                        </span>
+                      </DropdownMenuItem>
+                    )}
+                    {onSyncEpic && (
+                      <DropdownMenuItem
+                        disabled={isSyncingEpic}
+                        onSelect={() => {
+                          onSyncEpic();
+                          playSound("select");
+                        }}
+                        className={MENU_ITEM}
+                      >
+                        <EpicBrandIcon className="h-4 w-4 text-[var(--ink-muted)]" />
+                        <span className="flex min-w-0 flex-col leading-tight">
+                          <span>{isSyncingEpic ? "Sincronizando Epic…" : "Só a Epic Games"}</span>
+                          <span className="text-[length:var(--fs-label)] font-normal text-[var(--ink-faint)]">{syncAgo(lastEpicSyncAt)}</span>
+                        </span>
+                      </DropdownMenuItem>
+                    )}
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            </div>
+
+            {/* Busca: o slot mantém o tamanho de um botão; a pílula cresce para a esquerda, por
+                cima do menu (que some), sem empurrar o perfil. */}
             <div className="relative z-20 h-[var(--control-h)] w-[var(--control-h)] shrink-0">
             <div
-              style={searchExpanded ? { width: "var(--search-open-w)" } : undefined}
-              className={`ctl-circle !absolute left-0 top-0 justify-start overflow-hidden transition-[width,border-color] duration-[var(--dur-focus)] ease-[var(--ease-focus)] ${
+              style={searchExpanded ? { width: "min(360px, 36vw)" } : undefined}
+              className={`ctl-circle !absolute right-0 top-0 justify-start overflow-hidden transition-[width,border-color] duration-[var(--dur-focus)] ease-[var(--ease-focus)] ${
                 searchExpanded ? "!border-[color:var(--edge-selected)] !bg-[color:var(--surface-raised)]" : ""
               }`}
             >
@@ -223,132 +313,7 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
             </div>
             </div>
 
-            {/* Controles cobertos pela busca aberta */}
-            <div
-              className={`flex items-center gap-[var(--gap-inline)] transition-opacity duration-[var(--dur-focus)] ease-[var(--ease-focus)] ${
-                searchExpanded ? "pointer-events-none opacity-0" : ""
-              }`}
-              aria-hidden={searchExpanded}
-            >
-
-            {/* Add Game Button (+) */}
-            <button
-              type="button"
-              onClick={() => {
-                onOpenAddGame();
-                playSound("showModal");
-              }}
-              title="Adicionar Jogo"
-              aria-label="Adicionar jogo"
-              className="ctl-circle"
-            >
-              <Plus className="ctl-icon" />
-            </button>
-
-            {/* Sincronizar: um botão só; com contas conectadas abre um menu (tudo / só Steam / só Epic) */}
-            {onSyncLibraries && (onSyncSteam || onSyncEpic) ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    disabled={isSyncingLibraries}
-                    title="Sincronizar jogos"
-                    aria-label="Sincronizar jogos Steam e Epic"
-                    className="ctl-circle"
-                    onPointerEnter={() => playSound("hover")}
-                  >
-                    <RefreshCw className={`ctl-icon ${isSyncingLibraries ? "animate-spin" : ""}`} />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" sideOffset={10} className="min-w-[220px] rounded-[var(--corner-md)] border-0 bg-[var(--tone-3)] p-1.5">
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      onSyncLibraries();
-                      playSound("select");
-                    }}
-                    className="cursor-pointer gap-2.5 rounded-[var(--node)] px-3.5 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-[var(--tone-4)]"
-                  >
-                    <RefreshCw className="h-4 w-4 text-[var(--ink-muted)]" />
-                    Sincronizar tudo
-                  </DropdownMenuItem>
-                  {onSyncSteam && (
-                    <DropdownMenuItem
-                      disabled={isSyncingSteam}
-                      onSelect={() => {
-                        onSyncSteam();
-                        playSound("select");
-                      }}
-                      className="cursor-pointer gap-2.5 rounded-[var(--node)] px-3.5 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-[var(--tone-4)]"
-                    >
-                      <SteamBrandIcon className="h-4 w-4 text-[var(--ink-muted)]" />
-                      <span className="flex min-w-0 flex-col leading-tight">
-                        <span>{isSyncingSteam ? "Sincronizando Steam…" : "Só a Steam"}</span>
-                        <span className="text-[length:var(--fs-label)] font-normal text-[var(--ink-faint)]">{syncAgo(lastSteamSyncAt)}</span>
-                      </span>
-                    </DropdownMenuItem>
-                  )}
-                  {onSyncEpic && (
-                    <DropdownMenuItem
-                      disabled={isSyncingEpic}
-                      onSelect={() => {
-                        onSyncEpic();
-                        playSound("select");
-                      }}
-                      className="cursor-pointer gap-2.5 rounded-[var(--node)] px-3.5 py-2 text-[length:var(--fs-caption)] font-medium text-[var(--ink)] focus:bg-[var(--tone-4)]"
-                    >
-                      <EpicBrandIcon className="h-4 w-4 text-[var(--ink-muted)]" />
-                      <span className="flex min-w-0 flex-col leading-tight">
-                        <span>{isSyncingEpic ? "Sincronizando Epic…" : "Só a Epic Games"}</span>
-                        <span className="text-[length:var(--fs-label)] font-normal text-[var(--ink-faint)]">{syncAgo(lastEpicSyncAt)}</span>
-                      </span>
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              onSyncLibraries && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSyncLibraries();
-                    playSound("select");
-                  }}
-                  disabled={isSyncingLibraries}
-                  title="Sincronizar jogos da Steam e Epic"
-                  aria-label="Sincronizar jogos Steam e Epic"
-                  className="ctl-circle"
-                >
-                  <RefreshCw className={`ctl-icon ${isSyncingLibraries ? "animate-spin" : ""}`} />
-                </button>
-              )
-            )}
-
-            {/* Filter / Context Menu Button */}
-            <button
-              type="button"
-              onClick={() => {
-                onOpenFilterModal();
-                playSound("select");
-              }}
-              title="Filtros da biblioteca"
-              aria-label="Filtros"
-              data-active={hasActiveFilters}
-              className="ctl-circle"
-            >
-              <SlidersHorizontal className="ctl-icon" />
-            </button>
-
-            {/* Live Clock (omitido em janelas estreitas para nao invadir a pill de abas) */}
-            <div className="hidden min-[1360px]:block">
-              <TopBarClock />
-            </div>
-            </div>
           </>
-        )}
-        {!showTabsAndSearch && (
-          <div className="hidden min-[1360px]:block">
-            <TopBarClock />
-          </div>
         )}
 
         {/* User Profile */}
@@ -364,6 +329,19 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
           onLogout={onLogout}
         />
       </div>
+      </div>
+
+      {/* 2. Abas da biblioteca: linha própria, alinhadas à esquerda */}
+      {showTabsAndSearch && (
+        <ConsoleLibraryTabs
+          activeCategory={activeCategory}
+          onSelectTab={onSelectCategory}
+          gamepadFamily={gamepadFamily}
+          isGamepadConnected={isGamepadConnected}
+          playSound={playSound}
+          games={games}
+        />
+      )}
     </motion.header>
   );
 };

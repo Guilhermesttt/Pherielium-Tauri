@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { isManualDnd, setManualDnd } from "../services/presenceStatus";
 import {
+  BellOff,
   Search,
   User,
+  UserPlus,
   Users,
   X,
 } from "lucide-react";
@@ -18,6 +20,7 @@ import { useVoiceCallContext } from "../context/VoiceCallContext";
 import { useAuth } from "../auth/AuthProvider";
 import { useNotification } from "../components/NotificationCenter";
 import { useGamepadButton } from "../context/GamepadContext";
+import { useDiscordFriendMatches } from "../hooks/useDiscordFriendMatches";
 import { FriendsSubTabs } from "@/components/social/FriendsSubTabs";
 
 type TranslationFn = ReturnType<typeof usePreferences>["t"];
@@ -60,6 +63,42 @@ export interface FriendsPageProps {
 // SUBCOMPONENTES MEMOIZADOS DE AMIGOS
 // ============================================================
 
+/**
+ * Ações do cabeçalho: o modo "Não perturbe" (um interruptor, não um rótulo que troca) e a ação
+ * principal da página. Uma só ação preenchida por tela.
+ */
+export const FriendsPageActions: React.FC<{
+  dnd: boolean;
+  onToggleDnd: () => void;
+  onAddFriendClick: () => void;
+  playSound?: (type: SoundEffectType) => void;
+}> = ({ dnd, onToggleDnd, onAddFriendClick, playSound }) => (
+  <>
+    <button
+      type="button"
+      aria-pressed={dnd}
+      onClick={onToggleDnd}
+      className={`inline-flex h-11 cursor-pointer items-center gap-2 rounded-full px-5 text-[length:var(--step-0)] font-semibold ring-1 transition-colors ${
+        dnd
+          ? "bg-[var(--tone-3)] text-[var(--ink)] ring-[color:var(--danger)]"
+          : "bg-[var(--surface-raised)] text-[var(--ink-muted)] ring-[color:var(--border-subtle)] hover:text-[var(--ink)]"
+      }`}
+    >
+      <BellOff className="h-4 w-4" aria-hidden />
+      Não perturbe
+    </button>
+    <button
+      type="button"
+      onMouseEnter={() => playSound?.("hover")}
+      onClick={onAddFriendClick}
+      className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full bg-[var(--ink)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
+    >
+      <UserPlus className="h-4 w-4" aria-hidden />
+      Adicionar amigo
+    </button>
+  </>
+);
+
 export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
   discordConnected,
   friends,
@@ -93,6 +132,8 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
   const onlineCount = useMemo(() => friends.filter((f) => f.status !== "offline").length, [friends]);
   const playingCount = useMemo(() => friends.filter((f) => f.status === "playing").length, [friends]);
 
+  const discordMatch = useDiscordFriendMatches(friends);
+
   const checkpointFriends = useMemo(
     () => friends.filter((f) => f.source === "checkpoint"),
     [friends],
@@ -105,7 +146,7 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
       const tabs: SocialSubTab[] = ["AMIGOS", "CHAT", "SALAS", "SOLICITAÇÕES"];
       const currentIdx = tabs.indexOf(activeSubTab);
       const nextIdx = (currentIdx + direction + tabs.length) % tabs.length;
-      playSound?.("select");
+      playSound?.("tabSwitch");
       setActiveSubTab(tabs[nextIdx]);
     },
     [activeSubTab, playSound],
@@ -119,29 +160,16 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
       title="Amigos"
       description={friends.length > 0 ? `${friends.length} amigos · ${onlineCount} online · ${playingCount} jogando` : "Conecte-se e jogue junto."}
       actions={
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              const next = !dnd;
-              setDnd(next);
-              setManualDnd(next);
-            }}
-            className={`cursor-pointer rounded-full px-4 py-2.5 text-xs font-bold tracking-wide ${
-              dnd ? "bg-rose-500/20 text-rose-200" : "bg-white/10 text-[var(--ink)]"
-            }`}
-          >
-            {dnd ? "Não perturbe" : "Disponível"}
-          </button>
-          <button
-            type="button"
-            onMouseEnter={() => playSound?.("hover")}
-            onClick={onAddFriendClick}
-            className="cursor-pointer flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-body font-bold text-xs tracking-wide shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all"
-          >
-            <span>+ ADICIONAR AMIGO</span>
-          </button>
-        </div>
+        <FriendsPageActions
+          dnd={dnd}
+          onToggleDnd={() => {
+            const next = !dnd;
+            setDnd(next);
+            setManualDnd(next);
+          }}
+          onAddFriendClick={onAddFriendClick}
+          playSound={playSound}
+        />
       }
     >
       <FriendsSubTabs
@@ -149,7 +177,6 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
         onTabChange={(id) => setActiveSubTab(id)}
         incomingRequestsCount={incomingRequests.length}
         totalFriendsCount={friends.length}
-        onlineCount={onlineCount}
         unreadCount={totalUnreadCount}
         playSound={playSound}
       />
@@ -186,6 +213,7 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
           onViewProfile={onViewFriendProfile}
           onRemoveFriend={onRemoveFriend}
           playSound={playSound}
+          discordMatch={discordMatch}
           discord={{
             connected: discordConnected || Boolean(userProfile?.discordUsername),
             onConnect: onConnectDiscord,
@@ -338,40 +366,41 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
       maxWidthClassName="max-w-xl"
     >
       <div className="space-y-5 p-6">
-        <div className="flex items-center justify-between gap-3 border-b border-white/8 pb-4">
-          <h2 className="text-sm font-bold text-white">
+        <div className="flex items-center justify-between gap-3 border-b border-[color:var(--border-subtle)] pb-4">
+          <h2 className="text-[length:var(--step-1)] font-bold text-[var(--ink)]">
             {t("addFriendTitle") || "Adicionar amigo"}
           </h2>
           <button
             type="button"
             onClick={handleCloseModal}
             aria-label="Fechar"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/8 text-[var(--ink-muted)] transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--tone-3)] text-[var(--ink-muted)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)] cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
         <div>
-          <label className="text-xs font-body font-medium text-[var(--ink-muted)] block mb-2">
+          <label htmlFor="add-friend-query" className="text-[length:var(--step-0)] font-body font-medium text-[var(--ink-muted)] block mb-2">
             Busque por nome de usuário ou email
           </label>
           <form onSubmit={handleSearch} className="flex items-center gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-faint)]" />
               <input
+                id="add-friend-query"
                 type="text"
                 value={query}
                 onChange={(e) => handleQueryChange(e.target.value)}
                 placeholder={t("addFriendSearchPlaceholder") || "Digite o nome ou email do usuário..."}
-                className="w-full h-12 pl-11 pr-11 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-ui-detail)] text-xs font-body text-white placeholder:text-[var(--ink-faint)] focus:outline-none focus:border-white/30 shadow-inner transition-all "
+                className="w-full h-12 pl-11 pr-11 rounded-full bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)] text-[length:var(--step-1)] font-body text-[var(--ink)] placeholder:text-[var(--ink-faint)] transition-colors"
                 autoFocus
               />
               {query && (
                 <button
                   type="button"
                   onClick={handleClearQuery}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-[var(--ink-faint)] hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-                  title="Limpar campo"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1 rounded-full text-[var(--ink-faint)] hover:text-[var(--ink)] hover:bg-[var(--tone-3)] transition-colors cursor-pointer"
+                  aria-label="Limpar campo"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -381,7 +410,7 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
               type="submit"
               disabled={searching}
               onMouseEnter={() => playSound?.("hover")}
-              className="cursor-pointer h-12 px-7 rounded-2xl bg-white text-black font-body font-bold text-xs hover:bg-white/90 disabled:opacity-50 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] active:scale-98"
+              className="cursor-pointer h-12 px-7 rounded-full bg-[var(--ink)] text-[var(--tone-0)] font-body font-semibold text-[length:var(--step-0)] disabled:opacity-50 transition-transform active:scale-[0.98]"
             >
               {searching ? "Buscando..." : (t("addFriendSearchButton") || "Buscar")}
             </button>
@@ -416,7 +445,7 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
                     void handleSearch(undefined, item);
                   }}
                   onMouseEnter={() => playSound?.("hover")}
-                  className="px-3 py-1 rounded-xl bg-[var(--color-surface)] border border-[var(--color-ui-detail)] hover:border-white/20 text-xs font-body text-[var(--ink-muted)] hover:text-white transition-all cursor-pointer"
+                  className="px-3 py-1.5 rounded-full bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)] hover:bg-[var(--tone-3)] text-[length:var(--step-0)] font-body text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors cursor-pointer"
                 >
                   {item}
                 </button>
@@ -435,10 +464,10 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
             return (
               <div
                 key={user.uid}
-                className="flex items-center justify-between p-4 rounded-2xl bg-[var(--color-surface)] hover:bg-[var(--tone-3)] border border-[var(--color-ui-detail)] hover:border-white/20 transition-all shadow-md "
+                className="flex items-center justify-between p-4 rounded-[var(--corner-md)] bg-[var(--surface-raised)] hover:bg-[var(--tone-3)] ring-1 ring-[color:var(--border-subtle)] transition-colors"
               >
                 <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl overflow-hidden bg-[var(--color-surface)] border border-white/10 flex items-center justify-center shrink-0">
+                  <div className="w-12 h-12 rounded-[28%] overflow-hidden bg-[var(--tone-3)] flex items-center justify-center shrink-0">
                     {user.photoURL ? (
                       <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -446,11 +475,11 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-display font-bold text-white tracking-tight">
+                    <p className="text-[length:var(--step-1)] font-display font-bold text-[var(--ink)] tracking-tight">
                       {user.displayName || "Jogador"}
                     </p>
-                    <p className="text-[length:var(--step-0)] font-body text-[var(--ink-faint)] uppercase tracking-wider mt-0.5">
-                      NÍVEL {user.level || 1}
+                    <p className="text-[length:var(--step-0)] font-body text-[var(--ink-faint)] mt-0.5">
+                      Nível {user.level || 1}
                     </p>
                   </div>
                 </div>
@@ -464,21 +493,21 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
                         playSound?.("select");
                         onViewProfile(user);
                       }}
-                      className="cursor-pointer px-4 py-2 rounded-xl bg-[var(--color-surface)] border border-white/10 hover:bg-white/10 text-white font-body font-semibold text-xs transition-all active:scale-95"
+                      className="cursor-pointer px-4 py-2 rounded-full bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--ink)] font-body font-semibold text-[length:var(--step-0)] transition-colors active:scale-95"
                     >
                       {t("addFriendViewProfile") || "Ver perfil"}
                     </button>
                   )}
                   {isFriend ? (
-                    <span className="px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+                    <span className="px-4 py-2 rounded-full ring-1 ring-[color:var(--live)] text-[var(--live)] text-[length:var(--step-0)] font-semibold">
                       Amigo
                     </span>
                   ) : isOutgoing ? (
-                    <span className="px-4 py-2 rounded-xl bg-white/10 text-[var(--ink-muted)] text-xs font-medium">
+                    <span className="px-4 py-2 rounded-full bg-[var(--tone-3)] text-[var(--ink-muted)] text-[length:var(--step-0)] font-medium">
                       Pendente
                     </span>
                   ) : isIncoming ? (
-                    <span className="px-4 py-2 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 text-xs font-semibold">
+                    <span className="px-4 py-2 rounded-full ring-1 ring-[color:var(--border-strong)] text-[var(--ink)] text-[length:var(--step-0)] font-semibold">
                       Solicitou
                     </span>
                   ) : (
@@ -489,7 +518,7 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
                         playSound?.("select");
                         onAddFriend(user);
                       }}
-                      className="cursor-pointer px-5 py-2 rounded-xl bg-white text-black font-body font-bold text-xs hover:bg-white/90 shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all active:scale-95"
+                      className="cursor-pointer px-5 py-2 rounded-full bg-[var(--ink)] text-[var(--tone-0)] font-body font-semibold text-[length:var(--step-0)] transition-transform active:scale-95"
                     >
                       {t("addFriendSend") || "Enviar"}
                     </button>
@@ -500,8 +529,8 @@ export const AddFriendModal: React.FC<AddFriendModalProps> = ({
           })}
 
           {hasSearched && results.length === 0 && !searching && (
-            <div className="text-center py-8 rounded-2xl bg-[var(--color-surface)] border border-dashed border-[var(--color-ui-detail)]">
-              <p className="text-xs font-body text-[var(--ink-faint)]">Nenhum jogador encontrado para essa busca.</p>
+            <div className="text-center py-8 rounded-[var(--corner-md)] bg-[var(--surface-raised)]">
+              <p className="text-[length:var(--step-0)] font-body text-[var(--ink-muted)]">Nenhum jogador encontrado para essa busca.</p>
             </div>
           )}
         </div>

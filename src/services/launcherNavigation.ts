@@ -43,7 +43,8 @@ export const SETTINGS_TABS = [
 
 export const SIDEBAR_NAVIGATION_GROUPS = [
   { key: "filters", ids: ["ALL", "FAVORITES"] },
-  { key: "community", ids: ["FRIENDS", "FEED", "TROPHIES", "PROFILE"] },
+  { key: "community", ids: ["FRIENDS", "FEED"] },
+  { key: "progress", ids: ["TROPHIES", "PROFILE"] },
   { key: "mods", ids: ["MODS"] },
 ] as const;
 

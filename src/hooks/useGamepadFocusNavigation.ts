@@ -105,14 +105,15 @@ export function useGamepadFocusNavigation({
 
       if (!nextElement) {
         // Natural console UX: when reaching the end of content in that direction,
-        // do not warp to the opposite end of the screen.
+        // do not warp to the opposite end of the screen. The bump says "nothing there".
+        playSound("edgeBump");
         return false;
       }
 
       focusSystemElement(nextElement, currentElement);
       return true;
     },
-    [focusSystemElement, getSystemFocusableElements],
+    [focusSystemElement, getSystemFocusableElements, playSound],
   );
 
   useEffect(() => {

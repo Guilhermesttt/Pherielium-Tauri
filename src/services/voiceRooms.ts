@@ -1,3 +1,4 @@
+import { mergeVoiceRooms } from "./voiceRoomListing";
 import { apiFetch } from "./api";
 import { shouldFallbackToSupabase, VoiceRoomApiError } from "./voiceRoomFallbackPolicy";
 import { supabase } from "./supabase";
@@ -164,6 +165,37 @@ const joinVoiceRoomViaSupabase = async (
   };
 };
 
+/**
+ * Salas privadas ativas, lidas do banco. A API do Render só lista as públicas; as privadas
+ * aparecem para todos com o cadeado e pedem a senha para entrar (a entrada é validada no RPC
+ * `join_voice_room`). Exige a policy de migration 20261023120000. Os membros de salas privadas
+ * continuam escondidos pelo RLS, então a contagem de participantes vem vazia.
+ */
+const listPrivateVoiceRoomsViaSupabase = async (filters?: {
+  category?: string;
+  search?: string;
+}): Promise<VoiceRoom[]> => {
+  let query = supabase
+    .from("voice_rooms")
+    .select(
+      "id, host_uid, room_name, category, is_private, has_password, max_participants, status, created_at, updated_at, icon, avatar_url, theme_color, description, banner_url",
+    )
+    .eq("status", "active")
+    .eq("is_private", true)
+    .order("created_at", { ascending: false });
+
+  if (filters?.category && filters.category !== "all") {
+    query = query.eq("category", filters.category);
+  }
+  if (filters?.search?.trim()) {
+    query = query.ilike("room_name", `%${filters.search.trim()}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return (data || []).map((row) => mapVoiceRoomFromDb(row as VoiceRoomRow));
+};
+
 const listPublicVoiceRoomsViaSupabase = async (filters?: {
   category?: string;
   search?: string;
@@ -176,7 +208,6 @@ const listPublicVoiceRoomsViaSupabase = async (filters?: {
       voice_room_members ( user_id, display_name, avatar_url, joined_at, removed_at )
     `)
     .eq("status", "active")
-    .eq("is_private", false)
     .order("created_at", { ascending: false });
 
   if (filters?.category && filters.category !== "all") {
@@ -361,9 +392,6 @@ export const updateVoiceRoom = async (
 };
 
 /**
- * Lista as salas públicas ativas no backend
- */
-/**
  * A API do Render não conhece descrição/banner: completa as salas com esses campos direto do
  * Supabase (uma consulta por lista). Se falhar, devolve as salas como vieram.
  */
@@ -382,6 +410,10 @@ const withRoomExtras = async (rooms: VoiceRoom[]): Promise<VoiceRoom[]> => {
   }
 };
 
+/**
+ * Lista as salas ativas visíveis para o usuário: as públicas (API) e as privadas, que aparecem
+ * com o cadeado e exigem senha para entrar.
+ */
 export const listPublicVoiceRooms = async (filters?: {
   category?: string;
   search?: string;
@@ -407,7 +439,13 @@ export const listPublicVoiceRooms = async (filters?: {
       }
 
       const data = (await res.json()) as { rooms?: VoiceRoom[] };
-      return withRoomExtras((data.rooms || []) as VoiceRoom[]);
+      const publicRooms = await withRoomExtras((data.rooms || []) as VoiceRoom[]);
+      // Falha ao ler as privadas não derruba a lista: as públicas aparecem do mesmo jeito.
+      const privateRooms = await listPrivateVoiceRoomsViaSupabase(filters).catch((err: unknown) => {
+        console.warn("[voiceRooms] could not list private rooms:", err);
+        return [] as VoiceRoom[];
+      });
+      return mergeVoiceRooms(publicRooms, privateRooms);
     } catch (err) {
       if (!shouldUseSupabaseVoiceFallback(err)) {
         throw err;

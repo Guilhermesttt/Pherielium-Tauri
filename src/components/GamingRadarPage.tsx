@@ -223,9 +223,6 @@ const GamingRadarPage: React.FC = () => {
     <motion.div
       ref={scrollRef}
       data-system-page
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", bounce: 0, duration: 0.4 }}
       className="relative flex-1 overflow-y-auto px-6 sm:px-10 pb-16 pt-6 thin-scrollbar font-sans"
       style={{ contain: "layout paint", transform: "translate3d(0,0,0)", willChange: "transform" }}
     >

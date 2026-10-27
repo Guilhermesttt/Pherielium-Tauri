@@ -24,6 +24,8 @@ import {
   saveOrbloomConfig,
   clearOrbloomConfig,
 } from "../OrbloomOrb";
+import { modalBackdropMotion, modalMotion } from "../../../design-system/motion";
+import { useModalSounds } from "../../../hooks/useModalSounds";
 
 export const ALL_ORBLOOM_PRESETS = [
   // NEBULA
@@ -112,6 +114,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
   onClose,
   localStream,
 }) => {
+  useModalSounds(isOpen);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const controllerRef = useRef<OrbController | null>(null);
   const audioCleanupRef = useRef<(() => void) | null>(null);
@@ -380,20 +383,17 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
     setTimeout(() => setSaveToast(false), 2000);
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div
+    <AnimatePresence>
+      {isOpen && (
+    <motion.div {...modalBackdropMotion}
       role="dialog"
       aria-modal="true"
       aria-label="Personalizador do Orbloom"
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md select-none"
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 10 }}
-        transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
+        {...modalMotion}
         style={{ cornerShape: "squircle" } as React.CSSProperties}
         className="relative w-full max-w-xl max-h-[92vh] flex flex-col rounded-[var(--corner-lg)] bg-[var(--tone-1)]/95 border border-[#161616] text-white shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl overflow-hidden"
       >
@@ -959,6 +959,8 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
           )}
         </AnimatePresence>
       </motion.div>
-    </div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

@@ -235,7 +235,7 @@ const GameCard: React.FC<GameCardProps> = ({
           scale: isActive ? FOCUS_SCALE : 0.96,
           y: isActive ? -6 : 0,
         }}
-        transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
+        transition={{ type: "spring", bounce: 0.1, duration: 0.55 }}
         style={{
           width: CARD_WIDTH,
           height: CARD_HEIGHT,
@@ -270,7 +270,7 @@ const GameCard: React.FC<GameCardProps> = ({
               initial={false}
               animate={{ scale: isActive ? 1.06 : 1 }}
               whileHover={{ scale: 1.06 }}
-              transition={{ type: "spring", bounce: 0.1, duration: 0.5 }}
+              transition={{ type: "spring", bounce: 0.05, duration: 0.7 }}
               className="absolute inset-0 h-full w-full object-cover"
               loading="lazy"
               decoding="async"
@@ -314,7 +314,7 @@ const GameCard: React.FC<GameCardProps> = ({
                 data-context-menu-trigger="true"
                 whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.92 }}
-                transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
+                transition={{ type: "spring", bounce: 0.1, duration: 0.4 }}
                 onPointerDown={(e) => {
                   e.stopPropagation();
                 }}
@@ -349,7 +349,7 @@ const GameCard: React.FC<GameCardProps> = ({
                       initial={{ rotate: -90, opacity: 0, scale: 0.7 }}
                       animate={{ rotate: 0, opacity: 1, scale: 1 }}
                       exit={{ rotate: 90, opacity: 0, scale: 0.7 }}
-                      transition={{ type: "spring", bounce: 0.15, duration: 0.22 }}
+                      transition={{ type: "spring", bounce: 0.1, duration: 0.35 }}
                       className="flex items-center justify-center"
                     >
                       <X className="w-3.5 h-3.5 stroke-[2.2] text-[var(--ink)]" />
@@ -360,7 +360,7 @@ const GameCard: React.FC<GameCardProps> = ({
                       initial={{ rotate: 90, opacity: 0, scale: 0.7 }}
                       animate={{ rotate: 0, opacity: 1, scale: 1 }}
                       exit={{ rotate: -90, opacity: 0, scale: 0.7 }}
-                      transition={{ type: "spring", bounce: 0.15, duration: 0.22 }}
+                      transition={{ type: "spring", bounce: 0.1, duration: 0.35 }}
                       className="flex items-center justify-center"
                     >
                       <MoreVertical className="w-3.5 h-3.5 text-[var(--ink)]" />
@@ -380,13 +380,13 @@ const GameCard: React.FC<GameCardProps> = ({
             scale: isActive ? 1 : 0.9
           }}
           whileHover={{ opacity: 1, scale: 0.95 }}
-          transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
+          transition={{ type: "spring", bounce: 0.1, duration: 0.45 }}
           className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
         >
           <motion.div
             animate={{ scale: isActive ? 1.06 : 1 }}
             whileHover={{ scale: 1.06 }}
-            transition={{ type: "spring", bounce: 0.3, duration: 0.3 }}
+            transition={{ type: "spring", bounce: 0.15, duration: 0.45 }}
             className="flex h-12 w-12 items-center justify-center rounded-[var(--node)] bg-[var(--ink)]"
           >
             <Play className="ml-0.5 h-4 w-4 fill-[var(--tone-0)] text-[var(--tone-0)]" aria-hidden="true" />

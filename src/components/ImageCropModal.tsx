@@ -263,7 +263,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
               step="0.05"
               value={scale}
               onChange={(e) => setScale(parseFloat(e.target.value))}
-              className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-white/15 accent-white outline-none"
+              className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-white/15 accent-white outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             />
             <ZoomIn className="h-4 w-4 text-[var(--ink-faint)] shrink-0" />
             <span className="min-w-[44px] text-right text-xs font-mono font-medium text-[var(--ink-muted)]">

@@ -205,7 +205,7 @@ export function FeaturesSection() {
                   ))}
                 </div>
               </div>
-              <div className="absolute inset-0 bg-gradient-to-r from-[#070707] via-transparent to-transparent opacity-80" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A] via-transparent to-transparent opacity-80" />
             </div>
           </div>
 

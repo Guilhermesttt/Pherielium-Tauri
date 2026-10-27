@@ -17,6 +17,11 @@ export interface GameDetailPanelProps {
   friends?: import("./domain").SocialFriend[];
   onToggleFavorite?: (game: Game) => Promise<void> | void;
   onEditGame?: (game: Game) => void;
+  /**
+   * Contador de pedidos de "Jogar" feitos fora do painel (botão do herói da Home). Cada valor
+   * novo dispara um lançamento; o painel guarda o último atendido.
+   */
+  launchRequest?: number;
 }
 
 export interface GamePanelMod {

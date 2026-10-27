@@ -8,13 +8,21 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
  * ainda não existe, marca como cancelado e desfaz assim que a promise resolve — senão
  * o listener vaza e cada evento passa a disparar o callback 2+ vezes (foi o que fazia
  * "mutar" no notch ligar e desligar o microfone e tocar o som empilhado).
+ *
+ * `target`: rótulo da janela, OBRIGATÓRIO para eventos que o Rust emite com `emit_to("<rótulo>", ...)`.
+ * O Tauri só entrega esses eventos a listeners registrados para o mesmo rótulo; o listener global
+ * (sem alvo) nunca os recebe. Eventos emitidos com `emit` simples chegam aos dois.
  */
-export function makeListen<T>(event: string, cb: (payload: T) => void): () => void {
+export function makeListen<T>(event: string, cb: (payload: T) => void, target?: string): () => void {
   let unlisten: UnlistenFn | null = null;
   let cancelled = false;
-  void listen<T>(event, (e) => {
-    if (!cancelled) cb(e.payload);
-  }).then((u) => {
+  void listen<T>(
+    event,
+    (e) => {
+      if (!cancelled) cb(e.payload);
+    },
+    target ? { target } : undefined,
+  ).then((u) => {
     if (cancelled) u();
     else unlisten = u;
   });

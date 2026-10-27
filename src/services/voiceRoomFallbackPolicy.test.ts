@@ -24,6 +24,20 @@ describe("shouldFallbackToSupabase", () => {
     expect(shouldFallbackToSupabase(new VoiceRoomApiError("Token de autenticacao invalido.", status))).toBe(expected);
   });
 
+  // Regressão: criar uma "Noite de jogo" recebia 400 "Validação falhou" da API do Render, que recusa
+  // o que o banco aceita (o mesmo já acontecia ao editar sala). O RPC do Supabase é a fonte de verdade.
+  it("falls back when the Render API rejects with its generic 'Validação falhou' (400/422)", () => {
+    for (const status of [400, 422]) {
+      expect(shouldFallbackToSupabase(new VoiceRoomApiError("Validação falhou", status))).toBe(true);
+      expect(shouldFallbackToSupabase(new VoiceRoomApiError("Validacao falhou.", status))).toBe(true);
+    }
+  });
+
+  it("keeps real 400s (a specific reason) from falling back", () => {
+    expect(shouldFallbackToSupabase(new VoiceRoomApiError("Senha da sala incorreta.", 400))).toBe(false);
+    expect(shouldFallbackToSupabase(new VoiceRoomApiError("Validação falhou", 401))).toBe(false);
+  });
+
   it("falls back on timeouts and plain network errors", () => {
     expect(shouldFallbackToSupabase(named("RequestTimeoutError", "A requisicao excedeu 15000ms."))).toBe(true);
     expect(shouldFallbackToSupabase(new TypeError("Failed to fetch"))).toBe(true);

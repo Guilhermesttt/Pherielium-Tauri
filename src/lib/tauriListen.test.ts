@@ -2,14 +2,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type Handler = (event: { payload: unknown }) => void;
 
-const registered: Array<{ handler: Handler; unlisten: ReturnType<typeof vi.fn>; resolve: () => void }> = [];
+const registered: Array<{
+  handler: Handler;
+  options?: { target?: string };
+  unlisten: ReturnType<typeof vi.fn>;
+  resolve: () => void;
+}> = [];
 
 vi.mock("@tauri-apps/api/event", () => ({
   // listen() só resolve quando o teste mandar (simula o IPC assíncrono do Tauri)
-  listen: (_event: string, handler: Handler) =>
+  listen: (_event: string, handler: Handler, options?: { target?: string }) =>
     new Promise<() => void>((resolveListen) => {
       const unlisten = vi.fn();
-      registered.push({ handler, unlisten, resolve: () => resolveListen(unlisten) });
+      registered.push({ handler, options, unlisten, resolve: () => resolveListen(unlisten) });
     }),
 }));
 
@@ -71,5 +76,14 @@ describe("makeListen", () => {
     stop();
     stop();
     expect(registered[0].unlisten).toHaveBeenCalledTimes(1);
+  });
+
+  it("com `target`, o listener é registrado para esse rótulo (eventos de emit_to não chegam ao listener global)", () => {
+    // O Rust emite com emit_to("main", ...): o Tauri só entrega a listeners com alvo "main".
+    // Um listen() sem alvo (Any) nunca recebe esse evento.
+    makeListen("nexus:download-state", () => undefined, "main");
+    makeListen("overlay:panel-action", () => undefined);
+    expect(registered[0].options).toEqual({ target: "main" });
+    expect(registered[1].options).toBeUndefined();
   });
 });

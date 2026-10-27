@@ -18,12 +18,10 @@ export const TopBarClock: React.FC = () => {
   }, []);
 
   return (
-    <div className="ctl-pill justify-center gap-[var(--gap-stack)] px-[var(--space-4)] w-[var(--clock-w)] whitespace-nowrap select-none">
-      <span className="h-[0.5em] w-[0.5em] rounded-full bg-emerald-400 animate-pulse text-[length:var(--fs-caption)]" />
-      <span className="font-mono text-[length:var(--fs-caption)] font-semibold tracking-wider text-[var(--ink)]">
-        {time}
-      </span>
-    </div>
+    // Só a hora, em texto: o verde "ao vivo" é reservado para estado real (jogo em execução, amigo online).
+    <time className="font-metric whitespace-nowrap px-[var(--space-2,0.5rem)] text-[length:var(--fs-caption)] font-medium text-[var(--ink-muted)] select-none">
+      {time}
+    </time>
   );
 };
 

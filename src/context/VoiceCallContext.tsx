@@ -1,3 +1,4 @@
+import type { VoiceRoom } from "../types/voice-governance";
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PhoneCall, X } from "lucide-react";
@@ -574,7 +575,7 @@ const safeFallbackVoiceCallContext: Partial<VoiceCallContextType> = {
   endCallForEveryone: async () => {},
   joinRoom: async () => {},
   joinActiveCall: async () => {},
-  createAndJoinRoom: async () => {},
+  createAndJoinRoom: async () => ({}) as VoiceRoom,
   updateRoomPrivacy: async () => {},
   updateRoomAppearance: async () => {},
   kickParticipant: async () => {},

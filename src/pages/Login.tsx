@@ -18,6 +18,7 @@ import { LoadingState } from "../components/ui/loading-state";
 import PlasmaHeroBackground from "../components/PlasmaHeroBackground";
 import LightSpeedTunnel from "../components/LightSpeedTunnel";
 import BlackHoleHeroSection from "../components/BlackHoleHeroSection";
+import { IconSwap } from "../components/ui/IconSwap";
 
 // Variantes de entrada escalonada para os campos do formulário
 const formContainerVariants = {
@@ -898,7 +899,7 @@ const LoginContent: React.FC = () => {
                         transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
                         className="flex"
                       >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        <IconSwap active={showPassword} a={<Eye size={16} />} b={<EyeOff size={16} />} />
                       </motion.span>
                     </AnimatePresence>
                   </motion.button>

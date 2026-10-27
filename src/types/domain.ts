@@ -109,6 +109,8 @@ export interface UserProfile {
   /** banner do perfil (URL pública; pode ser GIF) */
   bannerURL?: string | null;
   profileVisibility?: ProfileVisibility;
+  /** se amigos do Discord podem achar esta conta pelo Discord (padrão: sim) */
+  discordDiscoverable?: boolean;
   bio?: string;
   location?: string;
   pronouns?: string;

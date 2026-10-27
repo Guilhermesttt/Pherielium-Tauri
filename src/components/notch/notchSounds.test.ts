@@ -1,12 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { NOTCH_SOUNDS, resolveNotchVolume, shouldPlayNotchSound, type NotchSoundId } from "./notchSounds";
+import { NOTCH_SOUNDS, resolveNotchSoundSrc, resolveNotchVolume, shouldPlayNotchSound, type NotchSoundId } from "./notchSounds";
+import { soundThemes } from "../../hooks/useSoundEffects";
 
 const IDS = Object.keys(NOTCH_SOUNDS) as NotchSoundId[];
 
 describe("sons do notch", () => {
-  it("cada interação tem um som próprio (nenhum arquivo repetido)", () => {
-    const sources = IDS.map((id) => NOTCH_SOUNDS[id].src);
-    expect(new Set(sources).size).toBe(IDS.length);
+  it("cada interação usa um efeito diferente do tema (nenhum repetido)", () => {
+    const types = IDS.map((id) => NOTCH_SOUNDS[id].type);
+    expect(new Set(types).size).toBe(IDS.length);
+  });
+
+  it("o som vem do tema sonoro escolhido, não de um pacote fixo", () => {
+    expect(resolveNotchSoundSrc("expand", "xbox360")).toBe(soundThemes.xbox360.detailOpen);
+    expect(resolveNotchSoundSrc("expand", "ps5")).toBe(soundThemes.ps5.detailOpen);
+    expect(resolveNotchSoundSrc("expand", "xbox360")).not.toBe(resolveNotchSoundSrc("expand", "ps5"));
+  });
+
+  it("todo som do notch existe em todos os temas (ou cai no padrão)", () => {
+    for (const theme of Object.keys(soundThemes)) {
+      for (const id of IDS) {
+        // o "reveal" é um som de hover, e o tema padrão não tem hover (fica em silêncio de propósito)
+        if (theme === "default" && id === "reveal") continue;
+        expect(resolveNotchSoundSrc(id, theme), `${theme}.${id}`).toBeTruthy();
+      }
+    }
+  });
+
+  it("o reveal do notch fica em silêncio no tema padrão, que não tem som de hover", () => {
+    expect(resolveNotchSoundSrc("reveal", "default")).toBe("");
+  });
+
+  it("tema desconhecido ou ausente usa o padrão; nomes antigos são traduzidos", () => {
+    expect(resolveNotchSoundSrc("panelOpen", undefined)).toBe(soundThemes.default.showModal);
+    expect(resolveNotchSoundSrc("panelOpen", "nao-existe")).toBe(soundThemes.default.showModal);
+    expect(resolveNotchSoundSrc("panelOpen", "playstation")).toBe(soundThemes.ps2.showModal);
+    expect(resolveNotchSoundSrc("panelOpen", "phelierium")).toBe(soundThemes.default.showModal);
   });
 
   it("nenhum som de mutar/desligar: esses tocam no hook de voz e dobrariam", () => {

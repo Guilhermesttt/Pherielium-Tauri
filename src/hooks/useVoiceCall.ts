@@ -159,8 +159,8 @@ const isLocalTestCall = (chatId?: string | null, friendUid?: string | null) =>
     (chatId && LOCAL_TEST_CHAT_IDS.has(chatId)) ||
     (friendUid && LOCAL_TEST_PEER_IDS.has(friendUid)),
   );
-import sfxJoin from "../sounds/Phelierium Default/ui_call_enter.mp3";
-import sfxLeave from "../sounds/Phelierium Default/ui_leave_call.mp3";
+import sfxJoin from "../sounds/Phelierium Default/Recording Start.mp3";
+import sfxLeave from "../sounds/Phelierium Default/Recording Stop.mp3";
 import sfxIncomingCall from "../sounds/Phelierium Default/ui_call_incomming.wav";
 import sfxRingingOut from "../sounds/Phelierium Default/ui_ringing.mp3";
 import sfxMute from "../sounds/Stoat_SFX/mute-CuCJ24EB.ogg";
@@ -4135,6 +4135,8 @@ export const useVoiceCall = ({ user, userProfile, notify, dismissNotification, v
         const newRoom = await createVoiceRoom(config);
         // Host já é isento da senha no servidor; não enviar flags de confiança do cliente.
         await joinRoom(newRoom.id, config.password);
+        // Quem criou a sala precisa do id (ex.: Noite de jogo manda o convite com ele)
+        return newRoom;
       } catch (err: any) {
         console.error("[useVoiceCall] createAndJoinRoom failed:", err);
         const message =

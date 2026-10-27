@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useRef, useCallb
 import { resetCachedLedDevice } from "../services/controllerLed";
 import { isLauncherInputLocked } from "../utils/launcherInputLock";
 import { INPUT_ACTIVITY_EVENT } from "../utils/videoHold";
+import { fireGamepadButton, registerGamepadSubscriber } from "./gamepadSubscribers";
 
 /** O Windows não distingue USB de Bluetooth de forma confiável: sempre "unknown". */
 export type ControllerConnectionType = "bluetooth" | "usb" | "unknown";
@@ -68,14 +69,6 @@ const DEDICATED_BUTTON_INDEXES = (() => {
   }
   return dedicated;
 })();
-
-interface GamepadButtonSubscriber {
-  id: symbol;
-  callback: () => void;
-  priority: number;
-}
-
-const gamepadButtonSubscribers = new Map<GamepadButtonName, Set<GamepadButtonSubscriber>>();
 
 export function detectGamepadFamily(id: string): GamepadFamily {
   const lower = id.toLowerCase();
@@ -334,13 +327,7 @@ export const GamepadProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const dispatchButtonPress = useCallback((buttonName: GamepadButtonName) => {
     if (isLauncherInputLocked()) return;
     window.dispatchEvent(new Event(INPUT_ACTIVITY_EVENT));
-    const subscribers = Array.from(gamepadButtonSubscribers.get(buttonName) ?? []);
-    if (subscribers.length === 0) return;
-
-    const highestPriority = Math.max(...subscribers.map((s) => s.priority));
-    subscribers
-      .filter((s) => s.priority === highestPriority)
-      .forEach((s) => s.callback());
+    fireGamepadButton(buttonName);
   }, []);
 
   const getRepeatInterval = (repeatCount: number): number => {
@@ -755,19 +742,6 @@ export const useGamepadButton = (
 
   useEffect(() => {
     if (!enabled) return;
-
-    const subscriber: GamepadButtonSubscriber = {
-      id: Symbol(button),
-      callback: () => callbackRef.current(),
-      priority,
-    };
-    const subscribers = gamepadButtonSubscribers.get(button) ?? new Set<GamepadButtonSubscriber>();
-    subscribers.add(subscriber);
-    gamepadButtonSubscribers.set(button, subscribers);
-
-    return () => {
-      subscribers.delete(subscriber);
-      if (subscribers.size === 0) gamepadButtonSubscribers.delete(button);
-    };
+    return registerGamepadSubscriber(button, { callback: () => callbackRef.current(), priority });
   }, [button, enabled, priority]);
 };

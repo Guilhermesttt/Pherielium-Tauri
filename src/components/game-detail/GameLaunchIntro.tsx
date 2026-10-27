@@ -28,6 +28,8 @@ export interface GameLaunchIntroProps {
   soundEnabled: boolean;
   /** volume dos efeitos 0..1 */
   effectsVolume: number;
+  /** tema sonoro: os sons do mascote/notch seguem o mesmo pacote da interface */
+  soundTheme?: string;
   /** Esconde a janela principal (chamado só quando `willHideHub`). */
   onHideHub: () => void;
 }
@@ -45,6 +47,7 @@ export const GameLaunchIntro: React.FC<GameLaunchIntroProps> = ({
   willHideHub,
   soundEnabled,
   effectsVolume,
+  soundTheme,
   onHideHub,
 }) => {
   const config = useNotchConfig();
@@ -55,11 +58,11 @@ export const GameLaunchIntro: React.FC<GameLaunchIntroProps> = ({
   const handedOff = useRef(false);
 
   // valores mais recentes sem reiniciar a linha do tempo
-  const live = useRef({ willHideHub, soundEnabled, effectsVolume, onHideHub });
-  live.current = { willHideHub, soundEnabled, effectsVolume, onHideHub };
+  const live = useRef({ willHideHub, soundEnabled, effectsVolume, soundTheme, onHideHub });
+  live.current = { willHideHub, soundEnabled, effectsVolume, soundTheme, onHideHub };
 
   const sound = useCallback((id: NotchSoundId) => {
-    if (live.current.soundEnabled) playNotchSound(id, live.current.effectsVolume);
+    if (live.current.soundEnabled) playNotchSound(id, live.current.effectsVolume, live.current.soundTheme);
   }, []);
 
   const startFold = useCallback(() => {

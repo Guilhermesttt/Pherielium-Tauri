@@ -1,3 +1,9 @@
+/* Pherielium — Modern UI refinement
+   Base original preservada: seletores, estrutura, animações, responsividade e integração Tailwind mantidos.
+   Alterações limitadas aos tokens visuais existentes (raios, timing e elevação).
+   Evite substituir este arquivo por uma folha de overrides: ele é a folha completa do projeto.
+*/
+
 @import "tailwindcss";
 
 /* ===== Accessibility: focus-visible and reduced motion ===== */
@@ -15,9 +21,15 @@
 /* Accessible, gentle transitions for users who prefer reduced motion */
 /* Fones RGB da Pherie: o matiz gira continuamente */
 @keyframes pherie-rgb {
-  from { filter: hue-rotate(0deg) saturate(1.5); }
-  to { filter: hue-rotate(360deg) saturate(1.5); }
+  from {
+    filter: hue-rotate(0deg) saturate(1.5);
+  }
+
+  to {
+    filter: hue-rotate(360deg) saturate(1.5);
+  }
 }
+
 .pherie-rgb {
   animation: pherie-rgb 4s linear infinite;
 }
@@ -50,15 +62,53 @@ html[data-launcher-theme="checkpoint"] {
   /* ========================================================
      PHERIELIUM (Autoral / Carvão Fosco e Foco Concentrado)
      ======================================================== */
-  --surface-base: #070707;
-  --surface-raised: #141414;
-  --surface-overlay: #1F1F1F;
+  /* Escala de elevação monocromática: profundidade vem de luminosidade e hairlines,
+     não de sombra. No tema padrão --gray-0 (#000) é o fundo absoluto do app (e do notch e da
+     title bar); nos outros temas ele continua exclusivo do notch e da title bar. */
+  --gray-0: #000000;
+  /* Base */
+  --gray-1: #0A0A0A;
+  /* 50  */
+  --gray-2: #171717;
+  /* 100 */
+  --gray-3: #262626;
+  /* 200 */
+  --gray-4: #373737;
+  /* 300 */
+  --gray-5: #525252;
+  /* 400 */
+  --gray-6: #8A8A8A;
+  /* 500 */
+  --gray-7: #A3A3A3;
+  /* 600 */
+  --gray-8: #D4D4D4;
+  /* 700 */
+  --gray-9: #E5E5E5;
+  /* 800 */
+  --gray-10: #F5F5F5;
+  /* 900 */
+  --gray-11: #FAFAFA;
+  /* 950 */
+
+  /* Papéis da escala (tema padrão): 0 = fundo absoluto do app; 1 e 2 = superfícies de cards e
+     containers (--tone-0, --tone-2); 3 e 4 = bordas e divisores; 8 (#D4D4D4) = texto secundário. */
+  --surface-base: var(--gray-0);
+  --surface-raised: var(--gray-2);
+  --surface-overlay: var(--gray-3);
+
+  /* Borda interna iluminada: separa camadas sem sombra pesada */
+  --hairline: inset 0 0 0 1px rgb(255 255 255 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  --hairline-strong: inset 0 0 0 1px rgb(255 255 255 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.08);
+  --ease-mech: cubic-bezier(0.2, 0, 0, 1);
+  /* Cantos contínuos do macOS/iOS. A palavra-chave equivale a superellipse(2):
+     expoentes maiores (ex.: 4) tendem ao canto reto e "quadram" o notch. */
+  --squircle: squircle;
 
   --color-bg-main: var(--surface-base);
   --color-surface: var(--surface-raised);
   --color-ui-detail: #2A2A2A;
   --color-text-main: #FFFFFF;
-  --color-text-sub: #A3A3A3;
+  --color-text-sub: #D4D4D4;
 
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-selected: rgba(255, 255, 255, 0.40);
@@ -86,8 +136,8 @@ html[data-launcher-theme="checkpoint"] {
   --muted-foreground: var(--color-text-sub);
   --text-primary: var(--color-text-main);
   --text-secondary: var(--color-text-sub);
-  --text-tertiary: rgba(210, 210, 210, 0.4);
-  --text-disabled: rgba(210, 210, 210, 0.25);
+  --text-tertiary: rgba(210, 210, 210, 0.62);
+  --text-disabled: rgba(210, 210, 210, 0.38);
   --border: var(--border-subtle);
 
   --launcher-accent: 255 255 255;
@@ -221,7 +271,7 @@ html[data-launcher-theme="checkpoint"] {
   --scrim-left: linear-gradient(to right, var(--surface-base) 0%, color-mix(in srgb, var(--surface-base) 70%, transparent) 40%, transparent 100%);
 
   /* Transicao unica de foco/hover (espelhada em src/styles/motion.ts) */
-  --dur-focus: 280ms;
+  --dur-focus: 420ms;
   --ease-focus: cubic-bezier(0.22, 1, 0.36, 1);
   --transition-focus: var(--dur-focus) var(--ease-focus);
 }
@@ -237,14 +287,17 @@ html[data-launcher-theme="checkpoint"] {
   .platform-hint {
     border: 1px solid transparent;
   }
+
   .platform-hint:hover,
   .platform-hint:focus-visible {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.1);
   }
+
   .platform-hint .platform-hint-wheel {
     transition: transform var(--transition-focus);
   }
+
   .platform-hint:hover .platform-hint-wheel,
   .platform-hint:focus-visible .platform-hint-wheel {
     transform: translateY(2.2px);
@@ -257,19 +310,17 @@ html[data-launcher-theme="checkpoint"] {
   .btn-play {
     --_game: var(--game-color, rgb(var(--launcher-accent)));
     color: #fff;
-    background: color-mix(in srgb, var(--_game) 68%, #0a0a0f);
-    border: 1px solid color-mix(in srgb, var(--_game) 55%, #fff 25%);
-    box-shadow:
-      0 8px 30px color-mix(in srgb, var(--_game) 38%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    /* Preenchimento na cor do jogo, sem borda nem brilho: a cor já destaca o botão */
+    background: color-mix(in srgb, var(--_game) 72%, #0a0a0f);
     transition:
       background-color var(--transition-focus),
-      box-shadow var(--transition-focus),
       transform var(--transition-focus);
   }
+
   .btn-play:hover {
     background: color-mix(in srgb, var(--_game) 80%, #0a0a0f);
   }
+
   .btn-play:disabled {
     opacity: 0.85;
   }
@@ -298,23 +349,28 @@ html[data-launcher-theme="checkpoint"] {
       color var(--transition-focus),
       transform var(--transition-focus);
   }
+
   .ctl-circle:hover {
     background: color-mix(in srgb, var(--color-text-main) 10%, transparent);
     border-color: var(--edge-strong);
     color: var(--color-text-main);
   }
+
   .ctl-circle:active {
     transform: scale(0.95);
   }
+
   .ctl-circle[data-active="true"] {
     background: color-mix(in srgb, var(--color-text-main) 20%, transparent);
     border-color: var(--edge-selected);
     color: var(--color-text-main);
   }
+
   .ctl-icon {
     width: calc(var(--control-h) * 0.4);
     height: calc(var(--control-h) * 0.4);
   }
+
   .ctl-pill {
     display: inline-flex;
     align-items: center;
@@ -402,8 +458,8 @@ html[data-launcher-theme="ps5"] {
   --launcher-tint: rgba(41, 121, 255, 0.10);
   --theme-ambient-bg: radial-gradient(ellipse at 50% -10%, rgba(244, 244, 246, 0.08) 0%, rgba(41, 121, 255, 0.06) 45%, transparent 70%);
 
-  --motion-fast: 180ms;
-  --motion-normal: 300ms;
+  --motion-fast: 150ms;
+  --motion-normal: 240ms;
   --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -607,9 +663,9 @@ html[data-launcher-theme="xbox360"] {
 .theme-tab-item {
   border-radius: var(--radius-control);
   transition: background-color var(--motion-fast) var(--motion-ease),
-              color var(--motion-fast) var(--motion-ease),
-              border-color var(--motion-fast) var(--motion-ease),
-              box-shadow var(--motion-fast) var(--motion-ease);
+    color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease);
 }
 
 .theme-tab-item[data-active="true"] {
@@ -625,21 +681,19 @@ html[data-launcher-theme="xbox360"] {
 }
 
 @theme {
-  /* Títulos, Headings e Elementos de Destaque (Impacto Máximo) */
+  /* Títulos de impacto (h1, h2 e .font-display/.font-heading): Inter Black (peso 900) */
   --font-display: 'Inter Variable', 'Inter', system-ui, sans-serif;
-  /* Aplicar font-weight: 900 */
   --font-heading: 'Inter Variable', 'Inter', system-ui, sans-serif;
-  /* Aplicar font-weight: 900 */
   --font-space: 'Inter Variable', 'Inter', system-ui, sans-serif;
-  /* Aplicar font-weight: 900 */
   --font-title: 'Inter Variable', 'Inter', system-ui, sans-serif;
-  /* Aplicar font-weight: 900 */
 
-  /* Textos de Interface, Corpo, Menus e Legendas (Legibilidade Apple) */
-  --font-body: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', sans-serif;
-  --font-ui: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', sans-serif;
-  --font-sans: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', sans-serif;
-  --font-inter: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', sans-serif;
+  /* Textos de interface, corpo, menus e legendas: SF Pro. A fonte da Apple é proprietária
+     e não pode ser distribuída com o app (projeto open source), então ela só aparece
+     quando instalada no sistema; sem ela, cai na Inter embutida. */
+  --font-body: 'SF Pro Text', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Inter Variable', 'Inter', 'Segoe UI Variable Text', sans-serif;
+  --font-ui: 'SF Pro Text', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Inter Variable', 'Inter', 'Segoe UI Variable Text', sans-serif;
+  --font-sans: 'SF Pro Text', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Inter Variable', 'Inter', 'Segoe UI Variable Text', sans-serif;
+  --font-inter: 'Inter Variable', 'Inter', system-ui, sans-serif;
 
   --color-bg-main: var(--color-bg-main);
   --color-surface: var(--color-surface);
@@ -756,10 +810,17 @@ html[data-launcher-theme="xbox360"] {
   h4,
   h5,
   h6 {
-    font-family: var(--font-display);
-    font-weight: 800;
+    font-family: var(--font-body);
+    font-weight: 700;
     letter-spacing: -0.03em;
     line-height: 1.05;
+  }
+
+  /* Só os títulos de impacto usam Inter Black; h3 a h6 são texto (SF Pro) */
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 900;
   }
 
   p {
@@ -1452,10 +1513,11 @@ video {
   pointer-events: none;
   transition:
     transform var(--panel-close-dur) var(--panel-ease),
-    opacity   var(--panel-close-dur) var(--panel-ease),
-    filter    var(--panel-close-dur) var(--panel-ease);
+    opacity var(--panel-close-dur) var(--panel-ease),
+    filter var(--panel-close-dur) var(--panel-ease);
   will-change: transform, opacity, filter;
 }
+
 .t-panel-slide[data-open="true"] {
   transform: translateY(0);
   opacity: 1;
@@ -1463,71 +1525,420 @@ video {
   pointer-events: auto;
   transition:
     transform var(--panel-open-dur) var(--panel-ease),
-    opacity   var(--panel-open-dur) var(--panel-ease),
-    filter    var(--panel-open-dur) var(--panel-ease);
+    opacity var(--panel-open-dur) var(--panel-ease),
+    filter var(--panel-open-dur) var(--panel-ease);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .t-panel-slide { transition: none !important; }
+  .t-panel-slide {
+    transition: none !important;
+  }
 }
 
-/* Transitions.dev — Modal open / close */
+/* ========================================================
+   Transitions.dev — escala de movimento compartilhada (transitions-dev skill)
+   Use estes nomes em vez de durações e curvas soltas.
+   ======================================================== */
 :root {
-  --modal-open-dur: 280ms;
-  --modal-close-dur: 220ms;
-  --modal-scale: 0.97;
-  --modal-scale-close: 0.98;
-  --modal-y: 10px;
-  --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Durações */
+  --duration-stagger: 40ms;
+  --duration-micro: 80ms;
+  --duration-quick: 150ms;
+  /* fechar modal/dropdown, troca de texto */
+  --duration-fast: 250ms;
+  /* abrir modal/dropdown, troca de ícone */
+  --duration-medium: 350ms;
+  --duration-slow: 400ms;
+  --duration-very-slow: 500ms;
+  /* Curvas */
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: ease-in-out;
+  --ease-out: ease-out;
+  --ease-bounce-strong: cubic-bezier(0.34, 3.85, 0.64, 1);
+  /* Distâncias, escalas e desfoques */
+  --distance-micro: 4px;
+  --distance-base: 8px;
+  --distance-medium: 12px;
+  --scale-large: 0.96;
+  /* modal */
+  --scale-medium: 0.97;
+  /* abrir dropdown */
+  --scale-tiny: 0.99;
+  /* fechar dropdown */
+  --blur-small: 2px;
+}
+
+/* Transitions.dev — Modal open / close: sobe de 0.96 a 1 (250ms), fecha mais curto (150ms) */
+:root {
+  --modal-open-dur: var(--duration-fast);
+  --modal-close-dur: var(--duration-quick);
+  --modal-scale: var(--scale-large);
+  --modal-scale-close: var(--scale-large);
+  --modal-ease: var(--ease-smooth-out);
 }
 
 .t-modal {
   transform-origin: center;
-  transform: scale(var(--modal-scale)) translateY(var(--modal-y));
+  transform: scale(var(--modal-scale));
   opacity: 0;
   pointer-events: none;
   transition:
     transform var(--modal-open-dur) var(--modal-ease),
-    opacity   var(--modal-open-dur) var(--modal-ease);
+    opacity var(--modal-open-dur) var(--modal-ease);
   will-change: transform, opacity;
 }
+
 .t-modal.is-open {
-  transform: scale(1) translateY(0);
+  transform: scale(1);
   opacity: 1;
   pointer-events: auto;
 }
+
 .t-modal.is-closing {
-  transform: scale(var(--modal-scale-close)) translateY(6px);
+  transform: scale(var(--modal-scale-close));
   opacity: 0;
   pointer-events: none;
   transition:
     transform var(--modal-close-dur) var(--modal-ease),
-    opacity   var(--modal-close-dur) var(--modal-ease);
+    opacity var(--modal-close-dur) var(--modal-ease);
 }
 
-/* Painéis grandes (chat): entrada/saída mais longas e suaves */
+/* Fundo do modal: acompanha a abertura/fechamento do cartão */
+.t-modal-backdrop {
+  opacity: 0;
+  transition: opacity var(--modal-close-dur) var(--modal-ease);
+}
+
+.t-modal-backdrop.is-open {
+  opacity: 1;
+  transition: opacity var(--modal-open-dur) var(--modal-ease);
+}
+
+/* Painéis grandes (chat) usam a mesma curva do modal: o cartão é que é maior */
 .t-modal.t-modal-panel {
-  --modal-open-dur: 420ms;
-  --modal-close-dur: 320ms;
-  --modal-scale: 0.96;
-  --modal-y: 18px;
-  --modal-scale-close: 0.97;
-  filter: blur(0px);
-  transition:
-    transform var(--modal-open-dur) var(--modal-ease),
-    opacity   var(--modal-open-dur) var(--modal-ease),
-    filter    var(--modal-open-dur) var(--modal-ease);
-}
-.t-modal.t-modal-panel:not(.is-open):not(.is-closing) {
-  filter: blur(6px);
-}
-.t-modal.t-modal-panel.is-closing {
-  --modal-y: 10px;
-  filter: blur(4px);
+  --modal-scale: var(--scale-medium);
+  --modal-scale-close: var(--scale-medium);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .t-modal { transition: none !important; }
+
+  .t-modal,
+  .t-modal-backdrop {
+    transition: none !important;
+  }
+}
+
+/* Transitions.dev — Menu dropdown: cresce a partir do gatilho (origem vem do Radix) */
+:root {
+  --dropdown-open-dur: var(--duration-fast);
+  --dropdown-close-dur: var(--duration-quick);
+  --dropdown-pre-scale: var(--scale-medium);
+  --dropdown-closing-scale: var(--scale-tiny);
+  --dropdown-ease: var(--ease-smooth-out);
+}
+
+/* Radix só adia a desmontagem para animações CSS (keyframes), não para transitions: por isso
+   o dropdown usa keyframes ligados ao data-state em vez do par .is-open/.is-closing do skill. */
+@keyframes t-dropdown-in {
+  from {
+    opacity: 0;
+    transform: scale(var(--dropdown-pre-scale));
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes t-dropdown-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(var(--dropdown-closing-scale));
+  }
+}
+
+.t-dropdown {
+  transform-origin: var(--radix-dropdown-menu-content-transform-origin, var(--radix-context-menu-content-transform-origin, top left));
+  will-change: transform, opacity;
+}
+
+.t-dropdown[data-state="open"] {
+  animation: t-dropdown-in var(--dropdown-open-dur) var(--dropdown-ease) both;
+}
+
+.t-dropdown[data-state="closed"] {
+  animation: t-dropdown-out var(--dropdown-close-dur) var(--dropdown-ease) both;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-dropdown {
+    animation: none !important;
+  }
+}
+
+/* Transitions.dev — Text states swap: o texto antigo sai para cima com desfoque, o novo entra por baixo */
+:root {
+  --text-swap-dur: var(--duration-quick);
+  --text-swap-translate-y: var(--distance-micro);
+  --text-swap-blur: var(--blur-small);
+  --text-swap-ease: var(--ease-in-out);
+}
+
+.t-text-swap {
+  display: inline-block;
+  transform: translateY(0);
+  filter: blur(0);
+  opacity: 1;
+  transition:
+    transform var(--text-swap-dur) var(--text-swap-ease),
+    filter var(--text-swap-dur) var(--text-swap-ease),
+    opacity var(--text-swap-dur) var(--text-swap-ease);
+  will-change: transform, filter, opacity;
+}
+
+.t-text-swap.is-exit {
+  transform: translateY(calc(var(--text-swap-translate-y) * -1));
+  filter: blur(var(--text-swap-blur));
+  opacity: 0;
+}
+
+.t-text-swap.is-enter-start {
+  transform: translateY(var(--text-swap-translate-y));
+  filter: blur(var(--text-swap-blur));
+  opacity: 0;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-text-swap {
+    transition: none !important;
+  }
+}
+
+/* Chamada recebida (src/components/voice/IncomingCallModal.tsx): cartão do estúdio de transições */
+.ic-card {
+  overflow: hidden;
+  border-radius: var(--corner-lg);
+  background: var(--tone-1);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ink) 9%, transparent),
+    0 30px 90px rgba(0, 0, 0, 0.7);
+}
+
+.ic-band {
+  position: relative;
+  height: 104px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 140% at 12% 100%, color-mix(in srgb, var(--ink) 14%, transparent) 0%, transparent 60%),
+    var(--tone-2);
+}
+
+/* ondas saindo do avatar (centro do selo: 24px + 32px da esquerda, na base da faixa) */
+.ic-ripple {
+  position: absolute;
+  left: 24px;
+  bottom: -32px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--ink) 35%, transparent);
+  opacity: 0;
+  animation: ic-ripple 2.2s var(--ease-out) infinite;
+}
+
+@keyframes ic-ripple {
+  from {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+.ic-timer {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  background: color-mix(in srgb, var(--ink) 55%, transparent);
+  transform-origin: left center;
+  transition: transform 1s linear;
+}
+
+.ic-body {
+  padding: 0 24px 24px;
+}
+
+.ic-avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-top: -32px;
+  overflow: hidden;
+  border-radius: var(--corner-md);
+  background: var(--tone-1);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent),
+    0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+.ic-title {
+  margin: 12px 0 0;
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 500;
+  color: var(--ink);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.ic-meta {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.ic-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ink-muted);
+}
+
+.ic-divider {
+  height: 1px;
+  margin: 16px 0;
+  background: linear-gradient(90deg, transparent, var(--tone-4) 20%, var(--tone-4) 80%, transparent);
+}
+
+.ic-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ic-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  border-radius: var(--node);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ic-actions button:disabled {
+  cursor: default;
+}
+
+.ic-actions button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.ic-accept {
+  flex: 1;
+  background: var(--ink);
+  color: var(--tone-0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.ic-decline {
+  padding: 0 18px;
+  background: rgba(236, 74, 74, 0.16);
+  color: #ff9090;
+  transition: background-color var(--duration-quick) var(--ease-smooth-out);
+}
+
+.ic-decline:hover:not(:disabled) {
+  background: rgba(236, 74, 74, 0.22);
+}
+
+/* toque dos botões: encolhe até 0.99 */
+.ic-press {
+  transition: transform var(--duration-quick) var(--ease-smooth-out), opacity var(--duration-quick) var(--ease-smooth-out);
+}
+
+.ic-press:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.ic-press:disabled {
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ic-ripple {
+    animation: none;
+  }
+
+  .ic-timer,
+  .ic-press,
+  .ic-decline {
+    transition: none;
+  }
+}
+
+/* Transitions.dev — Icon swap: dois ícones no mesmo lugar, com fade + desfoque + escala */
+:root {
+  --icon-swap-dur: var(--duration-fast);
+  --icon-swap-blur: var(--blur-small);
+  --icon-swap-start-scale: 0.25;
+  --icon-swap-ease: var(--ease-in-out);
+}
+
+.t-icon-swap {
+  position: relative;
+  display: inline-grid;
+}
+
+.t-icon-swap .t-icon {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    opacity var(--icon-swap-dur) var(--icon-swap-ease),
+    filter var(--icon-swap-dur) var(--icon-swap-ease),
+    transform var(--icon-swap-dur) var(--icon-swap-ease);
+  /* sem will-change: congelaria o ícone na escala inicial e ele cresceria borrado */
+}
+
+.t-icon-swap[data-state="a"] .t-icon[data-icon="a"],
+.t-icon-swap[data-state="b"] .t-icon[data-icon="b"] {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+
+.t-icon-swap[data-state="a"] .t-icon[data-icon="b"],
+.t-icon-swap[data-state="b"] .t-icon[data-icon="a"] {
+  opacity: 0;
+  filter: blur(var(--icon-swap-blur));
+  transform: scale(var(--icon-swap-start-scale));
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-icon-swap .t-icon {
+    transition: none !important;
+  }
 }
 
 /* Transitions.dev — Tabs sliding */
@@ -1538,6 +1949,13 @@ video {
   --tabs-text-active: #ffffff;
   --tabs-bar-bg: #202020;
   --tabs-pill-bg: #454545;
+  --tabs-text-on-pill: var(--tabs-text-active);
+  --tabs-hover-bg: color-mix(in srgb, var(--tabs-pill-bg) 40%, transparent);
+  --tabs-badge-active-bg: rgb(255 255 255 / 0.2);
+  --tabs-badge-active-text: #ffffff;
+  /* Item ativo da navegação: segue a aba (pílula do tema, branca no padrão) */
+  --nav-active-bg: var(--tone-3);
+  --nav-active-ink: var(--ink);
 }
 
 .t-tabs {
@@ -1549,6 +1967,7 @@ video {
   border-radius: 48px;
   background: var(--tabs-bar-bg);
 }
+
 .t-tab {
   position: relative;
   appearance: none;
@@ -1562,9 +1981,39 @@ video {
   z-index: 1;
   transition: color var(--tabs-dur) var(--tabs-ease);
 }
-.t-tab:not([aria-selected="true"]):hover,
-.t-tab[aria-selected="true"] {
+
+.t-tab:not([aria-selected="true"]):hover {
   color: var(--tabs-text-active);
+}
+
+.t-tab[aria-selected="true"] {
+  color: var(--tabs-text-on-pill);
+}
+
+/* Hover da aba inativa: um fundo suave surge atrás do rótulo (antes só a cor do
+   texto mudava, o que parecia um clique ignorado). O ícone também acende. */
+.t-tab::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--tabs-hover-bg);
+  opacity: 0;
+  transition: opacity var(--tabs-dur) var(--tabs-ease);
+  pointer-events: none;
+}
+
+.t-tab:not([aria-selected="true"]):hover::before {
+  opacity: 1;
+}
+
+.t-tab svg {
+  transition: opacity var(--tabs-dur) var(--tabs-ease);
+}
+
+.t-tab:not([aria-selected="true"]):hover svg {
+  opacity: 1;
 }
 
 .t-tabs-pill {
@@ -1578,56 +2027,20 @@ video {
   transform: translateX(0);
   transition:
     transform var(--tabs-dur) var(--tabs-ease),
-    width     var(--tabs-dur) var(--tabs-ease),
-    height    var(--tabs-dur) var(--tabs-ease),
-    top       var(--tabs-dur) var(--tabs-ease);
+    width var(--tabs-dur) var(--tabs-ease),
+    height var(--tabs-dur) var(--tabs-ease),
+    top var(--tabs-dur) var(--tabs-ease);
   will-change: transform, width, height, top;
   z-index: 0;
   pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .t-tabs-pill, .t-tab { transition: none !important; }
-}
 
-/* Transitions.dev — Toast open / close (Used for Dropdowns) */
-:root {
-  --toast-open: 350ms;
-  --toast-close: 250ms;
-  --toast-distance: 16px;
-  --toast-blur: 2px;
-  --toast-scale: 0.97;
-  --toast-ease: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.t-toast {
-  opacity: 0;
-  transform: translateY(var(--toast-distance)) scale(var(--toast-scale));
-  filter: blur(var(--toast-blur));
-  will-change: transform, opacity, filter;
-  transition:
-    opacity var(--toast-close) var(--toast-ease),
-    transform var(--toast-close) var(--toast-ease),
-    filter var(--toast-close) var(--toast-ease);
-}
-.t-toast.is-open,
-.t-toast[data-state="open"] {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  filter: blur(0);
-  transition:
-    opacity var(--toast-open) var(--toast-ease),
-    transform var(--toast-open) var(--toast-ease),
-    filter var(--toast-open) var(--toast-ease);
-}
-.t-toast[data-state="closed"] {
-  opacity: 0;
-  transform: translateY(var(--toast-distance)) scale(var(--toast-scale));
-  filter: blur(var(--toast-blur));
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .t-toast { transition: none !important; }
+  .t-tabs-pill,
+  .t-tab {
+    transition: none !important;
+  }
 }
 
 /* Transitions.dev — Toggle */
@@ -1640,30 +2053,93 @@ video {
   --toggle-ease: cubic-bezier(0.34, 1.35, 0.64, 1);
 }
 
-.t-toggle { transition: background var(--toggle-track) var(--toggle-ease); }
-.t-toggle-thumb { translate: 0 0; will-change: translate; }
-.t-toggle[data-state="checked"] .t-toggle-thumb,
-.t-toggle[data-on="true"] .t-toggle-thumb { translate: var(--toggle-travel) 0; }
-.t-toggle.is-init[data-state="checked"] .t-toggle-thumb,
-.t-toggle.is-init[data-on="true"] .t-toggle-thumb { animation: t-toggle-on var(--toggle-dur) var(--toggle-ease) both; }
-.t-toggle.is-init[data-state="unchecked"] .t-toggle-thumb,
-.t-toggle.is-init[data-on="false"] .t-toggle-thumb { animation: t-toggle-off var(--toggle-dur) var(--toggle-ease) both; }
-
-@keyframes t-toggle-on {
-  0% { translate: 0 0; }
-  55% { translate: calc(var(--toggle-travel) + var(--toggle-ov1)) 0; }
-  80% { translate: calc(var(--toggle-travel) - var(--toggle-ov2)) 0; }
-  100% { translate: var(--toggle-travel) 0; }
+.t-toggle {
+  transition: background var(--toggle-track) var(--toggle-ease);
 }
+
+.t-toggle-thumb {
+  translate: 0 0;
+  will-change: translate;
+}
+
+.t-toggle[data-state="checked"] .t-toggle-thumb,
+.t-toggle[data-on="true"] .t-toggle-thumb {
+  translate: var(--toggle-travel) 0;
+}
+
+.t-toggle.is-init[data-state="checked"] .t-toggle-thumb,
+.t-toggle.is-init[data-on="true"] .t-toggle-thumb {
+  animation: t-toggle-on var(--toggle-dur) var(--toggle-ease) both;
+}
+
+.t-toggle.is-init[data-state="unchecked"] .t-toggle-thumb,
+.t-toggle.is-init[data-on="false"] .t-toggle-thumb {
+  animation: t-toggle-off var(--toggle-dur) var(--toggle-ease) both;
+}
+
+/* Gota líquida: ao atravessar a trilha a bolinha se estica no sentido do movimento (a frente
+   chega antes) e volta ao formato redondo ao parar, com uma leve ultrapassada. O `scale` é
+   independente do `translate`, então os dois se combinam. */
+@keyframes t-toggle-on {
+  0% {
+    translate: 0 0;
+    scale: 1 1;
+    transform-origin: left center;
+  }
+
+  35% {
+    scale: 1.35 0.88;
+  }
+
+  55% {
+    translate: calc(var(--toggle-travel) + var(--toggle-ov1)) 0;
+    scale: 1.1 0.96;
+  }
+
+  80% {
+    translate: calc(var(--toggle-travel) - var(--toggle-ov2)) 0;
+    scale: 0.96 1.03;
+  }
+
+  100% {
+    translate: var(--toggle-travel) 0;
+    scale: 1 1;
+    transform-origin: left center;
+  }
+}
+
 @keyframes t-toggle-off {
-  0% { translate: var(--toggle-travel) 0; }
-  55% { translate: calc(0px - var(--toggle-ov1)) 0; }
-  80% { translate: var(--toggle-ov2) 0; }
-  100% { translate: 0 0; }
+  0% {
+    translate: var(--toggle-travel) 0;
+    scale: 1 1;
+    transform-origin: right center;
+  }
+
+  35% {
+    scale: 1.35 0.88;
+  }
+
+  55% {
+    translate: calc(0px - var(--toggle-ov1)) 0;
+    scale: 1.1 0.96;
+  }
+
+  80% {
+    translate: var(--toggle-ov2) 0;
+    scale: 0.96 1.03;
+  }
+
+  100% {
+    translate: 0 0;
+    scale: 1 1;
+    transform-origin: right center;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .t-toggle-thumb { animation: none !important; }
+  .t-toggle-thumb {
+    animation: none !important;
+  }
 }
 
 /* ==========================================================================
@@ -1683,6 +2159,7 @@ video {
     transform: translateY(var(--stagger-distance, 12px));
     filter: blur(var(--stagger-blur, 3px));
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);
@@ -1693,6 +2170,7 @@ video {
 .t-stagger-line {
   will-change: transform, opacity, filter;
 }
+
 .t-stagger-line:not([class*="flex"]):not([class*="grid"]) {
   display: block;
 }
@@ -1724,6 +2202,7 @@ video {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .t-stagger.is-shown .t-stagger-line,
   .t-stagger-line.is-animating,
   .t-stagger-line.is-shown,
@@ -1751,13 +2230,12 @@ video {
 
 @keyframes t-digit-pop-in {
   0% {
-    transform: translate(
-      calc(var(--digit-distance) * var(--digit-dir-x)),
-      calc(var(--digit-distance) * var(--digit-dir-y))
-    );
+    transform: translate(calc(var(--digit-distance) * var(--digit-dir-x)),
+        calc(var(--digit-distance) * var(--digit-dir-y)));
     opacity: 0;
     filter: blur(var(--digit-blur));
   }
+
   100% {
     transform: translate(0, 0);
     opacity: 1;
@@ -1845,7 +2323,7 @@ video {
   filter: blur(0);
   transition:
     opacity var(--reveal-dur) var(--reveal-ease),
-    filter  var(--reveal-dur) var(--reveal-ease);
+    filter var(--reveal-dur) var(--reveal-ease);
 }
 
 .t-skel-content {
@@ -1854,7 +2332,7 @@ video {
   filter: blur(var(--reveal-blur));
   transition:
     opacity var(--reveal-dur) var(--reveal-ease),
-    filter  var(--reveal-dur) var(--reveal-ease);
+    filter var(--reveal-dur) var(--reveal-ease);
 }
 
 .t-skel.is-revealed .t-skel-skeleton {
@@ -1874,21 +2352,30 @@ video {
   transition: none !important;
 }
 
-.t-skel-skeleton.is-pulsing > * {
+.t-skel-skeleton.is-pulsing>* {
   animation: t-skel-pulse var(--pulse-dur) ease-in-out var(--pulse-count);
 }
 
 @keyframes t-skel-pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: var(--pulse-min); }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: var(--pulse-min);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .t-skel-skeleton,
   .t-skel-content {
     transition: none !important;
   }
-  .t-skel-skeleton.is-pulsing > * {
+
+  .t-skel-skeleton.is-pulsing>* {
     animation: none !important;
   }
 }
@@ -1915,14 +2402,12 @@ video {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: linear-gradient(
-    90deg,
-    transparent          0%,
-    transparent         40%,
-    var(--shimmer-highlight) 50%,
-    transparent         60%,
-    transparent        100%
-  );
+  background-image: linear-gradient(90deg,
+      transparent 0%,
+      transparent 40%,
+      var(--shimmer-highlight) 50%,
+      transparent 60%,
+      transparent 100%);
   background-size: var(--shimmer-band) 100%;
   background-repeat: no-repeat;
   -webkit-background-clip: text;
@@ -1933,8 +2418,13 @@ video {
 }
 
 @keyframes t-shimmer {
-  0%   { background-position: 100% 0; }
-  100% { background-position: 0% 0; }
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: 0% 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2034,6 +2524,7 @@ video {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .t-morph,
   .t-morph-plus,
   .t-morph-menu {
@@ -2094,9 +2585,11 @@ video {
   0% {
     transform: scale(1);
   }
+
   30% {
     transform: scale(0.82);
   }
+
   100% {
     transform: scale(1);
   }
@@ -2128,10 +2621,12 @@ video {
     opacity: 0;
     transform: translate(0, 0) scale(0.4);
   }
+
   20% {
     opacity: 1;
     transform: translate(calc(var(--px) * 0.25), calc(var(--py) * 0.25)) scale(1);
   }
+
   100% {
     opacity: 0;
     transform: translate(var(--px), var(--py)) scale(var(--p-end-scale, 0.6));
@@ -2143,6 +2638,7 @@ video {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .t-like-icon,
   .t-like-particles i {
     animation: none !important;
@@ -2162,37 +2658,59 @@ video {
 /* 1) Tokens (propriedades personalizadas: sem conflito com utilitários do Tailwind) */
 html[data-ui-style="refined"] {
   /* Curva e duração padrão de todo `transition` do Tailwind (o padrão dele é 150ms, ease). */
-  --default-transition-duration: 240ms;
+  --default-transition-duration: 220ms;
   --default-transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
 
   --motion-ease: cubic-bezier(0.32, 0.72, 0, 1);
-  --motion-fast: 180ms;
-  --motion-normal: 300ms;
-  --motion-slow: 460ms;
+  --motion-fast: 150ms;
+  --motion-normal: 240ms;
+  --motion-slow: 360ms;
   --ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* Tema padrão (Pherielium/Checkpoint): superfícies, bordas e cantos */
 html[data-ui-style="refined"]:is(:not([data-launcher-theme]), [data-launcher-theme="phelierium"], [data-launcher-theme="checkpoint"]) {
-  --surface-base: #050505;
-  --surface-raised: #161618;
-  --surface-overlay: #232326;
-  --color-text-sub: #9a9aa1;
+  --surface-base: var(--gray-0);
+  --surface-raised: var(--gray-2);
+  --surface-overlay: var(--gray-3);
+  --color-text-sub: var(--gray-8);
+  /* texto secundário na escala 700 (#D4D4D4); os outros temas mantêm o seu */
+  --ink-muted: var(--gray-8);
+
+  /* Equilíbrio: preto = fundo, cinza = hover/camada, branco = ativo (como notch e login) */
+  --tabs-bar-bg: var(--gray-2);
+  --tabs-pill-bg: var(--gray-11);
+  --tabs-text-on-pill: var(--gray-1);
+  --tabs-hover-bg: var(--gray-3);
+  --tabs-badge-active-bg: rgb(0 0 0 / 0.12);
+  --tabs-badge-active-text: var(--gray-1);
+  --nav-active-bg: var(--gray-11);
+  --nav-active-ink: var(--gray-1);
 
   /* bordas discretas: o olho percebe o tom, não a linha */
   --border-subtle: rgba(255, 255, 255, 0.06);
   --border-strong: rgba(255, 255, 255, 0.15);
 
   /* cantos maiores e contínuos (a "squircle" do iOS) */
-  --radius-panel: 26px;
-  --radius-card: 20px;
-  --radius-control: 14px;
-  --radius-badge: 9px;
+  --radius-panel: 24px;
+  --radius-card: 18px;
+  --radius-control: 12px;
+  --radius-badge: 12px;
+
+  /* escala do Tailwind (rounded-lg..4xl) e do sistema refined acompanham os cantos grandes */
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 20px;
+  --radius-3xl: 26px;
+  --radius-4xl: 32px;
+  --corner-sm: 16px;
+  --corner-md: 20px;
+  --corner-lg: 28px;
 
   /* sombras longas e suaves em vez de curtas e duras */
   --elev-shadow-color: rgba(0, 0, 0, 0.55);
-  --elev-card: 0 18px 48px -18px var(--elev-shadow-color);
-  --elev-focus: 0 28px 64px -20px var(--elev-shadow-color), 0 0 0 1px var(--edge-selected);
+  --elev-card: 0 12px 32px -16px var(--elev-shadow-color);
+  --elev-focus: 0 18px 44px -18px var(--elev-shadow-color), 0 0 0 1px var(--edge-selected);
 }
 
 /* 2) Comportamento e tipografia (camada base: qualquer utilitário continua ganhando) */
@@ -2237,9 +2755,9 @@ html[data-ui-style="refined"]:is(:not([data-launcher-theme]), [data-launcher-the
    (sem borda), uma cor de acento só para "ao vivo", movimento com a mola do iOS.
    ======================================================== */
 html[data-ui-style="refined"] {
-  --font-display: 'Sora Variable', 'Inter Variable', system-ui, sans-serif;
-  --font-heading: 'Sora Variable', 'Inter Variable', system-ui, sans-serif;
-  --font-title: 'Sora Variable', 'Inter Variable', system-ui, sans-serif;
+  --font-display: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  --font-heading: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  --font-title: 'Inter Variable', 'Inter', system-ui, sans-serif;
 }
 
 /* Tokens do sistema: sempre definidos (as peças em components/ui/refined funcionam também no estilo clássico). */
@@ -2247,14 +2765,16 @@ html[data-ui-style="refined"] {
   /* tinta (contraste sobre --tone-0: 18:1, 8:1, 4.6:1) */
   --ink: #f5f5f7;
   --ink-muted: #a1a1a6;
-  --ink-faint: #7c7c82;
+  --ink-faint: #959595;
 
   /* tons: cada superfície é um degrau acima da anterior */
-  --tone-0: #050505;
-  --tone-1: #0e0e10;
-  --tone-2: #17171a;
-  --tone-3: #212125;
-  --tone-4: #2c2c31;
+  --tone-0: var(--gray-1);
+  --tone-1: #111111;
+  --tone-2: var(--gray-2);
+  --tone-3: var(--gray-3);
+  --tone-4: var(--gray-4);
+  /* Faixa de chrome (title bar): preto absoluto só no tema padrão */
+  --chrome-black: var(--gray-0);
 
   /* passos de tipo: piso de 13px, um tamanho grande por tela */
   --step-0: 0.8125rem;
@@ -2279,12 +2799,19 @@ html[data-ui-style="refined"] {
 
   /* movimento */
   --spring: cubic-bezier(0.32, 0.72, 0, 1);
-  --dur-1: 160ms;
-  --dur-2: 260ms;
-  --dur-3: 420ms;
+  --dur-1: 140ms;
+  --dur-2: 220ms;
+  --dur-3: 340ms;
 
   /* o único acento de cor: "ao vivo" (online, falando, transmitindo) */
   --live: #30d158;
+  /* o par do ao vivo: erro, perigo e "offline" (mesma luminosidade, para conviverem na mesma tela) */
+  --danger: #ff453a;
+  /* aviso: algo pede atenção, mas ainda funciona (gravando, pendente, a caminho) */
+  --warn: #ffd60a;
+  /* presença de amigo: verde online, vermelho offline */
+  --presence-online: var(--live);
+  --presence-offline: var(--danger);
 }
 
 /* ========================================================
@@ -2320,6 +2847,7 @@ html[data-ui-style="refined"] {
 html[data-ui-style="refined"] [class*="shadow-"] {
   --tw-shadow: 0 0 #0000 !important;
 }
+
 html[data-ui-style="refined"] :is(.theme-panel, .theme-card-surface) {
   box-shadow: none;
 }
@@ -2348,6 +2876,7 @@ html[data-ui-style="refined"] .t-modal {
   --modal-close-dur: var(--dur-2);
   border-color: transparent !important;
 }
+
 html[data-ui-style="refined"] .t-modal.t-modal-panel:not(.is-open):not(.is-closing),
 html[data-ui-style="refined"] .t-modal.t-modal-panel.is-closing {
   filter: none;
@@ -2361,14 +2890,20 @@ html[data-ui-style="refined"] {
   --tabs-text-active: var(--ink);
   --tabs-bar-bg: var(--tone-2);
   --tabs-pill-bg: var(--tone-4);
+  --tabs-text-on-pill: var(--tabs-text-active);
+  --tabs-hover-bg: color-mix(in srgb, var(--tabs-pill-bg) 40%, transparent);
+  --tabs-badge-active-bg: rgb(255 255 255 / 0.2);
+  --tabs-badge-active-text: var(--ink);
   --toast-ease: var(--spring);
   --toast-blur: 0px;
   --toggle-ease: var(--spring);
 }
+
 html[data-ui-style="refined"] .t-tabs {
   gap: 0;
   padding: 4px;
 }
+
 html[data-ui-style="refined"] .t-tab {
   height: 36px;
   padding: 0 16px;
@@ -2384,6 +2919,7 @@ html[data-ui-style="refined"] [data-slot="tooltip-content"] {
   font-size: var(--step-0);
   font-weight: 500;
 }
+
 html[data-ui-style="refined"] [data-slot="tooltip-content"] svg.fill-foreground {
   fill: var(--tone-3);
   background: var(--tone-3);
@@ -2393,6 +2929,7 @@ html[data-ui-style="refined"] [data-slot="tooltip-content"] svg.fill-foreground 
 html[data-ui-style="refined"] .uppercase {
   text-transform: none;
 }
+
 html[data-ui-style="refined"] :is(.tracking-wide, .tracking-wider, .tracking-widest, [class*="tracking-[0."], [class*="tracking-[.1"], [class*="tracking-[.2"], [class*="tracking-[.3"]) {
   letter-spacing: 0;
 }
@@ -2409,9 +2946,11 @@ html[data-ui-style="refined"] .font-mono {
 html[data-ui-style="refined"] button[class*="border-white/"]:not([aria-pressed]):not([aria-selected]):not([aria-checked]):not([aria-current]):not([data-state]):not([role]):not([style*="border"]) {
   border-color: transparent !important;
 }
+
 html[data-ui-style="refined"] button[class*="border-white/"]:not([class^="bg-"]):not([class*=" bg-"]):not([aria-pressed]):not([aria-selected]):not([aria-checked]):not([aria-current]):not([data-state]):not([role]):not([style*="border"]) {
   background-color: var(--tone-3);
 }
+
 html[data-ui-style="refined"] button[class*="border-white/"]:not([class^="bg-"]):not([class*=" bg-"]):not([aria-pressed]):not([aria-selected]):not([aria-checked]):not([aria-current]):not([data-state]):not([role]):not([style*="border"]):hover:not(:disabled) {
   background-color: var(--tone-4);
 }
@@ -2420,6 +2959,7 @@ html[data-ui-style="refined"] button[class*="border-white/"]:not([class^="bg-"])
 html[data-ui-style="refined"] span[class*="rounded-full"][class*="border-white/"]:not([style*="border"]) {
   border-color: transparent !important;
 }
+
 html[data-ui-style="refined"] span[class*="rounded-full"][class*="border-white/"]:not([class^="bg-"]):not([class*=" bg-"]):not([style*="border"]) {
   background-color: var(--tone-3);
 }
@@ -2427,16 +2967,16 @@ html[data-ui-style="refined"] span[class*="rounded-full"][class*="border-white/"
 
 /* Cartões com linha quase invisível (5–10%) e fundo próprio: o tom já separa, a linha sai.
    Bordas de seleção (20% ou mais) e bordas inline (cor dinâmica) ficam. */
-html[data-ui-style="refined"] div:is([class*=" border-white/5 "],[class$=" border-white/5"],[class^="border-white/5 "],[class*=" border border-white/5"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
-html[data-ui-style="refined"] div:is([class*=" border-white/6 "],[class$=" border-white/6"],[class^="border-white/6 "],[class*=" border border-white/6"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
-html[data-ui-style="refined"] div:is([class*=" border-white/8 "],[class$=" border-white/8"],[class^="border-white/8 "],[class*=" border border-white/8"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
-html[data-ui-style="refined"] div:is([class*=" border-white/10 "],[class$=" border-white/10"],[class^="border-white/10 "],[class*=" border border-white/10"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
-html[data-ui-style="refined"] div:is([class*=" border-white/[0.04] "],[class$=" border-white/[0.04]"],[class^="border-white/[0.04] "],[class*=" border border-white/[0.04]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
-html[data-ui-style="refined"] div:is([class*=" border-white/[0.05] "],[class$=" border-white/[0.05]"],[class^="border-white/[0.05] "],[class*=" border border-white/[0.05]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
-html[data-ui-style="refined"] div:is([class*=" border-white/[0.06] "],[class$=" border-white/[0.06]"],[class^="border-white/[0.06] "],[class*=" border border-white/[0.06]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
-html[data-ui-style="refined"] div:is([class*=" border-white/[0.07] "],[class$=" border-white/[0.07]"],[class^="border-white/[0.07] "],[class*=" border border-white/[0.07]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
-html[data-ui-style="refined"] div:is([class*=" border-white/[0.08] "],[class$=" border-white/[0.08]"],[class^="border-white/[0.08] "],[class*=" border border-white/[0.08]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]),
-html[data-ui-style="refined"] div:is([class*=" border-white/[0.1] "],[class$=" border-white/[0.1]"],[class^="border-white/[0.1] "],[class*=" border border-white/[0.1]"]):is([class^="bg-"],[class*=" bg-"]):not([style*="border"]) {
+html[data-ui-style="refined"] div:is([class*=" border-white/5 "], [class$=" border-white/5"], [class^="border-white/5 "], [class*=" border border-white/5"]):is([class^="bg-"], [class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/6 "], [class$=" border-white/6"], [class^="border-white/6 "], [class*=" border border-white/6"]):is([class^="bg-"], [class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/8 "], [class$=" border-white/8"], [class^="border-white/8 "], [class*=" border border-white/8"]):is([class^="bg-"], [class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/10 "], [class$=" border-white/10"], [class^="border-white/10 "], [class*=" border border-white/10"]):is([class^="bg-"], [class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.04] "], [class$=" border-white/[0.04]"], [class^="border-white/[0.04] "], [class*=" border border-white/[0.04]"]):is([class^="bg-"], [class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.05] "], [class$=" border-white/[0.05]"], [class^="border-white/[0.05] "], [class*=" border border-white/[0.05]"]):is([class^="bg-"], [class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.06] "], [class$=" border-white/[0.06]"], [class^="border-white/[0.06] "], [class*=" border border-white/[0.06]"]):is([class^="bg-"], [class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.07] "], [class$=" border-white/[0.07]"], [class^="border-white/[0.07] "], [class*=" border border-white/[0.07]"]):is([class^="bg-"], [class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.08] "], [class$=" border-white/[0.08]"], [class^="border-white/[0.08] "], [class*=" border border-white/[0.08]"]):is([class^="bg-"], [class*=" bg-"]):not([style*="border"]),
+html[data-ui-style="refined"] div:is([class*=" border-white/[0.1] "], [class$=" border-white/[0.1]"], [class^="border-white/[0.1] "], [class*=" border border-white/[0.1]"]):is([class^="bg-"], [class*=" bg-"]):not([style*="border"]) {
   border-color: transparent;
 }
 
@@ -2450,6 +2990,7 @@ html[data-ui-style="refined"] {
   --elev-button: none;
   --ease-focus: var(--spring);
 }
+
 html[data-ui-style="refined"] :is(.ctl-circle, .ctl-pill) {
   border-color: transparent;
   background: color-mix(in srgb, var(--tone-2) 88%, transparent);
@@ -2457,22 +2998,27 @@ html[data-ui-style="refined"] :is(.ctl-circle, .ctl-pill) {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
+
 html[data-ui-style="refined"] .ctl-circle {
   color: var(--ink-muted);
 }
+
 html[data-ui-style="refined"] .ctl-circle:hover {
   background: var(--tone-3);
   color: var(--ink);
 }
+
 html[data-ui-style="refined"] .ctl-circle[data-active="true"] {
   background: var(--ink);
   color: var(--tone-0);
 }
+
 html[data-ui-style="refined"] .btn-play {
   border-color: transparent;
   box-shadow: none;
   border-radius: var(--node);
 }
+
 html[data-ui-style="refined"] .platform-hint:hover,
 html[data-ui-style="refined"] .platform-hint:focus-visible {
   border-color: transparent;
@@ -2483,4 +3029,732 @@ html[data-ui-style="refined"] .platform-hint:focus-visible {
    Os degradês escuros (from-black, scrims) ficam: protegem a leitura do texto sobre imagens. */
 html[data-ui-style="refined"] :is([class*="bg-gradient-"], [class*="bg-linear-"]):is([class*="from-white/"], [class*="via-white/"]):not(.bg-clip-text) {
   background-image: none !important;
+}
+
+/* Cantos squircle (corner-shape, Chromium/WebView2 recente). Sem suporte, o
+   border-radius comum continua valendo, então não há regressão visual. */
+.squircle {
+  border-radius: var(--radius-card);
+}
+
+@supports (corner-shape: squircle) {
+  .squircle {
+    corner-shape: var(--squircle);
+  }
+}
+
+/* Temas que não são o padrão: o preto absoluto e a escala de cinzas saem de cena
+   e os tons derivam das superfícies do próprio tema. */
+html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-launcher-theme="checkpoint"]) {
+  --tone-0: var(--surface-base);
+  --tone-1: color-mix(in srgb, var(--surface-base) 50%, var(--surface-raised));
+  --tone-2: var(--surface-raised);
+  --tone-3: color-mix(in srgb, var(--surface-raised) 50%, var(--surface-overlay));
+  --tone-4: var(--surface-overlay);
+  --chrome-black: var(--surface-base);
+}
+
+/* Squircle em todo o app: qualquer elemento com border-radius ganha o canto
+   contínuo do macOS. Círculos e pílulas ficam de fora, senão virariam quadrados
+   arredondados (avatares, pontos de status, botões redondos). */
+@supports (corner-shape: squircle) {
+  @layer base {
+
+    *,
+    *::before,
+    *::after {
+      corner-shape: var(--squircle);
+    }
+
+    :is(.rounded-full,
+      /* Orbloom desenha o orb com border-radius: 50% na própria folha de estilo */
+      [class*="orb-"],
+      [class*="rounded-full"],
+      [class*="rounded-[50%]"],
+      [class*="rounded-[999"],
+      [class*="rounded-[var(--node)]"],
+      [style*="border-radius: 50%"],
+      [style*="border-radius: 999"],
+      [style*="border-radius:50%"],
+      [style*="border-radius:999"],
+      [style*="borderRadius: 50%"],
+      circle, ellipse) {
+      corner-shape: round;
+    }
+  }
+}
+
+/* ========================================================
+   Fundação do redesign (docs/redesign-plan.md, F0)
+   ======================================================== */
+
+/* Tiers de troféu: a única cor fora do --live. Espelham TIER_STYLES (achievementTier.ts),
+   em canais r g b para compor com alfa: rgb(var(--tier-gold) / 0.4). O teste
+   tierTokens.test.ts garante que os dois lugares não se separam. */
+:root {
+  --tier-iron: 148 155 163;
+  --tier-bronze: 205 127 50;
+  --tier-silver: 203 209 220;
+  --tier-gold: 245 176 36;
+  --tier-platinum: 125 249 255;
+}
+
+/* Números que o usuário compara (ping, FPS, tamanho, contagens). O estilo refinado troca
+   .font-mono por Inter; esta classe é a exceção deliberada. */
+.font-metric {
+  font-family: 'Geist Mono Variable', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* Painel em vidro escuro sobre o fundo ambiente. Só para painéis flutuantes: vidro em tudo
+   custa GPU a 144 Hz. Sem suporte a blur, cai no tom sólido. */
+.panel-glass {
+  background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+  box-shadow: var(--hairline);
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  .panel-glass {
+    backdrop-filter: blur(20px) saturate(1.4);
+  }
+}
+
+/* ========================================================
+   Home estilo console (src/components/home/console)
+   A arte do jogo em foco ocupa a tela (GameEnvironment nítido); embaixo, uma fileira
+   de capas em que a focada cresce, e o nome do jogo com as dicas de tecla.
+   ======================================================== */
+:root {
+  --console-tile-h: clamp(190px, 25vh, 340px);
+  /* capas verticais (600x900 da Steam): a largura é 2/3 da altura, a arte cabe sem cortar */
+  --console-tile-ratio: 0.667;
+  --console-tile-radius: 6px;
+  --console-focus-scale: 1.2;
+  --console-gap: clamp(10px, 0.8vw, 20px);
+  --console-shadow-room: 40px;
+}
+
+/* .console-tile: dimensoes de fallback apenas (React Spring controla h/w/box-shadow via
+   inline style com fisica de mola — transicoes CSS removidas para nao conflitar). */
+/* loja escrita sob a capa em foco, como o "PS5" do conceito */
+.console-store-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: absolute;
+  left: 0;
+  top: calc(100% + 10px);
+  font-size: var(--fs-label);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+/* legenda do controle no formato do conceito: sem faixa, glifo + rótulo em caixa alta, à direita */
+.console-footer {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.console-footer span {
+  font-size: var(--fs-label) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* abas da biblioteca, como numa tela inicial de console: texto em caixa alta pequena,
+   a ativa com contorno de tinta, chips de troca de aba (LB/RB ou Q/E) nas pontas */
+.console-tab-item {
+  font-size: var(--fs-label);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  border: 1.5px solid transparent;
+  transition: color var(--dur-focus) ease-out, border-color var(--dur-focus) ease-out;
+}
+
+.console-tab-item:hover {
+  color: var(--ink);
+}
+
+.console-tab-item[data-active="true"] {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+.console-bumper {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 6px;
+  border: 1px solid var(--tone-4);
+  font-size: var(--fs-label);
+  font-weight: 700;
+  color: var(--ink-muted);
+  background: transparent;
+}
+
+/* bloco de informações do jogo em foco, acima da fileira: nome, horas, último troféu e sessão */
+.console-info {
+  margin-bottom: var(--gap-section);
+  animation: console-info-in 200ms var(--screen-ease, ease-out) both;
+}
+
+.console-info-title {
+  font-family: var(--font-display, inherit);
+  font-size: calc(var(--fs-hero) * 0.6);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: var(--ink);
+  max-width: 70%;
+}
+
+.console-info-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px var(--gap-section);
+  margin-top: var(--gap-stack);
+  font-size: var(--fs-caption);
+  color: var(--ink-muted);
+}
+
+.console-info-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.console-info-trophy {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 46ch;
+  align-items: center;
+  gap: 8px;
+}
+
+@keyframes console-info-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .console-info {
+    animation: none;
+  }
+}
+
+/* setas laterais: só com o mouse sobre a fileira */
+.console-step {
+  opacity: 0;
+  transition: opacity var(--dur-focus) ease-out;
+}
+
+.console-row:hover .console-step:not(:disabled) {
+  opacity: 1;
+}
+
+.console-step:disabled {
+  pointer-events: none;
+}
+
+/* dicas de tecla: rótulo em texto, tecla em pílula de contorno */
+.console-hints {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.console-hints li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.console-hints kbd {
+  font-family: inherit;
+  font-size: var(--fs-label);
+  color: var(--ink);
+  border: 1px solid var(--tone-4);
+  background: color-mix(in srgb, var(--tone-2) 80%, transparent);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .console-step {
+    transition: none;
+  }
+}
+
+/* ========================================================
+   Tela do jogo estilo console (src/components/game-detail/console)
+   A arte fica; a interface entra deslizando. No modo lista a arte recua
+   para a coluna da direita (animado no componente).
+   ======================================================== */
+:root {
+  --screen-open: 240ms;
+  --screen-close: 150ms;
+  --screen-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  /* aviso de erro ao iniciar: o único vermelho da tela, com contraste sobre a arte escurecida */
+  --screen-error: #ff8a80;
+}
+
+.console-screen {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--screen-close) ease-in;
+}
+
+.console-screen[data-open="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity var(--screen-open) var(--screen-ease);
+}
+
+/* A entrada dos blocos (abas, título, caixa de Iniciar) e o movimento da arte são molas do
+   framer-motion no componente (screenSprings, em src/design-system/motion.ts). */
+
+/* a fileira da Home desce e some quando a tela do jogo abre, como no vídeo de referência */
+.console-home {
+  transition: opacity var(--screen-open) var(--screen-ease), transform var(--screen-open) var(--screen-ease);
+}
+
+.console-home[data-hidden="true"] {
+  opacity: 0;
+  transform: translateY(36px);
+  pointer-events: none;
+}
+
+.console-screen-scrim {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--tone-0) 82%, transparent) 0%, color-mix(in srgb, var(--tone-0) 30%, transparent) 50%, transparent 75%),
+    linear-gradient(0deg, color-mix(in srgb, var(--tone-0) 88%, transparent) 0%, transparent 50%),
+    linear-gradient(180deg, color-mix(in srgb, var(--tone-0) 60%, transparent) 0%, transparent 22%);
+  transition: opacity var(--screen-open) var(--screen-ease);
+}
+
+/* no modo lista a arte é só a coluna da direita: escurece só embaixo (onde ficam troféus e Iniciar) */
+/* painel da lista: sólido e escuro, sem canto arredondado (como o painel do conceito) */
+.console-list-panel {
+  background: var(--tone-1);
+}
+
+.console-screen-scrim[data-split="true"] {
+  background:
+    linear-gradient(0deg, color-mix(in srgb, var(--tone-0) 90%, transparent) 0%, transparent 55%),
+    linear-gradient(90deg, color-mix(in srgb, var(--tone-0) 40%, transparent) 0%, transparent 30%);
+}
+
+/* botões pequenos sobre a arte: base e contorno próprios, legíveis em qualquer capa */
+.console-chip {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--tone-2) 85%, transparent);
+  border: 1px solid var(--tone-4);
+  transition: background-color var(--dur-focus) ease-out;
+}
+
+.console-chip:hover {
+  background: var(--tone-3);
+}
+
+/* números grandes com unidade pequena ("23h 19m") */
+.console-stats dt {
+  font-size: var(--fs-label);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.console-stats dd {
+  margin: 0;
+  font-size: calc(var(--fs-title) * 1.5);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.console-stats dd small {
+  font-size: 0.55em;
+  font-weight: 500;
+  color: var(--ink-muted);
+  margin-left: 1px;
+}
+
+.console-stats dd.console-stats-text {
+  font-size: var(--fs-title);
+  padding-top: 0.25em;
+}
+
+.console-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+  overflow: hidden;
+}
+
+.console-progress>span {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--ink);
+  transition: width var(--screen-open) var(--screen-ease);
+}
+
+/* Iniciar o jogo: caixa de contorno que acende ao passar o mouse ou focar */
+.console-start {
+  border-radius: var(--console-tile-radius, 6px);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--tone-0) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink) 70%, transparent);
+  transition:
+    background-color var(--dur-focus) ease-out,
+    color var(--dur-focus) ease-out,
+    transform var(--dur-focus) var(--screen-ease);
+}
+
+.console-start:hover:not(:disabled),
+.console-start:focus-visible {
+  background: var(--ink);
+  color: var(--tone-0);
+}
+
+.console-start:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.console-start:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.console-start-icon {
+  background: var(--ink);
+  color: var(--tone-0);
+}
+
+.console-start:hover:not(:disabled) .console-start-icon,
+.console-start:focus-visible .console-start-icon {
+  background: var(--tone-0);
+  color: var(--ink);
+}
+
+/* menu Opções: lista curta sobre a arte */
+.console-options {
+  background: color-mix(in srgb, var(--tone-1) 94%, transparent);
+  border: 1px solid var(--tone-4);
+  border-radius: var(--console-tile-radius, 6px);
+  padding: 4px;
+}
+
+.console-options button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  color: var(--ink);
+  text-align: left;
+}
+
+.console-options button:hover,
+.console-options button:focus-visible {
+  background: var(--tone-3);
+}
+
+/* busca da lista de troféus */
+.console-search {
+  border: 1.5px solid var(--tone-4);
+  transition: border-color var(--dur-focus) ease-out;
+}
+
+.console-search:focus-within {
+  border-color: var(--ink);
+}
+
+/* linha de troféu: separada por um filete, sem caixa (como a lista do conceito) */
+.console-trophy+.console-trophy {
+  border-top: 1px solid var(--tone-3);
+}
+
+.console-trophy[data-achieved="false"] {
+  opacity: 0.85;
+}
+
+.console-more {
+  transition: color var(--dur-focus) ease-out;
+}
+
+.console-more:hover {
+  color: var(--ink);
+}
+
+.console-ach {
+  background: var(--tone-1);
+  border: 1.5px solid transparent;
+  border-radius: var(--console-tile-radius, 6px);
+  transition: border-color var(--dur-focus) ease-out, background-color var(--dur-focus) ease-out;
+}
+
+.console-ach[data-state="next"] {
+  background: transparent;
+}
+
+/* o item em foco ganha o contorno de tinta, como o item selecionado da lista do conceito */
+.console-ach:focus-visible {
+  outline: none;
+}
+
+/* contorno único do item selecionado: salta de um item para o outro */
+.console-ach-cursor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 1;
+  pointer-events: none;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--console-tile-radius, 6px);
+  transition: transform 180ms var(--screen-ease), height 180ms var(--screen-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .console-screen,
+  .console-home,
+  .console-ach-cursor,
+  .console-progress>span,
+  .console-start {
+    transition: none;
+  }
+}
+
+/* ========================================================
+   Teclado virtual do controle (src/components/keyboard)
+   Formato do teclado do Steam Deck: cinco fileiras na mesma largura, o símbolo de cima pequeno
+   acima do principal, teclas de ação mais largas com o botão do controle. Só tokens do sistema.
+   ======================================================== */
+.vk-dock {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 var(--safe-x, 24px) 16px;
+}
+
+.vk-preview {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  max-width: min(720px, 100%);
+  min-height: 44px;
+  padding: 0 20px;
+  overflow: hidden;
+  white-space: pre;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: var(--step-2);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
+}
+
+.vk-caret {
+  width: 2px;
+  height: 1.2em;
+  margin-inline: 1px;
+  background: var(--ink);
+  animation: vk-blink 1s steps(1) infinite;
+}
+
+.vk-placeholder {
+  color: var(--ink-faint);
+}
+
+@keyframes vk-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.vk {
+  --vk-gap: 4px;
+  display: grid;
+  gap: var(--vk-gap);
+  padding: var(--vk-gap);
+  border-radius: var(--corner-sm);
+  background: var(--tone-0);
+  box-shadow: 0 -12px 40px rgb(0 0 0 / 0.5);
+}
+
+.vk-row,
+.vk-extras {
+  display: grid;
+  gap: var(--vk-gap);
+}
+
+.vk-row {
+  grid-template-columns: repeat(60, minmax(0, 1fr));
+}
+
+.vk-extras {
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+}
+
+.vk-key {
+  grid-column: span var(--vk-span, 6);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  height: clamp(52px, 7.4vh, 76px);
+  padding: 0;
+  border-radius: 4px;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: var(--step-2);
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--duration-micro, 80ms) var(--ease-smooth-out, ease-out),
+    transform var(--duration-micro, 80ms) var(--ease-smooth-out, ease-out);
+}
+
+.vk-extras .vk-key {
+  grid-column: auto;
+}
+
+.vk-key[data-kind="action"] {
+  background: var(--surface-base);
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 0 10px 8px;
+  font-size: var(--step-0);
+}
+
+.vk-key[data-kind="action"]>svg {
+  align-self: center;
+  margin: auto;
+}
+
+.vk-key:hover {
+  background: var(--tone-3);
+}
+
+.vk-key:active {
+  transform: scale(0.97);
+}
+
+/* o foco do controle: contorno claro por dentro, sem mudar o tamanho da fileira (`:focus`, não `:focus-visible`: o foco vem do D-pad, não do teclado) */
+.vk-key:focus {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+  box-shadow: none;
+  background: var(--tone-4);
+}
+
+.vk-key[data-pressed] {
+  background: var(--tone-4);
+}
+
+.vk-sub {
+  position: absolute;
+  top: 7px;
+  font-size: var(--step-0);
+  color: var(--ink-faint);
+}
+
+.vk-key[data-kind="char"]:has(.vk-sub) .vk-main {
+  margin-top: 12px;
+}
+
+.vk-label {
+  font-weight: 500;
+}
+
+.vk-badge {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: inline-flex;
+}
+
+.vk-badge--start {
+  right: auto;
+  left: 10px;
+}
+
+.vk-badge--text {
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--tone-0);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vk-caret {
+    animation: none;
+  }
+
+  .vk-key {
+    transition: none;
+  }
+}
+
+/* selo de favorito na capa (src/components/home/console/FavoriteBadge.tsx) */
+.console-fav {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--surface-base);
+  color: var(--ink);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.5);
+  pointer-events: none;
+}
+
+.console-fav-star {
+  width: 16px;
+  height: 16px;
+}
+
+.console-fav-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 2px solid var(--ink);
 }

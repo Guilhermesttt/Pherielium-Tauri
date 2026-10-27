@@ -47,7 +47,7 @@ export const GameDetailSteamActionBar: React.FC<GameDetailSteamActionBarProps> =
     }) => {
       return (
         <div className="w-full select-none flex flex-col gap-3">
-          <div className="w-full flex flex-wrap items-center justify-between gap-6 py-4 border-b border-white/[0.08]">
+          <div className="w-full flex flex-wrap items-center justify-between gap-6 py-4">
             {/* Left Side: Big Play Button + Session / Playtime Info */}
             <div className="flex flex-wrap items-center gap-6 sm:gap-8">
               {/* Primary Action Button (White Editorial Pill with Dynamic Shimmer Sheen) */}
@@ -61,9 +61,9 @@ export const GameDetailSteamActionBar: React.FC<GameDetailSteamActionBarProps> =
                   onLaunch();
                 }}
                 disabled={isLaunching || isRunning}
-                className={`group relative overflow-hidden flex items-center gap-3 px-8 sm:px-10 py-3.5 rounded-2xl font-display font-black text-sm sm:text-base tracking-wider uppercase transition-all cursor-pointer ${
+                className={`group relative overflow-hidden flex h-[var(--cta-h)] min-h-14 items-center gap-3.5 rounded-[var(--node)] px-10 sm:px-14 font-display font-black text-[length:var(--step-2)] sm:text-[length:var(--step-3)] tracking-tight transition-all cursor-pointer ${
                   isRunning
-                    ? "bg-emerald-600/80 text-emerald-100 border border-emerald-400/50 shadow-[0_0_28px_rgba(16,185,129,0.4)]"
+                    ? "bg-[color-mix(in_srgb,var(--live)_80%,black)] text-white"
                     : "btn-play"
                 }`}
               >
@@ -134,7 +134,7 @@ export const GameDetailSteamActionBar: React.FC<GameDetailSteamActionBarProps> =
                   onOpenControllerPanel();
                 }}
                 disabled={!onOpenControllerPanel}
-                className="flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.05] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 text-[var(--ink-muted)] hover:text-white transition-all cursor-pointer shadow-md disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex items-center justify-center w-11 h-11 rounded-[var(--node)] bg-[var(--tone-2)] hover:bg-[var(--tone-3)] transition-colors text-[var(--ink-muted)] hover:text-white transition-all cursor-pointer shadow-md disabled:cursor-not-allowed disabled:opacity-40"
                 title="Configuração do Controle"
                 aria-label="Configuração do Controle"
               >
@@ -146,7 +146,7 @@ export const GameDetailSteamActionBar: React.FC<GameDetailSteamActionBarProps> =
                 <button
                   type="button"
                   onClick={onEditGame}
-                  className="flex items-center justify-center w-11 h-11 rounded-xl bg-white/[0.05] hover:bg-white/[0.12] border border-white/10 hover:border-white/25 text-[var(--ink-muted)] hover:text-white transition-all cursor-pointer shadow-md"
+                  className="flex items-center justify-center w-11 h-11 rounded-[var(--node)] bg-[var(--tone-2)] hover:bg-[var(--tone-3)] transition-colors text-[var(--ink-muted)] hover:text-white transition-all cursor-pointer shadow-md"
                   title="Gerenciar Jogo"
                   aria-label="Gerenciar Jogo"
                 >
@@ -159,10 +159,10 @@ export const GameDetailSteamActionBar: React.FC<GameDetailSteamActionBarProps> =
                 <button
                   type="button"
                   onClick={onToggleFavorite}
-                  className={`flex items-center justify-center w-11 h-11 rounded-xl border transition-all cursor-pointer shadow-md ${
+                  className={`flex items-center justify-center w-11 h-11 rounded-[var(--node)] transition-colors cursor-pointer ${
                     isFavorite
-                      ? "bg-amber-500/20 border-amber-400/50 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.25)]"
-                      : "bg-white/[0.05] hover:bg-white/[0.12] border-white/10 text-[var(--ink-muted)] hover:text-white"
+                      ? "bg-amber-500/20 text-amber-300"
+                      : "bg-[var(--tone-2)] hover:bg-[var(--tone-3)] text-[var(--ink-muted)] hover:text-[var(--ink)]"
                   }`}
                   title={
                     isFavorite

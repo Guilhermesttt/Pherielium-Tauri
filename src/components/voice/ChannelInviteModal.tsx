@@ -7,6 +7,9 @@ import { sendCallInvite } from "../../services/voiceCall";
 import { isChannelInviteRingOn } from "../../services/voiceCall/inviteState";
 import { APP_PROTOCOL_VERSION } from "../../lib/protocolVersion";
 import { callCapacityMessage, canAcceptNewParticipant } from "../../services/voiceCall/limits";
+import { buildChannelInvitePayload } from "../../services/voiceCall/channelInvite";
+import { modalBackdropMotion, modalMotion } from "../../design-system/motion";
+import { useModalSounds } from "../../hooks/useModalSounds";
 
 interface ChannelInviteModalProps {
   isOpen: boolean;
@@ -25,6 +28,7 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
   friends,
   notify,
 }) => {
+  useModalSounds(isOpen);
   const [searchQuery, setSearchQuery] = useState("");
   const [invitedFriends, setInvitedFriends] = useState<Record<string, boolean>>({});
   const [sendingId, setSendingId] = useState<string | null>(null);
@@ -72,16 +76,14 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
       }).catch(() => {});
 
       // 2. Send structured chat message for interactive invite card in DM
-      const invitePayload = {
-        __type: "call_invite",
-        chatId: session.chatId,
+      const invitePayload = buildChannelInvitePayload({
+        roomId: session.chatId,
         roomName: session.roomName || `Call de ${userProfile?.displayName || "Voz"}`,
         category: session.category || "resenha_games",
         callerName: userProfile?.displayName || "Jogador",
         callerAvatar: avatarUrl,
         isPrivate: Boolean(session.isPrivate),
-        createdAt: Date.now(),
-      };
+      });
 
       await sendChatMessage(friendUid, JSON.stringify(invitePayload));
 
@@ -103,19 +105,16 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl select-none">
+      {isOpen && (
+      <motion.div {...modalBackdropMotion} className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl select-none">
         {/* Backdrop dismiss */}
         <div className="absolute inset-0" onClick={onClose} />
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: 10 }}
-          transition={{ type: "spring", stiffness: 380, damping: 28 }}
+          {...modalMotion}
           className="glass-panel relative flex flex-col w-full max-w-md max-h-[80vh] overflow-hidden rounded-3xl border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.95)] z-10"
         >
           {/* Header */}
@@ -278,7 +277,8 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
             </p>
           </div>
         </motion.div>
-      </div>
+      </motion.div>
+    )}
     </AnimatePresence>
   );
 };

@@ -309,7 +309,8 @@ const playOverlaySound = (
             : type === "toast" || type === "notification"
               ? (themeSounds.notification || themeSounds.chatReceived)
               : type === "hover"
-                ? (themeSounds.hover || themeSounds.navigate)
+                // hover vazio = o tema não tem som de passar o mouse: fica em silêncio (não vira "navigate")
+                ? (themeSounds.hover === "" ? undefined : (themeSounds.hover || themeSounds.navigate))
                 : type === "select"
                   ? (themeSounds.select || themeSounds.navigate)
                   : type === "switchOn"
@@ -1678,6 +1679,7 @@ const OverlayApp: React.FC = () => {
         soundVolume={
           typeof panelData.settings?.effectsVolume === "number" ? panelData.settings.effectsVolume : undefined
         }
+        soundTheme={panelData.settings?.achievementSoundTheme}
         overlayCall={
           activeCall && activeCall.active
             ? {

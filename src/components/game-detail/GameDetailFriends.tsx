@@ -11,6 +11,27 @@ interface GameDetailFriendsProps {
   onOpenChat?: (friend: SocialFriend) => void;
   playSound?: (type: SoundEffectType) => void;
 }
+
+
+/** Avatar com as iniciais quando o amigo não tem foto (nada de imagem remota de reserva). */
+const FriendAvatar: React.FC<{ name: string; url?: string; className: string }> = ({ name, url, className }) =>
+  url ? (
+    <img src={url} alt="" className={`${className} object-cover`} draggable={false} />
+  ) : (
+    <span
+      aria-hidden="true"
+      className={`${className} flex items-center justify-center bg-[var(--tone-3)] text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]`}
+    >
+      {name.slice(0, 2).toUpperCase()}
+    </span>
+  );
+
+/** Enter ou Espaço ativam, como um clique (para linhas clicáveis que não são <button>). */
+const onActivateKey = (run: () => void) => (event: React.KeyboardEvent) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    run();
+  };
 
 export const GameDetailFriends: React.FC<GameDetailFriendsProps> = React.memo(({
   game,
@@ -93,7 +114,7 @@ export const GameDetailFriends: React.FC<GameDetailFriendsProps> = React.memo(({
       {friendsPlayingNow.length > 0 && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2.5">
-            <span className="w-2 h-2 rounded-full bg-[var(--live)] animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+            <span className="w-2 h-2 rounded-full bg-[var(--live)] animate-pulse" />
             <h3 className="text-sm font-bold text-white tracking-wide">
               {friendsPlayingNow.length === 1
                 ? "1 amigo está jogando agora"
@@ -101,7 +122,7 @@ export const GameDetailFriends: React.FC<GameDetailFriendsProps> = React.memo(({
             </h3>
           </div>
 
-          <div className="w-full rounded-2xl bg-[var(--tone-2)] border border-emerald-500/25 p-4 sm:p-5 shadow-[0_8px_24px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(52,211,153,0.15)]">
+          <div className="w-full rounded-2xl bg-[var(--tone-2)] border border-[color-mix(in_srgb,var(--live)_25%,transparent)] p-4 sm:p-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {friendsPlayingNow.map((friend) => (
                 <motion.div
@@ -109,26 +130,32 @@ export const GameDetailFriends: React.FC<GameDetailFriendsProps> = React.memo(({
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   transition={{ type: "spring", bounce: 0.2, duration: 0.25 }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={onActivateKey(() => {
+                    playSound?.("select");
+                    onOpenChat?.(friend);
+                  })}
                   onClick={() => {
                     playSound?.("select");
                     onOpenChat?.(friend);
                   }}
-                  className="flex items-center gap-3.5 p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.04] hover:border-emerald-500/30 transition-all cursor-pointer group"
+                  className="flex items-center gap-3.5 p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.04] hover:border-[color-mix(in_srgb,var(--live)_30%,transparent)] transition-all cursor-pointer group"
                 >
                   <div className="relative shrink-0">
-                    <img
-                      src={friend.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80"}
-                      alt={friend.name}
-                      className="w-11 h-11 rounded-xl object-cover ring-2 ring-emerald-500/70 shadow-md"
+                    <FriendAvatar
+                      name={friend.name}
+                      url={friend.avatar}
+                      className="w-11 h-11 rounded-xl ring-2 ring-[color-mix(in_srgb,var(--live)_70%,transparent)]"
                     />
-                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#0E1318]" />
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[var(--live)] border-2 border-[var(--tone-0)]" />
                   </div>
 
                   <div className="flex flex-col min-w-0 flex-1">
-                    <span className="font-bold text-sm text-white group-hover:text-emerald-300 transition-colors truncate">
+                    <span className="font-bold text-sm text-white group-hover:text-white transition-colors truncate">
                       {friend.name}
                     </span>
-                    <span className="text-xs text-emerald-400/90 font-medium truncate">
+                    <span className="text-xs text-[var(--live)] font-medium truncate">
                       {friend.playing || "Jogando agora"}
                     </span>
                   </div>
@@ -157,16 +184,22 @@ export const GameDetailFriends: React.FC<GameDetailFriendsProps> = React.memo(({
               {friendsWhoOwnNotPlaying.map((friend) => (
                 <div
                   key={friend.id}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={onActivateKey(() => {
+                    playSound?.("select");
+                    onOpenChat?.(friend);
+                  })}
                   onClick={() => {
                     playSound?.("select");
                     onOpenChat?.(friend);
                   }}
                   className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/[0.06] transition-all cursor-pointer group shrink-0"
                 >
-                  <img
-                    src={friend.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&q=80"}
-                    alt={friend.name}
-                    className="w-9 h-9 rounded-xl object-cover ring-1 ring-white/10 group-hover:ring-white/40 transition-all"
+                  <FriendAvatar
+                    name={friend.name}
+                    url={friend.avatar}
+                    className="w-9 h-9 rounded-xl ring-1 ring-white/10 group-hover:ring-white/40 transition-all"
                   />
                   <div className="flex flex-col min-w-0">
                     <span className="font-medium text-xs text-[var(--ink)] group-hover:text-white truncate max-w-[110px]">

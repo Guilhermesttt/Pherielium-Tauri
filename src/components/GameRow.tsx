@@ -217,12 +217,15 @@ const GameRow: React.FC<GameRowProps> = ({
             type="button"
             key={i}
             aria-label={`Ir para jogo ${i + 1}`}
-            className="rounded-full cursor-pointer origin-center bg-[rgb(var(--launcher-accent))] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--edge-selected)]"
+            aria-current={isActive ? "true" : undefined}
+            // O ponto é pequeno de propósito; a área de clique cresce com um pseudo-elemento
+            // invisível, sem mexer no espaçamento nem no visual.
+            className="relative rounded-full cursor-pointer origin-center bg-[rgb(var(--launcher-accent))] before:absolute before:-inset-x-1 before:-inset-y-2.5 before:content-['']"
             animate={{
               scaleX: isActive ? 1 : 0.22,
               opacity: isActive ? 0.95 : 0.35,
             }}
-            transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+            transition={{ type: "spring", bounce: 0, duration: 0.6 }}
             style={{ width: "var(--dot-w)", height: "var(--dot-h)" }}
             onClick={() => onSelect(i)}
             />

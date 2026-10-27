@@ -7,6 +7,16 @@ const CALL_INVITE_PREFIX = '{"__type":"call_invite"';
 
 export const isCallInviteText = (text: unknown): boolean => typeof text === "string" && text.startsWith(CALL_INVITE_PREFIX);
 
+/** Nome da sala quando o cartão é de uma "noite" (jogo, cinema...); vazio nos convites comuns. */
+function nightRoomOf(text: string): string {
+  try {
+    const card = JSON.parse(text) as { nightKind?: unknown; roomName?: unknown };
+    return typeof card.nightKind === "string" && typeof card.roomName === "string" ? card.roomName.trim() : "";
+  } catch {
+    return "";
+  }
+}
+
 /** Nome de quem convidou, lido do JSON do cartão; vazio se o JSON não puder ser lido. */
 function inviterNameOf(text: string): string {
   try {
@@ -22,6 +32,8 @@ export function messageNotificationPreview(text: string, isImage: boolean, fallb
   if (isImage) return "📷 Enviou uma imagem";
   if (isCallInviteText(text)) {
     const who = inviterNameOf(text) || fallbackName.trim();
+    const night = nightRoomOf(text);
+    if (night) return who ? `${who} chamou você para a ${night}.` : `Chamou você para a ${night}.`;
     return who ? `${who} convidou para uma chamada.` : "Convidou para uma chamada.";
   }
   return text;

@@ -55,6 +55,7 @@ import {
   BattlenetBrandIcon,
   RockstarBrandIcon,
 } from "./Sidebar";
+import { IconSwap } from "./ui/IconSwap";
 
 interface AddGameModalProps {
   isOpen: boolean;
@@ -2209,7 +2210,7 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
                 <div className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg ${
                   formData.executablePath ? "bg-white/10 text-white" : "bg-white/[0.03] text-[var(--ink-faint)]"
                 }`}>
-                  {formData.executablePath ? <Check size={12} strokeWidth={3} /> : <HardDrive size={12} />}
+                  <IconSwap active={Boolean(formData.executablePath)} a={<HardDrive size={12} />} b={<Check size={12} strokeWidth={3} />} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[length:var(--step-0)] font-bold text-[var(--ink)]">

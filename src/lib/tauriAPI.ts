@@ -378,6 +378,12 @@ export const tauriAPI = {
   getNexusDownloadState: () =>
     invoke<unknown | null>("nexus_get_download_state"),
 
+  listNexusDownloads: () => invoke<unknown[]>("nexus_list_downloads"),
+  pauseNexusDownload: (id: string) => invoke<void>("nexus_pause_download", { id }),
+  resumeNexusDownload: (id: string) => invoke<void>("nexus_resume_download", { id }),
+  cancelNexusDownload: (id: string) => invoke<void>("nexus_cancel_download", { id }),
+  checkModScriptLog: (gameFolder: string) => invoke<unknown>("mods_check_script_log", { gameFolder }),
+
   listNexusDownloadedFiles: (gameDomain: string) =>
     invoke<unknown[]>("nexus_list_downloaded_files", { gameDomain }),
 
@@ -387,24 +393,31 @@ export const tauriAPI = {
   selectModGameDirectory: (gameTitle: string) =>
     invoke<string | null>("nexus_select_game_directory", { gameTitle }),
 
+  // O Rust emite este estado com emit_to("main"): sem o alvo "main" o evento nunca chega e a
+  // tela fica em "Aguardando" para sempre, mesmo com o download andando.
   onNexusDownloadState: (callback: (state: unknown) => void) =>
-    makeListen("nexus:download-state", callback),
+    makeListen("nexus:download-state", callback, "main"),
 
-  // Stubs for Phase 5 (mod installation — requires zip extraction in Rust)
-  prepareNexusFreeDownload: (_req: unknown) =>
-    Promise.resolve({ prepared: false, autoInstall: false, expiresAt: 0 }),
+  // Download e instalação automática (src-tauri/src/commands/nexus_download.rs e mod_install.rs)
+  prepareNexusFreeDownload: (request: unknown) =>
+    invoke<unknown>("nexus_prepare_free_download", { request }),
 
-  installNexusDownloadedMod: (_req: unknown) =>
-    Promise.reject(new Error("Not implemented yet — Phase 5")),
+  installNexusDownloadedMod: (request: unknown) =>
+    invoke<unknown>("nexus_install_downloaded_mod", { request }),
 
   previewNexusMod: (_req: unknown) =>
     Promise.resolve(null),
 
-  adoptNexusInstalledMod: (_req: unknown) =>
-    Promise.reject(new Error("Not implemented yet — Phase 5")),
+  adoptNexusInstalledMod: (request: unknown) =>
+    invoke<unknown>("nexus_adopt_installed_mod", { request }),
 
-  removeNexusInstalledMod: (_req: unknown) =>
-    Promise.reject(new Error("Not implemented yet — Phase 5")),
+  removeNexusInstalledMod: (request: unknown) =>
+    invoke<unknown>("nexus_remove_installed_mod", { request }),
+
+  // Protocolo nxm:// ("Mod Manager Download" da Nexus): só registrado quando a pessoa pede
+  getNexusNxmStatus: () => invoke<{ registered: boolean }>("nexus_nxm_status"),
+  registerNexusNxm: () => invoke<{ registered: boolean }>("nexus_nxm_register"),
+  unregisterNexusNxm: () => invoke<{ registered: boolean }>("nexus_nxm_unregister"),
 
   // ─── Hardware ──────────────────────────────────────────────────────────────
   getControllerBattery: () =>

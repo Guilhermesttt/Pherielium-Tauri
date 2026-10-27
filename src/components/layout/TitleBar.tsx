@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
-import { Minus, Square, Copy, X, Maximize2, Minimize2 } from "lucide-react";
+import { Minus, Square, Copy, X, Maximize2, Minimize2, ChevronLeft, ChevronRight } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import pherieliumDesktopIcon from "../../assets/Pherielium_Desktop_icon.png";
+import {
+  NAV_HISTORY_REQUEST_EVENT,
+  NAV_HISTORY_STATE_EVENT,
+  type NavHistoryFlags,
+} from "../../services/navigationHistory";
 
 interface TitleBarProps {
   isFullscreen?: boolean;
@@ -19,7 +24,22 @@ export const TitleBar: React.FC<TitleBarProps> = ({
 
   const [isMaximized, setIsMaximized] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [navFlags, setNavFlags] = useState<NavHistoryFlags>({ canBack: false, canForward: false });
   const hoverTimeoutRef = useRef<number | null>(null);
+
+  // O Home publica se há para onde voltar/avançar; a barra só mostra o estado e pede o passo.
+  useEffect(() => {
+    const onState = (event: Event) => {
+      const detail = (event as CustomEvent<NavHistoryFlags>).detail;
+      if (detail) setNavFlags({ canBack: Boolean(detail.canBack), canForward: Boolean(detail.canForward) });
+    };
+    window.addEventListener(NAV_HISTORY_STATE_EVENT, onState);
+    return () => window.removeEventListener(NAV_HISTORY_STATE_EVENT, onState);
+  }, []);
+
+  const requestHistoryStep = useCallback((direction: -1 | 1) => {
+    window.dispatchEvent(new CustomEvent(NAV_HISTORY_REQUEST_EVENT, { detail: { direction } }));
+  }, []);
 
   const updateFullscreenState = useCallback(
     (fs: boolean) => {
@@ -177,8 +197,8 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         }}
         className={`select-none items-center justify-between font-sans text-xs tracking-tight text-[var(--ink-muted)] ${
           isFullscreen
-            ? "fixed top-0 left-0 right-0 z-50 flex h-9 px-3 bg-[var(--tone-0)]"
-            : "relative z-50 flex h-9 w-full shrink-0 px-3 bg-[var(--tone-0)]"
+            ? "fixed top-0 left-0 right-0 z-50 flex h-9 px-3 bg-[var(--chrome-black)]"
+            : "relative z-50 flex h-9 w-full shrink-0 px-3 bg-[var(--chrome-black)]"
         }`}
         style={{
           WebkitAppRegion: isFullscreen ? "no-drag" : "drag",
@@ -224,6 +244,29 @@ export const TitleBar: React.FC<TitleBarProps> = ({
             )}
             <span>{isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}</span>
           </motion.button>
+
+          {/* Voltar / avançar entre as seções do hub */}
+          <div
+            className="flex items-center gap-0.5"
+            style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+          >
+            {([
+              { direction: -1 as const, enabled: navFlags.canBack, label: "Voltar", Icon: ChevronLeft },
+              { direction: 1 as const, enabled: navFlags.canForward, label: "Avançar", Icon: ChevronRight },
+            ]).map(({ direction, enabled, label, Icon }) => (
+              <button
+                key={label}
+                type="button"
+                disabled={!enabled}
+                onClick={() => requestHistoryStep(direction)}
+                aria-label={label}
+                title={label}
+                className="flex h-6 w-7 items-center justify-center rounded-[var(--node)] text-[var(--ink-muted)] transition-colors cursor-pointer hover:bg-[var(--tone-2)] hover:text-[var(--ink)] disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[var(--ink-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Centro: Espaço amplo arrastável */}

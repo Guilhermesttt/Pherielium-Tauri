@@ -48,6 +48,7 @@ import type { LinkQuality } from "../../services/voiceCall/livekitHealth";
 const EMPTY_PEER_QUALITY: Record<string, LinkQuality> = {};
 import type { MediaTransport } from "@/services/voiceCall/feedAudioPolicy";
 import { OrbloomCustomizerModal } from "./call-window/OrbloomCustomizerModal";
+import { IconSwap } from "../ui/IconSwap";
 
 export type CallFeedId =
   | "remote-screen"
@@ -1302,7 +1303,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                           }`}
                         title={isMuted ? "Desmutar microfone" : "Mutar microfone"}
                       >
-                        {isMuted ? <MicOff className="h-4.5 w-4.5" /> : <Mic className="h-4.5 w-4.5" />}
+                        <IconSwap active={isMuted} a={<Mic className="h-4.5 w-4.5" />} b={<MicOff className="h-4.5 w-4.5" />} />
                       </button>
 
                       <button
@@ -1314,7 +1315,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                           }`}
                         title={isDeafened ? "Reativar áudio" : "Desativar áudio"}
                       >
-                        {isDeafened ? <VolumeX className="h-4.5 w-4.5" /> : <Volume2 className="h-4.5 w-4.5" />}
+                        <IconSwap active={isDeafened} a={<Volume2 className="h-4.5 w-4.5" />} b={<VolumeX className="h-4.5 w-4.5" />} />
                       </button>
 
                       {focusedFeed.isLocal && (

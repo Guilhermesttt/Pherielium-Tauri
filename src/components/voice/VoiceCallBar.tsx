@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { UserProfile, VoiceCallSession, CallState } from "../../types/domain";
 import { OrbloomOrb, mapCallToOrbState } from "./OrbloomOrb";
+import { IconSwap } from "../ui/IconSwap";
 
 interface VoiceCallBarProps {
   session: VoiceCallSession | null;
@@ -252,7 +253,7 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
             }`}
             title={isMuted ? "Desmutar microfone" : "Mutar microfone"}
           >
-            {isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+            <IconSwap active={isMuted} a={<Mic className="h-4 w-4" />} b={<MicOff className="h-4 w-4" />} />
           </button>
 
           {/* Deafen Sound */}
@@ -266,7 +267,7 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
             }`}
             title={isDeafened ? "Desmutar áudio" : "Silenciar áudio"}
           >
-            {isDeafened ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            <IconSwap active={isDeafened} a={<Volume2 className="h-4 w-4" />} b={<VolumeX className="h-4 w-4" />} />
           </button>
 
           {/* Share Screen */}
@@ -280,7 +281,7 @@ export const VoiceCallBar: React.FC<VoiceCallBarProps> = ({
             }`}
             title={isSharingScreen ? "Parar compartilhamento" : "Compartilhar tela"}
           >
-            {isSharingScreen ? <MonitorOff className="h-4 w-4" /> : <MonitorUp className="h-4 w-4" />}
+            <IconSwap active={isSharingScreen} a={<MonitorUp className="h-4 w-4" />} b={<MonitorOff className="h-4 w-4" />} />
           </button>
 
           {/* Expand Window */}

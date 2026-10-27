@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Clock, ExternalLink, Gamepad2, Layers, Lock, Pencil, Search, Star, Trophy, TrendingUp, User, Sparkles, ChevronDown, Camera } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDiscord, faSteam } from "@fortawesome/free-brands-svg-icons";
-import tierLevelClickSound from "../sounds/Phelierium Default/ui_tierLevel_click.mp3";
+import tierLevelClickSound from "../sounds/Phelierium Default/Deck UI Default Activation.mp3";
 import { progressionEventBus } from "../services/progressionEvents";
 import { EPIC_GAMES_ICON_PATH } from "../constants/assets";
 import type { LauncherLanguage } from "../context/PreferencesContext";
@@ -216,8 +216,8 @@ const ProfileAvatar: React.FC<{
         </div>
       )}
       {editable && (
-        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white z-10">
-          <Camera className="h-5 w-5 text-white" />
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-[var(--ink)] z-10">
+          <Camera className="h-5 w-5 text-[var(--ink)]" />
           <span className="text-[length:var(--step-0)] font-semibold">Editar</span>
         </div>
       )}
@@ -240,17 +240,17 @@ const PlatformRow: React.FC<{
       }`}
   >
     <div className="flex min-w-0 items-center gap-3">
-      <div className={`flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/[0.06] text-neutral-200 ${compact ? "h-9 w-9" : "h-11 w-11"}`}>
+      <div className={`flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--tone-3)] text-[var(--ink)] ${compact ? "h-9 w-9" : "h-11 w-11"}`}>
         {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover rounded-lg" /> : icon}
       </div>
       <div className="min-w-0">
-        <p className="truncate text-[length:var(--step-1)] font-semibold text-white leading-tight">{name}</p>
-        <p className="truncate text-[length:var(--step-0)] text-neutral-400 mt-0.5">
+        <p className="truncate text-[length:var(--step-1)] font-semibold text-[var(--ink)] leading-tight">{name}</p>
+        <p className="truncate text-[length:var(--step-0)] text-[var(--ink-muted)] mt-0.5">
           {connected ? username || connectedLabel : disconnectedLabel}
         </p>
       </div>
     </div>
-    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${connected ? "bg-[rgb(var(--launcher-accent))] shadow-[0_0_8px_rgba(52,211,153,0.7)]" : "bg-white/20"}`} />
+    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${connected ? "bg-[rgb(var(--launcher-accent))]" : "bg-[var(--tone-4)]"}`} />
   </div>
 );
 
@@ -261,14 +261,14 @@ const MetricsCluster: React.FC<{
   copy: { games: string; hours: string; favorites: string };
   compact?: boolean;
 }> = ({ games, hours, favorites, copy, compact = false }) => (
-  <dl className={`grid grid-cols-3 gap-px overflow-hidden rounded-[var(--corner-md)] bg-white/[0.06] ${compact ? "text-[length:var(--step-3)]" : "text-[length:var(--step-4)]"}`}>
+  <dl className={`grid grid-cols-3 gap-px overflow-hidden rounded-[var(--corner-md)] bg-[var(--tone-3)] ${compact ? "text-[length:var(--step-3)]" : "text-[length:var(--step-4)]"}`}>
     {[
       [games, copy.games],
       [hours, copy.hours],
       [favorites, copy.favorites],
     ].map(([value, label]) => (
       <div key={String(label)} className={`bg-[var(--surface-base)] ${compact ? "px-5 py-3" : "px-6 py-4"}`}>
-        <dd className="font-display font-bold leading-none tabular-nums text-white">{value}</dd>
+        <dd className="font-display font-bold leading-none tabular-nums text-[var(--ink)]">{value}</dd>
         <dt className="mt-1.5 text-[length:var(--step-0)] text-[var(--ink-muted)]">{label}</dt>
       </div>
     ))}
@@ -291,7 +291,7 @@ const Section: React.FC<SectionProps> = ({
   compact = false,
 }) => (
   <section
-    className={`${compact ? "rounded-[var(--corner-md)] p-4 md:p-5" : "rounded-[var(--corner-md)] p-5 md:p-6"} bg-[var(--surface-raised)] border border-white/[0.10] ${className}`}
+    className={`${compact ? "rounded-[var(--corner-md)] p-4 md:p-5" : "rounded-[var(--corner-md)] p-5 md:p-6"} bg-[var(--surface-raised)] border border-[color:var(--border-subtle)] ${className}`}
   >
     <div className={`${compact ? "mb-3" : "mb-4"} flex items-center gap-2.5`}>
       {icon && (
@@ -299,7 +299,7 @@ const Section: React.FC<SectionProps> = ({
           {icon}
         </div>
       )}
-      <h2 className="font-display text-[length:var(--step-2)] font-semibold leading-tight text-white">{title}</h2>
+      <h2 className="font-display text-[length:var(--step-2)] font-semibold leading-tight text-[var(--ink)]">{title}</h2>
     </div>
     {children}
   </section>
@@ -671,9 +671,6 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
     <motion.div
       ref={scrollRef}
       data-system-page
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", bounce: 0, duration: 0.4 }}
       data-profile-density={compactProfile ? "compact" : "comfortable"}
       className={`relative min-h-0 flex-1 overflow-y-auto thin-scrollbar ${compactProfile ? "px-6 pb-6 pt-4" : "px-10 pb-12 pt-8"}`}
       style={{ contain: "layout paint", transform: "translate3d(0,0,0)", willChange: "transform" }}
@@ -682,7 +679,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
 
       <div className={`relative mx-auto max-w-6xl ${compactProfile ? "space-y-4" : "space-y-6"}`}>
         {/* HERO: capa com avatar e nome alinhados pelo centro na base; o resto vem abaixo */}
-        <section className="relative overflow-hidden rounded-[var(--corner-lg)] bg-[var(--surface-raised)] border border-white/[0.10]">
+        <section className="relative overflow-hidden rounded-[var(--corner-lg)] bg-[var(--surface-raised)] border border-[color:var(--border-subtle)]">
           <div
             className={`relative ${compactProfile ? "h-[190px]" : "h-[240px]"}`}
             style={{
@@ -735,7 +732,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
               <div className="min-w-0 flex-1">
                   {/* Nível 1: Nome do Jogador */}
                   <div className="flex items-center gap-3">
-                    <h1 className={`${compactProfile ? "text-[length:var(--step-4)]" : "text-[length:var(--step-4)]"} font-display font-bold tracking-tight text-white leading-none truncate`}>
+                    <h1 className={`${compactProfile ? "text-[length:var(--step-4)]" : "text-[length:var(--step-4)]"} font-display font-bold tracking-tight text-[var(--ink)] leading-none truncate`}>
                       {displayName}
                     </h1>
                   </div>
@@ -795,7 +792,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                       key={effectiveLevel}
                       initial={{ y: -4, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      className="text-[length:var(--step-0)] font-bold text-neutral-300 tabular-nums"
+                      className="text-[length:var(--step-0)] font-bold text-[var(--ink-muted)] tabular-nums"
                     >
                       Lv. {effectiveLevel}
                     </motion.span>
@@ -808,7 +805,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
             <div className="min-w-0 max-w-2xl flex-1">
                   {/* Barra de Progressão da Patente (Clean & Minimal) */}
                   <div className="mt-2.5 space-y-1 max-w-sm">
-                    <div className="h-2 w-full sm:w-80 rounded-full bg-white/[0.07] overflow-hidden">
+                    <div className="h-2 w-full sm:w-80 rounded-full bg-[var(--tone-3)] overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${Math.min(100, Math.max(0, playerLevel.progress))}%` }}
@@ -820,10 +817,10 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                         }}
                       />
                     </div>
-                    <div className="flex items-center justify-between text-[length:var(--step-0)] text-neutral-400">
+                    <div className="flex items-center justify-between text-[length:var(--step-0)] text-[var(--ink-muted)]">
                       <span>{playerLevel.progress}% para {nextTierInfo?.name || "Nível Máximo"}</span>
                       {playerLevel.currentLevelXp > 0 && playerLevel.xpForNextLevel > 0 && (
-                        <span className="text-[length:var(--step-0)] text-neutral-500 font-mono">
+                        <span className="text-[length:var(--step-0)] text-[var(--ink-faint)] font-mono">
                           {playerLevel.currentLevelXp}/{playerLevel.xpForNextLevel} XP
                         </span>
                       )}
@@ -832,7 +829,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
 
                   {/* Nível 3: Bio */}
                   {userProfile?.bio && (
-                    <p className="mt-3.5 max-w-xl text-[length:var(--step-1)] leading-relaxed text-neutral-200">
+                    <p className="mt-3.5 max-w-xl text-[length:var(--step-1)] leading-relaxed text-[var(--ink)]">
                       {userProfile.bio}
                     </p>
                   )}
@@ -843,9 +840,9 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                       <button
                         type="button"
                         onClick={() => void openExternalProfile(`https://steamcommunity.com/profiles/${steamId}`)}
-                        className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white/[0.07] px-3.5 py-1.5 text-[length:var(--step-0)] font-semibold text-neutral-200 transition-colors hover:bg-white/[0.13] hover:text-white"
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[var(--tone-3)] px-3.5 py-1.5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                       >
-                        <FontAwesomeIcon icon={faSteam} className="h-3 w-3 text-neutral-400" />
+                        <FontAwesomeIcon icon={faSteam} className="h-3 w-3 text-[var(--ink-muted)]" />
                         <span>{userProfile?.steamUsername || "Steam"}</span>
                       </button>
                     )}
@@ -866,19 +863,19 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                             })
                             .catch(() => onNotify?.(copy.copyError, "error"));
                         }}
-                        className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white/[0.07] px-3.5 py-1.5 text-[length:var(--step-0)] font-semibold text-neutral-200 transition-colors hover:bg-white/[0.13] hover:text-white"
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[var(--tone-3)] px-3.5 py-1.5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                       >
-                        <FontAwesomeIcon icon={faDiscord} className="h-3 w-3 text-neutral-400" />
+                        <FontAwesomeIcon icon={faDiscord} className="h-3 w-3 text-[var(--ink-muted)]" />
                         <span>{discordDisplayName}</span>
                       </button>
                     )}
                     {userProfile?.website && /^https:\/\//i.test(userProfile.website) && (
                       <button
                         type="button"
-                        className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-white/[0.07] px-3.5 py-1.5 text-[length:var(--step-0)] font-semibold text-neutral-200 transition-colors hover:bg-white/[0.13] hover:text-white"
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[var(--tone-3)] px-3.5 py-1.5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                         onClick={() => window.electronAPI?.openExternalUrl(userProfile.website as string)}
                       >
-                        <ExternalLink className="h-3 w-3 text-neutral-400" />
+                        <ExternalLink className="h-3 w-3 text-[var(--ink-muted)]" />
                         <span>Site</span>
                       </button>
                     )}
@@ -890,7 +887,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                       {userProfile?.favoriteGenres?.map((genre) => (
                         <span
                           key={genre}
-                          className="rounded-full bg-white/[0.06] px-3 py-1 text-[length:var(--step-0)] font-semibold text-neutral-300"
+                          className="rounded-full bg-[var(--tone-3)] px-3 py-1 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]"
                         >
                           {genre}
                         </span>
@@ -909,7 +906,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                         className="inline-flex items-center gap-1.5 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs font-black text-amber-300 transition hover:bg-amber-400/20 hover:border-amber-400/50 hover:text-amber-200 cursor-pointer shadow-[0_0_15px_rgba(251,191,36,0.15)] active:scale-95"
                         title="Simular subida de nível e emitir modal com som espacial"
                       >
-                        <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+                        <Sparkles className="h-3.5 w-3.5 text-[rgb(var(--tier-gold))]" />
                         <span>Simular Level UP</span>
                       </button>
 
@@ -918,23 +915,23 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                         <button
                           type="button"
                           onClick={() => setIsTierMenuOpen((v) => !v)}
-                          className="h-8 w-8 rounded-xl border border-white/10 bg-white/[0.04] flex items-center justify-center text-neutral-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                          className="h-8 w-8 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] flex items-center justify-center text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)] transition cursor-pointer"
                           title="Saltar para outro Tier"
                         >
                           <ChevronDown className="h-3.5 w-3.5" />
                         </button>
 
                         {isTierMenuOpen && (
-                          <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-white/15 bg-neutral-900/95 backdrop-blur-xl shadow-2xl p-1 z-50 space-y-0.5">
+                          <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-2)] backdrop-blur-xl shadow-2xl p-1 z-50 space-y-0.5">
                             <button
                               type="button"
                               onClick={() => {
                                 handleSimulateLevelUp("bronze");
                                 setIsTierMenuOpen(false);
                               }}
-                              className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-[#cd7f32] hover:bg-white/10 transition flex items-center gap-2 cursor-pointer"
+                              className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-[rgb(var(--tier-bronze))] hover:bg-[var(--tone-4)] transition flex items-center gap-2 cursor-pointer"
                             >
-                              <span className="h-2 w-2 rounded-full bg-[#cd7f32]" />
+                              <span className="h-2 w-2 rounded-full bg-[rgb(var(--tier-bronze))]" />
                               <span>Tier Bronze (Lv. 10)</span>
                             </button>
                             <button
@@ -943,9 +940,9 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                                 handleSimulateLevelUp("silver");
                                 setIsTierMenuOpen(false);
                               }}
-                              className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-200 hover:bg-white/10 transition flex items-center gap-2 cursor-pointer"
+                              className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-[rgb(var(--tier-silver))] hover:bg-[var(--tone-4)] transition flex items-center gap-2 cursor-pointer"
                             >
-                              <span className="h-2 w-2 rounded-full bg-slate-300" />
+                              <span className="h-2 w-2 rounded-full bg-[rgb(var(--tier-silver))]" />
                               <span>Tier Prata (Lv. 25)</span>
                             </button>
                             <button
@@ -954,9 +951,9 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                                 handleSimulateLevelUp("gold");
                                 setIsTierMenuOpen(false);
                               }}
-                              className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-400 hover:bg-white/10 transition flex items-center gap-2 cursor-pointer"
+                              className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-[rgb(var(--tier-gold))] hover:bg-[var(--tone-4)] transition flex items-center gap-2 cursor-pointer"
                             >
-                              <span className="h-2 w-2 rounded-full bg-amber-400" />
+                              <span className="h-2 w-2 rounded-full bg-[rgb(var(--tier-gold))]" />
                               <span>Tier Ouro (Lv. 50)</span>
                             </button>
                             <button
@@ -965,9 +962,9 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                                 handleSimulateLevelUp("platinum");
                                 setIsTierMenuOpen(false);
                               }}
-                              className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-[#38bdf8] hover:bg-white/10 transition flex items-center gap-2 cursor-pointer"
+                              className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-[rgb(var(--tier-platinum))] hover:bg-[var(--tone-4)] transition flex items-center gap-2 cursor-pointer"
                             >
-                              <span className="h-2 w-2 rounded-full bg-[#38bdf8]" />
+                              <span className="h-2 w-2 rounded-full bg-[rgb(var(--tier-platinum))]" />
                               <span>Tier Platina (Lv. 100)</span>
                             </button>
                             {simulatedLevelDelta !== 0 && (
@@ -977,7 +974,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                                   setSimulatedLevelDelta(0);
                                   setIsTierMenuOpen(false);
                                 }}
-                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-neutral-400 hover:bg-white/5 hover:text-white border-t border-white/10 transition cursor-pointer"
+                                className="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold text-[var(--ink-muted)] hover:bg-[var(--tone-3)] hover:text-[var(--ink)] border-t border-[color:var(--border-subtle)] transition cursor-pointer"
                               >
                                 Resetar nível original
                               </button>
@@ -995,7 +992,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                         setIsEditing(true);
                         playSound?.("showModal");
                       }}
-                      className="inline-flex h-11 items-center gap-2 rounded-full bg-white/[0.08] px-5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition hover:bg-white/[0.15] hover:text-white active:scale-95 cursor-pointer"
+                      className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--tone-3)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)] active:scale-95 cursor-pointer"
                     >
                       <Camera className="h-4 w-4" />
                       Adicionar banner
@@ -1009,7 +1006,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                         setIsEditing(true);
                         playSound?.("showModal");
                       }}
-                      className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-5 text-[length:var(--step-0)] font-semibold text-black transition hover:bg-white/90 active:scale-95 cursor-pointer"
+                      className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--ink)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition hover:opacity-90 active:scale-95 cursor-pointer"
                     >
                       <Pencil className="h-4 w-4" />
                       <span>{copy.edit}</span>
@@ -1018,8 +1015,8 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 </div>
 
                 {isPrivateProfile ? (
-                  <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-neutral-400">
-                    <Lock className="h-4 w-4 text-neutral-400" />
+                  <div className="flex items-center gap-2 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-4 py-2.5 text-[var(--ink-muted)]">
+                    <Lock className="h-4 w-4 text-[var(--ink-muted)]" />
                     <span className="text-[length:var(--step-0)] font-semibold">Perfil privado</span>
                   </div>
                 ) : (
@@ -1036,11 +1033,11 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
         </section>
 
         {isPrivateProfile ? (
-          <section className="bg-[var(--surface-raised)] border border-white/[0.10] flex flex-col items-center justify-center rounded-[var(--corner-md)] p-12 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-white/15 bg-white/[0.06] text-[var(--ink-muted)] shadow-inner">
+          <section className="bg-[var(--surface-raised)] border border-[color:var(--border-subtle)] flex flex-col items-center justify-center rounded-[var(--corner-md)] p-12 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] text-[var(--ink-muted)] shadow-inner">
               <Lock className="h-8 w-8 text-[var(--ink)]" />
             </div>
-            <h2 className="text-xl font-black text-white">Perfil Privado</h2>
+            <h2 className="text-xl font-bold text-[var(--ink)]">Perfil privado</h2>
             <p className="mt-2 max-w-md text-sm text-[var(--ink-muted)] leading-relaxed">
               Este jogador optou por manter suas estatísticas, biblioteca de jogos e troféus privados.
             </p>
@@ -1052,7 +1049,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 <div className="flex items-center justify-end mb-2">
                   <button
                     onClick={toggleQuestsVisibility}
-                    className="text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
+                    className="text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     {isQuestsVisible ? "Ocultar missões" : "Mostrar missões"}
                   </button>
@@ -1088,7 +1085,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                   className={compactProfile ? "min-h-[260px]" : "min-h-[346px]"}
                 >
                   {/* Tab Selector com Underline Minimalista & Search */}
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.06] pb-1">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-4 border-b border-[color:var(--border-subtle)] pb-1">
                     <div className="flex items-center gap-6">
                       <button
                         type="button"
@@ -1097,14 +1094,14 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                           playSound?.("select");
                         }}
                         onMouseEnter={() => playSound?.("hover")}
-                        className={`relative pb-3 text-[length:var(--step-1)] font-semibold transition-colors cursor-pointer ${activeGameTab === "mostPlayed" ? "text-white" : "text-neutral-500 hover:text-neutral-300"
+                        className={`relative pb-3 text-[length:var(--step-1)] font-semibold transition-colors cursor-pointer ${activeGameTab === "mostPlayed" ? "text-[var(--ink)]" : "text-[var(--ink-faint)] hover:text-[var(--ink-muted)]"
                           }`}
                       >
                         <span>{copy.mostPlayed}</span>
                         {activeGameTab === "mostPlayed" && (
                           <motion.div
                             layoutId="profileGameTabUnderline"
-                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-white shadow-[0_0_8px_rgba(255,255,255,0.7)]"
+                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--ink)]"
                             transition={{ type: "spring", stiffness: 500, damping: 35 }}
                           />
                         )}
@@ -1117,15 +1114,15 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                           playSound?.("select");
                         }}
                         onMouseEnter={() => playSound?.("hover")}
-                        className={`relative pb-3 text-[length:var(--step-1)] font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${activeGameTab === "allGames" ? "text-white" : "text-neutral-500 hover:text-neutral-300"
+                        className={`relative pb-3 text-[length:var(--step-1)] font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${activeGameTab === "allGames" ? "text-[var(--ink)]" : "text-[var(--ink-faint)] hover:text-[var(--ink-muted)]"
                           }`}
                       >
                         <span>{copy.allGames}</span>
-                        <span className="text-[length:var(--step-0)] font-mono text-neutral-400">({normalizedGames.length})</span>
+                        <span className="text-[length:var(--step-0)] font-mono text-[var(--ink-muted)]">({normalizedGames.length})</span>
                         {activeGameTab === "allGames" && (
                           <motion.div
                             layoutId="profileGameTabUnderline"
-                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-white shadow-[0_0_8px_rgba(255,255,255,0.7)]"
+                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--ink)]"
                             transition={{ type: "spring", stiffness: 500, damping: 35 }}
                           />
                         )}
@@ -1134,13 +1131,13 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
 
                     {activeGameTab === "allGames" && (
                       <div className="relative w-48 sm:w-56 pb-2 sm:pb-0">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-500 pointer-events-none" />
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--ink-faint)] pointer-events-none" />
                         <input
                           type="text"
                           placeholder={copy.searchGames}
                           value={gameSearch}
                           onChange={(e) => setGameSearch(e.target.value)}
-                          className="w-full h-8 pl-8 pr-3 rounded-lg bg-white/[0.04] border border-white/10 text-xs font-medium text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 focus:bg-white/[0.08] transition"
+                          className="w-full h-8 pl-8 pr-3 rounded-lg bg-[var(--tone-3)] border border-[color:var(--border-subtle)] text-xs font-medium text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:border-[color:var(--border-strong)] focus:bg-[var(--tone-3)] transition"
                         />
                       </div>
                     )}
@@ -1155,7 +1152,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                           const itemProps = canOpenGames
                             ? {
                                 onClick: () => onOpenGame?.(game),
-                                className: "group grid w-full grid-cols-[24px_56px_1fr_auto] items-center gap-4 rounded-2xl p-2.5 text-left transition-colors hover:bg-white/[0.05] cursor-pointer",
+                                className: "group grid w-full grid-cols-[24px_56px_1fr_auto] items-center gap-4 rounded-2xl p-2.5 text-left transition-colors hover:bg-[var(--tone-3)] cursor-pointer",
                               }
                             : {
                                 className: "grid w-full grid-cols-[24px_56px_1fr_auto] items-center gap-4 rounded-2xl p-2.5 text-left cursor-default select-none",
@@ -1169,8 +1166,8 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                               {...(canOpenGames ? { type: "button" } : {})}
                               {...itemProps}
                             >
-                              <span className="text-right text-[length:var(--step-1)] font-semibold tabular-nums text-neutral-500">{index + 1}</span>
-                              <div className="h-[72px] w-[54px] overflow-hidden rounded-xl bg-white/5 shrink-0">
+                              <span className="text-right text-[length:var(--step-1)] font-semibold tabular-nums text-[var(--ink-faint)]">{index + 1}</span>
+                              <div className="h-[72px] w-[54px] overflow-hidden rounded-xl bg-[var(--tone-3)] shrink-0">
                                 {(game.cardImage || game.image) && (
                                   <img
                                     src={game.cardImage || game.image}
@@ -1183,21 +1180,21 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                                 )}
                               </div>
                               <div className="min-w-0 pr-2">
-                                <p className="truncate text-[length:var(--step-1)] font-semibold text-white">{game.title}</p>
+                                <p className="truncate text-[length:var(--step-1)] font-semibold text-[var(--ink)]">{game.title}</p>
                                 {/* Barra sutil de distribuição relativa de tempo jogado */}
                                 <div className="mt-2.5 flex items-center gap-2">
-                                  <div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-white/[0.07]">
+                                  <div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-[var(--tone-3)]">
                                     <motion.div
                                       initial={{ width: 0 }}
                                       animate={{ width: `${pct}%` }}
                                       transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1], delay: index * 0.05 }}
-                                      className="h-full rounded-full bg-white/55"
+                                      className="h-full rounded-full bg-[var(--ink-muted)]"
                                     />
                                   </div>
                                 </div>
                               </div>
-                              <span className="flex items-center gap-1.5 text-[length:var(--step-1)] font-semibold tabular-nums text-neutral-200">
-                                <Clock className="h-3.5 w-3.5 text-neutral-500" />
+                              <span className="flex items-center gap-1.5 text-[length:var(--step-1)] font-semibold tabular-nums text-[var(--ink)]">
+                                <Clock className="h-3.5 w-3.5 text-[var(--ink-faint)]" />
                                 {formatPlayedHours(playedHours)}h
                               </span>
                             </Component>
@@ -1235,7 +1232,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                               {...(canOpenGames ? { type: "button" } : {})}
                               {...itemProps}
                             >
-                              <div className="h-[72px] w-[54px] rounded-xl overflow-hidden bg-white/8 shrink-0 relative">
+                              <div className="h-[72px] w-[54px] rounded-xl overflow-hidden bg-[var(--tone-3)] shrink-0 relative">
                                 {(game.cardImage || game.image) ? (
                                   <img
                                     src={game.cardImage || game.image}
@@ -1252,24 +1249,24 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                                 )}
                                 {game.isFavorite && (
                                   <div className="absolute top-1 right-1 h-3.5 w-3.5 rounded-full bg-black/60 flex items-center justify-center">
-                                    <Star className="h-2.5 w-2.5 text-yellow-400 fill-yellow-400" />
+                                    <Star className="h-2.5 w-2.5 text-[rgb(var(--tier-gold))] fill-[rgb(var(--tier-gold))]" />
                                   </div>
                                 )}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="truncate text-[length:var(--step-1)] font-semibold text-white">{game.title}</p>
+                                <p className="truncate text-[length:var(--step-1)] font-semibold text-[var(--ink)]">{game.title}</p>
                                 <div className="flex items-center gap-2 mt-1">
                                   <span className="text-[length:var(--step-0)] text-[var(--ink-muted)] flex items-center gap-1">
                                     <Clock className="h-2.5 w-2.5" />
                                     {formatPlayedHours(playedHours)}h
                                   </span>
-                                  <span className="text-[length:var(--step-0)] font-semibold px-2 py-0.5 rounded-full bg-white/[0.07] text-[var(--ink-muted)]">
+                                  <span className="text-[length:var(--step-0)] font-semibold px-2 py-0.5 rounded-full bg-[var(--tone-3)] text-[var(--ink-muted)]">
                                     {launcherBadge}
                                   </span>
                                 </div>
                                 {(game.totalAchievements || 0) > 0 && (
                                   <div className="flex items-center gap-1 mt-1 text-[length:var(--step-0)] text-[var(--ink-faint)]">
-                                    <Trophy className="h-2.5 w-2.5 text-yellow-500/80" />
+                                    <Trophy className="h-2.5 w-2.5 text-[rgb(var(--tier-gold)/0.8)]" />
                                     <span>{game.completedAchievements || 0} / {game.totalAchievements}</span>
                                   </div>
                                 )}
@@ -1290,8 +1287,8 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 <div className="space-y-3 pt-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400/20" />
-                      <h3 className="font-display text-[length:var(--step-2)] font-semibold text-white">{copy.favorites}</h3>
+                      <Star className="h-3.5 w-3.5 text-[rgb(var(--tier-gold))] fill-[rgb(var(--tier-gold)/0.2)]" />
+                      <h3 className="font-display text-[length:var(--step-2)] font-semibold text-[var(--ink)]">{copy.favorites}</h3>
                     </div>
                     {favoriteGames.length > 0 && (
                       <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)]">
@@ -1309,7 +1306,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                         const itemProps = canOpenGames
                           ? {
                               onClick: () => onOpenGame?.(game),
-                              className: "group w-[96px] sm:w-[104px] shrink-0 text-left transition-transform duration-200 hover:-translate-y-1 focus:outline-none cursor-pointer",
+                              className: "group w-[96px] sm:w-[104px] shrink-0 text-left transition-transform duration-200 hover:-translate-y-1 cursor-pointer",
                             }
                           : {
                               className: "w-[96px] sm:w-[104px] shrink-0 text-left cursor-default select-none",
@@ -1322,8 +1319,8 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                             {...itemProps}
                           >
                             <div className={cn(
-                              "relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-neutral-900 border border-white/10 shadow-lg transition-all",
-                              canOpenGames && "group-hover:border-white/30 group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
+                              "relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-[var(--tone-1)] border border-[color:var(--border-subtle)] shadow-lg transition-all",
+                              canOpenGames && "group-hover:border-[color:var(--border-strong)] group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
                             )}>
                               {(game.cardImage || game.image) && (
                                 <img
@@ -1337,8 +1334,8 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                               )}
                             </div>
                             <p className={cn(
-                              "mt-2 line-clamp-2 text-xs font-bold text-neutral-300 leading-tight transition-colors",
-                              canOpenGames && "group-hover:text-white"
+                              "mt-2 line-clamp-2 text-xs font-bold text-[var(--ink-muted)] leading-tight transition-colors",
+                              canOpenGames && "group-hover:text-[var(--ink)]"
                             )}>
                               {game.title}
                             </p>
@@ -1347,7 +1344,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                       })}
                     </div>
                   ) : (
-                    <p className="py-4 text-xs font-medium text-neutral-500 italic">{copy.noFavorites}</p>
+                    <p className="py-4 text-xs font-medium text-[var(--ink-faint)] italic">{copy.noFavorites}</p>
                   )}
 
                 </div>
@@ -1391,13 +1388,13 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 <Section compact={compactProfile} title={copy.achievements}>
                   <div className="mb-3 flex items-end justify-between">
                     <div>
-                      <span className="font-display text-[44px] font-bold leading-none tabular-nums text-white">{stats.totalAchievements}</span>
+                      <span className="font-display text-[44px] font-bold leading-none tabular-nums text-[var(--ink)]">{stats.totalAchievements}</span>
                       <span className="ml-1.5 text-[length:var(--step-1)] text-[var(--ink-faint)]">/ {stats.totalPossible}</span>
                     </div>
                     <span className="text-[length:var(--step-2)] font-semibold text-[var(--ink-muted)] tabular-nums">{achievementPercent}%</span>
                   </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-white/8">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${achievementPercent}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} className="h-full rounded-full bg-white" />
+                  <div className="h-2 overflow-hidden rounded-full bg-[var(--tone-3)]">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${achievementPercent}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} className="h-full rounded-full bg-[var(--ink)]" />
                   </div>
                   <p className="mt-3 flex items-center gap-1.5 text-[length:var(--step-0)] text-[var(--ink-faint)]">
                     <Trophy className="h-3 w-3" /> {stats.totalAchievements} {copy.unlocked}
@@ -1409,13 +1406,13 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                   <div className="space-y-4">
                     {/* Header de Distribuição */}
                     <div className="flex items-baseline justify-between">
-                      <span className="text-[length:var(--step-0)] text-neutral-400">Distribuição</span>
-                      <span className="text-[length:var(--step-1)] font-semibold tabular-nums text-white">{stats.totalGames} {stats.totalGames === 1 ? "jogo" : "jogos"}</span>
+                      <span className="text-[length:var(--step-0)] text-[var(--ink-muted)]">Distribuição</span>
+                      <span className="text-[length:var(--step-1)] font-semibold tabular-nums text-[var(--ink)]">{stats.totalGames} {stats.totalGames === 1 ? "jogo" : "jogos"}</span>
                     </div>
 
                     {/* Stacked bar única de distribuição */}
                     {stats.totalGames > 0 && (
-                      <div className="h-2 w-full flex rounded-full overflow-hidden bg-white/[0.06] p-0.5 gap-0.5">
+                      <div className="h-2 w-full flex rounded-full overflow-hidden bg-[var(--tone-3)] p-0.5 gap-0.5">
                         {stats.steamGames > 0 && (
                           <div
                             style={{ width: `${(stats.steamGames / stats.totalGames) * 100}%` }}
@@ -1426,14 +1423,14 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                         {stats.epicGames > 0 && (
                           <div
                             style={{ width: `${(stats.epicGames / stats.totalGames) * 100}%` }}
-                            className="h-full bg-white/90 rounded-full transition-all"
+                            className="h-full bg-[var(--ink)] rounded-full transition-all"
                             title={`Epic Games: ${stats.epicGames}`}
                           />
                         )}
                         {stats.localGames > 0 && (
                           <div
                             style={{ width: `${(stats.localGames / stats.totalGames) * 100}%` }}
-                            className="h-full bg-neutral-500 rounded-full transition-all"
+                            className="h-full bg-[var(--ink-faint)] rounded-full transition-all"
                             title={`Local: ${stats.localGames}`}
                           />
                         )}
@@ -1447,10 +1444,10 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                         return (
                           <div key={row.label} className="group">
                             <div className="flex items-center justify-between text-[length:var(--step-1)] font-medium mb-1.5">
-                              <span className="text-neutral-300 group-hover:text-white transition-colors">{row.label}</span>
-                              <span className="font-mono text-neutral-400 group-hover:text-white tabular-nums transition-colors">{row.value}</span>
+                              <span className="text-[var(--ink-muted)] group-hover:text-[var(--ink)] transition-colors">{row.label}</span>
+                              <span className="font-mono text-[var(--ink-muted)] group-hover:text-[var(--ink)] tabular-nums transition-colors">{row.value}</span>
                             </div>
-                            <div className="h-1 w-full bg-white/[0.05] rounded-full overflow-hidden">
+                            <div className="h-1 w-full bg-[var(--tone-3)] rounded-full overflow-hidden">
                               <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${pct}%` }}
@@ -1458,8 +1455,8 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                                 className={`h-full rounded-full ${row.label === "Steam"
                                   ? "bg-sky-400/80"
                                   : row.label === "Epic Games"
-                                    ? "bg-white/80"
-                                    : "bg-neutral-400/80"
+                                    ? "bg-[var(--ink-muted)]"
+                                    : "bg-[var(--ink-muted)]"
                                   }`}
                               />
                             </div>
@@ -1492,7 +1489,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
 const EmptyProfileState: React.FC<{ title: string; body: string; compact?: boolean }> = ({ title, body, compact = false }) => (
   <div className={`flex flex-col items-center justify-center text-center ${compact ? "h-40" : "h-56"}`}>
     <User className="mb-4 h-9 w-9 text-[var(--ink-faint)]" />
-    <p className="text-sm font-black text-[var(--ink-faint)]">{title}</p>
+    <p className="text-sm font-semibold text-[var(--ink-faint)]">{title}</p>
     <p className="mt-1 text-xs text-[var(--ink-faint)]">{body}</p>
   </div>
 );

@@ -32,19 +32,36 @@ import { ControllerButtonGlyph } from "../components/ui/ControllerButtonGlyph";
 
 import DynamicBackground from "../components/DynamicBackground";
 import { GameEnvironment } from "../components/home/GameEnvironment";
-import { HeroGame } from "../components/home/HeroGame";
+import { HomeMinimal } from "../components/home/minimal/HomeMinimal";
+import {
+  HOME_LAYOUT_STORAGE_KEY,
+  HOME_LAYOUT_TOGGLE_EVENT,
+  otherHomeLayout,
+  parseHomeLayout,
+  type HomeLayout,
+} from "../components/home/minimal/homeLayout";
 import { HomeTopNav } from "../components/home/HomeTopNav";
 import { announceNotchEvent } from "../components/notch/notchEvent";
+import { focusCapturesKeys } from "../components/edgeDrawer";
 import { PlatformShortcutHint } from "../components/home/PlatformShortcutHint";
+import { ConsoleHome } from "../components/home/console/ConsoleHome";
+import { resolveSessionStart } from "../components/home/console/consoleInfo";
+import { useLastTrophy, useRunningSince } from "../components/home/console/useLastTrophy";
+import {
+  buildConsoleRow,
+  resolveWallFocus,
+  stepColumn,
+  stepRow,
+} from "../components/home/console/consoleRows";
 import { EpicConnectModal } from "../components/settings/EpicConnectModal";
 import { PlatformLibrarySkeleton } from "../components/PlatformLibrarySkeleton";
 import { fetchEpicStatus } from "../services/epic";
-import GameRow from "../components/GameRow";
 import LoadingSkeleton from "../components/LoadingSkeleton";
 import LoadingState from "../components/ui/loading-state";
 import { LinearProgress } from "../components/ui/LinearProgress";
-import { HomeOverviewPanels } from "../components/HomeOverviewPanels";
-import DashboardContinuePlaying from "../components/DashboardContinuePlaying";
+import { FriendsRail } from "../components/friends/FriendsRail";
+import { GameNightModal } from "../components/voice/GameNightModal";
+import { pickResumeGame } from "../components/commandPaletteLogic";
 import type { LibraryFilters } from "../components/LibraryFilterModal";
 import { HomeOnboardingQuests } from "../components/home/HomeOnboardingQuests";
 import { OnboardingTour } from "../tour/OnboardingTour";
@@ -157,6 +174,16 @@ import {
   consumeSettingsConnectionsRequest,
   type SettingsTab,
 } from "../services/launcherNavigation";
+import {
+  NAV_HISTORY_REQUEST_EVENT,
+  NAV_HISTORY_STATE_EVENT,
+  createNavHistory,
+  goBack,
+  goForward,
+  historyFlags,
+  pushEntry,
+  type NavHistory,
+} from "../services/navigationHistory";
 
 import {
   deleteLibraryGame,
@@ -185,6 +212,8 @@ import { progressionEventBus } from "../services/progressionEvents";
 import { completeUserQuest } from "../services/userQuests";
 import { resolveLibraryLoadingState } from "../utils/libraryLoading";
 import { parseInviteNotificationId } from "../services/voiceCall/inviteSurfaces";
+import { pageMotion } from "../design-system/motion";
+import { GAMEPAD_PRIORITY } from "../context/gamepadSubscribers";
 
 const AddGameModal = React.lazy(() => import("../components/AddGameModal"));
 const GameDetailPanel = React.lazy(
@@ -352,6 +381,9 @@ const Home: React.FC = () => {
   const [localLibraryReady, setLocalLibraryReady] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  // Mods: jogo pedido pela tela do jogo e se a página de um jogo está aberta (trava as gavetas)
+  const [modsGameId, setModsGameId] = useState<string | null>(null);
+  const [isModsGameOpen, setIsModsGameOpen] = useState(false);
 
   // Sincronizar selectedGame com a lista atualizada após refreshLibrary
   React.useEffect(() => {
@@ -604,7 +636,6 @@ const Home: React.FC = () => {
     }
   }, [user?.uid]);
 
-  const gameRailWheelTimeRef = useRef(0);
   const previousSteamIdRef = useRef<string | undefined>(undefined);
   const previousDiscordIdRef = useRef<string | undefined>(undefined);
   // useRef does NOT support lazy initializers — read localStorage directly at declaration time.
@@ -658,10 +689,79 @@ const Home: React.FC = () => {
       // que o pediu (botão de controle do detalhe); qualquer outra navegação o
       // descarta, senão Configurações reabriria sempre naquele jogo.
       setControllerSettingsGameId(undefined);
+      setModsGameId(null);
       if (currentUserUid) writeLastCategory(currentUserUid, category);
     },
     [currentUserUid],
   );
+
+  // Histórico das seções para as setas voltar/avançar da barra de título. Toda mudança de
+  // `activeCategory` entra nele (inclusive a restauração da última tela); o que vem das
+  // setas é marcado em `navFromHistoryRef` para não ser registrado de novo.
+  const navHistoryRef = useRef<NavHistory>(createNavHistory(activeCategory));
+  const navFromHistoryRef = useRef(false);
+
+  useEffect(() => {
+    if (navFromHistoryRef.current) {
+      navFromHistoryRef.current = false;
+    } else {
+      navHistoryRef.current = pushEntry(navHistoryRef.current, activeCategory);
+    }
+    window.dispatchEvent(
+      new CustomEvent(NAV_HISTORY_STATE_EVENT, { detail: historyFlags(navHistoryRef.current) }),
+    );
+  }, [activeCategory]);
+
+  useEffect(() => {
+    const onRequest = (event: Event) => {
+      const direction = (event as CustomEvent<{ direction?: number }>).detail?.direction;
+      const step =
+        direction === -1
+          ? goBack(navHistoryRef.current)
+          : direction === 1
+            ? goForward(navHistoryRef.current)
+            : null;
+      if (!step) return;
+      navHistoryRef.current = step.history;
+      navFromHistoryRef.current = true;
+      selectCategory(step.entry);
+    };
+    window.addEventListener(NAV_HISTORY_REQUEST_EVENT, onRequest);
+    return () => window.removeEventListener(NAV_HISTORY_REQUEST_EVENT, onRequest);
+  }, [selectCategory]);
+
+  const showFriendsRail = activeCategory !== "FRIENDS" && activeCategory !== "SETTINGS";
+
+  // Layout da Home (minimalista ou clássico): alterna pela paleta (evento) e fica gravado no aparelho.
+  const [homeLayout, setHomeLayout] = useState<HomeLayout>(() => {
+    try {
+      return parseHomeLayout(localStorage.getItem(HOME_LAYOUT_STORAGE_KEY));
+    } catch {
+      return parseHomeLayout(null);
+    }
+  });
+  useEffect(() => {
+    const toggle = () =>
+      setHomeLayout((current) => {
+        const next = otherHomeLayout(current);
+        try {
+          localStorage.setItem(HOME_LAYOUT_STORAGE_KEY, next);
+        } catch {
+          // sem armazenamento: vale só nesta sessão
+        }
+        return next;
+      });
+    window.addEventListener(HOME_LAYOUT_TOGGLE_EVENT, toggle);
+    return () => window.removeEventListener(HOME_LAYOUT_TOGGLE_EVENT, toggle);
+  }, []);
+
+  // Noite de jogo: abre pela gaveta de amigos e pela paleta (evento, como o tour de boas-vindas)
+  const [isGameNightOpen, setIsGameNightOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setIsGameNightOpen(true);
+    window.addEventListener("pherielium:open-game-night", open);
+    return () => window.removeEventListener("pherielium:open-game-night", open);
+  }, []);
 
   const handleSettingsTabChange = useCallback(
     (tab: SettingsTab) => {
@@ -711,6 +811,10 @@ const Home: React.FC = () => {
     soundTheme,
     notificationVolume / 100,
   );
+
+  // Estável de propósito: os cards da biblioteca são memoizados e um callback novo a cada render
+  // os refaria todos.
+  const handleMinimalHover = useCallback(() => playSound("hover"), [playSound]);
 
   // Alt + Scroll to quickly open and spin the platform selector drawer
   useEffect(() => {
@@ -1634,9 +1738,6 @@ const Home: React.FC = () => {
   const {
     displayGames,
     continuePlayingGames,
-    favoriteShowcaseGames,
-    friendsPlayingNow,
-    recentOverviewActivity,
   } = useGameLibraryView({
     games,
     activeCategory,
@@ -1827,6 +1928,49 @@ const Home: React.FC = () => {
     "RADAR",
   ].includes(activeCategory);
 
+  // Home estilo console (layout clássico): uma fileira de capas. O jogo selecionado continua
+  // sendo displayGames[selectedIndex]; a parede só guarda em qual fileira o foco está, porque
+  // o mesmo jogo pode aparecer em mais de uma (Continuar e Steam, por exemplo).
+  const isWallLayout = homeLayout !== "minimal";
+  const [wallRow, setWallRow] = useState(0);
+  const wallRows = useMemo(
+    () =>
+      buildConsoleRow(displayGames, continuePlayingGames, {
+        isAllCategory: activeCategory === "ALL",
+        title:
+          activeCategory === "ALL" ? "Biblioteca" : activePlatformConfig.label,
+      }),
+    [displayGames, continuePlayingGames, activeCategory, activePlatformConfig.label],
+  );
+  const wallFocus = resolveWallFocus(wallRows, wallRow, currentGame?.id);
+
+  const focusWallGame = useCallback(
+    (row: number, game: Game) => {
+      setWallRow(row);
+      const index = displayGames.findIndex((g) => g.id === game.id);
+      if (index !== -1) setSelectedIndex(index);
+    },
+    [displayGames],
+  );
+
+  /** Move o foco na parede; devolve false na borda (para quem chamou decidir o que fazer). */
+  const moveWallFocus = useCallback(
+    (axis: "row" | "col", delta: number): boolean => {
+      if (axis === "col") {
+        const game = stepColumn(wallRows, wallFocus, delta);
+        if (!game) return false;
+        focusWallGame(wallFocus.row, game);
+      } else {
+        const next = stepRow(wallRows, wallFocus, delta);
+        if (!next) return false;
+        focusWallGame(next.row, next.game);
+      }
+      playSound("navigate");
+      return true;
+    },
+    [wallRows, wallFocus, focusWallGame, playSound],
+  );
+
   const { moveSystemFocus, adjustFocusedRange } = useGamepadFocusNavigation({
     playSound,
     activeCategory,
@@ -1935,6 +2079,8 @@ const Home: React.FC = () => {
     disableX: true,
     disableO: false,
     onClose: closeTopGamepadSurface,
+    // a Home é a camada de baixo: a página aberta por cima responde primeiro
+    priority: GAMEPAD_PRIORITY.base,
   });
 
   useGamepadButton("X", () => {
@@ -1945,6 +2091,11 @@ const Home: React.FC = () => {
       return;
     }
     if (isAnyModalOpen) return;
+    // Foco numa gaveta (amigos, sidebar): o botão ativa o item focado, não abre o jogo por baixo
+    if (focusCapturesKeys(document.activeElement) && document.activeElement instanceof HTMLElement) {
+      activateElementWithController(document.activeElement);
+      return;
+    }
     if (isSystemCategory) {
       const activeElement = document.activeElement;
       if (activeElement instanceof HTMLElement) {
@@ -1968,12 +2119,18 @@ const Home: React.FC = () => {
       return;
     }
     if (displayGames.length === 0) return;
+    if (isWallLayout) {
+      if (moveWallFocus("col", -1)) playHapticPattern("nav");
+      return;
+    }
 
     setSelectedIndex((p) => {
       const prev = Math.max(p - 1, 0);
       if (prev !== p) {
         playSound("navigate");
         playHapticPattern("nav");
+      } else {
+        playSound("edgeBump");
       }
       return prev;
     });
@@ -1986,12 +2143,18 @@ const Home: React.FC = () => {
       return;
     }
     if (displayGames.length === 0) return;
+    if (isWallLayout) {
+      if (moveWallFocus("col", 1)) playHapticPattern("nav");
+      return;
+    }
 
     setSelectedIndex((p) => {
       const next = Math.min(p + 1, displayGames.length - 1);
       if (next !== p) {
         playSound("navigate");
         playHapticPattern("nav");
+      } else {
+        playSound("edgeBump");
       }
       return next;
     });
@@ -2001,6 +2164,11 @@ const Home: React.FC = () => {
     if (isAnyModalOpen || searchOpen) return;
     if (isSystemCategory) {
       moveSystemFocus("up");
+      return;
+    }
+    // Na parede, cima troca de fileira; só da primeira fileira o cima vai para a pesquisa.
+    if (isWallLayout && moveWallFocus("row", -1)) {
+      playHapticPattern("nav");
       return;
     }
     // No hub (biblioteca): DPAD_UP foca a pesquisa se existir
@@ -2024,10 +2192,16 @@ const Home: React.FC = () => {
     // Se a pesquisa estiver focada, DPAD_DOWN volta ao carrossel
     if (document.activeElement === searchInputRef.current) {
       searchInputRef.current?.blur();
-      const cards = document.querySelectorAll<HTMLElement>("[data-game-card]");
-      cards[selectedIndex]?.focus();
+      if (isWallLayout) {
+        document.querySelector<HTMLElement>("[data-console-focused]")?.focus();
+      } else {
+        const cards = document.querySelectorAll<HTMLElement>("[data-game-card]");
+        cards[selectedIndex]?.focus();
+      }
       playSound("navigate");
+      return;
     }
+    if (isWallLayout && moveWallFocus("row", 1)) playHapticPattern("nav");
   });
 
   const toggleFavoriteGame = useCallback(
@@ -2071,7 +2245,7 @@ const Home: React.FC = () => {
         nextIdx = (currentIdx + direction + tabs.length) % tabs.length;
       }
       selectCategory(tabs[nextIdx]);
-      playSound("navigate");
+      playSound("tabSwitch");
     },
     [activeCategory, selectCategory, playSound],
   );
@@ -2265,8 +2439,20 @@ const Home: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName || ""))
         return;
+      // Foco numa gaveta (amigos, sidebar): as teclas são dela. Sem isto, Enter no botão
+      // "Noite de jogo" abria o jogo selecionado e cancelava o clique do botão.
+      if (focusCapturesKeys(document.activeElement)) return;
 
-      if (e.key === "ArrowRight") {
+      if (
+        isWallLayout &&
+        ["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)
+      ) {
+        e.preventDefault();
+        if (e.key === "ArrowRight") moveWallFocus("col", 1);
+        else if (e.key === "ArrowLeft") moveWallFocus("col", -1);
+        else if (e.key === "ArrowUp") moveWallFocus("row", -1);
+        else moveWallFocus("row", 1);
+      } else if (e.key === "ArrowRight") {
         e.preventDefault();
         setSelectedIndex((p) => {
           const next = Math.min(p + 1, displayGames.length - 1);
@@ -2341,32 +2527,28 @@ const Home: React.FC = () => {
     isPlatformOrFavoritesPage,
     cycleLibraryTab,
     toggleFavoriteGame,
+    isWallLayout,
+    moveWallFocus,
   ]);
 
-  const handleGameRailWheel = useCallback(
+  // Roda do mouse na Home: vertical troca de fileira, horizontal (ou Shift) anda na fileira.
+  const wallWheelTimeRef = useRef(0);
+  const handleWallWheel = useCallback(
     (event: React.WheelEvent<HTMLDivElement>) => {
-      if (isAnyModalOpen || searchOpen || displayGames.length === 0) return;
-
-      const delta =
-        Math.abs(event.deltaY) >= Math.abs(event.deltaX)
-          ? event.deltaY
-          : event.deltaX;
+      if (isAnyModalOpen || searchOpen || event.altKey) return;
+      // com uma fileira só (Home de console), a roda vertical também anda nas capas
+      const horizontal =
+        wallRows.length <= 1 ||
+        event.shiftKey ||
+        Math.abs(event.deltaX) > Math.abs(event.deltaY);
+      const delta = horizontal ? event.deltaX || event.deltaY : event.deltaY;
       if (Math.abs(delta) <= 15) return;
-
       const now = performance.now();
-      if (now - gameRailWheelTimeRef.current < 120) return;
-      gameRailWheelTimeRef.current = now;
-
-      setSelectedIndex((current) => {
-        const next =
-          delta > 0
-            ? Math.min(current + 1, displayGames.length - 1)
-            : Math.max(current - 1, 0);
-        if (next !== current) playSound("navigate");
-        return next;
-      });
+      if (now - wallWheelTimeRef.current < (horizontal ? 120 : 260)) return;
+      wallWheelTimeRef.current = now;
+      moveWallFocus(horizontal ? "col" : "row", delta > 0 ? 1 : -1);
     },
-    [displayGames.length, isAnyModalOpen, playSound, searchOpen],
+    [isAnyModalOpen, searchOpen, moveWallFocus, wallRows.length],
   );
 
   // Construção do perfil com busca resiliente de jogos da conta e favoritos
@@ -3240,32 +3422,6 @@ const Home: React.FC = () => {
     });
   }, []);
 
-  const currentGamePlatformInfo = useMemo(() => {
-    if (!currentGame) return null;
-    const launcher = (
-      currentGame.launcherType ||
-      currentGame.source ||
-      ""
-    ).toLowerCase();
-    if (launcher === "steam")
-      return { icon: PlatformSteamIcon, label: "Steam" };
-    if (launcher === "epic")
-      return { icon: PlatformEpicIcon, label: "Epic Games" };
-    if (launcher === "ea") return { icon: PlatformEaIcon, label: "EA App" };
-    if (launcher === "ubisoft")
-      return { icon: PlatformUbisoftIcon, label: "Ubisoft" };
-    if (launcher === "gog")
-      return { icon: PlatformGogIcon, label: "GOG Galaxy" };
-    if (launcher === "xbox") return { icon: PlatformXboxIcon, label: "Xbox" };
-    if (launcher === "riot")
-      return { icon: PlatformRiotIcon, label: "Riot Games" };
-    if (launcher === "battlenet")
-      return { icon: PlatformBattlenetIcon, label: "Battle.net" };
-    if (launcher === "rockstar")
-      return { icon: PlatformRockstarIcon, label: "Rockstar" };
-    return { icon: PlatformLocalIcon, label: "Executável Local" };
-  }, [currentGame]);
-
   const isCurrentGameRunning = useMemo(() => {
     if (!currentGame) return false;
     const running = resolveGameFromPresence(
@@ -3276,31 +3432,12 @@ const Home: React.FC = () => {
     return running?.id === currentGame.id;
   }, [currentGame, games, currentPresenceGame, currentPresenceExecutablePath]);
 
-  const handleSelectContinuePlaying = useCallback(
-    (game: Game) => {
-      const idx = displayGames.findIndex((g) => g.id === game.id);
-      if (idx !== -1) {
-        setSelectedIndex(idx);
-      }
-    },
-    [displayGames],
-  );
-
-  const handlePlayContinuePlaying = useCallback(
-    (game: Game) => {
-      openDetails(game);
-      playSound("select");
-    },
-    [openDetails, playSound],
-  );
-
-  const handleOpenDetailsContinuePlaying = useCallback(
-    (game: Game) => {
-      openDetails(game);
-      playSound("select");
-    },
-    [openDetails, playSound],
-  );
+  // Bloco de informações da Home: último troféu (carga sob demanda) e início da sessão
+  const focusedLastTrophy = useLastTrophy(currentGame);
+  const focusedRunningSince = useRunningSince(currentGame?.id, isCurrentGameRunning);
+  const focusedSessionStart = isCurrentGameRunning
+    ? resolveSessionStart(focusedRunningSince, currentGame?.lastPlayedAt, Date.now())
+    : null;
 
   const handleHeroOpenDetails = useCallback(
     (game: Game) => {
@@ -3309,108 +3446,37 @@ const Home: React.FC = () => {
     [openDetails],
   );
 
-  const renderedContinuePlaying = useMemo(() => {
-    if (activeCategory !== "ALL" || continuePlayingGames.length === 0)
-      return null;
-    return (
-      // Com a legenda do controle ocupando o rodapé, telas entre 800 e 1019 px de altura
-      // não comportam esta faixa junto com o carrossel: ela cede o lugar.
-      <div
-        className={`shrink-0 [@media(max-height:799px)]:hidden ${
-          isGamepadConnected ? "[@media(max-height:1019px)]:hidden" : ""
-        }`}
-      >
-        <DashboardContinuePlaying
-          continuePlayingGames={continuePlayingGames}
-          selectedGameId={currentGame?.id}
-          onSelectGame={handleSelectContinuePlaying}
-          onPlayGame={handlePlayContinuePlaying}
-          onOpenDetails={handleOpenDetailsContinuePlaying}
-          playSound={playSound}
-        />
-      </div>
-    );
-  }, [
-    activeCategory,
-    continuePlayingGames,
-    currentGame?.id,
-    handleSelectContinuePlaying,
-    handlePlayContinuePlaying,
-    handleOpenDetailsContinuePlaying,
-    playSound,
-    isGamepadConnected,
-  ]);
+  // Jogar pelo herói: abre o detalhe (onde mora o fluxo de lançamento) e pede o início.
+  const [heroLaunchRequest, setHeroLaunchRequest] = useState(0);
+  const handleHeroPlay = useCallback(
+    (game: Game) => {
+      openDetails(game);
+      setHeroLaunchRequest((n) => n + 1);
+    },
+    [openDetails],
+  );
 
-  const renderedHeroGame = useMemo(() => {
-    if (!currentGame) return null;
-    return (
-      <HeroGame
-        game={currentGame}
-        isRunning={isCurrentGameRunning}
-        platformInfo={currentGamePlatformInfo}
-        onOpenDetails={handleHeroOpenDetails}
-        playSound={playSound}
-        runningLabel="Em execução"
-      />
-    );
-  }, [
-    currentGame,
-    isCurrentGameRunning,
-    currentGamePlatformInfo,
-    handleHeroOpenDetails,
-    playSound,
-  ]);
-
-  const renderedGameShelf = useMemo(() => {
-    return (
-      <div
-        // Com a legenda do controle embaixo, ela faz o papel da folga inferior.
-        className={`shrink-0 hub-scroll transform-gpu flex flex-col gap-[var(--gap-stack)] ${
-          isGamepadConnected ? "" : "pb-[var(--safe-y)]"
-        }`}
-        onWheel={handleGameRailWheel}
-      >
-        <div className="px-[var(--safe-x)] flex items-center justify-between">
-          <h2 className="text-[length:var(--fs-title)] font-semibold text-[var(--ink-muted)] font-display">
-            {activeCategory === "ALL"
-              ? "Biblioteca"
-              : activePlatformConfig.label}
-          </h2>
-          <div className="flex items-center gap-[var(--gap-section)]">
-            {!isGamepadConnected && (
-              <PlatformShortcutHint
-                onActivate={() => {
-                  setIsPlatformModalOpen(true);
-                  playSound("showModal");
-                }}
-              />
-            )}
-            <span className="text-[length:var(--fs-caption)] font-medium text-[var(--ink-muted)]">
-              {displayGames.length}{" "}
-              {displayGames.length === 1 ? "jogo" : "jogos"}
-            </span>
-          </div>
-        </div>
-        <GameRow
-          games={displayGames}
-          selectedIndex={selectedIndex}
-          onSelect={onSelectHandler}
-          onContextMenu={handleMenuAction}
-          playSound={playSound}
-        />
-      </div>
-    );
-  }, [
-    handleGameRailWheel,
-    activeCategory,
-    activePlatformConfig.label,
-    displayGames,
-    selectedIndex,
-    onSelectHandler,
-    handleMenuAction,
-    playSound,
-    isGamepadConnected,
-  ]);
+  // Retomar com uma tecla: Ctrl+Enter, em qualquer tela, inicia o último jogo jogado.
+  // Não age enquanto se digita, com um modal aberto ou com a paleta aberta (lá o Enter já executa).
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Enter" || !(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey) return;
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+      )
+        return;
+      if (isAnyModalOpen || isCommandPaletteOpen) return;
+      const game = pickResumeGame(games);
+      if (!game) return;
+      event.preventDefault();
+      handleHeroPlay(game);
+      playSound("select");
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [games, handleHeroPlay, isAnyModalOpen, isCommandPaletteOpen, playSound]);
 
   return (
     <div
@@ -3423,13 +3489,15 @@ const Home: React.FC = () => {
       }
     >
       <GameEnvironment
+        // Home de console: a arte do jogo em foco é o fundo, nítida e em tela cheia.
         artwork={
           settledGame?.backgroundImage ||
           settledGame?.image ||
           settledGame?.cardImage ||
           ""
         }
-        dominantColor={dominantColor}
+        sharp={isWallLayout}
+        dominantColor={isWallLayout ? null : dominantColor}
         videoUrl={
           activeCategory === "ALL" && !isAnyModalOpen
             ? settledTrailer
@@ -3440,33 +3508,23 @@ const Home: React.FC = () => {
         style={{ left: 0 }}
       />
 
-      {/* Widgets flutuantes (Pulso, Amigos) com animação sincronizada ao jogo */}
-      {activeCategory === "ALL" && !isLoading && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <HomeOverviewPanels
-            continuePlaying={continuePlayingGames}
-            favoriteGames={favoriteShowcaseGames}
-            friendsPlaying={friendsPlayingNow}
-            recentActivity={recentOverviewActivity}
-            onOpenGame={openDetails}
-            onOpenFriends={() => selectCategory("FRIENDS")}
-            onOpenFriendChat={openFriendChatFromOverview}
-            t={t}
-          />
-        </motion.div>
-      )}
-
       <Sidebar
+        locked={isDetailOpen || isModsGameOpen}
         activeCategory={activeCategory}
         onCategory={selectCategory}
         settingsLabel={t("settings")}
         language={launcherLanguage}
         playSound={playSound}
         platformOperations={platformOperations}
+        userDisplay={userDisplay}
+        userAvatar={
+          userProfile?.photoURL ||
+          user?.photoURL ||
+          userProfile?.discordAvatar ||
+          userProfile?.steamAvatar ||
+          undefined
+        }
+        userLevel={playerLevel.level}
         notificationCount={
           incomingFriendRequests.length +
           Object.values(unreadMessagesByFriend).reduce(
@@ -3475,6 +3533,19 @@ const Home: React.FC = () => {
           )
         }
       />
+
+      {/* Gaveta de amigos: abre ao encostar na borda direita (some em Amigos, que já é a lista completa, e em Ajustes) */}
+      {showFriendsRail && (
+        <FriendsRail
+          friends={socialFriends}
+          pendingRequests={incomingFriendRequests.length}
+          onOpenFriend={openFriendChatFromOverview}
+          onOpenFriends={() => selectCategory("FRIENDS")}
+          onOpenGameNight={() => setIsGameNightOpen(true)}
+          locked={isDetailOpen || isModsGameOpen}
+          playSound={playSound}
+        />
+      )}
 
       <div
         className="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden"
@@ -3571,18 +3642,7 @@ const Home: React.FC = () => {
           <AnimatePresence mode="wait" custom={activeCategory}>
             <motion.div
               key={activeCategory}
-              initial={{
-                opacity: 0,
-                x: activeCategory === "ALL" ? -40 : 40,
-                scale: activeCategory === "ALL" ? 0.98 : 1,
-              }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{
-                opacity: 0,
-                x: activeCategory === "ALL" ? 40 : -40,
-                scale: activeCategory === "ALL" ? 1 : 0.98,
-              }}
-              transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+              {...pageMotion}
               className="flex-1 flex flex-col justify-end min-h-0 w-full"
             >
               {activeCategory === "SETTINGS" ? (
@@ -3749,7 +3809,12 @@ const Home: React.FC = () => {
                     </div>
                   }
                 >
-                  <ModsPage uid={user?.uid || "local"} games={games} />
+                  <ModsPage
+                    uid={user?.uid || "local"}
+                    games={games}
+                    initialGameId={modsGameId}
+                    onGameOpenChange={setIsModsGameOpen}
+                  />
                 </React.Suspense>
               ) : activeCategory === "PROFILE" ? (
                 <React.Suspense
@@ -3968,14 +4033,45 @@ const Home: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex min-h-0 flex-1 flex-col gap-[var(--gap-section)]">
-                  {/* B. Continue Playing / Jogos Recentes (EM CIMA) */}
-                  {renderedContinuePlaying}
-
-                  {/* C. Cinematic Hero / Nome do Jogo (EM BAIXO) */}
-                  {renderedHeroGame}
-
-                  {/* D. Library / Recent Games Shelf */}
-                  {renderedGameShelf}
+                  {homeLayout === "minimal" ? (
+                    <HomeMinimal
+                      games={displayGames}
+                      allGames={games}
+                      libraryTitle={activeCategory === "ALL" ? "Biblioteca" : activePlatformConfig.label}
+                      selectedIndex={selectedIndex}
+                      runningGameId={isCurrentGameRunning ? currentGame?.id : null}
+                      onPlay={handleHeroPlay}
+                      onOpenDetails={handleHeroOpenDetails}
+                      onSelect={onSelectHandler}
+                      onHover={handleMinimalHover}
+                      trailing={
+                        !isGamepadConnected ? (
+                          <PlatformShortcutHint
+                            onActivate={() => {
+                              setIsPlatformModalOpen(true);
+                              playSound("showModal");
+                            }}
+                          />
+                        ) : null
+                      }
+                    />
+                  ) : (
+                    <div className="flex min-h-0 flex-1 flex-col" onWheel={handleWallWheel}>
+                      <ConsoleHome
+                        rows={wallRows}
+                        focus={wallFocus}
+                        focusedIsRunning={isCurrentGameRunning}
+                        onFocus={focusWallGame}
+                        onOpenDetails={handleHeroOpenDetails}
+                        onMenuAction={handleMenuAction}
+                        onStep={(delta) => moveWallFocus("col", delta)}
+                        lastTrophy={focusedLastTrophy}
+                        sessionStartedAt={focusedSessionStart}
+                        hidden={isDetailOpen}
+                        playSound={playSound}
+                      />
+                    </div>
+                  )}
 
                   {/* Steam Deck / PS5 Controller Footer Hints */}
                   <SteamDeckControllerFooter
@@ -4053,6 +4149,8 @@ const Home: React.FC = () => {
           onOpenMods={() => {
             setIsDetailOpen(false);
             selectCategory("MODS");
+            // Depois do selectCategory, que limpa o valor: a página de mods abre já neste jogo.
+            setModsGameId(selectedGame?.id ?? null);
           }}
           onOpenControllerSettings={(game) => {
             setIsDetailOpen(false);
@@ -4063,6 +4161,7 @@ const Home: React.FC = () => {
           }}
           currentPresenceGame={currentPresenceGame}
           friends={socialFriends}
+          launchRequest={heroLaunchRequest}
           onToggleFavorite={(game) => {
             void toggleFavoriteGame(game);
           }}
@@ -4091,6 +4190,25 @@ const Home: React.FC = () => {
         />
       </React.Suspense>
 
+      <GameNightModal
+        isOpen={isGameNightOpen}
+        onClose={() => setIsGameNightOpen(false)}
+        games={games}
+        friends={socialFriends}
+        initialGame={currentGame}
+        hostName={userDisplay}
+        hostAvatar={userProfile?.photoURL || user?.photoURL || null}
+        onCreateRoom={async (config) => {
+          const room = await voiceCallContext.createAndJoinRoom(config);
+          return { id: room.id };
+        }}
+        onSendInvite={async (uid, payload) => {
+          await sendChatMessage(uid, JSON.stringify(payload));
+        }}
+        notify={notify}
+        playSound={playSound}
+      />
+
       <React.Suspense fallback={null}>
         <CommandPalette
           isOpen={isCommandPaletteOpen}
@@ -4102,7 +4220,7 @@ const Home: React.FC = () => {
             playSound("select");
           }}
           onPlayGame={(game) => {
-            openDetails(game);
+            handleHeroPlay(game);
             playSound("select");
           }}
           onNavigate={(category) => {
@@ -4161,7 +4279,7 @@ const Home: React.FC = () => {
             ? `Você vai remover "${pendingDeleteGame.title}" da sua biblioteca.`
             : ""
         }
-        confirmLabel="Sim, remover"
+        confirmLabel="Remover jogo"
         variant="delete"
         onClose={() => setPendingDeleteGame(null)}
         onConfirm={async () => {
@@ -4190,7 +4308,7 @@ const Home: React.FC = () => {
         variant="logout"
         title={t("signOutTitle")}
         description={t("signOutDescription")}
-        confirmLabel="Sim, sair"
+        confirmLabel="Sair da conta"
         onClose={() => setSignOutModalOpen(false)}
         onConfirm={async () => {
           setSignOutModalOpen(false);
@@ -4219,7 +4337,7 @@ const Home: React.FC = () => {
         variant="disconnect"
         title={t("disconnectSteamTitle")}
         description={t("disconnectSteamDescription")}
-        confirmLabel="Sim, desconectar"
+        confirmLabel="Desconectar Steam"
         onClose={() => setDisconnectSteamModalOpen(false)}
         onConfirm={async () => {
           setDisconnectSteamModalOpen(false);
@@ -4235,7 +4353,7 @@ const Home: React.FC = () => {
         variant="disconnect"
         title={t("disconnectDiscordTitle")}
         description={t("disconnectDiscordDescription")}
-        confirmLabel="Sim, desconectar"
+        confirmLabel="Desconectar Discord"
         onClose={() => setDisconnectDiscordModalOpen(false)}
         onConfirm={async () => {
           setDisconnectDiscordModalOpen(false);
@@ -4251,7 +4369,7 @@ const Home: React.FC = () => {
         variant="disconnect"
         title={t("disconnectEpicTitle")}
         description={t("disconnectEpicDescription")}
-        confirmLabel="Sim, desconectar"
+        confirmLabel="Desconectar Epic Games"
         onClose={() => setDisconnectEpicModalOpen(false)}
         onConfirm={async () => {
           setDisconnectEpicModalOpen(false);
@@ -4282,7 +4400,7 @@ const Home: React.FC = () => {
             ? `Você vai remover ${pendingFriendRemoval.name} da sua lista de amigos.`
             : ""
         }
-        confirmLabel="Sim, remover"
+        confirmLabel="Remover amigo"
         onClose={() => setPendingFriendRemoval(null)}
         onConfirm={async () => {
           const friend = pendingFriendRemoval;
@@ -4619,7 +4737,7 @@ const Home: React.FC = () => {
             playSound("select");
             setIsQuestsModalOpen(true);
           }}
-          className="fixed bottom-6 right-6 z-120 flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[var(--tone-1)]/90 hover:bg-[#161824] border border-amber-500/40 hover:border-amber-500/80 shadow-[0_10px_30px_rgba(0,0,0,0.7),0_0_20px_rgba(245,158,11,0.2)] text-white text-xs font-bold transition-all duration-200 backdrop-blur-xl group hover:scale-105 cursor-pointer"
+          className={`fixed bottom-6 right-6 z-120 flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[var(--tone-1)]/90 hover:bg-[#161824] border border-amber-500/40 hover:border-amber-500/80 shadow-[0_10px_30px_rgba(0,0,0,0.7),0_0_20px_rgba(245,158,11,0.2)] text-white text-xs font-bold transition-all duration-200 backdrop-blur-xl group hover:scale-105 cursor-pointer`}
           title="Abrir Guia de Missões"
         >
           <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 group-hover:bg-amber-500/30">

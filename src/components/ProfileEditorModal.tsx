@@ -16,6 +16,7 @@ import {
   validateProfileMedia,
   type ProfileMediaKind,
 } from "../services/profileMedia";
+import { IconSwap } from "./ui/IconSwap";
 
 interface ProfileEditorModalProps {
   isOpen?: boolean;
@@ -27,7 +28,7 @@ interface ProfileEditorModalProps {
 }
 
 const inputClass =
-  "w-full rounded-xl border border-white/10 bg-black/45 px-3.5 py-3 text-sm text-white outline-none transition focus:border-white/30 placeholder:text-[var(--ink-faint)]";
+  "w-full rounded-xl border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-3.5 py-3 text-sm text-[var(--ink)] outline-none transition focus:border-[color:var(--border-strong)] placeholder:text-[var(--ink-faint)]";
 
 const AVAILABLE_GENRES = [
   "Ação", "Aventura", "RPG", "Estratégia", "Simulação",
@@ -193,19 +194,18 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
         zIndexClassName="z-[250]"
         ariaLabel="Editar perfil"
       >
-        <div className="relative max-h-[85vh] w-full overflow-y-auto rounded-[var(--corner-md)] border border-white/12 bg-[var(--tone-1)] p-6 shadow-2xl thin-scrollbar text-white">
+        <div className="relative max-h-[85vh] w-full overflow-y-auto rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--tone-1)] p-6 shadow-2xl thin-scrollbar text-[var(--ink)]">
           <header className="mb-6 flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">Conta Phelierium</p>
-              <h2 id="profile-editor-title" className="mt-1 text-2xl font-black text-white">Editar perfil</h2>
+              <h2 id="profile-editor-title" className="text-2xl font-bold text-[var(--ink)]">Editar perfil</h2>
             </div>
-            <button type="button" onClick={onClose} className="rounded-lg border border-white/10 p-2 text-[var(--ink-muted)] hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/40">
+            <button type="button" onClick={onClose} className="rounded-lg border border-[color:var(--border-subtle)] p-2 text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)] focus-visible:ring-2">
               <X className="h-5 w-5" />
             </button>
           </header>
 
-          <div className="mb-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]">
-            <div className="relative h-32 w-full bg-gradient-to-br from-white/[0.08] to-white/[0.02]">
+          <div className="mb-4 overflow-hidden rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-2)]">
+            <div className="relative h-32 w-full bg-[var(--tone-3)]">
               {form.bannerURL ? (
                 <img src={form.bannerURL} alt="Prévia do banner" className="h-full w-full object-cover" />
               ) : (
@@ -216,7 +216,7 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
             </div>
             <div className="flex flex-wrap items-center gap-2 p-3">
               <div className="mr-auto min-w-0">
-                <p className="text-sm font-black text-white">Banner do perfil</p>
+                <p className="text-sm font-semibold text-[var(--ink)]">Banner do perfil</p>
                 <p className="text-xs text-[var(--ink-faint)]">JPG, PNG, WebP ou GIF animado, até {Math.round(PROFILE_MEDIA_LIMITS.bannerBytes / 1048576)} MB.</p>
               </div>
               <input
@@ -229,15 +229,15 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
                   event.target.value = "";
                 }}
               />
-              <button type="button" onClick={() => bannerInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-xl bg-white px-3.5 py-2 text-xs font-black text-black hover:bg-white/85 transition active:scale-95">
+              <button type="button" onClick={() => bannerInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-xl bg-[var(--ink)] px-3.5 py-2 text-xs font-semibold text-[var(--tone-0)] hover:opacity-90 transition active:scale-95">
                 <Camera className="h-4 w-4" /> {form.bannerURL ? "Trocar banner" : "Adicionar banner"}
               </button>
               {form.bannerURL && (
                 <>
-                  <button type="button" onClick={() => handleOpenCropCurrent("banner")} className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2 text-xs font-black text-white hover:bg-white/20 transition active:scale-95">
+                  <button type="button" onClick={() => handleOpenCropCurrent("banner")} className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-4)] px-3.5 py-2 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--tone-4)] transition active:scale-95">
                     <Crop className="h-4 w-4" /> Ajustar
                   </button>
-                  <button type="button" onClick={() => { delete pendingRef.current.banner; setField("bannerURL", ""); }} className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-[var(--ink-muted)] hover:bg-white/10 hover:text-white transition active:scale-95">
+                  <button type="button" onClick={() => { delete pendingRef.current.banner; setField("bannerURL", ""); }} className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--border-subtle)] px-3 py-2 text-xs font-semibold text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)] transition active:scale-95">
                     <Trash2 className="h-4 w-4" /> Remover
                   </button>
                 </>
@@ -245,8 +245,8 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
             </div>
           </div>
 
-          <div className="mb-6 flex flex-col gap-5 rounded-2xl border border-white/10 bg-white/[0.035] p-4 sm:flex-row sm:items-center">
-            <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white/15 bg-white/[0.06] text-2xl font-black text-[var(--ink-muted)] aspect-square shadow-inner">
+          <div className="mb-6 flex flex-col gap-5 rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-2)] p-4 sm:flex-row sm:items-center">
+            <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[color:var(--border-subtle)] bg-[var(--tone-3)] text-2xl font-semibold text-[var(--ink-muted)] aspect-square shadow-inner">
               {form.photoURL ? (
                 <img
                   src={form.photoURL}
@@ -258,7 +258,7 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
               )}
             </div>
             <div className="flex-1">
-              <p className="text-sm font-black text-white">Foto de perfil</p>
+              <p className="text-sm font-semibold text-[var(--ink)]">Foto de perfil</p>
               <p className="mt-1 text-xs text-[var(--ink-faint)]">JPG, PNG, WebP ou GIF animado. Fotos estáticas podem ser recortadas; GIFs sobem como estão.</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <input
@@ -274,7 +274,7 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-2 rounded-xl bg-white px-3.5 py-2 text-xs font-black text-black hover:bg-white/85 transition active:scale-95"
+                  className="inline-flex items-center gap-2 rounded-xl bg-[var(--ink)] px-3.5 py-2 text-xs font-semibold text-[var(--tone-0)] hover:opacity-90 transition active:scale-95"
                 >
                   <Camera className="h-4 w-4" /> Escolher foto
                 </button>
@@ -283,14 +283,14 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleOpenCropCurrent("avatar")}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2 text-xs font-black text-white hover:bg-white/20 transition active:scale-95"
+                      className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-4)] px-3.5 py-2 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--tone-4)] transition active:scale-95"
                     >
                       <Crop className="h-4 w-4" /> Ajustar / Cortar
                     </button>
                     <button
                       type="button"
                       onClick={() => { delete pendingRef.current.avatar; setField("photoURL", ""); }}
-                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-black text-[var(--ink-muted)] hover:bg-white/10 hover:text-white transition active:scale-95"
+                      className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--border-subtle)] px-3 py-2 text-xs font-semibold text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)] transition active:scale-95"
                     >
                       <Trash2 className="h-4 w-4" /> Remover
                     </button>
@@ -302,24 +302,24 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="sm:col-span-2">
-            <span className="mb-1.5 block text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-faint)]">Nome público</span>
+            <span className="mb-1.5 block text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)]">Nome público</span>
             <input className={inputClass} maxLength={PROFILE_LIMITS.displayName} value={form.displayName} onChange={(event) => setField("displayName", event.target.value)} />
           </label>
           
           <label className="sm:col-span-2">
-            <span className="mb-1.5 flex justify-between text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-faint)]">
+            <span className="mb-1.5 flex justify-between text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)]">
               <span>Bio</span><span>{form.bio.length}/{PROFILE_LIMITS.bio}</span>
             </span>
             <textarea className={`${inputClass} min-h-24 resize-none`} maxLength={PROFILE_LIMITS.bio} value={form.bio} placeholder="Conte um pouco sobre você e os jogos que curte." onChange={(event) => setField("bio", event.target.value)} />
           </label>
           
           <label className="sm:col-span-2">
-            <span className="mb-1.5 block text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-faint)]">Site ou rede social</span>
+            <span className="mb-1.5 block text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)]">Site ou rede social</span>
             <input className={inputClass} maxLength={PROFILE_LIMITS.website} value={form.website} placeholder="https://..." onChange={(event) => setField("website", event.target.value)} />
           </label>
 
           <div className="sm:col-span-2 mt-2">
-            <span className="mb-2 flex justify-between text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-faint)]">
+            <span className="mb-2 flex justify-between text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)]">
               <span>Gêneros favoritos</span>
               <span>{form.favoriteGenres.length}/{PROFILE_LIMITS.genres}</span>
             </span>
@@ -339,7 +339,7 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
                         }
                       }
                     }}
-                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition border ${isSelected ? "border-white bg-white text-black" : "border-white/10 bg-black/45 text-[var(--ink-muted)] hover:border-white/30 hover:text-white"}`}
+                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition border ${isSelected ? "border-[color:var(--ink)] bg-[var(--ink)] text-[var(--tone-0)]" : "border-[color:var(--border-subtle)] bg-[var(--surface-base)] text-[var(--ink-muted)] hover:border-[color:var(--border-strong)] hover:text-[var(--ink)]"}`}
                   >
                     {genre}
                   </button>
@@ -350,12 +350,12 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
           </div>
         </div>
 
-        {error && <p role="alert" className="mt-4 rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-bold text-red-200">{error}</p>}
+        {error && <p role="alert" className="mt-4 rounded-xl ring-1 ring-[color:var(--danger)] bg-[var(--tone-2)] px-3 py-2 text-xs font-semibold text-[var(--ink)]">{error}</p>}
 
         <footer className="mt-6 flex justify-end gap-3">
-          <button type="button" disabled={saving} onClick={onClose} className="rounded-xl border border-white/10 px-4 py-2.5 text-xs font-black text-[var(--ink-muted)] hover:bg-white/10">Cancelar</button>
-          <button type="button" disabled={saving} onClick={handleSave} className="inline-flex min-w-32 items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-black text-black hover:bg-white/85 disabled:opacity-50">
-            {saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          <button type="button" disabled={saving} onClick={onClose} className="rounded-xl border border-[color:var(--border-subtle)] px-4 py-2.5 text-xs font-semibold text-[var(--ink-muted)] hover:bg-[var(--tone-4)]">Cancelar</button>
+          <button type="button" disabled={saving} onClick={handleSave} className="inline-flex min-w-32 items-center justify-center gap-2 rounded-xl bg-[var(--ink)] px-4 py-2.5 text-xs font-semibold text-[var(--tone-0)] hover:opacity-90 disabled:opacity-50">
+            <IconSwap active={saving} a={<Check className="h-4 w-4" />} b={<LoaderCircle className="h-4 w-4 animate-spin" />} />
             {saving ? "Salvando..." : "Salvar perfil"}
           </button>
         </footer>
