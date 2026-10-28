@@ -25,10 +25,8 @@ export const SteamDeckControllerFooter: React.FC<SteamDeckControllerFooterProps>
   onToggleSidebar,
   isFavorite = false,
 }) => {
-  // As legendas de controle só aparecem quando um controle estiver conectado
-  if (!isGamepadConnected) {
-    return null;
-  }
+  // Sem controle não há legendas aqui: o atalho Alt + Scroll aparece no menu da biblioteca (HomeTopNav).
+  if (!isGamepadConnected) return null;
 
   return (
     <footer
