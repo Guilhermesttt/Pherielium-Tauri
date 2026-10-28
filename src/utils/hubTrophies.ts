@@ -30,6 +30,38 @@ export function markHubAchievement(uid: string, gameId: string, apiName: string)
   }
 }
 
+/** Índice de tier (0 platina, 1 ouro, 2 prata, 3 bronze) a partir do nome que o overlay usa; `null` se não for conhecido. */
+export function tierIndexFromName(tier?: string | null): number | null {
+  switch (String(tier ?? "").toLowerCase()) {
+    case "platinum":
+    case "platina":
+      return 0;
+    case "gold":
+    case "ouro":
+      return 1;
+    case "silver":
+    case "prata":
+      return 2;
+    case "bronze":
+      return 3;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Marca a conquista e soma o troféu e o XP dela, uma única vez. Mais de um ouvinte do mesmo desbloqueio
+ * (a contagem global e a tela do jogo) podem chamar: só o primeiro conta. Devolve se este chamou contou.
+ */
+export function awardHubAchievement(uid: string, gameId: string, apiName: string, tierIndex: number): boolean {
+  if (isHubAchievement(uid, gameId, apiName)) return false;
+  // soma antes de marcar: `getHubCounts` migra contadores antigos tratando cada conquista já marcada
+  // como bronze, então marcar primeiro contaria esta conquista duas vezes (como bronze e no tier dela)
+  incrementHubCount(uid, gameId, tierIndex);
+  markHubAchievement(uid, gameId, apiName);
+  return true;
+}
+
 export function isHubAchievement(uid: string, gameId: string, apiName: string): boolean {
   return getHubAchievementSet(uid, gameId).has(String(apiName).toLowerCase());
 }

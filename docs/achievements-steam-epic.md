@@ -5,6 +5,7 @@
 2. Com o jogo rodando, o app consulta a API (Render) **a cada 15 s** (`/api/steam/achievements` para Steam; `fetchEpicAchievements` para Epic). O primeiro retorno vira o "baseline"; o que aparecer desbloqueado depois disso é "novo".
 3. Cada conquista nova chama `unlockAchievement` (Rust `achievement_unlock`), que grava o progresso, emite `achievement:realtime-unlock` e manda o evento ao overlay. O modal de detalhes (`useGameDetailAsync`) escuta esse evento e marca a conquista.
 4. O **tier** vem da raridade global (porcentagem): ≤ 5% platina, ≤ 20% ouro, ≤ 50% prata, senão bronze.
+4b. **A contagem no hub** (troféu do tier, XP e o total de conquistas do jogo na biblioteca) acontece assim que o evento `achievement:realtime-unlock` chega, em `useRealtimeAchievementAccounting` [VERIFICADO: `src/hooks/useRealtimeAchievementAccounting.ts`], com ou sem a tela do jogo aberta. Antes ela só rodava dentro de `useGameDetailAsync`, então jogar com a tela fechada mostrava o overlay mas não somava. `awardHubAchievement` conta cada conquista uma vez só (a tela do jogo e o ouvinte global chamam a mesma função) e soma o troféu **antes** de marcar a conquista: `getHubCounts` migra contadores antigos tratando conquistas já marcadas como bronze, e marcar primeiro contava a conquista duas vezes.
 5. O app local só lê **arquivos de save de emuladores** (`achievement_watcher.rs`); para jogos oficiais da Steam/Epic a fonte é sempre a API do servidor.
 
 ## O que foi corrigido (rc.5)

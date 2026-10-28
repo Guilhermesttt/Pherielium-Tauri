@@ -1,4 +1,3 @@
-import type { Game } from "../types/domain";
 
 export interface CustomLibraryFilter {
   id: string;
@@ -8,6 +7,39 @@ export interface CustomLibraryFilter {
 }
 
 const STORAGE_KEY = "checkpoint_custom_library_filters";
+const CHANGED_EVENT = "checkpoint:custom-filters-changed";
+
+/** O texto guardado dos filtros: serve de "versão" para quem precisa refazer a conta quando eles mudam. */
+export const readCustomFiltersRaw = (): string | null => {
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+};
+
+/** Avisa quando os filtros mudam (nesta janela, pelo evento, ou em outra, pelo `storage`). */
+export const subscribeCustomFilters = (onChange: () => void): (() => void) => {
+  window.addEventListener(CHANGED_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(CHANGED_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+};
+
+/** Os jogos de um filtro personalizado, a partir do texto guardado; `null` se o filtro não existe. */
+export const gameIdsOfCustomFilter = (raw: string | null, filterId: string): Set<string> | null => {
+  if (!raw) return null;
+  try {
+    const filters: unknown = JSON.parse(raw);
+    if (!Array.isArray(filters)) return null;
+    const found = filters.find((f): f is CustomLibraryFilter => Boolean(f) && (f as CustomLibraryFilter).id === filterId);
+    return found && Array.isArray(found.gameIds) ? new Set(found.gameIds) : null;
+  } catch {
+    return null;
+  }
+};
 
 export const getCustomLibraryFilters = (): CustomLibraryFilter[] => {
   try {
@@ -23,7 +55,7 @@ export const getCustomLibraryFilters = (): CustomLibraryFilter[] => {
 export const saveCustomLibraryFilters = (filters: CustomLibraryFilter[]) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
-    window.dispatchEvent(new CustomEvent("checkpoint:custom-filters-changed"));
+    window.dispatchEvent(new CustomEvent(CHANGED_EVENT));
   } catch {
     // ignore local storage errors
   }

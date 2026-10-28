@@ -22,7 +22,7 @@ import {
   getRarestAchievementApiName,
   isPlatinaByText,
 } from "../utils/trophyTiers";
-import { markHubAchievement, incrementHubCount } from "../utils/hubTrophies";
+import { awardHubAchievement } from "../utils/hubTrophies";
 import { normalizeSteamLookup } from "../types/gameDetail";
 import { readInstalledModsForGame } from "../services/installedMods";
 
@@ -387,7 +387,6 @@ export function useGameDetailAsync({
           ach.apiName.toLowerCase() === payload.achievementId.toLowerCase());
         if (user?.uid && unlocked) {
           try {
-            markHubAchievement(user.uid, game.id, unlocked.apiName);
             const isPlatina = isPlatinaByText(unlocked as any);
             const isRarest = unlocked.apiName === getRarestAchievementApiName(prev as any)
               || unlocked.apiName === getPlatinaCandidateApiName(prev as any);
@@ -395,7 +394,8 @@ export function useGameDetailAsync({
               isRarest: Boolean(isRarest),
               isPlatinaText: Boolean(isPlatina),
             });
-            incrementHubCount(user.uid, game.id, tierIdx);
+            // a contagem global (useRealtimeAchievementAccounting) pode já ter contado: só o primeiro conta
+            awardHubAchievement(user.uid, game.id, unlocked.apiName, tierIdx);
           } catch { /* ignore */ }
         }
 
