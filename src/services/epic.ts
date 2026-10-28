@@ -1,3 +1,4 @@
+import { mergeSyncedGame } from "./librarySyncMerge";
 import { apiFetch } from "./api";
 import type { LauncherLanguage } from "../context/PreferencesContext";
 import type { Game, LauncherType } from "../types/domain";
@@ -451,7 +452,7 @@ export const syncEpicLibraryToLocal = async (
         };
 
         if (existing) {
-          await updateLibraryGame(uid, docId, gameData);
+          await updateLibraryGame(uid, docId, mergeSyncedGame(existing, gameData));
         } else {
           await createLibraryGame(uid, gameData);
         }

@@ -1461,6 +1461,8 @@ const AddGameModalBody: React.FC<AddGameModalProps> = ({
       if (gameToEdit) {
         await updateLibraryGame(targetUid, gameToEdit.id, {
           ...data,
+          // a sincronização com a Steam/Epic passa a respeitar o que foi editado aqui
+          userEdited: true,
           ...(!formData.steamAppId
             ? {
               steamPlaytimeMinutes: 0,
