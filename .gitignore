@@ -47,3 +47,13 @@ src-tauri/windows/drivers/*.exe
 
 # skills instaladas localmente (terceiros)
 .claude/skills/
+
+# contexto e anotações de trabalho com IA: ficam só na máquina de quem desenvolve
+CLAUDE.md
+DESIGN.md
+PRODUCT.md
+docs/backend-audit/
+docs/frontend-audit.md
+docs/redesign-plan.md
+docs/design-direction.md
+docs/TESTES-RC1.md
