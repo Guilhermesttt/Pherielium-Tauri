@@ -53,7 +53,7 @@ export const ParticipantFilmstrip: React.FC<ParticipantFilmstripProps> = ({
             aria-label={`Ver mais ${remainingCount} participantes na chamada`}
             onClick={onShowAll}
             style={{ cornerShape: "squircle" } as React.CSSProperties}
-            className="flex items-center justify-center h-[52px] px-3.5 rounded-[var(--corner-md)] bg-[var(--tone-1)]/80 border border-[#161616] text-xs font-semibold text-[var(--ink-muted)] shrink-0 hover:bg-[var(--tone-2)] hover:text-white transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+            className="flex items-center justify-center h-[52px] px-3.5 rounded-[var(--corner-md)] bg-[var(--tone-1)]/80 border border-[#161616] text-xs font-semibold text-[var(--ink-muted)] shrink-0 hover:bg-[var(--tone-2)] hover:text-[var(--ink)] transition cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
           >
             +{remainingCount}
           </button>

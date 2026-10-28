@@ -65,16 +65,16 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
 
         <motion.div
           {...modalMotion}
-          className="glass-panel relative flex flex-col w-full max-w-sm rounded-3xl border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.95)] z-10 overflow-hidden"
+          className="glass-panel relative flex flex-col w-full max-w-sm rounded-3xl border border-transparent shadow-[0_30px_90px_rgba(0,0,0,0.95)] z-10 overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4.5 border-b border-white/8 bg-black/30 backdrop-blur-md">
+          <div className="flex items-center justify-between px-6 py-4.5 border-b border-transparent bg-black/30 backdrop-blur-md">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white border border-white/10 shadow-sm">
-                <IconSwap active={isPrivate} a={<Unlock className="h-5 w-5 text-[var(--ink)]" />} b={<Lock className="h-5 w-5 text-amber-400" />} />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--tone-3)] text-[var(--ink)] border border-transparent shadow-sm">
+                <IconSwap active={isPrivate} a={<Unlock className="h-5 w-5 text-[var(--ink)]" />} b={<Lock className="h-5 w-5 text-[var(--ink)]" />} />
               </div>
               <div>
-                <h3 className="text-sm font-black text-white tracking-tight uppercase">
+                <h3 className="text-sm font-black text-[var(--ink)] tracking-tight uppercase">
                   Privacidade da Chamada
                 </h3>
                 <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">Controle de acesso e senha</p>
@@ -83,7 +83,7 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/5 text-[var(--ink-muted)] hover:text-white hover:bg-white/15 transition cursor-pointer"
+              className="h-8 w-8 flex items-center justify-center rounded-xl bg-[var(--tone-3)] text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)] transition cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
@@ -92,10 +92,10 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
           {/* Body Controls */}
           <div className="p-6 space-y-5">
             {/* Public vs Private Toggle Switch */}
-            <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/8">
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-[var(--tone-3)] border border-transparent">
               <div className="space-y-0.5">
-                <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <IconSwap active={isPrivate} a={<Unlock className="h-3.5 w-3.5 text-emerald-400" />} b={<Lock className="h-3.5 w-3.5 text-amber-400" />} />
+                <span className="text-xs font-bold text-[var(--ink)] flex items-center gap-1.5">
+                  <IconSwap active={isPrivate} a={<Unlock className="h-3.5 w-3.5 text-[var(--live)]" />} b={<Lock className="h-3.5 w-3.5 text-[var(--ink)]" />} />
                   <span>{isPrivate ? "Sala Privada" : "Sala Aberta"}</span>
                 </span>
                 <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">
@@ -111,11 +111,11 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
                   setError(null);
                 }}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  isPrivate ? "bg-amber-500" : "bg-white/20"
+                  isPrivate ? "bg-[var(--tone-3)]" : "bg-[var(--tone-4)]"
                 }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-[var(--ink)] shadow-lg ring-0 transition duration-200 ease-in-out ${
                     isPrivate ? "translate-x-5" : "translate-x-0"
                   }`}
                 />
@@ -132,13 +132,13 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
               >
                 <label className="text-[length:var(--step-0)] font-bold text-[var(--ink-muted)] flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    <KeyRound className="h-3.5 w-3.5 text-amber-400" />
+                    <KeyRound className="h-3.5 w-3.5 text-[var(--ink)]" />
                     <span>Senha de Acesso</span>
                   </span>
                 </label>
 
                 <div className="relative flex items-center">
-                  <input
+                  <input aria-label="Senha da sala"
                     type={showPassword ? "text" : "password"}
                     placeholder="Digite uma senha para a sala..."
                     value={password}
@@ -146,12 +146,12 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
                       setPassword(e.target.value);
                       setError(null);
                     }}
-                    className="w-full h-10 px-3.5 pr-10 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-white placeholder-white/30 focus:outline-none focus:border-white/30 transition"
+                    className="w-full h-10 px-3.5 pr-10 rounded-xl bg-[var(--tone-3)] border border-transparent text-xs font-semibold text-[var(--ink)] placeholder-white/30 focus:outline-none focus:border-transparent transition"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 text-[var(--ink-faint)] hover:text-white transition"
+                    className="absolute right-3 text-[var(--ink-faint)] hover:text-[var(--ink)] transition"
                     title={showPassword ? "Ocultar senha" : "Ver senha"}
                   >
                     <IconSwap active={showPassword} a={<Eye className="h-4 w-4" />} b={<EyeOff className="h-4 w-4" />} />
@@ -161,7 +161,7 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
             )}
 
             {error && (
-              <p className="text-[length:var(--step-0)] text-rose-400 font-medium flex items-center gap-1.5">
+              <p className="text-[length:var(--step-0)] text-[var(--danger)] font-medium flex items-center gap-1.5">
                 <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
                 <span>{error}</span>
               </p>
@@ -169,11 +169,11 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
           </div>
 
           {/* Footer Actions */}
-          <div className="px-6 py-4 border-t border-white/8 bg-black/20 flex gap-3">
+          <div className="px-6 py-4 border-t border-transparent bg-black/20 flex gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/8 text-white font-bold text-xs transition cursor-pointer"
+              className="flex-1 py-2.5 rounded-xl bg-[var(--tone-3)] hover:bg-[var(--tone-4)] border border-transparent text-[var(--ink)] font-bold text-xs transition cursor-pointer"
             >
               Cancelar
             </button>
@@ -181,7 +181,7 @@ export const CallPrivacyPanel: React.FC<CallPrivacyPanelProps> = ({
               type="button"
               disabled={isSaving}
               onClick={() => void handleSave()}
-              className="flex-1 py-2.5 rounded-xl bg-white text-black hover:bg-white/90 font-black text-xs shadow-md transition hover:scale-105 active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+              className="flex-1 py-2.5 rounded-xl bg-[var(--ink)] text-[var(--tone-0)] hover:opacity-90 font-black text-xs shadow-md transition hover:scale-105 active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               {isSaving ? (
                 <span>Salvando...</span>

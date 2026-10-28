@@ -47,14 +47,14 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
       style={{
         cornerShape: "squircle",
       } as React.CSSProperties}
-      className={`group relative flex items-center gap-2.5 px-3 py-2 rounded-[var(--corner-md)] select-none cursor-pointer transition-colors duration-200 shrink-0 min-w-[130px] max-w-[190px] h-[52px] outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
+      className={`group relative flex items-center gap-2.5 px-3 py-2 rounded-[var(--corner-md)] select-none cursor-pointer transition-colors duration-200 shrink-0 min-w-[130px] max-w-[190px] h-[52px] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ink)] ${
         isFocused
-          ? "bg-white/[0.12] text-white border border-white/40 shadow-[0_4px_16px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)]"
+          ? "bg-[var(--tone-3)] text-[var(--ink)] border border-transparent shadow-[0_4px_16px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)]"
           : isPresenting
-          ? "bg-[var(--tone-1)]/90 text-white border border-sky-400/50 shadow-[0_2px_12px_rgba(56,189,248,0.18),inset_0_1px_0_rgba(255,255,255,0.08)]"
+          ? "bg-[var(--tone-1)]/90 text-[var(--ink)] border border-transparent shadow-[0_2px_12px_rgba(56,189,248,0.18),inset_0_1px_0_rgba(255,255,255,0.08)]"
           : isSpeaking
-          ? "bg-[var(--tone-2)] text-white border border-white/20 shadow-[0_2px_12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] -translate-y-0.5"
-          : "bg-[var(--tone-1)]/80 text-[var(--ink)] hover:bg-[var(--tone-2)]/90 hover:text-white border border-[#161616] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+          ? "bg-[var(--tone-2)] text-[var(--ink)] border border-transparent shadow-[0_2px_12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] -translate-y-0.5"
+          : "bg-[var(--tone-1)]/80 text-[var(--ink)] hover:bg-[var(--tone-2)]/90 hover:text-[var(--ink)] border border-[#161616] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
       }`}
     >
       {/* Avatar / Camera Thumbnail */}
@@ -80,7 +80,7 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
 
         {/* Micro indicador de fala na borda do avatar */}
         {isSpeaking && (
-          <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-white ring-2 ring-[#0F0F0F] animate-pulse" />
+          <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-[var(--ink)] ring-2 ring-[#0F0F0F] animate-pulse" />
         )}
       </div>
 
@@ -89,12 +89,12 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
         <div className="flex items-center gap-1.5">
           {isSpeaking && (
             <span className="inline-flex items-center gap-0.5 h-2.5 shrink-0" aria-label="Falando">
-              <span className="w-0.5 h-2 rounded-full bg-white/90 animate-pulse" />
-              <span className="w-0.5 h-3 rounded-full bg-white/90 animate-pulse" />
-              <span className="w-0.5 h-1.5 rounded-full bg-white/90 animate-pulse" />
+              <span className="w-0.5 h-2 rounded-full bg-[var(--ink)] animate-pulse" />
+              <span className="w-0.5 h-3 rounded-full bg-[var(--ink)] animate-pulse" />
+              <span className="w-0.5 h-1.5 rounded-full bg-[var(--ink)] animate-pulse" />
             </span>
           )}
-          <span className={`text-xs font-semibold tracking-tight truncate ${isPresenting ? "text-sky-300" : ""}`}>
+          <span className={`text-xs font-semibold tracking-tight truncate ${isPresenting ? "text-[var(--ink)]" : ""}`}>
             {feed.isLocal ? `${feed.title} (Você)` : feed.title}
           </span>
         </div>
@@ -102,12 +102,12 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
         {/* Status secundário em linha discreta */}
         <div className="flex items-center gap-1.5 text-[length:var(--step-0)] text-[var(--ink-muted)]">
           {isPresenting ? (
-            <span className="flex items-center gap-1 text-sky-300 font-medium">
+            <span className="flex items-center gap-1 text-[var(--ink)] font-medium">
               <Monitor className="h-2.5 w-2.5" aria-hidden="true" />
               <span>{feed.isLocal && viewers ? `Transmitindo · ${viewers}` : "Transmitindo"}</span>
             </span>
           ) : feed.isDeafened ? (
-            <span className="flex items-center gap-1 text-rose-400">
+            <span className="flex items-center gap-1 text-[var(--danger)]">
               <VolumeX className="h-2.5 w-2.5" aria-hidden="true" />
               <span>Surdo</span>
             </span>
@@ -124,7 +124,7 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
 
           {quality.show && (
             <span
-              className={`flex items-center gap-1 shrink-0 ${quality.tone === "bad" ? "text-rose-400" : "text-amber-300"}`}
+              className={`flex items-center gap-1 shrink-0 ${quality.tone === "bad" ? "text-[var(--danger)]" : "text-[var(--ink)]"}`}
               title={quality.label}
             >
               <WifiOff className="h-2.5 w-2.5" aria-hidden="true" />
@@ -145,13 +145,13 @@ const ParticipantTileComponent: React.FC<ParticipantTileProps> = ({
           e.stopPropagation();
           onSelect?.();
         }}
-        className={`ml-auto shrink-0 flex h-6 w-6 items-center justify-center rounded-full transition-opacity outline-none focus-visible:ring-1 focus-visible:ring-white/40 ${
-          isFocused ? "opacity-100 text-white" : "opacity-0 group-hover:opacity-100 text-[var(--ink-faint)] hover:text-white"
+        className={`ml-auto shrink-0 flex h-6 w-6 items-center justify-center rounded-full transition-opacity outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ink)] ${
+          isFocused ? "opacity-100 text-[var(--ink)]" : "opacity-0 group-hover:opacity-100 text-[var(--ink-faint)] hover:text-[var(--ink)]"
         }`}
         title={isFocused ? "Desafixar este participante" : "Fixar este participante"}
         aria-label={isFocused ? "Desafixar este participante" : "Fixar este participante"}
       >
-        <Pin className={`h-3 w-3 ${isFocused ? "fill-white text-white" : ""}`} aria-hidden="true" />
+        <Pin className={`h-3 w-3 ${isFocused ? "fill-white text-[var(--ink)]" : ""}`} aria-hidden="true" />
       </button>
     </motion.div>
   );

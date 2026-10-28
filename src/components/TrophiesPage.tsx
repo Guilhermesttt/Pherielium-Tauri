@@ -1,14 +1,16 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { WheelListbox } from "./ui/WheelListbox";
-import { ExpandingSearch } from "./ui/ExpandingSearch";
+import { motion } from "framer-motion";
+import { ConsolePageLayout } from "./ui/ConsolePageLayout";
+import { HorizontalTabs } from "./ui/HorizontalTabs";
+import { SectionTransition } from "./ui/SectionTransition";
 import {
   Trophy,
   Clock,
   ChevronRight,
   ArrowUpDown,
   Zap,
-  Filter
+  Filter,
+  Search,
 } from "lucide-react";
 import type { Game } from "../types/domain";
 import { formatPlayedHours, getGamePlayedHours } from "../utils/playtime";
@@ -25,10 +27,8 @@ import { getHubAggregateCounts, getUserUnifiedLevel } from "../utils/hubTrophies
 import { closestToPlatinum } from "../utils/trophyGoals";
 import { progressionEventBus } from "../services/progressionEvents";
 import { useAuth } from "../auth/AuthProvider";
-import { useGamepadNavigation } from "../hooks/useGamepadNavigation";
 import { useGamepadButton } from "../context/GamepadContext";
 import InputHints from "./ui/InputHints";
-import { Segmented } from "./ui/refined";
 import PherieliumLogoBronze from "../assets/Pherielium_Logo_Bronze.png";
 import PherieliumLogoSilver from "../assets/Pherielium_Logo_Prata.png";
 import PherieliumLogoGold from "../assets/Pherielium_Logo_Ouro.png";
@@ -164,7 +164,7 @@ const PSNTierBadge = React.memo<{
         className="pointer-events-none select-none object-contain"
         style={{ width: 112, height: 112 }}
       />
-      <span className="mt-2 inline-flex items-baseline gap-1 rounded-[var(--node)] bg-[var(--tone-3)] px-3 py-1">
+      <span className="mt-2 inline-flex items-baseline gap-1 rounded-[var(--corner-sm)] bg-[var(--tone-3)] px-3 py-1">
         <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)]">Nível</span>
         <span className="text-[length:var(--step-1)] font-semibold tabular-nums text-[var(--ink)]">{level}</span>
       </span>
@@ -185,10 +185,10 @@ const RankProgressionRail = React.memo<{
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={value}
-      className="relative h-1.5 w-full overflow-hidden rounded-[var(--node)] bg-[var(--tone-3)]"
+      className="relative h-2 w-full overflow-hidden rounded-[var(--corner-sm)] bg-[var(--tone-4)]"
     >
       <motion.div
-        className="h-full rounded-[var(--node)]"
+        className="h-full rounded-[var(--corner-sm)]"
         initial={{ width: 0 }}
         animate={{ width: `${value}%` }}
         transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
@@ -274,9 +274,9 @@ const GameRow = React.memo<GameRowProps>(
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
         aria-label={`${game.title}: ${statusLabel}, ${completionPct}% concluído`}
-        className="group flex w-full cursor-pointer items-center gap-5 rounded-[var(--corner-md)] bg-[var(--tone-1)] p-4 text-left outline-none transition-colors duration-[var(--dur-2)] hover:bg-[var(--tone-2)] focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
+        className="group flex w-full cursor-pointer items-center gap-6 rounded-[var(--corner-md)] bg-[var(--tone-2)] p-5 text-left outline-none transition-colors duration-[var(--dur-2)] hover:bg-[var(--tone-3)] focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
       >
-        <div className="relative h-[88px] w-16 shrink-0 overflow-hidden rounded-[var(--corner-sm)] bg-[var(--tone-3)]">
+        <div className="relative h-[104px] w-[72px] shrink-0 overflow-hidden rounded-[var(--corner-sm)] bg-[var(--tone-3)]">
           {cover ? (
             <img
               src={cover}
@@ -357,12 +357,11 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
   const [sortBy, setSortBy] = useState<SortOption>("progress");
   const [filterByPlat, setFilterByPlat] = useState<FilterByPlat>("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const [isPlataformFilterOpen, setIsPlatformFilterOpen] = useState(false);
-  const platFilterRef = useRef<HTMLDivElement>(null);
   const [isSortOpen, setIsSortOpen] = useState(false);
   const sortRef = useRef<HTMLDivElement>(null);
+  const platFilterRef = useRef<HTMLDivElement>(null);
   const [xpRevision, setXpRevision] = useState(0);
 
   useEffect(() => {
@@ -387,13 +386,6 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  useGamepadNavigation({
-    scrollRef: scrollRef as React.RefObject<HTMLElement>,
-    scrollSpeed: 25,
-    enabled: true,
-    priority: 1,
-  });
 
   const gamesWithAchievements = useMemo(() => {
     return (games || []).filter((g) => (g.totalAchievements || 0) > 0);
@@ -561,50 +553,177 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
   const selectedSortLabel = sortOptions.find((opt) => opt.value === sortBy)?.label || "Maior %";
   const selectedPlatformLabel = platformOptions.find((opt) => opt.value === filterByPlat)?.label || "Todas as Plataformas";
 
-  return (
-    <motion.div
-      className="relative flex min-h-0 flex-1 flex-col text-[var(--ink)] font-sans"
-      style={{ contain: "layout paint", transform: "translate3d(0,0,0)", willChange: "transform" }}
-    >
-      <div
-        ref={scrollRef}
-        data-system-page="trophies"
-        className="min-h-0 flex-1 overflow-y-auto thin-scrollbar px-10 pb-10 pt-10"
+  const sortButton = (
+    <div className="relative" ref={sortRef}>
+      <button
+        type="button"
+        onClick={() => setIsSortOpen((prev) => !prev)}
+        onMouseEnter={() => playSound?.("hover")}
+        aria-haspopup="listbox"
+        aria-expanded={isSortOpen}
+        aria-label={`Ordenar: ${selectedSortLabel}`}
+        className="flex h-12 cursor-pointer items-center gap-2.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--tone-4)]"
       >
-      <div className="mx-auto mb-10 w-full max-w-5xl">
-        <h1 className="font-display text-[length:var(--step-5)] font-semibold leading-[1.02] tracking-[-0.04em] text-[var(--ink)]">
-          Troféus
-        </h1>
-        <p className="mt-3 max-w-2xl text-[length:var(--step-1)] leading-relaxed text-[var(--ink-muted)]">
-          Suas conquistas de todas as lojas num lugar só, e o caminho até a próxima patente.
-        </p>
-      </div>
+        <ArrowUpDown className="h-4 w-4 text-[var(--ink-muted)]" aria-hidden="true" />
+        <span>{selectedSortLabel}</span>
+      </button>
 
-      <div className="mx-auto max-w-5xl space-y-8">
-        {/* Patente do jogador: o emblema é o único destaque; um degrau de tom separa, sem borda nem brilho */}
-        <section aria-label="Sua patente" className="rounded-[var(--corner-lg)] bg-[var(--tone-1)] p-8">
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex min-w-0 items-center gap-6">
-              <PSNTierBadge
-                tier={levelInfo.tier}
-                subTier={levelInfo.subTier}
-                level={levelInfo.level}
-                playSound={playSound}
-              />
-              <div className="min-w-0 flex-1 space-y-4">
+      {isSortOpen && (
+        <div role="listbox" aria-label="Ordenar jogos" className="absolute right-0 top-full z-20 mt-2 w-52 overflow-hidden rounded-[var(--corner-md)] bg-[var(--tone-3)] p-2">
+          {sortOptions.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              role="option"
+              aria-selected={sortBy === opt.value}
+              onClick={() => {
+                playSound?.("select");
+                setSortBy(opt.value);
+                setIsSortOpen(false);
+              }}
+              className={`flex h-11 w-full cursor-pointer items-center rounded-[var(--corner-sm)] px-4 text-left text-[length:var(--step-0)] transition-colors ${
+                sortBy === opt.value
+                  ? "bg-[var(--ink)] font-semibold text-[var(--tone-0)]"
+                  : "text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const platformButton = (
+    <div className="relative" ref={platFilterRef}>
+      <button
+        type="button"
+        onClick={() => setIsPlatformFilterOpen((prev) => !prev)}
+        onMouseEnter={() => playSound?.("hover")}
+        aria-haspopup="listbox"
+        aria-expanded={isPlataformFilterOpen}
+        aria-label={`Plataforma: ${selectedPlatformLabel}`}
+        className={`flex h-12 cursor-pointer items-center gap-2.5 rounded-[var(--corner-sm)] px-5 text-[length:var(--step-0)] font-semibold transition-colors ${
+          filterByPlat !== "all"
+            ? "bg-[var(--ink)] text-[var(--tone-0)]"
+            : "bg-[var(--tone-3)] text-[var(--ink)] hover:bg-[var(--tone-4)]"
+        }`}
+      >
+        <Filter className="h-4 w-4" aria-hidden="true" />
+        <span>{filterByPlat === "all" ? "Plataforma" : selectedPlatformLabel}</span>
+      </button>
+
+      {isPlataformFilterOpen && (
+        <div
+          role="listbox"
+          aria-label="Filtrar por plataforma"
+          className="thin-scrollbar absolute right-0 top-full z-20 mt-2 max-h-80 w-60 overflow-y-auto rounded-[var(--corner-md)] bg-[var(--tone-3)] p-2"
+        >
+          {platformOptions.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              role="option"
+              aria-selected={filterByPlat === opt.value}
+              onClick={() => {
+                playSound?.("select");
+                setFilterByPlat(opt.value);
+                setIsPlatformFilterOpen(false);
+              }}
+              className={`flex h-11 w-full cursor-pointer items-center rounded-[var(--corner-sm)] px-4 text-left text-[length:var(--step-0)] transition-colors ${
+                filterByPlat === opt.value
+                  ? "bg-[var(--ink)] font-semibold text-[var(--tone-0)]"
+                  : "text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+    </div>
+  );
+
+  const searchField = (
+    <div className="relative w-64">
+      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-faint)]" aria-hidden="true" />
+      <input
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        aria-label="Buscar jogos"
+        placeholder="Buscar jogos"
+        className="h-12 w-full rounded-[var(--corner-sm)] bg-[var(--tone-2)] pl-11 pr-4 text-[length:var(--step-0)] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--ink-faint)] focus:bg-[var(--tone-3)]"
+      />
+    </div>
+  );
+
+  return (
+    <ConsolePageLayout
+      title="Troféus"
+      systemPage="trophies"
+      gamepadPriority={1}
+      emptyLine="Suas conquistas de todas as lojas num lugar só."
+      readings={[
+        { label: "Troféus", value: totalStats.unlocked },
+        { label: "Platinas", value: totalStats.platinum },
+        { label: "Jogos", value: totalStats.gamesCount },
+      ]}
+      actions={
+        <>
+          {sortButton}
+          {platformButton}
+          {searchField}
+        </>
+      }
+      tabs={
+        <HorizontalTabs
+          activeId={filter}
+          onChange={(id) => handleFilterSelect(id as TrophyFilter)}
+          className="t-tabs--squircle flex-wrap"
+          tabClassName="flex h-12 items-center gap-2.5 whitespace-nowrap"
+          tabs={filterTabs.map((f) => ({
+            id: f.id,
+            label: (
+              <span className="flex items-center gap-2.5">
+                {f.label}
+                <span className="font-metric rounded-full bg-[var(--tone-4)] px-1.5 text-center text-[length:var(--step-0)] font-bold leading-5 text-[var(--ink)]">{f.count}</span>
+              </span>
+            ),
+          }))}
+        />
+      }
+      footer={
+        <InputHints
+          hints={[
+            { button: "L1_R1", label: "Filtrar" },
+            { button: "DPAD", label: "Navegar" },
+            { button: "X", label: "Abrir Jogo" },
+            { button: "SCROLL", label: "Rolar" },
+            { button: "O", label: "Voltar" },
+          ]}
+        />
+      }
+    >
+      <div className="space-y-8">
+        {/* Patente e escalada lado a lado: um degrau de tom separa, sem borda nem brilho */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+          <section aria-label="Sua patente" className="rounded-[var(--corner-lg)] bg-[var(--tone-1)] p-8">
+            <div className="flex min-w-0 items-center gap-7">
+              <PSNTierBadge tier={levelInfo.tier} subTier={levelInfo.subTier} level={levelInfo.level} playSound={playSound} />
+              <div className="min-w-0 flex-1 space-y-5">
                 <div>
-                  <p className="text-[length:var(--step-0)] text-[var(--ink-muted)]">Patente atual</p>
-                  <h2 className="font-display text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">
-                    {levelInfo.tierName}
-                  </h2>
+                  <p className="text-[length:var(--fs-label)] font-bold uppercase tracking-[0.08em] text-[var(--ink-muted)]">Patente</p>
+                  <h2 className="mt-1 text-[length:var(--step-4)] font-semibold leading-tight tracking-[-0.035em] text-[var(--ink)]">{levelInfo.tierName}</h2>
                 </div>
 
-                <div className="max-w-sm space-y-2">
+                <div className="space-y-2.5">
                   <div className="flex items-baseline justify-between gap-3 text-[length:var(--step-0)]">
-                    <span className="font-semibold tabular-nums text-[var(--ink)]">
+                    <span className="font-metric font-semibold text-[var(--ink)]">
                       {levelInfo.currentLevelXp} / {levelInfo.xpForNextLevel} XP
                     </span>
-                    <span className="font-semibold tabular-nums text-[var(--ink)]">{levelInfo.progress}%</span>
+                    <span className="font-metric font-semibold text-[var(--ink)]">{levelInfo.progress}%</span>
                   </div>
                   <div
                     role="progressbar"
@@ -612,79 +731,67 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-valuenow={levelInfo.progress}
-                    className="relative h-2 w-full overflow-hidden rounded-[var(--node)] bg-[var(--tone-3)]"
+                    className="relative h-2.5 w-full overflow-hidden rounded-[var(--corner-sm)] bg-[var(--tone-3)]"
                   >
                     <motion.div
-                      className="absolute inset-y-0 left-0 rounded-[var(--node)]"
+                      className="absolute inset-y-0 left-0 rounded-[var(--corner-sm)]"
                       style={{ backgroundColor: tierStyle.color }}
                       initial={{ width: 0 }}
                       animate={{ width: `${levelInfo.progress}%` }}
                       transition={{ duration: 1, ease: [0.32, 0.72, 0, 1] }}
                     />
                   </div>
-                  {levelInfo.level < 999 && (
-                    <p className="text-[length:var(--step-0)] text-[var(--ink-muted)]">Faltam {nextGoal}</p>
-                  )}
+                  {levelInfo.level < 999 && <p className="text-[length:var(--step-0)] text-[var(--ink-muted)]">Faltam {nextGoal}</p>}
                 </div>
 
-                <div className="space-y-1">
-                  <p className="flex flex-wrap items-center gap-x-2 text-[length:var(--step-0)] text-[var(--ink-muted)]">
-                    <span className="inline-flex items-center gap-1 font-semibold text-[var(--ink)]">
-                      <Zap className="h-3.5 w-3.5" aria-hidden="true" />
-                      {levelInfo.xp.toLocaleString()} XP do hub
-                    </span>
-                    <span aria-hidden="true" className="text-[var(--ink-faint)]">·</span>
-                    <span>{totalStats.unlocked} troféus sincronizados</span>
+                <p className="flex flex-wrap items-center gap-x-2 text-[length:var(--step-0)] text-[var(--ink-muted)]">
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--ink)]">
+                    <Zap className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span className="font-metric">{levelInfo.xp.toLocaleString()}</span> XP do hub
+                  </span>
+                </p>
+                {levelInfo.xp === 0 && totalStats.unlocked > 0 && (
+                  <p className="text-[length:var(--step-0)] leading-snug text-[var(--ink-faint)]">
+                    Troféus sincronizados alimentam sua vitrine. Ganhe XP em sessões pelo hub e completando missões.
                   </p>
-                  {levelInfo.xp === 0 && totalStats.unlocked > 0 && (
-                    <p className="text-[length:var(--step-0)] leading-snug text-[var(--ink-faint)]">
-                      Troféus sincronizados alimentam sua vitrine. Ganhe XP em sessões pelo hub e completando missões.
-                    </p>
-                  )}
-                </div>
+                )}
               </div>
             </div>
+          </section>
 
-            {/* Escalada: quantos troféus de cada metal, e quanto XP cada um vale */}
-            <div className="shrink-0">
-              <p className="mb-3 text-[length:var(--step-0)] text-[var(--ink-muted)]">
-                Escalada de troféus · {totalStats.unlocked} no total
-              </p>
-              <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {[
-                  { type: "bronze" as const, xp: 15, count: totalStats.bronze },
-                  { type: "silver" as const, xp: 30, count: totalStats.silver },
-                  { type: "gold" as const, xp: 90, count: totalStats.gold },
-                  { type: "platinum" as const, xp: 300, count: totalStats.platinum },
-                ].map((item) => {
-                  const isCurrentTier = levelInfo.tier === item.type;
-                  const style = TIER_VISUAL_STYLES[item.type];
-                  return (
-                    <li
-                      key={item.type}
-                      aria-current={isCurrentTier ? "true" : undefined}
-                      className={`flex min-w-[96px] flex-col items-center rounded-[var(--corner-md)] px-3 py-4 ${
-                        isCurrentTier ? "bg-[var(--tone-3)]" : "bg-[var(--tone-2)]"
-                      }`}
-                    >
-                      <PSNTrophyIcon type={item.type} size={40} dimmed={item.count === 0} />
-                      <span className="mt-2 text-[length:var(--step-3)] font-semibold tabular-nums leading-none text-[var(--ink)]">
-                        {item.count}
-                      </span>
-                      <span className="mt-1 text-[length:var(--step-0)] text-[var(--ink-muted)]">
-                        {style.label} · {item.xp} XP
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </div>
-        </section>
+          <section aria-label="Escalada de troféus" className="rounded-[var(--corner-lg)] bg-[var(--tone-1)] p-8">
+            <p className="mb-5 text-[length:var(--fs-label)] font-bold uppercase tracking-[0.08em] text-[var(--ink-muted)]">Escalada de troféus</p>
+            <ul className="grid grid-cols-2 gap-3">
+              {[
+                { type: "bronze" as const, xp: 15, count: totalStats.bronze },
+                { type: "silver" as const, xp: 30, count: totalStats.silver },
+                { type: "gold" as const, xp: 90, count: totalStats.gold },
+                { type: "platinum" as const, xp: 300, count: totalStats.platinum },
+              ].map((item) => {
+                const isCurrentTier = levelInfo.tier === item.type;
+                const style = TIER_VISUAL_STYLES[item.type];
+                return (
+                  <li
+                    key={item.type}
+                    aria-current={isCurrentTier ? "true" : undefined}
+                    className={`flex items-center gap-4 rounded-[var(--corner-md)] px-5 py-4 ${isCurrentTier ? "bg-[var(--tone-4)]" : "bg-[var(--tone-2)]"}`}
+                  >
+                    <PSNTrophyIcon type={item.type} size={44} dimmed={item.count === 0} />
+                    <span className="min-w-0">
+                      <span className="font-metric block text-[length:var(--step-3)] font-semibold leading-none text-[var(--ink)]">{item.count}</span>
+                      <span className="mt-1.5 block text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]">{style.label}</span>
+                      <span className="font-metric block text-[length:var(--step-0)] text-[var(--ink-faint)]">{item.xp} XP</span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        </div>
 
-        {/* Próximo objetivo: o jogo mais perto da Platina, um clique para abrir */}
+        {/* Próximo objetivo: o jogo mais perto da Platina, com a arte de ponta a ponta */}
         {platinumGoal && (
-          <section aria-label="Próximo objetivo" className="rounded-[var(--corner-lg)] bg-[var(--tone-1)] p-3">
+          <section aria-label="Próximo objetivo">
             <button
               type="button"
               onClick={() => {
@@ -692,30 +799,28 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                 onOpenGame?.(platinumGoal.game);
               }}
               onMouseEnter={() => playSound?.("hover")}
-              className="group flex w-full cursor-pointer items-center gap-5 rounded-[var(--corner-md)] p-3 text-left transition-colors duration-150 hover:bg-[var(--tone-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
+              className="group relative isolate flex w-full cursor-pointer items-center gap-6 overflow-hidden rounded-[var(--corner-lg)] bg-[var(--tone-1)] p-7 text-left transition-transform active:scale-[0.995]"
             >
-              {platinumGoal.game.cardImage || platinumGoal.game.image ? (
+              {(platinumGoal.game.backgroundImage || platinumGoal.game.cardImage || platinumGoal.game.image) && (
                 <img
-                  src={platinumGoal.game.cardImage || platinumGoal.game.image}
+                  src={platinumGoal.game.backgroundImage || platinumGoal.game.cardImage || platinumGoal.game.image}
                   alt=""
-                  className="h-24 w-16 shrink-0 rounded-[var(--corner-sm)] object-cover"
+                  aria-hidden
+                  className="absolute inset-0 -z-10 h-full w-full object-cover object-center"
                   draggable={false}
                 />
-              ) : (
-                <span className="flex h-24 w-16 shrink-0 items-center justify-center rounded-[var(--corner-sm)] bg-[var(--tone-3)] text-[var(--ink-faint)]">
-                  <Trophy className="h-6 w-6" aria-hidden="true" />
-                </span>
               )}
+              <span
+                className="absolute inset-0 -z-10"
+                style={{ background: "linear-gradient(90deg, color-mix(in srgb, var(--tone-0) 94%, transparent) 0%, color-mix(in srgb, var(--tone-0) 70%, transparent) 55%, color-mix(in srgb, var(--tone-0) 35%, transparent) 100%)" }}
+              />
               <span className="min-w-0 flex-1">
-                <span className="block text-[length:var(--step-0)] font-semibold" style={{ color: "rgb(var(--tier-platinum))" }}>
+                <span className="block text-[length:var(--fs-label)] font-bold uppercase tracking-[0.08em]" style={{ color: "rgb(var(--tier-platinum))" }}>
                   Mais perto da Platina
                 </span>
-                <span className="mt-0.5 block truncate text-[length:var(--step-3)] font-semibold tracking-[-0.02em] text-[var(--ink)]">
-                  {platinumGoal.game.title}
-                </span>
-                <span className="mt-1 block text-[length:var(--step-0)] text-[var(--ink-muted)]">
-                  Faltam <span className="font-metric text-[var(--ink)]">{platinumGoal.remaining}</span>{" "}
-                  {platinumGoal.remaining === 1 ? "conquista" : "conquistas"} de{" "}
+                <span className="mt-1.5 block truncate text-[length:var(--step-4)] font-semibold tracking-[-0.025em] text-[var(--ink)]">{platinumGoal.game.title}</span>
+                <span className="mt-1.5 block text-[length:var(--step-0)] text-[var(--ink-muted)]">
+                  Faltam <span className="font-metric text-[var(--ink)]">{platinumGoal.remaining}</span> {platinumGoal.remaining === 1 ? "conquista" : "conquistas"} de{" "}
                   <span className="font-metric">{platinumGoal.total}</span>
                 </span>
                 <span
@@ -724,139 +829,26 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                   aria-valuemin={0}
                   aria-valuemax={100}
                   aria-valuenow={platinumGoal.percent}
-                  className="mt-3 block h-1.5 w-full overflow-hidden rounded-[var(--node)] bg-[var(--tone-3)]"
+                  className="mt-4 block h-2 w-full max-w-md overflow-hidden rounded-[var(--corner-sm)] bg-[var(--tone-3)]"
                 >
-                  <span
-                    className="block h-full rounded-[var(--node)]"
-                    style={{ width: `${platinumGoal.percent}%`, backgroundColor: "rgb(var(--tier-platinum))" }}
-                  />
+                  <span className="block h-full rounded-[var(--corner-sm)]" style={{ width: `${platinumGoal.percent}%`, backgroundColor: "rgb(var(--tier-platinum))" }} />
                 </span>
               </span>
-              <span className="font-metric shrink-0 text-[length:var(--step-4)] font-semibold text-[var(--ink)]">
-                {platinumGoal.percent}%
+              <span className="font-metric shrink-0 text-[length:var(--step-5)] font-semibold text-[var(--ink)]">{platinumGoal.percent}%</span>
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--corner-sm)] bg-[var(--ink)] text-[var(--tone-0)]">
+                <ChevronRight className="h-5 w-5 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden="true" />
               </span>
-              <ChevronRight
-                className="h-5 w-5 shrink-0 text-[var(--ink-faint)] transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-[var(--ink)]"
-                aria-hidden="true"
-              />
             </button>
           </section>
         )}
 
-        {/* Filtros e busca */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <Segmented
-            label="Filtrar troféus"
-            options={filterTabs.map((f) => ({ value: f.id, label: `${f.label} ${f.count}` }))}
-            value={filter}
-            onChange={handleFilterSelect}
-            className="max-w-full overflow-x-auto [scrollbar-width:none]"
-          />
-
-          <div className="flex items-center gap-2">
-            {/* Ordenação */}
-            <div className="relative" ref={sortRef}>
-              <button
-                type="button"
-                onClick={() => setIsSortOpen((prev) => !prev)}
-                onMouseEnter={() => playSound?.("hover")}
-                aria-haspopup="listbox"
-                aria-expanded={isSortOpen}
-                aria-label={`Ordenar: ${selectedSortLabel}`}
-                className="flex h-11 cursor-pointer items-center gap-2 rounded-[var(--node)] bg-[var(--tone-2)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--tone-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
-              >
-                <ArrowUpDown className="h-4 w-4 text-[var(--ink-muted)]" aria-hidden="true" />
-                <span>{selectedSortLabel}</span>
-              </button>
-
-              {isSortOpen && (
-                <div role="listbox" aria-label="Ordenar jogos" className="absolute right-0 top-full z-20 mt-2 w-48 overflow-hidden rounded-[var(--corner-md)] bg-[var(--tone-3)] p-1.5">
-                  {sortOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      role="option"
-                      aria-selected={sortBy === opt.value}
-                      onClick={() => {
-                        playSound?.("select");
-                        setSortBy(opt.value);
-                        setIsSortOpen(false);
-                      }}
-                      className={`flex h-10 w-full cursor-pointer items-center rounded-[var(--node)] px-3.5 text-left text-[length:var(--step-0)] transition-colors ${
-                        sortBy === opt.value
-                          ? "bg-[var(--tone-4)] font-semibold text-[var(--ink)]"
-                          : "text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Plataforma */}
-            <div className="relative" ref={platFilterRef}>
-              <button
-                type="button"
-                onClick={() => setIsPlatformFilterOpen((prev) => !prev)}
-                onMouseEnter={() => playSound?.("hover")}
-                aria-haspopup="listbox"
-                aria-expanded={isPlataformFilterOpen}
-                aria-label={`Plataforma: ${selectedPlatformLabel}`}
-                className={`flex h-11 cursor-pointer items-center gap-2 rounded-[var(--node)] px-4 text-[length:var(--step-0)] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] ${
-                  filterByPlat !== "all"
-                    ? "bg-[var(--ink)] text-[var(--tone-0)]"
-                    : "bg-[var(--tone-2)] text-[var(--ink)] hover:bg-[var(--tone-3)]"
-                }`}
-              >
-                <Filter className="h-4 w-4" aria-hidden="true" />
-                <span>{filterByPlat === "all" ? "Plataforma" : selectedPlatformLabel}</span>
-              </button>
-
-              <AnimatePresence>
-                {isPlataformFilterOpen && (
-                  <WheelListbox
-                    key="platform-wheel"
-                    ariaLabel="Filtrar por plataforma"
-                    options={platformOptions}
-                    value={filterByPlat}
-                    onFocusChange={() => playSound?.("navigate")}
-                    onSelect={(next) => {
-                      playSound?.("select");
-                      setFilterByPlat(next);
-                      setIsPlatformFilterOpen(false);
-                    }}
-                    onClose={() => setIsPlatformFilterOpen(false)}
-                    className="absolute right-0 top-full z-20 mt-2 w-64"
-                  />
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Busca */}
-            <ExpandingSearch
-              value={searchTerm}
-              onChange={setSearchTerm}
-              placeholder="Buscar jogos"
-              ariaLabel="Buscar jogos"
-              width={256}
-              onOpenChange={(open) => playSound?.(open ? "select" : "back")}
-            />
-          </div>
-        </div>
-
         {/* Lista de jogos */}
-        <div className="space-y-2">
+        <SectionTransition id={`${filter}|${sortBy}|${filterByPlat}`} className="space-y-3">
           {renderedGameRows}
 
           {filteredGames.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center justify-center rounded-[var(--corner-lg)] bg-[var(--tone-1)] px-6 py-20 text-center"
-            >
-              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-[var(--node)] bg-[var(--tone-3)]">
+            <div className="flex flex-col items-center justify-center rounded-[var(--corner-lg)] bg-[var(--tone-1)] px-6 py-20 text-center">
+              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-[var(--corner-md)] bg-[var(--tone-3)]">
                 <Trophy className="h-7 w-7 text-[var(--ink-muted)]" strokeWidth={1.5} aria-hidden="true" />
               </div>
               <h3 className="text-[length:var(--step-2)] font-semibold text-[var(--ink)]">
@@ -873,24 +865,11 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                   ? "Complete 100% das conquistas de um jogo para conquistar seu troféu de Platina!"
                   : "Tente alterar os filtros de busca para ver seus outros jogos e troféus."}
               </p>
-            </motion.div>
+            </div>
           )}
-        </div>
+        </SectionTransition>
       </div>
-      </div>
-      {/* Legenda fixa no rodapé da página (fora da rolagem), como nas demais. */}
-      <div className="flex shrink-0 justify-end px-10 py-3">
-        <InputHints
-          hints={[
-            { button: "L1_R1", label: "Filtrar" },
-            { button: "DPAD", label: "Navegar" },
-            { button: "X", label: "Abrir Jogo" },
-            { button: "SCROLL", label: "Rolar" },
-            { button: "O", label: "Voltar" },
-          ]}
-        />
-      </div>
-    </motion.div>
+    </ConsolePageLayout>
   );
 };
 

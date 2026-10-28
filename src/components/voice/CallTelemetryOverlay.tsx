@@ -169,17 +169,17 @@ export const CallTelemetryLeft: React.FC<CallTelemetryLeftProps> = ({
   // Latência/codec hidden behind settings per audit — simplified to duration + quality only
   return (
     <div className={`flex flex-col gap-2.5 w-full max-w-[340px] select-none ${className}`}>
-      {/* Simplified Card: Excelente with green dot + waveform + duration — rounded-2xl p-3 bg-black/40 border border-white/10 */}
-      <div className="flex items-center justify-between gap-3 rounded-2xl p-3 bg-black/40 border border-white/10 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+      {/* Simplified Card: Excelente with green dot + waveform + duration — rounded-2xl p-3 bg-black/40 border border-transparent */}
+      <div className="flex items-center justify-between gap-3 rounded-2xl p-3 bg-black/40 border border-transparent backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--tone-3)] border border-transparent text-[var(--live)] shrink-0">
             <span className="h-2 w-2 rounded-full bg-[var(--live)] animate-pulse" />
           </div>
           <div className="flex flex-col leading-tight">
             <span className="text-[length:var(--step-0)] font-medium uppercase tracking-wider text-[var(--ink-muted)]">
               Qualidade
             </span>
-            <span className="text-xs font-bold tracking-wide text-emerald-400 flex items-center gap-1.5 mt-0.5">
+            <span className="text-xs font-bold tracking-wide text-[var(--live)] flex items-center gap-1.5 mt-0.5">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--live)]" />
               Excelente
             </span>
@@ -288,16 +288,16 @@ export const CallTelemetryRight: React.FC<CallTelemetryRightProps> = ({
 
   return (
     <div className={`flex flex-col gap-2.5 w-full max-w-[340px] select-none ${className}`}>
-      {/* Simplified: Nível de voz — horizontal bar h-1 bg-white/15 rounded-full with fill per audit */}
-      <div className="flex items-center justify-between gap-4 rounded-2xl p-3 bg-black/40 border border-white/10 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+      {/* Simplified: Nível de voz — horizontal bar h-1 bg-[var(--tone-4)] rounded-full with fill per audit */}
+      <div className="flex items-center justify-between gap-4 rounded-2xl p-3 bg-black/40 border border-transparent backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <span className="text-[length:var(--step-0)] font-medium uppercase tracking-wider text-[var(--ink-muted)]">
           Nível de voz
         </span>
 
         {/* Horizontal bar replacing •••••••• dots */}
-        <div className="flex-1 max-w-[120px] h-1 bg-white/15 rounded-full overflow-hidden">
+        <div className="flex-1 max-w-[120px] h-1 bg-[var(--tone-4)] rounded-full overflow-hidden">
           <div
-            className="h-full bg-emerald-400 rounded-full transition-all duration-100"
+            className="h-full bg-[var(--live)] rounded-full transition-all duration-100"
             style={{ width: `${levelPct}%` }}
           />
         </div>

@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import type { Game, SocialFriend } from "../types/domain";
 import { CATEGORIES } from "../components/Sidebar";
 import type { usePreferences } from "../context/PreferencesContext";
 import { formatPlayedHours, getGamePlayedHours } from "../utils/playtime";
 import type { LibraryFilters } from "../components/LibraryFilterModal";
+import { gameIdsOfCustomFilter, readCustomFiltersRaw, subscribeCustomFilters } from "../services/customLibraryFilters";
 
 export const normalizeCategory = (v?: string) =>
   v?.toUpperCase().replace(/[^A-Z0-9]/g, "") ?? "";
@@ -29,6 +30,10 @@ export function useGameLibraryView({
   libraryFilters?: LibraryFilters;
   t: ReturnType<typeof usePreferences>["t"];
 }) {
+  // os jogos de um filtro personalizado mudam quando ele é editado: sem assinar, a lista só se
+  // atualizava ao sair do filtro e voltar
+  const customFiltersRaw = useSyncExternalStore(subscribeCustomFilters, readCustomFiltersRaw);
+
   const displayGames = useMemo(() => {
     const s = searchTerm.trim().toLowerCase();
 
@@ -75,20 +80,8 @@ export function useGameLibraryView({
           ? ordered.filter((g) => g.isFavorite)
           : activeCategory.startsWith("custom_")
             ? (() => {
-                try {
-                  const stored = localStorage.getItem("checkpoint_custom_library_filters");
-                  if (stored) {
-                    const filters = JSON.parse(stored);
-                    const found = Array.isArray(filters) ? filters.find((f: any) => f.id === activeCategory) : null;
-                    if (found && Array.isArray(found.gameIds)) {
-                      const idSet = new Set(found.gameIds);
-                      return ordered.filter((g) => idSet.has(g.id));
-                    }
-                  }
-                } catch {
-                  // ignore
-                }
-                return ordered;
+                const idSet = gameIdsOfCustomFilter(customFiltersRaw, activeCategory);
+                return idSet ? ordered.filter((g) => idSet.has(g.id)) : ordered;
               })()
           : activeCategory === "RECENT"
             ? (() => {
@@ -197,7 +190,7 @@ export function useGameLibraryView({
     }
 
     return textFiltered;
-  }, [activeCategory, games, searchTerm, libraryFilters]);
+  }, [activeCategory, games, searchTerm, libraryFilters, customFiltersRaw]);
 
   const continuePlayingGames = useMemo(
     () => {

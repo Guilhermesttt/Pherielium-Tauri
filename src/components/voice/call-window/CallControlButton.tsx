@@ -31,21 +31,19 @@ export const CallControlButton: React.FC<CallControlButtonProps> = ({
   className = "",
   ...props
 }) => {
-  // Styles according to Apple Design System guidelines:
-  // Solid surface by default (#333333) with inset light bevel (inset 0 1px 0 rgba(255,255,255,0.08))
-  // Active/Pressed physics with instant response on pointerdown (scale 0.96)
+  // Preenchidos, sem contorno: o estado é dito pela cor do bloco (tinta = ligado, perigo = mutado).
   const variantStyles: Record<CallButtonVariant, string> = {
-    default: "bg-white/[0.09] text-[var(--ink)] hover:bg-white/[0.16] hover:text-white",
-    active: "bg-white text-black font-semibold hover:bg-white/90",
-    muted: "bg-[#ff453a]/18 text-[#ff7a72] hover:bg-[#ff453a]/28",
-    danger: "bg-[#ff453a] text-white font-medium hover:brightness-110",
-    ghost: "bg-transparent text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08]",
+    default: "bg-[var(--tone-3)] text-[var(--ink)] hover:bg-[var(--tone-4)]",
+    active: "bg-[var(--ink)] text-[var(--tone-0)] hover:opacity-90",
+    muted: "bg-[color-mix(in_srgb,var(--danger)_20%,transparent)] text-[var(--danger)] hover:bg-[color-mix(in_srgb,var(--danger)_30%,transparent)]",
+    danger: "bg-[var(--danger)] text-[var(--tone-0)] hover:opacity-90",
+    ghost: "bg-transparent text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-3)]",
   };
 
-  // botões só com ícone são círculos (como o FaceTime); com rótulo viram pílula
+  // botões só com ícone são blocos squircle de 56 px; com rótulo, blocos largos
   const sizeStyles = {
-    md: label ? "h-12 gap-2 rounded-full px-4" : "h-12 w-12 rounded-full",
-    lg: "h-12 gap-2 rounded-full px-5",
+    md: label ? "h-14 gap-2 rounded-[var(--corner-sm)] px-5" : "h-14 w-14 rounded-[var(--corner-sm)]",
+    lg: "h-14 gap-2 rounded-[var(--corner-sm)] px-6",
   };
 
   return (
@@ -58,7 +56,7 @@ export const CallControlButton: React.FC<CallControlButtonProps> = ({
       disabled={disabled}
       title={tooltip}
       aria-label={tooltip}
-      className={`relative inline-flex items-center justify-center select-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c0c0e] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 text-[length:var(--step-0)] font-medium ${
+      className={`relative inline-flex items-center justify-center select-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--tone-0)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 text-[length:var(--step-0)] font-medium ${
         variantStyles[variant]
       } ${sizeStyles[size]} ${className}`}
       {...props}

@@ -8,6 +8,10 @@ import {
 import { completeUserQuest } from "../services/userQuests";
 import ModalShell from "./ui/ModalShell";
 import ImageCropModal from "./ImageCropModal";
+import ProfileFramingModal from "./ProfileFramingModal";
+import { FramedImage } from "./ui/FramedImage";
+import { FramingSurface } from "./ui/FramingSurface";
+import { parseFraming, stripFraming, withFraming, type Framing } from "../services/mediaFraming";
 import {
   PROFILE_MEDIA_LIMITS,
   dataUrlToBlob,
@@ -64,6 +68,8 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
   const [rawImageForCrop, setRawImageForCrop] = useState<string | null>(null);
   const [isCropOpen, setIsCropOpen] = useState(false);
   const [cropKind, setCropKind] = useState<ProfileMediaKind>("avatar");
+  // GIF não se recorta: o enquadramento é guardado na URL e aplicado ao mostrar (ver services/mediaFraming)
+  const [framingKind, setFramingKind] = useState<ProfileMediaKind | null>(null);
   // Arquivos escolhidos e ainda não enviados (o envio acontece ao salvar). GIF vai original, sem recorte.
   const pendingRef = useRef<Partial<Record<ProfileMediaKind, Blob>>>({});
   const bannerInputRef = useRef<HTMLInputElement>(null);
@@ -110,7 +116,8 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
     setError("");
 
     // GIF: sobe o arquivo original (o recorte no canvas deixaria só o 1º quadro).
-    if (isAnimatedImage(file)) {
+    // Banner: também sobe original; a pessoa posiciona arrastando no próprio preview.
+    if (isAnimatedImage(file) || kind === "banner") {
       pendingRef.current[kind] = file;
       setField(kind === "banner" ? "bannerURL" : "photoURL", URL.createObjectURL(file));
       return;
@@ -131,13 +138,23 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
 
   const handleOpenCropCurrent = (kind: ProfileMediaKind) => {
     const current = kind === "banner" ? form.bannerURL : form.photoURL;
-    // um GIF atual não pode ser recortado (viraria estático): troque o arquivo para mudar
-    const isGif = pendingRef.current[kind]?.type === "image/gif" || /\.gif($|\?)/i.test(current || "");
-    if (current && !isGif) {
-      setCropKind(kind);
-      setRawImageForCrop(current);
-      setIsCropOpen(true);
+    if (!current) return;
+    // um GIF não pode ser recortado (viraria estático): abre o ajuste de enquadramento, que mantém a animação
+    const isGif = pendingRef.current[kind]?.type === "image/gif" || /\.gif($|[?#])/i.test(current);
+    if (isGif) {
+      setFramingKind(kind);
+      return;
     }
+    setCropKind(kind);
+    setRawImageForCrop(stripFraming(current));
+    setIsCropOpen(true);
+  };
+
+  const handleApplyFraming = (framing: Framing) => {
+    if (!framingKind) return;
+    const field = framingKind === "banner" ? "bannerURL" : "photoURL";
+    setField(field, withFraming(form[field] || "", framing));
+    setFramingKind(null);
   };
 
   const handleCropComplete = (croppedDataUrl: string) => {
@@ -161,8 +178,9 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
           if (!blob) continue;
           try {
             const url = await uploadProfileMedia(uid, kind, blob);
-            if (kind === "banner") toSave.bannerURL = url;
-            else toSave.photoURL = url;
+            // a URL nova leva o enquadramento escolhido no editor
+            if (kind === "banner") toSave.bannerURL = withFraming(url, parseFraming(form.bannerURL || "").framing);
+            else toSave.photoURL = withFraming(url, parseFraming(form.photoURL || "").framing);
           } catch (uploadError) {
             const canFallBack = kind === "avatar" && !isAnimatedImage(blob) && (form.photoURL || "").startsWith("data:");
             if (!canFallBack) throw uploadError;
@@ -188,7 +206,7 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
   return (
     <>
       <ModalShell
-        isOpen={isOpen && !isCropOpen}
+        isOpen={isOpen && !isCropOpen && !framingKind}
         onClose={onClose}
         maxWidthClassName="max-w-2xl"
         zIndexClassName="z-[250]"
@@ -205,9 +223,15 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
           </header>
 
           <div className="mb-4 overflow-hidden rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-2)]">
-            <div className="relative h-32 w-full bg-[var(--tone-3)]">
+            <div className="relative h-40 w-full bg-[var(--tone-3)]">
               {form.bannerURL ? (
-                <img src={form.bannerURL} alt="Prévia do banner" className="h-full w-full object-cover" />
+                <FramingSurface
+                  src={stripFraming(form.bannerURL)}
+                  framing={parseFraming(form.bannerURL).framing}
+                  onChange={(next) => setField("bannerURL", withFraming(form.bannerURL || "", next))}
+                  label="Banner"
+                  className="h-full w-full"
+                />
               ) : (
                 <div className="flex h-full w-full items-center justify-center gap-2 text-sm text-[var(--ink-faint)]">
                   <Camera className="h-4 w-4" /> Sem banner
@@ -217,7 +241,7 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
             <div className="flex flex-wrap items-center gap-2 p-3">
               <div className="mr-auto min-w-0">
                 <p className="text-sm font-semibold text-[var(--ink)]">Banner do perfil</p>
-                <p className="text-xs text-[var(--ink-faint)]">JPG, PNG, WebP ou GIF animado, até {Math.round(PROFILE_MEDIA_LIMITS.bannerBytes / 1048576)} MB.</p>
+                <p className="text-xs text-[var(--ink-faint)]">JPG, PNG, WebP ou GIF animado, até {Math.round(PROFILE_MEDIA_LIMITS.bannerBytes / 1048576)} MB. Arraste a imagem no quadro acima para posicionar.</p>
               </div>
               <input
                 ref={bannerInputRef}
@@ -234,9 +258,6 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
               </button>
               {form.bannerURL && (
                 <>
-                  <button type="button" onClick={() => handleOpenCropCurrent("banner")} className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-4)] px-3.5 py-2 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--tone-4)] transition active:scale-95">
-                    <Crop className="h-4 w-4" /> Ajustar
-                  </button>
                   <button type="button" onClick={() => { delete pendingRef.current.banner; setField("bannerURL", ""); }} className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--border-subtle)] px-3 py-2 text-xs font-semibold text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)] transition active:scale-95">
                     <Trash2 className="h-4 w-4" /> Remover
                   </button>
@@ -246,9 +267,9 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
           </div>
 
           <div className="mb-6 flex flex-col gap-5 rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-2)] p-4 sm:flex-row sm:items-center">
-            <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[color:var(--border-subtle)] bg-[var(--tone-3)] text-2xl font-semibold text-[var(--ink-muted)] aspect-square shadow-inner">
+            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[color:var(--border-subtle)] bg-[var(--tone-3)] text-2xl font-semibold text-[var(--ink-muted)] aspect-square shadow-inner">
               {form.photoURL ? (
-                <img
+                <FramedImage
                   src={form.photoURL}
                   alt="Prévia do avatar"
                   className="h-full w-full object-cover object-center aspect-square"
@@ -259,7 +280,7 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
             </div>
             <div className="flex-1">
               <p className="text-sm font-semibold text-[var(--ink)]">Foto de perfil</p>
-              <p className="mt-1 text-xs text-[var(--ink-faint)]">JPG, PNG, WebP ou GIF animado. Fotos estáticas podem ser recortadas; GIFs sobem como estão.</p>
+              <p className="mt-1 text-xs text-[var(--ink-faint)]">JPG, PNG, WebP ou GIF animado. Fotos estáticas podem ser recortadas; GIFs sobem como estão e você escolhe o enquadramento.</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <input
                   ref={fileInputRef}
@@ -361,6 +382,15 @@ const ProfileEditorModal: React.FC<ProfileEditorModalProps> = ({
         </footer>
       </div>
     </ModalShell>
+
+    <ProfileFramingModal
+      isOpen={Boolean(framingKind)}
+      kind={framingKind ?? "avatar"}
+      src={stripFraming((framingKind === "banner" ? form.bannerURL : form.photoURL) || "")}
+      initial={parseFraming((framingKind === "banner" ? form.bannerURL : form.photoURL) || "").framing}
+      onApply={handleApplyFraming}
+      onClose={() => setFramingKind(null)}
+    />
 
     {rawImageForCrop && (
       <ImageCropModal

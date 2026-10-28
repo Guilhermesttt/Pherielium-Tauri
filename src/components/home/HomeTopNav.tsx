@@ -278,7 +278,7 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                 />
               </button>
 
-              <input
+              <input aria-label="Buscar na biblioteca"
                 ref={searchInputRef}
                 type="text"
                 value={searchTerm}

@@ -55,7 +55,7 @@ const DesktopAuth: React.FC = () => {
           )}
         </div>
         
-        <h1 className="text-2xl font-display font-medium tracking-tight bg-gradient-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent">
+        <h1 className="text-2xl font-display font-medium tracking-tight text-[var(--ink)]">
           Pherielium Hub
         </h1>
         <p className="mt-2 text-xs text-[var(--ink-muted)] max-w-xs">{message}</p>

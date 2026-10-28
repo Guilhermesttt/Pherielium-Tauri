@@ -971,7 +971,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
             style={{
               cornerShape: "squircle",
             } as React.CSSProperties}
-            className={`relative flex flex-col w-full overflow-hidden bg-[var(--tone-1)] border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.8)] transition duration-300 ${
+            className={`relative flex flex-col w-full overflow-hidden bg-[var(--tone-1)] border border-transparent shadow-[0_30px_90px_rgba(0,0,0,0.8)] transition duration-300 ${
               isCompactMode
                 ? "max-w-xl h-[440px] sm:h-[460px] rounded-[var(--corner-lg)]"
                 : "max-w-5xl h-[84vh] rounded-[var(--corner-lg)]"
@@ -1263,18 +1263,18 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                       transition={{ duration: 0.2 }}
                       className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-auto z-20"
                     >
-                      <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-black/80 border border-white/10 backdrop-blur-xl shadow-2xl">
+                      <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-black/80 border border-transparent backdrop-blur-xl shadow-2xl">
                         <span className="h-2.5 w-2.5 rounded-full bg-[var(--live)] animate-pulse" />
-                        <span className="text-sm font-semibold text-white">
+                        <span className="text-sm font-semibold text-[var(--ink)]">
                           {focusedFeed.title}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-black/80 border border-white/10 backdrop-blur-xl shadow-2xl">
+                      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-black/80 border border-transparent backdrop-blur-xl shadow-2xl">
                         <button
                           type="button"
                           onClick={() => void handleTogglePip()}
-                          className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--ink-muted)] hover:text-white hover:bg-white/10 transition cursor-pointer"
+                          className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)] transition cursor-pointer"
                           title="Mini-player flutuante (PiP)"
                         >
                           <PictureInPicture2 className="h-4 w-4" />
@@ -1292,14 +1292,14 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 20 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2.5 p-2 rounded-2xl bg-black/85 border border-white/15 backdrop-blur-2xl shadow-2xl pointer-events-auto z-20"
+                      className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2.5 p-2 rounded-2xl bg-black/85 border border-transparent backdrop-blur-2xl shadow-2xl pointer-events-auto z-20"
                     >
                       <button
                         type="button"
                         onClick={onToggleMute}
                         className={`flex h-11 w-11 items-center justify-center rounded-xl transition cursor-pointer ${isMuted
-                          ? "bg-[#FF2B55] text-white shadow-lg"
-                          : "bg-white/10 text-white hover:bg-white/20"
+                          ? "bg-[#FF2B55] text-[var(--ink)] shadow-lg"
+                          : "bg-[var(--tone-3)] text-[var(--ink)] hover:bg-[var(--tone-4)]"
                           }`}
                         title={isMuted ? "Desmutar microfone" : "Mutar microfone"}
                       >
@@ -1310,8 +1310,8 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                         type="button"
                         onClick={onToggleDeafen}
                         className={`flex h-11 w-11 items-center justify-center rounded-xl transition cursor-pointer ${isDeafened
-                          ? "bg-[#FF2B55] text-white shadow-lg"
-                          : "bg-white/10 text-white hover:bg-white/20"
+                          ? "bg-[#FF2B55] text-[var(--ink)] shadow-lg"
+                          : "bg-[var(--tone-3)] text-[var(--ink)] hover:bg-[var(--tone-4)]"
                           }`}
                         title={isDeafened ? "Reativar áudio" : "Desativar áudio"}
                       >
@@ -1322,7 +1322,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                         <button
                           type="button"
                           onClick={onToggleScreenShare}
-                          className="flex h-11 items-center gap-2 px-4 rounded-xl bg-white text-black text-xs font-semibold shadow-lg hover:bg-white/90 cursor-pointer"
+                          className="flex h-11 items-center gap-2 px-4 rounded-xl bg-[var(--ink)] text-[var(--tone-0)] text-xs font-semibold shadow-lg hover:opacity-90 cursor-pointer"
                         >
                           <MonitorOff className="h-4 w-4" />
                           <span>Parar Transmissão</span>
@@ -1332,7 +1332,7 @@ export const VoiceCallWindow: React.FC<VoiceCallWindowProps> = ({
                       <button
                         type="button"
                         onClick={beginDisconnect}
-                        className="flex h-11 items-center gap-2 px-5 rounded-xl bg-[#FF2B55] text-white text-xs font-semibold shadow-lg hover:bg-[#FF1A45] cursor-pointer"
+                        className="flex h-11 items-center gap-2 px-5 rounded-xl bg-[#FF2B55] text-[var(--ink)] text-xs font-semibold shadow-lg hover:bg-[#FF1A45] cursor-pointer"
                       >
                         <PhoneOff className="h-4 w-4" />
                         <span>Desconectar</span>

@@ -60,7 +60,7 @@ const SuccessOverlay = ({ message }: { message: string }) => {
         initial={{ scale: 0, opacity: 0.9 }}
         animate={{ scale: 1, opacity: 0 }}
         transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
-        className="absolute w-[70vmax] h-[70vmax] rounded-full bg-white blur-[100px] pointer-events-none"
+        className="absolute w-[70vmax] h-[70vmax] rounded-full bg-[var(--ink)] blur-[100px] pointer-events-none"
       />
 
       {/* Anéis colapsando para dentro, indicando que a órbita "fechou" com sucesso */}
@@ -68,13 +68,13 @@ const SuccessOverlay = ({ message }: { message: string }) => {
         initial={{ scale: 2.4, opacity: 0.5, rotate: 0 }}
         animate={{ scale: 0.9, opacity: 0, rotate: 90 }}
         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-        className="absolute w-72 h-72 md:w-96 md:h-96 rounded-full border border-white/20"
+        className="absolute w-72 h-72 md:w-96 md:h-96 rounded-full border border-transparent"
       />
       <motion.div
         initial={{ scale: 3, opacity: 0.35, rotate: 0 }}
         animate={{ scale: 0.85, opacity: 0, rotate: -70 }}
         transition={{ duration: 1, ease: [0.16, 1, 0.3, 1], delay: 0.05 }}
-        className="absolute w-96 h-96 md:w-[28rem] md:h-[28rem] rounded-full border border-dashed border-white/15"
+        className="absolute w-96 h-96 md:w-[28rem] md:h-[28rem] rounded-full border border-dashed border-transparent"
       />
 
       {/* Núcleo: logo com brilho intenso + selo de confirmação */}
@@ -88,7 +88,7 @@ const SuccessOverlay = ({ message }: { message: string }) => {
           <motion.div
             animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.7, 0.4] }}
             transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute inset-0 rounded-full bg-white blur-[60px]"
+            className="absolute inset-0 rounded-full bg-[var(--ink)] blur-[60px]"
           />
           <img
             src={pherieliumLogo}
@@ -100,9 +100,9 @@ const SuccessOverlay = ({ message }: { message: string }) => {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.4, delay: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
-            className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.6)]"
+            className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-[var(--ink)] flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.6)]"
           >
-            <Check size={18} strokeWidth={3.5} className="text-black" />
+            <Check size={18} strokeWidth={3.5} className="text-[var(--tone-0)]" />
           </motion.div>
         </motion.div>
 
@@ -110,7 +110,7 @@ const SuccessOverlay = ({ message }: { message: string }) => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="font-display font-semibold text-lg md:text-xl tracking-tight bg-gradient-to-b from-[#FFFFFF] to-[#8A8A8A] bg-clip-text text-transparent"
+          className="font-display font-semibold text-lg md:text-xl tracking-tight text-[var(--ink)]"
         >
           {message}
         </motion.p>
@@ -268,7 +268,7 @@ const OrbitIcon: React.FC<OrbitIconProps> = ({
                   animate={{ opacity: 1, y: -26, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.8 }}
                   transition={{ type: "spring", bounce: 0.25, duration: 0.2 }}
-                  className="absolute left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-[var(--tone-2)]/95 backdrop-blur-md border border-white/20 text-white text-[length:var(--step-0)] font-medium font-body shadow-[0_8px_24px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.15)] whitespace-nowrap pointer-events-none flex items-center gap-1.5 z-50 select-none"
+                  className="absolute left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-full bg-[var(--tone-2)]/95 backdrop-blur-md border border-transparent text-[var(--ink)] text-[length:var(--step-0)] font-medium font-body shadow-[0_8px_24px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.15)] whitespace-nowrap pointer-events-none flex items-center gap-1.5 z-50 select-none"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-[var(--live)] shadow-[0_0_6px_#34d399]" />
                   <span>{label}</span>
@@ -317,7 +317,7 @@ const AnimatedPherieliumLogo: React.FC<AnimatedPherieliumLogoProps> = ({
   // Outer ring icons: 5 platforms, CW 44s
   const outerIcons: Array<{ src?: string; node?: React.ReactNode; alt: string; startAngle: number }> = [
     {
-      node: <FontAwesomeIcon icon={faSteam} className="w-5 h-5 text-white" />,
+      node: <FontAwesomeIcon icon={faSteam} className="w-5 h-5 text-[var(--ink)]" />,
       alt: "Steam",
       startAngle: 0,
     },
@@ -358,11 +358,11 @@ const AnimatedPherieliumLogo: React.FC<AnimatedPherieliumLogoProps> = ({
           >
             {/* Decorative orbit ring lines */}
             <div
-              className="absolute rounded-full border border-white/[0.08]"
+              className="absolute rounded-full border border-transparent"
               style={{ width: outerRadius * 2, height: outerRadius * 2 }}
             />
             <div
-              className="absolute rounded-full border border-white/[0.07] border-dashed"
+              className="absolute rounded-full border border-transparent border-dashed"
               style={{ width: innerRadius * 2, height: innerRadius * 2 }}
             />
 
@@ -377,7 +377,7 @@ const AnimatedPherieliumLogo: React.FC<AnimatedPherieliumLogoProps> = ({
                 label={item.alt}
               >
                 <div
-                  className="flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 hover:border-white/35 backdrop-blur-sm border border-white/15 shadow-lg transition-all"
+                  className="flex items-center justify-center rounded-full bg-[var(--tone-3)] hover:bg-[var(--tone-4)] hover:border-transparent backdrop-blur-sm border border-transparent shadow-lg transition-all"
                   style={{ width: 40, height: 40 }}
                 >
                   {item.node ? (
@@ -406,7 +406,7 @@ const AnimatedPherieliumLogo: React.FC<AnimatedPherieliumLogoProps> = ({
                 label={item.alt}
               >
                 <div
-                  className="flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 hover:border-white/35 backdrop-blur-sm border border-white/15 shadow-lg transition-all"
+                  className="flex items-center justify-center rounded-full bg-[var(--tone-3)] hover:bg-[var(--tone-4)] hover:border-transparent backdrop-blur-sm border border-transparent shadow-lg transition-all"
                   style={{ width: 36, height: 36 }}
                 >
                   {item.node ? (
@@ -600,9 +600,9 @@ const LoginContent: React.FC = () => {
 
   if (authLoading && !user) {
     return (
-      <div className="min-h-screen w-full bg-[var(--tone-0)] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+      <div className="min-h-screen w-full bg-[var(--tone-0)] text-[var(--ink)] flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
         <PlasmaHeroBackground opacity={0.45} />
-        <div className="relative z-10 flex flex-col items-center gap-6 p-8 md:p-10 rounded-[var(--corner-lg)] border border-white/[0.08] bg-[var(--tone-1)]/80 backdrop-blur-2xl shadow-2xl">
+        <div className="relative z-10 flex flex-col items-center gap-6 p-8 md:p-10 rounded-[var(--corner-lg)] border border-transparent bg-[var(--tone-1)]/80 backdrop-blur-2xl shadow-2xl">
           <img src={pherieliumLogo} alt="Pherielium" className="w-16 h-16 object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.4)] animate-pulse" />
           <LoadingState label="Verificando sessão..." variant="breathing" />
         </div>
@@ -686,7 +686,7 @@ const LoginContent: React.FC = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="min-h-screen w-full bg-[var(--tone-0)] text-white flex flex-col md:flex-row items-center justify-between p-6 md:p-14 lg:p-20 relative overflow-hidden font-sans selection:bg-white selection:text-black"
+      className="min-h-screen w-full bg-[var(--tone-0)] text-[var(--ink)] flex flex-col md:flex-row items-center justify-between p-6 md:p-14 lg:p-20 relative overflow-hidden font-sans selection:bg-white selection:text-[var(--tone-0)]"
     >
       {/* Overlay de sucesso — some assim que o login/cadastro é confirmado */}
       <AnimatePresence>
@@ -762,14 +762,14 @@ const LoginContent: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -16, scale: 0.95 }}
             transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
-            className="absolute top-6 md:top-8 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 px-4 py-2 rounded-full bg-[var(--tone-2)]/90 backdrop-blur-xl border border-white/15 text-white shadow-[0_10px_30px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.12)] text-xs select-none"
+            className="absolute top-6 md:top-8 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 px-4 py-2 rounded-full bg-[var(--tone-2)]/90 backdrop-blur-xl border border-transparent text-[var(--ink)] shadow-[0_10px_30px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.12)] text-[length:var(--step-0)] select-none"
           >
             <span className="w-2 h-2 rounded-full bg-[#FF9838] shadow-[0_0_8px_#FF9838] animate-pulse" />
             <span className="font-ui text-[var(--ink)] font-medium">Singularidade Ativa</span>
             <button
               type="button"
               onClick={() => setIsBlackHoleActive(false)}
-              className="text-[length:var(--step-0)] text-[var(--ink-muted)] hover:text-white underline ml-1 cursor-pointer transition-colors"
+              className="text-[length:var(--step-0)] text-[var(--ink-muted)] hover:text-[var(--ink)] underline ml-1 cursor-pointer transition-colors"
             >
               Desativar
             </button>
@@ -888,7 +888,7 @@ const LoginContent: React.FC = () => {
                     onClick={() => setShowPassword(!showPassword)}
                     whileTap={{ scale: 0.85 }}
                     transition={{ type: "spring", bounce: 0.3, duration: 0.25 }}
-                    className="text-[var(--ink-faint)] hover:text-white transition-colors p-1"
+                    className="text-[var(--ink-faint)] hover:text-[var(--ink)] transition-colors p-1"
                   >
                     <AnimatePresence mode="wait" initial={false}>
                       <motion.span
@@ -915,8 +915,8 @@ const LoginContent: React.FC = () => {
               >
                 <div
                   className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${rememberMe
-                    ? "border-white bg-white text-black"
-                    : "border-white/35 bg-transparent group-hover:border-white/60"
+                    ? "border-white bg-[var(--ink)] text-[var(--tone-0)]"
+                    : "border-transparent bg-transparent group-hover:border-transparent"
                     }`}
                 >
                   {rememberMe && <Check size={10} strokeWidth={3.5} />}
@@ -946,7 +946,7 @@ const LoginContent: React.FC = () => {
                   animate={{ opacity: 1, y: 0, height: "auto" }}
                   exit={{ opacity: 0, y: -4, height: 0 }}
                   transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-                  className="flex items-center gap-2 text-red-400 text-xs py-1 font-body overflow-hidden"
+                  className="flex items-center gap-2 text-[var(--danger)] text-[length:var(--step-0)] py-1 font-body overflow-hidden"
                 >
                   <motion.span
                     initial={{ rotate: -15, scale: 0.5 }}
@@ -1012,13 +1012,13 @@ const LoginContent: React.FC = () => {
             <motion.div variants={formItemVariants}>
               {isGoogleLoading ? (
                 <div className="w-full flex items-center gap-2">
-                  <div className="flex-1 flex items-center justify-center gap-2.5 py-3 px-4 bg-white/[0.05] border border-white/[0.18] text-[var(--ink)] rounded-2xl text-xs font-body font-medium">
+                  <div className="flex-1 flex items-center justify-center gap-2.5 py-3 px-4 bg-[var(--tone-3)] border border-transparent text-[var(--ink)] rounded-[var(--corner-md)] text-[length:var(--step-0)] font-body font-medium">
                     <LoadingState label="Aguardando no navegador..." variant="connecting" size="sm" />
                   </div>
                   <button
                     type="button"
                     onClick={handleCancelGoogleLogin}
-                    className="py-3 px-4 bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.22] hover:border-white/40 text-[var(--ink)] hover:text-white rounded-2xl text-xs font-medium transition-all active:scale-95 cursor-pointer shrink-0"
+                    className="py-3 px-4 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] border border-transparent hover:border-transparent text-[var(--ink)] hover:text-[var(--ink)] rounded-[var(--corner-md)] text-[length:var(--step-0)] font-medium transition-all active:scale-95 cursor-pointer shrink-0"
                     title="Cancelar tentativa de login (Esc)"
                   >
                     Cancelar
@@ -1060,7 +1060,7 @@ const LoginContent: React.FC = () => {
                         whileHover={{ scale: 1.04 }}
                         whileTap={{ scale: 0.94 }}
                         transition={{ type: "spring", bounce: 0.3, duration: 0.22 }}
-                        className="text-white font-medium cursor-pointer underline-offset-2 hover:underline"
+                        className="text-[var(--ink)] font-medium cursor-pointer underline-offset-2 hover:underline"
                       >
                         Cadastre-se
                       </motion.button>
@@ -1074,7 +1074,7 @@ const LoginContent: React.FC = () => {
                         whileHover={{ scale: 1.04 }}
                         whileTap={{ scale: 0.94 }}
                         transition={{ type: "spring", bounce: 0.3, duration: 0.22 }}
-                        className="text-white font-medium cursor-pointer underline-offset-2 hover:underline"
+                        className="text-[var(--ink)] font-medium cursor-pointer underline-offset-2 hover:underline"
                       >
                         Entrar
                       </motion.button>

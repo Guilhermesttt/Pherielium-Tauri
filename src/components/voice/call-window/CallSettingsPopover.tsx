@@ -129,10 +129,10 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#161616] bg-[var(--tone-1)]/80">
             <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-[var(--corner-sm)] bg-white/6 flex items-center justify-center text-[var(--ink)]">
+              <div className="h-8 w-8 rounded-[var(--corner-sm)] bg-[var(--tone-3)] flex items-center justify-center text-[var(--ink)]">
                 <Sliders className="h-4 w-4" />
               </div>
-              <h2 className="text-sm font-semibold text-white tracking-tight">
+              <h2 className="text-sm font-semibold text-[var(--ink)] tracking-tight">
                 Áudio & Vídeo
               </h2>
             </div>
@@ -140,20 +140,20 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Fechar configurações da chamada"
-              className="h-7 w-7 flex items-center justify-center rounded-lg text-[var(--ink-muted)] hover:text-white hover:bg-white/8 transition cursor-pointer"
+              className="h-7 w-7 flex items-center justify-center rounded-lg text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)] transition cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
 
           {/* Segmented Control Tabs */}
-          <div className="flex items-center gap-1 p-1 mx-6 mt-3 rounded-xl bg-white/3 border border-[#161616]">
+          <div className="flex items-center gap-1 p-1 mx-6 mt-3 rounded-xl bg-[var(--tone-3)] border border-[#161616]">
             <button
               type="button"
               onClick={() => setActiveTab("devices")}
               className={`flex-1 py-1.5 rounded-[9px] text-xs font-semibold transition cursor-pointer ${
                 activeTab === "devices"
-                  ? "bg-white/12 text-white shadow-sm"
+                  ? "bg-[var(--tone-3)] text-[var(--ink)] shadow-sm"
                   : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
               }`}
             >
@@ -164,7 +164,7 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
               onClick={() => setActiveTab("audio")}
               className={`flex-1 py-1.5 rounded-[9px] text-xs font-semibold transition cursor-pointer ${
                 activeTab === "audio"
-                  ? "bg-white/12 text-white shadow-sm"
+                  ? "bg-[var(--tone-3)] text-[var(--ink)] shadow-sm"
                   : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
               }`}
             >
@@ -175,7 +175,7 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
               onClick={() => setActiveTab("activation")}
               className={`flex-1 py-1.5 rounded-[9px] text-xs font-semibold transition cursor-pointer ${
                 activeTab === "activation"
-                  ? "bg-white/12 text-white shadow-sm"
+                  ? "bg-[var(--tone-3)] text-[var(--ink)] shadow-sm"
                   : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
               }`}
             >
@@ -186,7 +186,7 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
               onClick={() => setActiveTab("status")}
               className={`flex-1 py-1.5 rounded-[9px] text-xs font-semibold transition cursor-pointer ${
                 activeTab === "status"
-                  ? "bg-white/12 text-white shadow-sm"
+                  ? "bg-[var(--tone-3)] text-[var(--ink)] shadow-sm"
                   : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
               }`}
             >
@@ -200,14 +200,14 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
             {onOpenOrbloomCustomizer && (
               <div
                 style={{ cornerShape: "squircle" } as React.CSSProperties}
-                className="p-3.5 rounded-2xl bg-linear-to-r from-purple-950/25 via-[#0F0F0F] to-cyan-950/15 border border-[#161616] flex items-center justify-between"
+                className="p-3.5 rounded-[var(--corner-md)] bg-[var(--tone-2)] flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-white/6 flex items-center justify-center text-purple-300">
+                  <div className="h-9 w-9 rounded-[var(--corner-sm)] bg-[var(--tone-3)] flex items-center justify-center text-[var(--ink)]">
                     <Sparkles className="h-4.5 w-4.5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-semibold text-white">Visual do Orbloom</h4>
+                    <h4 className="text-xs font-semibold text-[var(--ink)]">Visual do Orbloom</h4>
                     <p className="text-[length:var(--step-0)] text-[var(--ink-muted)]">Personalize presets, reações e cores da sua esfera</p>
                   </div>
                 </div>
@@ -218,7 +218,7 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                     onOpenOrbloomCustomizer();
                   }}
                   style={{ cornerShape: "squircle" } as React.CSSProperties}
-                  className="px-3 py-1.5 rounded-[var(--corner-sm)] bg-white text-black font-semibold text-xs hover:bg-white/90 transition active:scale-95 cursor-pointer shadow-sm"
+                  className="px-3 py-1.5 rounded-[var(--corner-sm)] bg-[var(--ink)] text-[var(--tone-0)] font-semibold text-xs hover:opacity-90 transition active:scale-95 cursor-pointer shadow-sm"
                 >
                   Personalizar
                 </button>
@@ -249,10 +249,10 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                 </div>
 
                 {/* VU Meter de Microfone */}
-                <div className="p-3 rounded-[var(--corner-sm)] bg-white/3 border border-[#161616] space-y-2">
+                <div className="p-3 rounded-[var(--corner-sm)] bg-[var(--tone-3)] border border-[#161616] space-y-2">
                   <div className="flex justify-between text-xs font-medium text-[var(--ink-muted)]">
                     <span className="flex items-center gap-1.5">
-                      <Activity className="h-3.5 w-3.5 text-emerald-400" />
+                      <Activity className="h-3.5 w-3.5 text-[var(--live)]" />
                       Teste de Entrada
                     </span>
                     <span className="font-mono text-[var(--ink)]">{micVolumeLevel}%</span>
@@ -263,16 +263,16 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                       const isLit = micVolumeLevel >= threshold;
                       const zoneColor =
                         threshold > 80
-                          ? "bg-rose-500"
+                          ? "bg-[var(--danger)]"
                           : threshold > 60
-                          ? "bg-amber-400"
-                          : "bg-emerald-400";
+                          ? "bg-[var(--tone-3)]"
+                          : "bg-[var(--live)]";
 
                       return (
                         <div
                           key={i}
                           className={`flex-1 h-full rounded-xs transition duration-75 ${
-                            isLit ? zoneColor : "bg-white/6"
+                            isLit ? zoneColor : "bg-[var(--tone-3)]"
                           }`}
                         />
                       );
@@ -281,11 +281,11 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                 </div>
 
                 {/* Retorno de Microfone (Sidetone) */}
-                <label className="flex items-center justify-between p-3 rounded-[var(--corner-sm)] bg-white/3 border border-[#161616] cursor-pointer hover:bg-white/5 transition">
+                <label className="flex items-center justify-between p-3 rounded-[var(--corner-sm)] bg-[var(--tone-3)] border border-[#161616] cursor-pointer hover:bg-[var(--tone-4)] transition">
                   <div className="flex items-center gap-2.5">
                     <Headphones className="h-4 w-4 text-[var(--ink-muted)]" />
                     <div>
-                      <p className="text-xs font-semibold text-white">Retorno de Voz</p>
+                      <p className="text-xs font-semibold text-[var(--ink)]">Retorno de Voz</p>
                       <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">Escute a si mesmo nos fones</p>
                     </div>
                   </div>
@@ -349,8 +349,8 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
               <div className="space-y-3">
                 {/* Volume de Entrada do Mic */}
                 {typeof micGain === "number" && onChangeMicGain && (
-                  <div className="p-3.5 rounded-[var(--corner-sm)] bg-white/3 border border-[#161616] space-y-2">
-                    <div className="flex justify-between text-xs font-semibold text-white">
+                  <div className="p-3.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] border border-[#161616] space-y-2">
+                    <div className="flex justify-between text-xs font-semibold text-[var(--ink)]">
                       <span>Volume do Microfone</span>
                       <span className="font-mono text-[var(--ink-muted)]">{micGain}%</span>
                     </div>
@@ -392,8 +392,8 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                 </div>
 
                 {onChangeVoiceSensitivity && (
-                  <div className="p-3.5 rounded-[var(--corner-sm)] bg-white/3 border border-[#161616] space-y-2">
-                    <div className="flex justify-between text-xs font-semibold text-white">
+                  <div className="p-3.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] border border-[#161616] space-y-2">
+                    <div className="flex justify-between text-xs font-semibold text-[var(--ink)]">
                       <span>Sensibilidade de Voz</span>
                       <span className="font-mono text-[var(--ink-muted)]">{voiceSensitivity}</span>
                     </div>
@@ -413,26 +413,26 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                 <button
                   type="button"
                   onClick={() => onChangeEchoCancellation?.(!echoCancellation)}
-                  className="w-full flex items-center justify-between p-3.5 rounded-[var(--corner-sm)] bg-white/3 border border-[#161616] hover:bg-white/5 transition cursor-pointer text-left"
+                  className="w-full flex items-center justify-between p-3.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] border border-[#161616] hover:bg-[var(--tone-4)] transition cursor-pointer text-left"
                 >
                   <div>
-                    <p className="text-xs font-semibold text-white">Cancelamento de Eco</p>
+                    <p className="text-xs font-semibold text-[var(--ink)]">Cancelamento de Eco</p>
                     <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">Evita repetição de som pelos alto-falantes</p>
                   </div>
-                  {echoCancellation && <Check className="h-4 w-4 text-emerald-400" />}
+                  {echoCancellation && <Check className="h-4 w-4 text-[var(--live)]" />}
                 </button>
 
                 {/* Ganho Automático */}
                 <button
                   type="button"
                   onClick={() => onChangeAutoGainControl?.(!autoGainControl)}
-                  className="w-full flex items-center justify-between p-3.5 rounded-[var(--corner-sm)] bg-white/3 border border-[#161616] hover:bg-white/5 transition cursor-pointer text-left"
+                  className="w-full flex items-center justify-between p-3.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] border border-[#161616] hover:bg-[var(--tone-4)] transition cursor-pointer text-left"
                 >
                   <div>
-                    <p className="text-xs font-semibold text-white">Ganho Automático</p>
+                    <p className="text-xs font-semibold text-[var(--ink)]">Ganho Automático</p>
                     <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">Nivela volume de voz baixa ou alta</p>
                   </div>
-                  {autoGainControl && <Check className="h-4 w-4 text-emerald-400" />}
+                  {autoGainControl && <Check className="h-4 w-4 text-[var(--live)]" />}
                 </button>
 
                 {onCalibrateNoise && (
@@ -440,7 +440,7 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                     type="button"
                     disabled={isCalibratingNoise}
                     onClick={() => void onCalibrateNoise()}
-                    className="w-full py-2 rounded-xl bg-white/6 hover:bg-white/10 text-xs font-semibold text-[var(--ink)] transition cursor-pointer disabled:opacity-50"
+                    className="w-full py-2 rounded-xl bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-xs font-semibold text-[var(--ink)] transition cursor-pointer disabled:opacity-50"
                   >
                     {isCalibratingNoise ? "Calibrando..." : "Calibrar Ruído Ambiente"}
                   </button>
@@ -453,13 +453,13 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                 <p className="text-[length:var(--step-0)] text-[var(--ink-faint)] px-1">
                   Escolha como o Checkpoint decide quando transmitir sua voz na chamada.
                 </p>
-                <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white/3 border border-[#161616]">
+                <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-[var(--tone-3)] border border-[#161616]">
                   <button
                     type="button"
                     onClick={() => setInputMode?.("voice-activity")}
                     className={`py-2 rounded-[9px] text-xs font-semibold transition cursor-pointer ${
                       inputMode === "voice-activity"
-                        ? "bg-white/12 text-white shadow-sm"
+                        ? "bg-[var(--tone-3)] text-[var(--ink)] shadow-sm"
                         : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
                     }`}
                   >
@@ -470,7 +470,7 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                     onClick={() => setInputMode?.("push-to-talk")}
                     className={`py-2 rounded-[9px] text-xs font-semibold transition cursor-pointer ${
                       inputMode === "push-to-talk"
-                        ? "bg-white/12 text-white shadow-sm"
+                        ? "bg-[var(--tone-3)] text-[var(--ink)] shadow-sm"
                         : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
                     }`}
                   >
@@ -479,9 +479,9 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                 </div>
 
                 {inputMode === "push-to-talk" && setPushToTalkKey && (
-                  <div className="flex items-center justify-between p-3.5 rounded-[var(--corner-sm)] bg-white/3 border border-[#161616]">
+                  <div className="flex items-center justify-between p-3.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] border border-[#161616]">
                     <div>
-                      <p className="text-xs font-semibold text-white flex items-center gap-1.5">
+                      <p className="text-xs font-semibold text-[var(--ink)] flex items-center gap-1.5">
                         <Keyboard className="h-3.5 w-3.5 text-[var(--ink-muted)]" />
                         Tecla Push-to-Talk
                       </p>
@@ -505,8 +505,8 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                       }}
                       className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold transition cursor-pointer ${
                         isRecordingKey
-                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-400 animate-pulse"
-                          : "bg-white/8 text-white border-white/20 hover:bg-white/[0.14]"
+                          ? "bg-[var(--tone-3)] text-[var(--live)] border-transparent animate-pulse"
+                          : "bg-[var(--tone-3)] text-[var(--ink)] border-transparent hover:bg-[var(--tone-4)]"
                       }`}
                     >
                       {isRecordingKey ? "Pressione..." : pushToTalkKey}
@@ -537,10 +537,10 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
                 ).map(([label, value]) => (
                   <div
                     key={label}
-                    className="flex items-center justify-between rounded-xl border border-[#161616] bg-white/3 px-3.5 py-2.5"
+                    className="flex items-center justify-between rounded-xl border border-[#161616] bg-[var(--tone-3)] px-3.5 py-2.5"
                   >
                     <span className="text-xs text-[var(--ink-muted)]">{label}</span>
-                    <span className="text-xs font-semibold text-white">{value}</span>
+                    <span className="text-xs font-semibold text-[var(--ink)]">{value}</span>
                   </div>
                 ))}
               </div>
@@ -553,7 +553,7 @@ export const CallSettingsPopover: React.FC<CallSettingsPopoverProps> = ({
               type="button"
               onClick={onClose}
               style={{ cornerShape: "squircle" } as React.CSSProperties}
-              className="px-4 py-1.5 rounded-xl bg-white text-black font-semibold text-xs hover:bg-white/90 transition cursor-pointer shadow-sm"
+              className="px-4 py-1.5 rounded-xl bg-[var(--ink)] text-[var(--tone-0)] font-semibold text-xs hover:opacity-90 transition cursor-pointer shadow-sm"
             >
               Concluído
             </button>

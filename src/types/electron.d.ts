@@ -794,6 +794,9 @@ declare global {
     earnedTime: number;
     /** ISO 8601 date string derived from earnedTime (or Date.now() as fallback). */
     unlockedAt: string;
+    /** Tier calculado na detecção (platinum, gold, silver, bronze), quando a fonte o conhece. */
+    tier?: string;
+    percent?: number;
     achievement?: {
       id?: string;
       name?: string;

@@ -13,6 +13,7 @@ import type { SteamAchievement } from "../../../services/steam";
 import type { SoundEffectType } from "../../../hooks/useSoundEffects";
 import type { GamepadFamily } from "../../../context/GamepadContext";
 import { ControllerButtonGlyph } from "../../ui/ControllerButtonGlyph";
+import { useSlidingPill } from "../../../hooks/useSlidingPill";
 import { formatRarity, formatUnlockDate, pickRecentAchievements, splitPlaytime, trophyPercent } from "./consoleScreen";
 
 /** Textos desta tela que não existem no copy do painel (pt-BR, en-US, es-ES). */
@@ -176,6 +177,9 @@ export const ConsoleGameScreen: React.FC<ConsoleGameScreenProps> = (props) => {
   });
   const [optionsOpen, setOptionsOpen] = React.useState(false);
   const optionsRef = React.useRef<HTMLDivElement>(null);
+  const tabsTrackRef = React.useRef<HTMLDivElement>(null);
+  const tabsPillRef = React.useRef<HTMLSpanElement>(null);
+  useSlidingPill(tabsTrackRef, tabsPillRef, activeTab);
 
   // Controle: o botão Opções abre e fecha o menu; com ele aberto, o D-pad anda pelos itens, X
   // escolhe e O fecha só o menu (prioridade acima do painel, que senão fecharia a tela inteira).
@@ -261,7 +265,7 @@ export const ConsoleGameScreen: React.FC<ConsoleGameScreenProps> = (props) => {
               onClose();
             }}
             aria-label={t.back}
-            className="console-chip inline-flex h-[var(--control-h)] w-[var(--control-h)] shrink-0 items-center justify-center rounded-[var(--node)]"
+            className="console-chip inline-flex h-[var(--control-h)] w-[var(--control-h)] shrink-0 items-center justify-center rounded-[var(--corner-sm)]"
           >
             <ArrowLeft className="ctl-icon" />
           </button>
@@ -289,7 +293,8 @@ export const ConsoleGameScreen: React.FC<ConsoleGameScreenProps> = (props) => {
                   <ControllerButtonGlyph button="LB" gamepadFamily={gamepadFamily} size={16} />
                 </span>
               )}
-              <div role="tablist" aria-label="Seções do jogo" className="no-scrollbar flex min-w-0 items-center gap-1 overflow-x-auto">
+              <div ref={tabsTrackRef} role="tablist" aria-label="Seções do jogo" className="no-scrollbar relative flex min-w-0 items-center gap-1.5 overflow-x-auto">
+                <span ref={tabsPillRef} className="console-tab-pill" aria-hidden="true" />
                 {tabs.map((tab) => {
                   const active = tab === activeTab;
                   return (
@@ -302,7 +307,7 @@ export const ConsoleGameScreen: React.FC<ConsoleGameScreenProps> = (props) => {
                         onSelectTab(tab);
                         playSound("navigate");
                       }}
-                      className="console-tab-item relative flex h-[calc(var(--control-h)-12px)] shrink-0 cursor-pointer items-center rounded-full px-3 whitespace-nowrap"
+                      className="console-tab-item relative flex h-[calc(var(--control-h)-8px)] shrink-0 cursor-pointer items-center px-4 whitespace-nowrap"
                       data-active={active}
                     >
                       {tab}
@@ -417,7 +422,7 @@ export const ConsoleGameScreen: React.FC<ConsoleGameScreenProps> = (props) => {
               {isGamepadConnected ? (
                 <ControllerButtonGlyph button="A" gamepadFamily={gamepadFamily} size={22} />
               ) : (
-                <span className="console-start-icon flex h-6 w-6 items-center justify-center rounded-full" aria-hidden="true">
+                <span className="console-start-icon flex h-8 w-8 items-center justify-center" aria-hidden="true">
                   <Play className="h-3 w-3 fill-current" />
                 </span>
               )}
@@ -497,7 +502,7 @@ export const ConsoleGameScreen: React.FC<ConsoleGameScreenProps> = (props) => {
                 aria-label={t.options}
                 title={t.options}
                 onClick={() => setOptionsOpen((v) => !v)}
-                className="console-chip pointer-events-auto ml-auto inline-flex h-[var(--control-h)] w-[var(--control-h)] items-center justify-center rounded-[var(--node)]"
+                className="console-chip pointer-events-auto ml-auto inline-flex h-[var(--control-h)] w-[var(--control-h)] items-center justify-center rounded-[var(--corner-sm)]"
               >
                 <MoreHorizontal className="ctl-icon" />
               </button>
@@ -647,7 +652,7 @@ const RecentList: React.FC<{
     return (
       <div className="flex flex-col items-start gap-3">
         <p className="text-[length:var(--fs-caption)] text-[var(--ink-muted)]">{error}</p>
-        <button type="button" onClick={onRetry} className="console-chip h-[var(--control-h)] rounded-[var(--node)] px-4 text-[length:var(--fs-label)] font-semibold">
+        <button type="button" onClick={onRetry} className="console-chip h-[var(--control-h)] rounded-[var(--corner-sm)] px-4 text-[length:var(--fs-label)] font-semibold">
           Tentar de novo
         </button>
       </div>

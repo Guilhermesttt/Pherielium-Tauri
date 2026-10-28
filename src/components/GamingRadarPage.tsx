@@ -228,24 +228,24 @@ const GamingRadarPage: React.FC = () => {
     >
       <div className="relative mx-auto max-w-6xl space-y-6">
         {/* Compact, Focused Editorial Header */}
-        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-white/[0.06]">
+        <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-transparent">
           <div>
-            <div className="inline-flex items-center gap-2 text-xs font-medium text-[var(--ink-muted)] mb-1.5">
+            <div className="inline-flex items-center gap-2 text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] mb-1.5">
               <Radio className="h-3 w-3 text-[var(--ink-muted)]" />
               <span>{copy.eyebrow}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight text-[var(--ink)]">
               {copy.title}
             </h1>
-            <p className="mt-1 text-xs sm:text-sm font-normal text-[var(--ink-muted)] max-w-xl">
+            <p className="mt-1 text-[length:var(--step-0)] sm:text-sm font-normal text-[var(--ink-muted)] max-w-xl">
               {copy.subtitle}
             </p>
           </div>
 
           <div className="flex items-center gap-3 self-start sm:self-auto shrink-0">
             {/* Discreet update status */}
-            <span className="inline-flex items-center gap-1.5 text-xs text-[var(--ink-muted)] font-medium">
-              <span className={`h-1.5 w-1.5 rounded-full ${stale ? "bg-amber-400" : "bg-emerald-400"}`} />
+            <span className="inline-flex items-center gap-1.5 text-[length:var(--step-0)] text-[var(--ink-muted)] font-medium">
+              <span className={`h-1.5 w-1.5 rounded-full ${stale ? "bg-[var(--tone-3)]" : "bg-[var(--live)]"}`} />
               <span>{lastUpdatedLabel}</span>
             </span>
 
@@ -253,7 +253,7 @@ const GamingRadarPage: React.FC = () => {
               type="button"
               disabled={loading}
               onClick={() => void loadNews()}
-              className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.05] hover:bg-white/10 px-3.5 py-1.5 text-xs font-medium text-[var(--ink)] shadow-sm transition-all disabled:opacity-50 active:scale-95"
+              className="cursor-pointer inline-flex items-center justify-center gap-2 rounded-[var(--corner-sm)] border border-transparent bg-[var(--tone-3)] hover:bg-[var(--tone-4)] px-3.5 py-1.5 text-[length:var(--step-0)] font-medium text-[var(--ink)] shadow-sm transition-all disabled:opacity-50 active:scale-95"
               title={copy.refresh}
             >
               <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
@@ -269,10 +269,10 @@ const GamingRadarPage: React.FC = () => {
               key={source}
               type="button"
               onClick={() => setActiveSource(source)}
-              className={`cursor-pointer rounded-full border px-3.5 py-1 text-xs font-medium transition-all ${
+              className={`cursor-pointer rounded-full border px-3.5 py-1 text-[length:var(--step-0)] font-medium transition-all ${
                 activeSource === source
-                  ? "border-white bg-white text-black font-semibold shadow-sm"
-                  : "border-white/[0.08] bg-white/[0.03] text-[var(--ink-muted)] hover:border-white/20 hover:text-white"
+                  ? "border-white bg-[var(--ink)] text-[var(--tone-0)] font-semibold shadow-sm"
+                  : "border-transparent bg-[var(--tone-3)] text-[var(--ink-muted)] hover:border-transparent hover:text-[var(--ink)]"
               }`}
             >
               {source === "__all__" ? copy.all : source}
@@ -282,22 +282,22 @@ const GamingRadarPage: React.FC = () => {
 
         {/* News Content Area */}
         {error ? (
-          <div className="flex min-h-60 flex-col items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/[0.04] p-8 text-center">
-            <AlertCircle className="mb-3 h-8 w-8 text-red-400/60" />
+          <div className="flex min-h-60 flex-col items-center justify-center rounded-[var(--corner-md)] border border-transparent bg-[color-mix(in_srgb,var(--danger)_18%,transparent)] p-8 text-center">
+            <AlertCircle className="mb-3 h-8 w-8 text-[var(--danger)]" />
             <p className="font-semibold text-[var(--ink)]">{copy.unavailable}</p>
-            <p className="mt-1 text-xs text-[var(--ink-faint)]">{error}</p>
+            <p className="mt-1 text-[length:var(--step-0)] text-[var(--ink-faint)]">{error}</p>
           </div>
         ) : loading && !items.length ? (
           <div className="space-y-4">
-            <div className="h-64 sm:h-80 animate-pulse rounded-3xl border border-white/[0.06] bg-[var(--tone-1)]" />
+            <div className="h-64 sm:h-80 animate-pulse rounded-[var(--corner-lg)] border border-transparent bg-[var(--tone-1)]" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="h-56 animate-pulse rounded-2xl border border-white/[0.06] bg-[var(--tone-1)]" />
+                <div key={index} className="h-56 animate-pulse rounded-[var(--corner-md)] border border-transparent bg-[var(--tone-1)]" />
               ))}
             </div>
           </div>
         ) : visibleItems.length === 0 ? (
-          <div className="flex min-h-48 flex-col items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 text-center text-[var(--ink-faint)] text-xs">
+          <div className="flex min-h-48 flex-col items-center justify-center rounded-[var(--corner-md)] border border-transparent bg-[var(--tone-3)] p-8 text-center text-[var(--ink-faint)] text-[length:var(--step-0)]">
             Nenhuma notícia encontrada para a fonte selecionada.
           </div>
         ) : (
@@ -306,7 +306,7 @@ const GamingRadarPage: React.FC = () => {
             {featuredItem && (
               <article
                 onClick={() => void openExternal(featuredItem.url)}
-                className="group relative cursor-pointer overflow-hidden rounded-3xl border border-white/10 bg-[var(--tone-1)] shadow-[0_24px_64px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-300 hover:border-white/25 hover:bg-[var(--tone-2)]"
+                className="group relative cursor-pointer overflow-hidden rounded-[var(--corner-lg)] border border-transparent bg-[var(--tone-1)] shadow-[0_24px_64px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] transition-all duration-300 hover:border-transparent hover:bg-[var(--tone-2)]"
               >
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-stretch">
                   {/* Imagem Widescreen */}
@@ -330,32 +330,32 @@ const GamingRadarPage: React.FC = () => {
                   <div className="lg:col-span-5 flex flex-col justify-between p-6 sm:p-8">
                     <div>
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/10 border border-amber-400/25 px-2.5 py-0.5 text-[length:var(--step-0)] font-semibold text-amber-300 uppercase tracking-wider">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[var(--tone-3)] border border-transparent px-2.5 py-0.5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] uppercase tracking-wider">
                           <Sparkles className="h-2.5 w-2.5" />
                           {copy.featured}
                         </span>
-                        <span className="rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-0.5 text-[length:var(--step-0)] font-mono font-medium text-[var(--ink-muted)]">
+                        <span className="rounded-full border border-transparent bg-[var(--tone-3)] px-2.5 py-0.5 text-[length:var(--step-0)] font-mono font-medium text-[var(--ink-muted)]">
                           {featuredItem.source}
                         </span>
                       </div>
 
-                      <h2 className="text-lg sm:text-2xl font-display font-bold text-white tracking-tight leading-snug group-hover:text-amber-200/90 transition-colors">
+                      <h2 className="text-lg sm:text-2xl font-display font-bold text-[var(--ink)] tracking-tight leading-snug group-hover:text-[var(--ink)] transition-colors">
                         {featuredItem.title}
                       </h2>
 
                       {featuredItem.summary && (
-                        <p className="mt-3 line-clamp-3 text-xs sm:text-sm text-[var(--ink-muted)] leading-relaxed font-body">
+                        <p className="mt-3 line-clamp-3 text-[length:var(--step-0)] sm:text-sm text-[var(--ink-muted)] leading-relaxed font-body">
                           {featuredItem.summary}
                         </p>
                       )}
                     </div>
 
-                    <div className="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-xs text-[var(--ink-muted)]">
+                    <div className="mt-6 pt-4 border-t border-transparent flex items-center justify-between text-[length:var(--step-0)] text-[var(--ink-muted)]">
                       <span className="flex items-center gap-1 font-mono text-[length:var(--step-0)]">
                         <Clock className="h-3 w-3 text-[var(--ink-faint)]" />
                         {relativeTime(featuredItem.publishedAt, language)}
                       </span>
-                      <span className="inline-flex items-center gap-1.5 font-semibold text-white group-hover:text-amber-300 transition-colors">
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-[var(--ink)] group-hover:text-[var(--ink)] transition-colors">
                         {copy.read}
                         <ExternalLink className="h-3.5 w-3.5" />
                       </span>
@@ -387,10 +387,10 @@ const GamingRadarPage: React.FC = () => {
         )}
 
         {/* Communities Section */}
-        <section className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[var(--tone-1)] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+        <section className="relative overflow-hidden rounded-[var(--corner-md)] border border-transparent bg-[var(--tone-1)] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
           <div className="mb-4 flex items-center gap-2">
             <Users className="h-4 w-4 text-[var(--ink-muted)]" />
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
+            <h2 className="text-[length:var(--step-0)] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
               {copy.communities}
             </h2>
           </div>
@@ -398,15 +398,15 @@ const GamingRadarPage: React.FC = () => {
             <button
               type="button"
               onClick={() => void openExternal("https://forum.adrenaline.com.br/")}
-              className="cursor-pointer group rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-left transition-all duration-200 hover:border-white/20 hover:bg-white/[0.05]"
+              className="cursor-pointer group rounded-[var(--corner-sm)] border border-transparent bg-[var(--tone-3)] p-4 text-left transition-all duration-200 hover:border-transparent hover:bg-[var(--tone-4)]"
             >
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-white tracking-tight">
+                <p className="text-sm font-semibold text-[var(--ink)] tracking-tight">
                   Fórum Adrenaline
                 </p>
-                <ExternalLink className="h-3.5 w-3.5 text-[var(--ink-faint)] group-hover:text-white transition-colors" />
+                <ExternalLink className="h-3.5 w-3.5 text-[var(--ink-faint)] group-hover:text-[var(--ink)] transition-colors" />
               </div>
-              <p className="mt-1 text-xs text-[var(--ink-faint)] leading-relaxed">
+              <p className="mt-1 text-[length:var(--step-0)] text-[var(--ink-faint)] leading-relaxed">
                 {copy.adrenaline}
               </p>
             </button>
@@ -414,15 +414,15 @@ const GamingRadarPage: React.FC = () => {
             <button
               type="button"
               onClick={() => void openExternal("https://steamcommunity.com/discussions/")}
-              className="cursor-pointer group rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-left transition-all duration-200 hover:border-white/20 hover:bg-white/[0.05]"
+              className="cursor-pointer group rounded-[var(--corner-sm)] border border-transparent bg-[var(--tone-3)] p-4 text-left transition-all duration-200 hover:border-transparent hover:bg-[var(--tone-4)]"
             >
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-white tracking-tight">
+                <p className="text-sm font-semibold text-[var(--ink)] tracking-tight">
                   Discussões Steam
                 </p>
-                <ExternalLink className="h-3.5 w-3.5 text-[var(--ink-faint)] group-hover:text-white transition-colors" />
+                <ExternalLink className="h-3.5 w-3.5 text-[var(--ink-faint)] group-hover:text-[var(--ink)] transition-colors" />
               </div>
-              <p className="mt-1 text-xs text-[var(--ink-faint)] leading-relaxed">
+              <p className="mt-1 text-[length:var(--step-0)] text-[var(--ink-faint)] leading-relaxed">
                 {copy.steam}
               </p>
             </button>

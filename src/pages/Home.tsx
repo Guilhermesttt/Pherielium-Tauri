@@ -45,6 +45,8 @@ import { announceNotchEvent } from "../components/notch/notchEvent";
 import { focusCapturesKeys } from "../components/edgeDrawer";
 import { PlatformShortcutHint } from "../components/home/PlatformShortcutHint";
 import { ConsoleHome } from "../components/home/console/ConsoleHome";
+import { useGameReveal } from "../hooks/useGameReveal";
+import { useRealtimeAchievementAccounting } from "../hooks/useRealtimeAchievementAccounting";
 import { resolveSessionStart } from "../components/home/console/consoleInfo";
 import { useLastTrophy, useRunningSince } from "../components/home/console/useLastTrophy";
 import {
@@ -926,6 +928,9 @@ const Home: React.FC = () => {
     }
   }, [user?.uid]);
 
+  // conquista desbloqueada (overlay) já conta troféu, XP e o total do jogo, com ou sem a tela do jogo aberta
+  useRealtimeAchievementAccounting(user?.uid, games, refreshLibrary);
+
   useAchievementLibrarySync(
     user?.uid,
     resolvedSteamId,
@@ -1746,6 +1751,21 @@ const Home: React.FC = () => {
     libraryFilters,
     t,
   });
+
+  // Capas que acabaram de chegar à fileira entram com animação. A lista base muda com aba, busca e
+  // filtros de biblioteca: nesses casos a nova lista é só a referência, sem animar.
+  const displayGameIds = useMemo(() => displayGames.map((g) => g.id), [displayGames]);
+  const revealScope = `${activeCategory}|${searchTerm}|${JSON.stringify(libraryFilters ?? null)}`;
+  const { reveal: gameReveal, markNext: markGameReveal } = useGameReveal(displayGameIds, revealScope, !isLoading);
+  useEffect(() => {
+    // o que chegar durante uma sincronização é "sincronizado"; o que a pessoa faz marca "adicionado" por conta própria
+    if (isAnySyncing) markGameReveal("sync");
+  }, [isAnySyncing, markGameReveal]);
+  useEffect(() => {
+    const onFiltersChanged = () => markGameReveal("add");
+    window.addEventListener("checkpoint:custom-filters-changed", onFiltersChanged);
+    return () => window.removeEventListener("checkpoint:custom-filters-changed", onFiltersChanged);
+  }, [markGameReveal]);
 
   const canonicalIndex =
     displayGames.length > 0
@@ -4068,6 +4088,7 @@ const Home: React.FC = () => {
                         lastTrophy={focusedLastTrophy}
                         sessionStartedAt={focusedSessionStart}
                         hidden={isDetailOpen}
+                        reveal={gameReveal}
                         playSound={playSound}
                       />
                     </div>
@@ -4176,6 +4197,7 @@ const Home: React.FC = () => {
           isOpen={isAddModalOpen}
           onClose={closeAddModal}
           onSaved={() => {
+            markGameReveal("add");
             void refreshLibrary();
             if (user?.uid) {
               completeUserQuest(user.uid, "first_game", {

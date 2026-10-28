@@ -222,18 +222,18 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
 
           <motion.div
             {...modalMotion}
-            className="glass-panel fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg border border-white/8 rounded-3xl shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_30px_100px_rgba(0,0,0,0.55)] z-50 overflow-hidden font-sans"
+            className="glass-panel fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg border border-transparent rounded-[var(--corner-lg)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_30px_100px_rgba(0,0,0,0.55)] z-50 overflow-hidden font-sans"
           >
             <div className="p-6">
-              <div className="flex items-center justify-between pb-4 border-b border-white/8">
+              <div className="flex items-center justify-between pb-4 border-b border-transparent">
                 <div className="flex items-center gap-3">
-                  <img src={PHERIELIUM_LOGO_PATH} alt="Phelierium" className="w-8 h-8 rounded-lg" />
-                  <h2 className="text-lg font-bold text-white">Conectar Epic Games</h2>
+                  <img src={PHERIELIUM_LOGO_PATH} alt="Phelierium" className="w-8 h-8 rounded-[10px]" />
+                  <h2 className="text-lg font-bold text-[var(--ink)]">Conectar Epic Games</h2>
                 </div>
                 <button
                   onClick={handleModalClose}
                   disabled={!canClose}
-                  className="text-neutral-500 hover:text-white transition-colors disabled:opacity-30 cursor-pointer"
+                  className="text-neutral-500 hover:text-[var(--ink)] transition-colors disabled:opacity-30 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -262,7 +262,7 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                           <button
                             type="button"
                             onClick={() => setWaitingBrowser(false)}
-                            className="text-[length:var(--step-0)] text-[var(--ink-muted)] hover:text-white underline cursor-pointer"
+                            className="text-[length:var(--step-0)] text-[var(--ink-muted)] hover:text-[var(--ink)] underline cursor-pointer"
                           >
                             Cancelar espera
                           </button>
@@ -272,13 +272,13 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                   )}
                 </AnimatePresence>
                 {currentAccount?.authenticated && (
-                  <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white/4 border border-white/8">
+                  <div className="flex items-center justify-between p-3.5 rounded-[var(--corner-md)] bg-[var(--tone-3)] border border-transparent">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-white shrink-0">
+                      <div className="w-8 h-8 rounded-[10px] bg-[var(--tone-3)] border border-transparent flex items-center justify-center text-[var(--ink)] shrink-0">
                         <CheckCircle2 size={16} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-white truncate">
+                        <p className="text-[length:var(--step-0)] font-bold text-[var(--ink)] truncate">
                           {currentAccount.displayName || "Conta Conectada"}
                         </p>
                         <p className="text-[length:var(--step-0)] text-neutral-400">Conta atualmente vinculada</p>
@@ -288,7 +288,7 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                       type="button"
                       onClick={handleDisconnectCurrent}
                       disabled={isBusy}
-                      className="px-3 py-1.5 rounded-xl bg-transparent hover:bg-white text-neutral-300 hover:text-black border border-white/10 hover:border-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                      className="px-3 py-1.5 rounded-[var(--corner-sm)] bg-transparent hover:bg-white text-neutral-300 hover:text-[var(--tone-0)] border border-transparent hover:border-white text-[length:var(--step-0)] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
                     >
                       <LogOut size={13} />
                       Desconectar
@@ -297,10 +297,10 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                 )}
 
                 {reauthMessage && (
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/40">
-                    <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-2 p-3 rounded-[10px] bg-[var(--tone-3)] border border-transparent">
+                    <AlertCircle className="w-4 h-4 text-[var(--ink)] shrink-0 mt-0.5" />
                     <div className="min-w-0 space-y-1">
-                      <p className="text-amber-100 text-xs font-semibold leading-relaxed">
+                      <p className="text-[var(--ink)] text-[length:var(--step-0)] font-semibold leading-relaxed">
                         {reauthMessage}
                       </p>
                     </div>
@@ -308,9 +308,9 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                 )}
 
                 {/* Opção 1: Login Rápido Automático (Recomendado) */}
-                <div className="p-4 rounded-3xl bg-white/3 border border-white/6 space-y-3">
+                <div className="p-4 rounded-[var(--corner-lg)] bg-[var(--tone-3)] border border-transparent space-y-3">
                   <div className="space-y-1">
-                    <p className="text-xs font-bold text-white flex items-center gap-2">
+                    <p className="text-[length:var(--step-0)] font-bold text-[var(--ink)] flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[var(--live)]" />
                       Login Automático com 1 Clique
                     </p>
@@ -322,7 +322,7 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                     type="button"
                     onClick={handleQuickLogin}
                     disabled={isBusy}
-                    className="w-full py-2.5 px-4 bg-white hover:bg-neutral-200 text-black rounded-2xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full py-2.5 px-4 bg-[var(--ink)] hover:bg-neutral-200 text-[var(--tone-0)] rounded-[var(--corner-md)] text-[length:var(--step-0)] font-bold transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     {waitingBrowser ? "Aguardando navegador..." : loading ? "Conectando…" : "Entrar com a Epic Games"}
@@ -330,9 +330,9 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                 </div>
 
                 {/* Opção 2: Manual via Navegador */}
-                <div className="p-4 rounded-3xl bg-white/10 border border-white/4 space-y-3">
+                <div className="p-4 rounded-[var(--corner-lg)] bg-[var(--tone-3)] border border-transparent space-y-3">
                   <div className="space-y-1">
-                    <p className="text-xs font-bold text-[var(--ink-muted)]">
+                    <p className="text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
                       Entrada Manual (Código ou JSON)
                     </p>
                     <p className="text-[length:var(--step-0)] text-neutral-400 leading-relaxed">
@@ -345,25 +345,25 @@ export const EpicConnectModal: React.FC<EpicConnectModalProps> = ({
                       type="button"
                       onClick={handleOpenAuthUrl}
                       disabled={isBusy}
-                      className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-white/4 hover:bg-white/8 text-[var(--ink-muted)] hover:text-white text-xs font-medium rounded-xl border border-white/6 transition-colors cursor-pointer"
+                      className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--ink-muted)] hover:text-[var(--ink)] text-[length:var(--step-0)] font-medium rounded-[var(--corner-sm)] border border-transparent transition-colors cursor-pointer"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                       Abrir no Navegador Externo
                     </button>
 
                     <form onSubmit={handleSubmit} className="space-y-2.5">
-                      <input
+                      <input aria-label="Código de autorização da Epic"
                         type="text"
                         value={sid}
                         disabled={isBusy}
                         onChange={(e) => setSid(extractAuthorizationCode(e.target.value))}
                         placeholder="Cole o código (ex: 5beff...), JSON ou URL aqui..."
-                        className="w-full bg-black border border-neutral-800 rounded-xl px-4 py-2 text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-500 transition-colors font-mono"
+                        className="w-full bg-black border border-neutral-800 rounded-[var(--corner-sm)] px-4 py-2 text-[length:var(--step-0)] text-[var(--ink)] placeholder-neutral-600 focus:outline-none focus:border-neutral-500 transition-colors font-mono"
                       />
                       <button
                         type="submit"
                         disabled={!sid.trim() || isBusy}
-                        className="w-full py-2 bg-white/10 hover:bg-white/20 text-white disabled:bg-neutral-800 disabled:text-neutral-500 rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:cursor-not-allowed"
+                        className="w-full py-2 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--ink)] disabled:bg-neutral-800 disabled:text-neutral-500 rounded-[var(--corner-sm)] text-[length:var(--step-0)] font-bold transition-colors cursor-pointer disabled:cursor-not-allowed"
                       >
                         Confirmar Código Manual
                       </button>

@@ -797,7 +797,7 @@ export const LevelUpModal: React.FC = () => {
                   <span className="text-lg font-semibold text-[var(--ink-faint)]">NÍVEL</span>
                   <span
                     className={`text-[66px] font-black leading-none tracking-[-0.06em] ${tierKey === "platinum"
-                      ? "bg-gradient-to-r from-[#75D8FF] via-[#F8FAFC] to-[#C084FC] bg-clip-text text-transparent"
+                      ? "text-[rgb(var(--tier-platinum))]"
                       : tierKey === "gold"
                         ? "text-[#FFD86B]"
                         : tierKey === "silver"

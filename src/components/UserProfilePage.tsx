@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Clock, ExternalLink, Gamepad2, Layers, Lock, Pencil, Search, Star, Trophy, TrendingUp, User, Sparkles, ChevronDown, Camera } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faDiscord, faSteam } from "@fortawesome/free-brands-svg-icons";
@@ -24,21 +24,14 @@ import {
   getGamePlayedHours,
 } from "../utils/playtime";
 import ProfileEditorModal from "./ProfileEditorModal";
-import PherieliumTierBronze from "../assets/Pherielium_Tier_Bronze.png";
-import PherieliumTierSilver from "../assets/Pherielium_Tier_Prata.png";
-import PherieliumTierGold from "../assets/Pherielium_Tier_Ouro.png";
-import PherieliumTierPlatinum from "../assets/Pherielium_Tier_Platina.png";
+import { RankBadge } from "./ui/RankBadge";
+import { FramedImage } from "./ui/FramedImage";
+import { HorizontalTabs } from "./ui/HorizontalTabs";
+import { SectionTransition } from "./ui/SectionTransition";
 import { HomeOnboardingQuests } from "./home/HomeOnboardingQuests";
 import { areAllQuestsCompleted, getAllQuestsWithStatus, shouldShowOnboardingQuests } from "../services/userQuests";
 import { fetchUserGamesForProfile } from "../services/checkpointFriends";
 import { cn } from "../lib/utils";
-
-const USER_TIER_IMAGES: Record<string, string> = {
-  bronze: PherieliumTierBronze,
-  silver: PherieliumTierSilver,
-  gold: PherieliumTierGold,
-  platinum: PherieliumTierPlatinum,
-};
 
 interface UserProfilePageProps {
   userProfile: UserProfile | null;
@@ -204,12 +197,12 @@ const ProfileAvatar: React.FC<{
   return (
     <div
       onClick={editable ? onEditClick : undefined}
-      className={`group relative shrink-0 aspect-square overflow-hidden rounded-[28%] bg-[var(--surface-base)] ring-4 ring-[var(--surface-raised)] ${compact ? "h-[88px] w-[88px]" : "h-[116px] w-[116px]"
+      className={`group relative shrink-0 aspect-square overflow-hidden rounded-[var(--corner-lg)] bg-[var(--tone-2)] ring-[6px] ring-[var(--tone-1)] ${compact ? "h-[104px] w-[104px]" : "h-[136px] w-[136px]"
         } ${editable ? "cursor-pointer" : ""}`}
       title={editable ? "Clique para editar perfil e foto" : undefined}
     >
       {src ? (
-        <img src={src} alt="" className="h-full w-full object-cover object-center aspect-square select-none transition-transform duration-300 group-hover:scale-105" />
+        <FramedImage src={src} className="h-full w-full object-cover object-center aspect-square select-none" />
       ) : (
         <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-[var(--ink-muted)] select-none">
           {initialsFor(displayName)}
@@ -236,12 +229,12 @@ const PlatformRow: React.FC<{
   compact?: boolean;
 }> = ({ name, connected, username, avatar, icon, connectedLabel, disconnectedLabel, compact = false }) => (
   <div
-    className={`flex items-center bg-[var(--surface-base)] justify-between transition-colors hover:bg-[var(--surface-overlay)] rounded-2xl ${compact ? "py-2.5 px-3 gap-2.5" : "py-3 px-3.5 gap-3"
+    className={`flex items-center bg-[var(--tone-2)] justify-between transition-colors hover:bg-[var(--tone-3)] rounded-[var(--corner-md)] ${compact ? "py-3 px-4 gap-3" : "py-4 px-5 gap-4"
       }`}
   >
     <div className="flex min-w-0 items-center gap-3">
-      <div className={`flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--tone-3)] text-[var(--ink)] ${compact ? "h-9 w-9" : "h-11 w-11"}`}>
-        {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover rounded-lg" /> : icon}
+      <div className={`flex shrink-0 items-center justify-center overflow-hidden rounded-[var(--corner-sm)] bg-[var(--tone-3)] text-[var(--ink)] ${compact ? "h-10 w-10" : "h-12 w-12"}`}>
+        {avatar ? <img src={avatar} alt="" className="h-full w-full object-cover" /> : icon}
       </div>
       <div className="min-w-0">
         <p className="truncate text-[length:var(--step-1)] font-semibold text-[var(--ink)] leading-tight">{name}</p>
@@ -250,29 +243,8 @@ const PlatformRow: React.FC<{
         </p>
       </div>
     </div>
-    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${connected ? "bg-[rgb(var(--launcher-accent))]" : "bg-[var(--tone-4)]"}`} />
+    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${connected ? "bg-[var(--live)]" : "bg-[var(--tone-4)]"}`} />
   </div>
-);
-
-const MetricsCluster: React.FC<{
-  games: number;
-  hours: string | number;
-  favorites: number;
-  copy: { games: string; hours: string; favorites: string };
-  compact?: boolean;
-}> = ({ games, hours, favorites, copy, compact = false }) => (
-  <dl className={`grid grid-cols-3 gap-px overflow-hidden rounded-[var(--corner-md)] bg-[var(--tone-3)] ${compact ? "text-[length:var(--step-3)]" : "text-[length:var(--step-4)]"}`}>
-    {[
-      [games, copy.games],
-      [hours, copy.hours],
-      [favorites, copy.favorites],
-    ].map(([value, label]) => (
-      <div key={String(label)} className={`bg-[var(--surface-base)] ${compact ? "px-5 py-3" : "px-6 py-4"}`}>
-        <dd className="font-display font-bold leading-none tabular-nums text-[var(--ink)]">{value}</dd>
-        <dt className="mt-1.5 text-[length:var(--step-0)] text-[var(--ink-muted)]">{label}</dt>
-      </div>
-    ))}
-  </dl>
 );
 
 interface SectionProps {
@@ -291,11 +263,11 @@ const Section: React.FC<SectionProps> = ({
   compact = false,
 }) => (
   <section
-    className={`${compact ? "rounded-[var(--corner-md)] p-4 md:p-5" : "rounded-[var(--corner-md)] p-5 md:p-6"} bg-[var(--surface-raised)] border border-[color:var(--border-subtle)] ${className}`}
+    className={`${compact ? "rounded-[var(--corner-lg)] p-5 md:p-6" : "rounded-[var(--corner-lg)] p-6 md:p-8"} bg-[var(--tone-1)] ${className}`}
   >
-    <div className={`${compact ? "mb-3" : "mb-4"} flex items-center gap-2.5`}>
+    <div className={`${compact ? "mb-4" : "mb-6"} flex items-center gap-3`}>
       {icon && (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-base)] text-[var(--ink-muted)]">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--corner-sm)] bg-[var(--tone-3)] text-[var(--ink-muted)]">
           {icon}
         </div>
       )}
@@ -672,233 +644,33 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
       ref={scrollRef}
       data-system-page
       data-profile-density={compactProfile ? "compact" : "comfortable"}
-      className={`relative min-h-0 flex-1 overflow-y-auto thin-scrollbar ${compactProfile ? "px-6 pb-6 pt-4" : "px-10 pb-12 pt-8"}`}
-      style={{ contain: "layout paint", transform: "translate3d(0,0,0)", willChange: "transform" }}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+      className="relative min-h-0 flex-1 overflow-y-auto thin-scrollbar"
+      style={{ padding: "var(--safe-y) var(--safe-x) 48px", contain: "layout paint" }}
     >
 
 
-      <div className={`relative mx-auto max-w-6xl ${compactProfile ? "space-y-4" : "space-y-6"}`}>
-        {/* HERO: capa com avatar e nome alinhados pelo centro na base; o resto vem abaixo */}
-        <section className="relative overflow-hidden rounded-[var(--corner-lg)] bg-[var(--surface-raised)] border border-[color:var(--border-subtle)]">
-          <div
-            className={`relative ${compactProfile ? "h-[190px]" : "h-[240px]"}`}
-            style={{
-              background: "linear-gradient(135deg, rgba(var(--launcher-accent), 0.16), transparent 60%), var(--surface-overlay)",
-            }}
-          >
+      <div className={`relative mx-auto max-w-[1280px] ${compactProfile ? "space-y-6" : "space-y-8"}`}>
+        {/* IDENTIDADE: uma capa nítida, o avatar subindo sobre ela, o nome e a patente logo ao lado;
+            bio e links à esquerda, a progressão de patente à direita. Sem desfoque sobre o banner. */}
+        <section aria-label="Identidade do jogador" className="overflow-hidden rounded-[var(--corner-lg)] bg-[var(--tone-1)]">
+          <div className={`relative overflow-hidden bg-[var(--tone-2)] ${compactProfile ? "h-[190px]" : "h-[260px]"}`}>
             {userProfile?.bannerURL && (
-              <img
-                src={userProfile.bannerURL}
-                alt=""
-                className="absolute inset-0 h-full w-full select-none object-cover"
-                draggable={false}
-              />
+              <FramedImage src={userProfile.bannerURL} className="absolute inset-0 h-full w-full select-none object-cover" draggable={false} />
             )}
-            {/* desfoque sutil que cresce para baixo + degradê até a cor do cartão (o banner "derrete" no conteúdo) */}
-            {userProfile?.bannerURL && (
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%] backdrop-blur-[12px]"
-                style={{
-                  maskImage: "linear-gradient(to top, black 0%, black 25%, transparent 100%)",
-                  WebkitMaskImage: "linear-gradient(to top, black 0%, black 25%, transparent 100%)",
-                }}
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--surface-raised)]/35 to-[var(--surface-raised)]" />
-            {userProfile?.bannerURL && (
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  background:
-                    "linear-gradient(90deg, var(--surface-raised) 0%, transparent 14%, transparent 86%, var(--surface-raised) 100%)",
-                  opacity: 0.55,
-                }}
-              />
-            )}
-            <div className="absolute inset-x-6 bottom-5 flex items-center gap-5 sm:inset-x-8 sm:gap-6">
-              <ProfileAvatar
-                profile={userProfile}
-                authPhotoURL={user?.photoURL}
-                displayName={displayName}
-                compact={compactProfile}
-                editable={editable}
-                onEditClick={() => {
-                  setIsEditing(true);
-                  playSound?.("showModal");
-                }}
-              />
-              <div className="min-w-0 flex-1">
-                  {/* Nível 1: Nome do Jogador */}
-                  <div className="flex items-center gap-3">
-                    <h1 className={`${compactProfile ? "text-[length:var(--step-4)]" : "text-[length:var(--step-4)]"} font-display font-bold tracking-tight text-[var(--ink)] leading-none truncate`}>
-                      {displayName}
-                    </h1>
-                  </div>
-
-                  {/* Nível 2: Patente Proprietária 3D com Animação de Substituição de Tier */}
-                  <div className="mt-2.5 flex items-center gap-2.5 flex-wrap">
-                    <motion.div
-                      whileHover={{ scale: 1.15, y: -2 }}
-                      whileTap={{ scale: 0.88 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 18 }}
-                      className="relative flex items-center justify-center shrink-0 cursor-pointer h-8 w-8"
-                      onClick={handleTierBadgeClick}
-                      onMouseEnter={() => playSound?.("hover")}
-                      title={`${effectiveTierInfo.name} - Nível ${effectiveLevel} (Clique para ouvir o som)`}
-                    >
-                      <AnimatePresence mode="wait">
-                        <motion.img
-                          key={effectiveTier}
-                          src={USER_TIER_IMAGES[effectiveTier] || PherieliumTierBronze}
-                          alt={effectiveTierInfo.name}
-                          width={32}
-                          height={32}
-                          initial={{
-                            scale: 1.8,
-                            opacity: 0,
-                            filter: "brightness(1.8) drop-shadow(0 0 16px rgba(255,255,255,0.9))",
-                          }}
-                          animate={{
-                            scale: [1.8, 1.15, 1],
-                            opacity: 1,
-                            filter: "brightness(1) drop-shadow(0 4px 8px rgba(0,0,0,0.5))",
-                          }}
-                          exit={{
-                            scale: 0.1,
-                            opacity: 0,
-                            filter: "brightness(0.5) blur(3px)",
-                          }}
-                          transition={{
-                            duration: 0.5,
-                            ease: [0.16, 1, 0.3, 1],
-                          }}
-                          className="h-7 w-7 object-contain shrink-0 select-none pointer-events-none drop-shadow"
-                        />
-                      </AnimatePresence>
-                    </motion.div>
-
-                    <span
-                      className="text-[length:var(--step-1)] font-bold transition-colors duration-500"
-                      style={{ color: effectiveTierInfo.hexColor }}
-                    >
-                      {effectiveTierInfo.name}
-                    </span>
-
-                    <span className="text-[var(--ink-faint)] font-bold">•</span>
-
-                    <motion.span
-                      key={effectiveLevel}
-                      initial={{ y: -4, opacity: 0 }}
-                      animate={{ y: 0, opacity: 1 }}
-                      className="text-[length:var(--step-0)] font-bold text-[var(--ink-muted)] tabular-nums"
-                    >
-                      Lv. {effectiveLevel}
-                    </motion.span>
-                  </div>
-              </div>
-            </div>
-          </div>
-
-          <div className={`flex flex-col gap-6 ${compactProfile ? "px-5 pb-5 pt-4" : "px-6 pb-7 pt-5 sm:px-8"}`}>
-            <div className="min-w-0 max-w-2xl flex-1">
-                  {/* Barra de Progressão da Patente (Clean & Minimal) */}
-                  <div className="mt-2.5 space-y-1 max-w-sm">
-                    <div className="h-2 w-full sm:w-80 rounded-full bg-[var(--tone-3)] overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(100, Math.max(0, playerLevel.progress))}%` }}
-                        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                        className="h-full rounded-full"
-                        style={{
-                          background: `linear-gradient(90deg, ${playerLevel.tierInfo.gradientFrom}, ${playerLevel.tierInfo.gradientTo})`,
-                          boxShadow: `0 0 8px ${playerLevel.tierInfo.gradientFrom}40`,
-                        }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between text-[length:var(--step-0)] text-[var(--ink-muted)]">
-                      <span>{playerLevel.progress}% para {nextTierInfo?.name || "Nível Máximo"}</span>
-                      {playerLevel.currentLevelXp > 0 && playerLevel.xpForNextLevel > 0 && (
-                        <span className="text-[length:var(--step-0)] text-[var(--ink-faint)] font-mono">
-                          {playerLevel.currentLevelXp}/{playerLevel.xpForNextLevel} XP
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Nível 3: Bio */}
-                  {userProfile?.bio && (
-                    <p className="mt-3.5 max-w-xl text-[length:var(--step-1)] leading-relaxed text-[var(--ink)]">
-                      {userProfile.bio}
-                    </p>
-                  )}
-
-                  {/* Nível 3: Plataformas Conectadas & Links */}
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {hasSteamProfile && (
-                      <button
-                        type="button"
-                        onClick={() => void openExternalProfile(`https://steamcommunity.com/profiles/${steamId}`)}
-                        className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[var(--tone-3)] px-3.5 py-1.5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
-                      >
-                        <FontAwesomeIcon icon={faSteam} className="h-3 w-3 text-[var(--ink-muted)]" />
-                        <span>{userProfile?.steamUsername || "Steam"}</span>
-                      </button>
-                    )}
-                    {hasDiscordProfile && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!copyFriendDiscord) {
-                            void openExternalProfile(`https://discord.com/users/${discordId}`);
-                            return;
-                          }
-                          void copyToClipboard(discordDisplayName)
-                            .then(() => {
-                              onNotify?.(
-                                userProfile?.discordUsername ? copy.copiedNickname : copy.copiedId,
-                                "success",
-                              );
-                            })
-                            .catch(() => onNotify?.(copy.copyError, "error"));
-                        }}
-                        className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[var(--tone-3)] px-3.5 py-1.5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
-                      >
-                        <FontAwesomeIcon icon={faDiscord} className="h-3 w-3 text-[var(--ink-muted)]" />
-                        <span>{discordDisplayName}</span>
-                      </button>
-                    )}
-                    {userProfile?.website && /^https:\/\//i.test(userProfile.website) && (
-                      <button
-                        type="button"
-                        className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-[var(--tone-3)] px-3.5 py-1.5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
-                        onClick={() => window.electronAPI?.openExternalUrl(userProfile.website as string)}
-                      >
-                        <ExternalLink className="h-3 w-3 text-[var(--ink-muted)]" />
-                        <span>Site</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Nível 4: Tags de Gêneros Favoritos */}
-                  {Boolean(userProfile?.favoriteGenres?.length) && (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {userProfile?.favoriteGenres?.map((genre) => (
-                        <span
-                          key={genre}
-                          className="rounded-full bg-[var(--tone-3)] px-3 py-1 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]"
-                        >
-                          {genre}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-            </div>
-
-              <div className={`z-10 flex shrink-0 flex-col items-start justify-between gap-4 lg:absolute lg:right-8 lg:top-5 lg:items-end ${compactProfile ? "lg:h-[150px]" : "lg:h-[200px]"}`}>
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  {editable && Boolean(import.meta.env.DEV) && typeof window !== "undefined" && window.localStorage?.getItem("checkpoint_dev_tools") === "true" && (
+            {/* só um véu de leitura nas bordas: escurece o suficiente para os botões, sem esconder a arte */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(to bottom, color-mix(in srgb, var(--tone-0) 45%, transparent) 0%, transparent 38%), linear-gradient(to top, color-mix(in srgb, var(--tone-1) 85%, transparent) 0%, transparent 42%)",
+              }}
+            />
+            <div className="absolute right-5 top-5 flex flex-wrap items-center justify-end gap-2.5 sm:right-8 sm:top-6">
+              {editable && Boolean(import.meta.env.DEV) && typeof window !== "undefined" && window.localStorage?.getItem("checkpoint_dev_tools") === "true" && (
                     <div className="relative flex items-center">
                       <button
                         type="button"
@@ -985,56 +757,175 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                     </div>
                   )}
 
-                  {editable && !userProfile?.bannerURL && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsEditing(true);
-                        playSound?.("showModal");
-                      }}
-                      className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--tone-3)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)] active:scale-95 cursor-pointer"
-                    >
-                      <Camera className="h-4 w-4" />
-                      Adicionar banner
-                    </button>
-                  )}
+              {editable && !userProfile?.bannerURL && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditing(true);
+                    playSound?.("showModal");
+                  }}
+                  className="inline-flex h-12 cursor-pointer items-center gap-2.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] px-6 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)] active:scale-95"
+                >
+                  <Camera className="h-4 w-4" />
+                  Adicionar banner
+                </button>
+              )}
+              {editable && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditing(true);
+                    playSound?.("showModal");
+                  }}
+                  className="inline-flex h-12 cursor-pointer items-center gap-2.5 rounded-[var(--corner-sm)] bg-[var(--ink)] px-6 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition hover:opacity-90 active:scale-95"
+                >
+                  <Pencil className="h-4 w-4" />
+                  <span>{copy.edit}</span>
+                </button>
+              )}
+            </div>
+          </div>
 
-                  {editable && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsEditing(true);
-                        playSound?.("showModal");
-                      }}
-                      className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--ink)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition hover:opacity-90 active:scale-95 cursor-pointer"
-                    >
-                      <Pencil className="h-4 w-4" />
-                      <span>{copy.edit}</span>
-                    </button>
-                  )}
+          <div className="px-6 pb-8 sm:px-10">
+            {/* nome em primeiro lugar; a leitura da biblioteca fica na mesma linha, à direita */}
+            <div className="-mt-[68px] flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
+              <div className="relative z-10 flex min-w-0 flex-col gap-5 sm:flex-row sm:items-end sm:gap-7">
+                <ProfileAvatar
+                  profile={userProfile}
+                  authPhotoURL={user?.photoURL}
+                  displayName={displayName}
+                  compact={compactProfile}
+                  editable={editable}
+                  onEditClick={() => {
+                    setIsEditing(true);
+                    playSound?.("showModal");
+                  }}
+                />
+                <div className="min-w-0 pb-1">
+                  <h1 className="truncate font-display text-[length:var(--step-5)] font-bold leading-none tracking-tight text-[var(--ink)]">{displayName}</h1>
                 </div>
+              </div>
 
-                {isPrivateProfile ? (
-                  <div className="flex items-center gap-2 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-4 py-2.5 text-[var(--ink-muted)]">
-                    <Lock className="h-4 w-4 text-[var(--ink-muted)]" />
-                    <span className="text-[length:var(--step-0)] font-semibold">Perfil privado</span>
+              {isPrivateProfile ? (
+                <div className="flex items-center gap-2.5 self-start rounded-[var(--corner-sm)] bg-[var(--tone-3)] px-5 py-3 text-[var(--ink-muted)] lg:self-end">
+                  <Lock className="h-4 w-4" />
+                  <span className="text-[length:var(--step-0)] font-semibold">Perfil privado</span>
+                </div>
+              ) : (
+                <dl className="flex flex-wrap items-baseline gap-x-9 gap-y-2 pb-1">
+                  {[
+                    [stats.totalGames, copy.games],
+                    [`${formatPlayedHours(stats.totalHours)}h`, copy.hours],
+                    [stats.favorites, copy.favorites],
+                  ].map(([value, label]) => (
+                    <div key={String(label)} className="flex items-baseline gap-2.5">
+                      <dd className="font-metric text-[length:var(--step-3)] font-semibold leading-none text-[var(--ink)]">{value}</dd>
+                      <dt className="text-[length:var(--step-0)] text-[var(--ink-muted)]">{label}</dt>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </div>
+
+            <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-12">
+              {/* quem é: bio, contas e gêneros */}
+              <div className="min-w-0 space-y-5">
+                {userProfile?.bio && <p className="max-w-xl text-[length:var(--step-1)] leading-relaxed text-[var(--ink)]">{userProfile.bio}</p>}
+
+                {(hasSteamProfile || hasDiscordProfile || (userProfile?.website && /^https:\/\//i.test(userProfile.website))) && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    {hasSteamProfile && (
+                      <button
+                        type="button"
+                        onClick={() => void openExternalProfile(`https://steamcommunity.com/profiles/${steamId}`)}
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-[var(--corner-sm)] bg-[var(--tone-3)] px-4 py-2.5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--tone-4)]"
+                      >
+                        <FontAwesomeIcon icon={faSteam} className="h-3.5 w-3.5 text-[var(--ink-muted)]" />
+                        <span>{userProfile?.steamUsername || "Steam"}</span>
+                      </button>
+                    )}
+                    {hasDiscordProfile && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!copyFriendDiscord) {
+                            void openExternalProfile(`https://discord.com/users/${discordId}`);
+                            return;
+                          }
+                          void copyToClipboard(discordDisplayName)
+                            .then(() => {
+                              onNotify?.(userProfile?.discordUsername ? copy.copiedNickname : copy.copiedId, "success");
+                            })
+                            .catch(() => onNotify?.(copy.copyError, "error"));
+                        }}
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-[var(--corner-sm)] bg-[var(--tone-3)] px-4 py-2.5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--tone-4)]"
+                      >
+                        <FontAwesomeIcon icon={faDiscord} className="h-3.5 w-3.5 text-[var(--ink-muted)]" />
+                        <span>{discordDisplayName}</span>
+                      </button>
+                    )}
+                    {userProfile?.website && /^https:\/\//i.test(userProfile.website) && (
+                      <button
+                        type="button"
+                        className="inline-flex cursor-pointer items-center gap-2 rounded-[var(--corner-sm)] bg-[var(--tone-3)] px-4 py-2.5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--tone-4)]"
+                        onClick={() => window.electronAPI?.openExternalUrl(userProfile.website as string)}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 text-[var(--ink-muted)]" />
+                        <span>Site</span>
+                      </button>
+                    )}
                   </div>
-                ) : (
-                  <MetricsCluster
-                    games={stats.totalGames}
-                    hours={`${formatPlayedHours(stats.totalHours)}h`}
-                    favorites={stats.favorites}
-                    copy={copy}
-                    compact={compactProfile}
-                  />
+                )}
+
+                {Boolean(userProfile?.favoriteGenres?.length) && (
+                  <div className="flex flex-wrap gap-2">
+                    {userProfile?.favoriteGenres?.map((genre) => (
+                      <span key={genre} className="rounded-[var(--corner-sm)] bg-[var(--tone-2)] px-3.5 py-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]">
+                        {genre}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
+
+              {/* a patente e o caminho até a próxima: o clique toca o som da patente */}
+              <button
+                type="button"
+                onClick={handleTierBadgeClick}
+                onMouseEnter={() => playSound?.("hover")}
+                title={`${effectiveTierInfo.name} - Nível ${effectiveLevel} (Clique para ouvir o som)`}
+                className="flex min-w-0 cursor-pointer items-center gap-6 self-start rounded-[var(--corner-md)] bg-[var(--tone-2)] p-6 text-left transition-colors hover:bg-[var(--tone-3)] active:scale-[0.99]"
+              >
+                <RankBadge level={{ level: effectiveLevel, tier: effectiveTier, rank: effectiveTierInfo.name }} size={72} />
+                <span className="min-w-0 flex-1 space-y-2.5">
+                  <span className="block h-2.5 w-full overflow-hidden rounded-[var(--corner-sm)] bg-[var(--tone-4)]">
+                    <motion.span
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(100, Math.max(0, playerLevel.progress))}%` }}
+                      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                      className="block h-full rounded-[var(--corner-sm)]"
+                      style={{ backgroundColor: playerLevel.tierInfo.hexColor }}
+                    />
+                  </span>
+                  <span className="flex items-baseline justify-between gap-3 text-[length:var(--step-0)] text-[var(--ink-muted)]">
+                    <span>
+                      <span className="font-metric text-[var(--ink)]">{playerLevel.progress}%</span> para {nextTierInfo?.name || "Nível Máximo"}
+                    </span>
+                    {playerLevel.currentLevelXp > 0 && playerLevel.xpForNextLevel > 0 && (
+                      <span className="font-metric">
+                        {playerLevel.currentLevelXp}/{playerLevel.xpForNextLevel} XP
+                      </span>
+                    )}
+                  </span>
+                </span>
+              </button>
+            </div>
           </div>
         </section>
 
         {isPrivateProfile ? (
-          <section className="bg-[var(--surface-raised)] border border-[color:var(--border-subtle)] flex flex-col items-center justify-center rounded-[var(--corner-md)] p-12 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] text-[var(--ink-muted)] shadow-inner">
+          <section className="bg-[var(--tone-1)] flex flex-col items-center justify-center rounded-[var(--corner-lg)] p-16 text-center">
+            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-[var(--corner-md)] bg-[var(--tone-3)] text-[var(--ink-muted)]">
               <Lock className="h-8 w-8 text-[var(--ink)]" />
             </div>
             <h2 className="text-xl font-bold text-[var(--ink)]">Perfil privado</h2>
@@ -1076,86 +967,132 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 )}
               </div>
             )}
-            <div className={`grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] ${compactProfile ? "gap-4" : "gap-5"}`}>
-              <section aria-label="Atividade do jogador" className="space-y-5">
+            <div className={`grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] ${compactProfile ? "gap-6" : "gap-8"}`}>
+              <section aria-label="Atividade do jogador" className="space-y-8">
+                {/* FAVORITOS: Editorial sem container pesado de card */}
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-[rgb(var(--tier-gold))] fill-[rgb(var(--tier-gold)/0.2)]" />
+                      <h3 className="font-display text-[length:var(--step-2)] font-semibold text-[var(--ink)]">{copy.favorites}</h3>
+                    </div>
+                    {favoriteGames.length > 0 && (
+                      <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)]">
+                        {stats.favorites > favoriteGames.length
+                          ? `${favoriteGames.length} de ${stats.favorites} favoritos`
+                          : `${favoriteGames.length} ${favoriteGames.length === 1 ? "favorito" : "favoritos"}`}
+                      </span>
+                    )}
+                  </div>
+
+                  {favoriteGames.length > 0 ? (
+                    <div className="flex gap-5 overflow-x-auto pb-2 pt-1 no-scrollbar">
+                      {favoriteGames.map((game) => {
+                        const Component = canOpenGames ? "button" : "div";
+                        const itemProps = canOpenGames
+                          ? {
+                              onClick: () => onOpenGame?.(game),
+                              className: "group w-[140px] sm:w-[168px] shrink-0 text-left transition-transform duration-200 hover:-translate-y-1 cursor-pointer",
+                            }
+                          : {
+                              className: "w-[140px] sm:w-[168px] shrink-0 text-left cursor-default select-none",
+                            };
+
+                        return (
+                          <Component
+                            key={game.id}
+                            {...(canOpenGames ? { type: "button" } : {})}
+                            {...itemProps}
+                          >
+                            <div className={cn(
+                              "relative aspect-[3/4] w-full overflow-hidden rounded-[var(--corner-md)] bg-[var(--tone-2)] transition-all",
+                              canOpenGames && "group-hover:opacity-90"
+                            )}>
+                              {(game.cardImage || game.image) && (
+                                <img
+                                  src={game.cardImage || game.image}
+                                  alt={game.title}
+                                  className={cn(
+                                    "h-full w-full object-cover transition-transform duration-300",
+                                    canOpenGames && "group-hover:scale-105"
+                                  )}
+                                />
+                              )}
+                            </div>
+                            <p className={cn(
+                              "mt-3 line-clamp-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] leading-snug transition-colors",
+                              canOpenGames && "group-hover:text-[var(--ink)]"
+                            )}>
+                              {game.title}
+                            </p>
+                          </Component>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="py-4 text-[length:var(--step-0)] text-[var(--ink-faint)]">{copy.noFavorites}</p>
+                  )}
+
+                </div>
+
                 <Section
                   compact={compactProfile}
                   title={copy.games}
                   icon={activeGameTab === "mostPlayed" ? <TrendingUp className="h-4 w-4" /> : <Layers className="h-4 w-4" />}
                   className={compactProfile ? "min-h-[260px]" : "min-h-[346px]"}
                 >
-                  {/* Tab Selector com Underline Minimalista & Search */}
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-4 border-b border-[color:var(--border-subtle)] pb-1">
-                    <div className="flex items-center gap-6">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveGameTab("mostPlayed");
-                          playSound?.("select");
-                        }}
-                        onMouseEnter={() => playSound?.("hover")}
-                        className={`relative pb-3 text-[length:var(--step-1)] font-semibold transition-colors cursor-pointer ${activeGameTab === "mostPlayed" ? "text-[var(--ink)]" : "text-[var(--ink-faint)] hover:text-[var(--ink-muted)]"
-                          }`}
-                      >
-                        <span>{copy.mostPlayed}</span>
-                        {activeGameTab === "mostPlayed" && (
-                          <motion.div
-                            layoutId="profileGameTabUnderline"
-                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--ink)]"
-                            transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                          />
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveGameTab("allGames");
-                          playSound?.("select");
-                        }}
-                        onMouseEnter={() => playSound?.("hover")}
-                        className={`relative pb-3 text-[length:var(--step-1)] font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${activeGameTab === "allGames" ? "text-[var(--ink)]" : "text-[var(--ink-faint)] hover:text-[var(--ink-muted)]"
-                          }`}
-                      >
-                        <span>{copy.allGames}</span>
-                        <span className="text-[length:var(--step-0)] font-mono text-[var(--ink-muted)]">({normalizedGames.length})</span>
-                        {activeGameTab === "allGames" && (
-                          <motion.div
-                            layoutId="profileGameTabUnderline"
-                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--ink)]"
-                            transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                          />
-                        )}
-                      </button>
-                    </div>
+                  {/* Abas com o bloco de tinta que desliza, e a busca da lista completa */}
+                  <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                    <HorizontalTabs
+                      activeId={activeGameTab}
+                      onChange={(id) => {
+                        setActiveGameTab(id as "mostPlayed" | "allGames");
+                        playSound?.("select");
+                      }}
+                      className="t-tabs--squircle"
+                      tabClassName="flex h-12 items-center gap-2 whitespace-nowrap"
+                      tabs={[
+                        { id: "mostPlayed", label: copy.mostPlayed },
+                        {
+                          id: "allGames",
+                          label: (
+                            <span className="flex items-center gap-2">
+                              {copy.allGames}
+                              <span className="font-metric text-[length:var(--step-0)] opacity-70">{normalizedGames.length}</span>
+                            </span>
+                          ),
+                        },
+                      ]}
+                    />
 
                     {activeGameTab === "allGames" && (
-                      <div className="relative w-48 sm:w-56 pb-2 sm:pb-0">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--ink-faint)] pointer-events-none" />
-                        <input
+                      <div className="relative w-56 sm:w-64">
+                        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-faint)]" />
+                        <input aria-label={copy.searchGames}
                           type="text"
                           placeholder={copy.searchGames}
                           value={gameSearch}
                           onChange={(e) => setGameSearch(e.target.value)}
-                          className="w-full h-8 pl-8 pr-3 rounded-lg bg-[var(--tone-3)] border border-[color:var(--border-subtle)] text-xs font-medium text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:border-[color:var(--border-strong)] focus:bg-[var(--tone-3)] transition"
+                          className="h-12 w-full rounded-[var(--corner-sm)] bg-[var(--tone-2)] pl-11 pr-4 text-[length:var(--step-0)] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--ink-faint)] focus:bg-[var(--tone-3)]"
                         />
                       </div>
                     )}
                   </div>
 
+                  <SectionTransition id={activeGameTab}>
                   {activeGameTab === "mostPlayed" ? (
                     topGames.length > 0 ? (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {topGames.map((game, index) => {
                           const playedHours = getGamePlayedHours(game);
                           const pct = Math.max(4, Math.min(100, (playedHours / maxHours) * 100));
                           const itemProps = canOpenGames
                             ? {
                                 onClick: () => onOpenGame?.(game),
-                                className: "group grid w-full grid-cols-[24px_56px_1fr_auto] items-center gap-4 rounded-2xl p-2.5 text-left transition-colors hover:bg-[var(--tone-3)] cursor-pointer",
+                                className: "group grid w-full grid-cols-[28px_64px_1fr_auto] items-center gap-5 rounded-[var(--corner-md)] bg-[var(--tone-2)] p-3.5 text-left transition-colors hover:bg-[var(--tone-3)] cursor-pointer",
                               }
                             : {
-                                className: "grid w-full grid-cols-[24px_56px_1fr_auto] items-center gap-4 rounded-2xl p-2.5 text-left cursor-default select-none",
+                                className: "grid w-full grid-cols-[28px_64px_1fr_auto] items-center gap-5 rounded-[var(--corner-md)] bg-[var(--tone-2)] p-3.5 text-left cursor-default select-none",
                               };
 
                           const Component = canOpenGames ? "button" : "div";
@@ -1167,7 +1104,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                               {...itemProps}
                             >
                               <span className="text-right text-[length:var(--step-1)] font-semibold tabular-nums text-[var(--ink-faint)]">{index + 1}</span>
-                              <div className="h-[72px] w-[54px] overflow-hidden rounded-xl bg-[var(--tone-3)] shrink-0">
+                              <div className="h-[88px] w-[64px] overflow-hidden rounded-[var(--corner-sm)] bg-[var(--tone-3)] shrink-0">
                                 {(game.cardImage || game.image) && (
                                   <img
                                     src={game.cardImage || game.image}
@@ -1183,12 +1120,12 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                                 <p className="truncate text-[length:var(--step-1)] font-semibold text-[var(--ink)]">{game.title}</p>
                                 {/* Barra sutil de distribuição relativa de tempo jogado */}
                                 <div className="mt-2.5 flex items-center gap-2">
-                                  <div className="h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-[var(--tone-3)]">
+                                  <div className="h-2 w-full max-w-sm overflow-hidden rounded-[var(--corner-sm)] bg-[var(--tone-4)]">
                                     <motion.div
                                       initial={{ width: 0 }}
                                       animate={{ width: `${pct}%` }}
                                       transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1], delay: index * 0.05 }}
-                                      className="h-full rounded-full bg-[var(--ink-muted)]"
+                                      className="h-full rounded-[var(--corner-sm)] bg-[var(--ink-muted)]"
                                     />
                                   </div>
                                 </div>
@@ -1207,7 +1144,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                   ) : (
                     /* Todos os Jogos Tab */
                     filteredAllGames.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1 thin-scrollbar">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[520px] overflow-y-auto pr-1 thin-scrollbar">
                         {filteredAllGames.map((game) => {
                           const playedHours = getGamePlayedHours(game);
                           const launcherBadge = game.launcherType === "steam"
@@ -1220,10 +1157,10 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                           const itemProps = canOpenGames
                             ? {
                                 onClick: () => onOpenGame?.(game),
-                                className: "flex items-center gap-3.5 p-3 rounded-2xl bg-[var(--surface-base)] hover:bg-[var(--surface-overlay)] transition text-left cursor-pointer group",
+                                className: "flex items-center gap-4 p-4 rounded-[var(--corner-md)] bg-[var(--tone-2)] hover:bg-[var(--tone-3)] transition-colors text-left cursor-pointer group",
                               }
                             : {
-                                className: "flex items-center gap-3.5 p-3 rounded-2xl bg-[var(--surface-base)] text-left cursor-default select-none",
+                                className: "flex items-center gap-4 p-4 rounded-[var(--corner-md)] bg-[var(--tone-2)] text-left cursor-default select-none",
                               };
 
                           return (
@@ -1232,7 +1169,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                               {...(canOpenGames ? { type: "button" } : {})}
                               {...itemProps}
                             >
-                              <div className="h-[72px] w-[54px] rounded-xl overflow-hidden bg-[var(--tone-3)] shrink-0 relative">
+                              <div className="h-[88px] w-[64px] rounded-[var(--corner-sm)] overflow-hidden bg-[var(--tone-3)] shrink-0 relative">
                                 {(game.cardImage || game.image) ? (
                                   <img
                                     src={game.cardImage || game.image}
@@ -1260,7 +1197,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                                     <Clock className="h-2.5 w-2.5" />
                                     {formatPlayedHours(playedHours)}h
                                   </span>
-                                  <span className="text-[length:var(--step-0)] font-semibold px-2 py-0.5 rounded-full bg-[var(--tone-3)] text-[var(--ink-muted)]">
+                                  <span className="text-[length:var(--step-0)] font-semibold px-2.5 py-1 rounded-[10px] bg-[var(--tone-3)] text-[var(--ink-muted)]">
                                     {launcherBadge}
                                   </span>
                                 </div>
@@ -1281,76 +1218,12 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                       </div>
                     )
                   )}
+                  </SectionTransition>
                 </Section>
 
-                {/* FAVORITOS: Editorial sem container pesado de card */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Star className="h-3.5 w-3.5 text-[rgb(var(--tier-gold))] fill-[rgb(var(--tier-gold)/0.2)]" />
-                      <h3 className="font-display text-[length:var(--step-2)] font-semibold text-[var(--ink)]">{copy.favorites}</h3>
-                    </div>
-                    {favoriteGames.length > 0 && (
-                      <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)]">
-                        {stats.favorites > favoriteGames.length
-                          ? `${favoriteGames.length} de ${stats.favorites} favoritos`
-                          : `${favoriteGames.length} ${favoriteGames.length === 1 ? "favorito" : "favoritos"}`}
-                      </span>
-                    )}
-                  </div>
-
-                  {favoriteGames.length > 0 ? (
-                    <div className="flex gap-4 overflow-x-auto pb-2 pt-1 no-scrollbar">
-                      {favoriteGames.map((game) => {
-                        const Component = canOpenGames ? "button" : "div";
-                        const itemProps = canOpenGames
-                          ? {
-                              onClick: () => onOpenGame?.(game),
-                              className: "group w-[96px] sm:w-[104px] shrink-0 text-left transition-transform duration-200 hover:-translate-y-1 cursor-pointer",
-                            }
-                          : {
-                              className: "w-[96px] sm:w-[104px] shrink-0 text-left cursor-default select-none",
-                            };
-
-                        return (
-                          <Component
-                            key={game.id}
-                            {...(canOpenGames ? { type: "button" } : {})}
-                            {...itemProps}
-                          >
-                            <div className={cn(
-                              "relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-[var(--tone-1)] border border-[color:var(--border-subtle)] shadow-lg transition-all",
-                              canOpenGames && "group-hover:border-[color:var(--border-strong)] group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
-                            )}>
-                              {(game.cardImage || game.image) && (
-                                <img
-                                  src={game.cardImage || game.image}
-                                  alt={game.title}
-                                  className={cn(
-                                    "h-full w-full object-cover transition-transform duration-300",
-                                    canOpenGames && "group-hover:scale-105"
-                                  )}
-                                />
-                              )}
-                            </div>
-                            <p className={cn(
-                              "mt-2 line-clamp-2 text-xs font-bold text-[var(--ink-muted)] leading-tight transition-colors",
-                              canOpenGames && "group-hover:text-[var(--ink)]"
-                            )}>
-                              {game.title}
-                            </p>
-                          </Component>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="py-4 text-xs font-medium text-[var(--ink-faint)] italic">{copy.noFavorites}</p>
-                  )}
-
-                </div>
               </section>
 
-              <aside aria-label="Resumo do perfil" className="space-y-5">
+              <aside aria-label="Resumo do perfil" className="space-y-6">
                 <Section compact={compactProfile} title={copy.platforms}>
                   <div className="space-y-2">
                     <PlatformRow
@@ -1388,13 +1261,13 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                 <Section compact={compactProfile} title={copy.achievements}>
                   <div className="mb-3 flex items-end justify-between">
                     <div>
-                      <span className="font-display text-[44px] font-bold leading-none tabular-nums text-[var(--ink)]">{stats.totalAchievements}</span>
+                      <span className="font-metric text-[44px] font-semibold leading-none text-[var(--ink)]">{stats.totalAchievements}</span>
                       <span className="ml-1.5 text-[length:var(--step-1)] text-[var(--ink-faint)]">/ {stats.totalPossible}</span>
                     </div>
                     <span className="text-[length:var(--step-2)] font-semibold text-[var(--ink-muted)] tabular-nums">{achievementPercent}%</span>
                   </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-[var(--tone-3)]">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${achievementPercent}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} className="h-full rounded-full bg-[var(--ink)]" />
+                  <div className="h-2.5 overflow-hidden rounded-[var(--corner-sm)] bg-[var(--tone-3)]">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${achievementPercent}%` }} transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }} className="h-full rounded-[var(--corner-sm)] bg-[var(--ink)]" />
                   </div>
                   <p className="mt-3 flex items-center gap-1.5 text-[length:var(--step-0)] text-[var(--ink-faint)]">
                     <Trophy className="h-3 w-3" /> {stats.totalAchievements} {copy.unlocked}
@@ -1412,25 +1285,25 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
 
                     {/* Stacked bar única de distribuição */}
                     {stats.totalGames > 0 && (
-                      <div className="h-2 w-full flex rounded-full overflow-hidden bg-[var(--tone-3)] p-0.5 gap-0.5">
+                      <div className="h-2.5 w-full flex rounded-[var(--corner-sm)] overflow-hidden bg-[var(--tone-3)] p-0.5 gap-0.5">
                         {stats.steamGames > 0 && (
                           <div
                             style={{ width: `${(stats.steamGames / stats.totalGames) * 100}%` }}
-                            className="h-full bg-sky-400 rounded-full transition-all"
+                            className="h-full bg-[var(--ink)] rounded-[var(--corner-sm)] transition-all"
                             title={`Steam: ${stats.steamGames}`}
                           />
                         )}
                         {stats.epicGames > 0 && (
                           <div
                             style={{ width: `${(stats.epicGames / stats.totalGames) * 100}%` }}
-                            className="h-full bg-[var(--ink)] rounded-full transition-all"
+                            className="h-full bg-[var(--ink-muted)] rounded-[var(--corner-sm)] transition-all"
                             title={`Epic Games: ${stats.epicGames}`}
                           />
                         )}
                         {stats.localGames > 0 && (
                           <div
                             style={{ width: `${(stats.localGames / stats.totalGames) * 100}%` }}
-                            className="h-full bg-[var(--ink-faint)] rounded-full transition-all"
+                            className="h-full bg-[var(--ink-faint)] rounded-[var(--corner-sm)] transition-all"
                             title={`Local: ${stats.localGames}`}
                           />
                         )}
@@ -1438,7 +1311,7 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                     )}
 
                     {/* Linhas Editoriais com traço fino */}
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-4 pt-1">
                       {libraryRows.map((row) => {
                         const pct = stats.totalGames > 0 ? (row.value / stats.totalGames) * 100 : 0;
                         return (
@@ -1447,13 +1320,13 @@ const UserProfilePage: React.FC<UserProfilePageProps> = ({
                               <span className="text-[var(--ink-muted)] group-hover:text-[var(--ink)] transition-colors">{row.label}</span>
                               <span className="font-mono text-[var(--ink-muted)] group-hover:text-[var(--ink)] tabular-nums transition-colors">{row.value}</span>
                             </div>
-                            <div className="h-1 w-full bg-[var(--tone-3)] rounded-full overflow-hidden">
+                            <div className="h-1.5 w-full bg-[var(--tone-3)] rounded-[var(--corner-sm)] overflow-hidden">
                               <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${pct}%` }}
                                 transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                                className={`h-full rounded-full ${row.label === "Steam"
-                                  ? "bg-sky-400/80"
+                                className={`h-full rounded-[var(--corner-sm)] ${row.label === "Steam"
+                                  ? "bg-[var(--ink)]"
                                   : row.label === "Epic Games"
                                     ? "bg-[var(--ink-muted)]"
                                     : "bg-[var(--ink-muted)]"

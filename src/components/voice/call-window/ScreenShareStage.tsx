@@ -71,7 +71,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
           className="flex items-center gap-2 px-3 py-1.5 rounded-[var(--corner-sm)] bg-[var(--tone-1)]/80 border border-[#161616] backdrop-blur-xl shadow-lg pointer-events-auto select-none"
         >
           <span className="h-2 w-2 rounded-full bg-[var(--live)] animate-pulse" />
-          <span className="text-xs font-semibold text-white tracking-tight">
+          <span className="text-xs font-semibold text-[var(--ink)] tracking-tight">
             {feed.title.replace(/^Tela de /i, "")}
           </span>
           <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] pl-1 border-l border-[#161616]">
@@ -91,15 +91,15 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
                 type="button"
                 onClick={() => setIsVolOpen((prev) => !prev)}
                 aria-label={`Volume da transmissão (${streamerVolume}%)`}
-                className={`h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40 ${
+                className={`h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ink)] ${
                   isVolOpen
-                    ? "bg-white text-black"
-                    : "text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08]"
+                    ? "bg-[var(--ink)] text-[var(--tone-0)]"
+                    : "text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)]"
                 }`}
                 title={`Volume da transmissão (${streamerVolume}%)`}
               >
                 {streamerVolume === 0 ? (
-                  <VolumeX className="h-4 w-4 text-rose-400" aria-hidden="true" />
+                  <VolumeX className="h-4 w-4 text-[var(--danger)]" aria-hidden="true" />
                 ) : streamerVolume < 60 ? (
                   <Volume1 className="h-4 w-4" aria-hidden="true" />
                 ) : (
@@ -112,7 +112,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
                   style={{ cornerShape: "squircle" } as React.CSSProperties}
                   className="absolute top-10 right-0 p-3 w-48 rounded-[var(--corner-md)] bg-[var(--tone-1)]/95 border border-[#161616] shadow-2xl z-30 space-y-2 backdrop-blur-2xl"
                 >
-                  <div className="flex justify-between text-[length:var(--step-0)] font-bold text-white">
+                  <div className="flex justify-between text-[length:var(--step-0)] font-bold text-[var(--ink)]">
                     <span>Volume</span>
                     <span className="font-mono tabular-nums text-[var(--ink-muted)]">{streamerVolume}%</span>
                   </div>
@@ -123,7 +123,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
                     aria-label="Volume da transmissão de tela"
                     value={streamerVolume}
                     onChange={(e) => onChangeStreamerVolume(Number(e.target.value))}
-                    className="w-full accent-white h-1.5 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40"
+                    className="w-full accent-white h-1.5 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ink)]"
                   />
                 </div>
               )}
@@ -145,18 +145,18 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
                   "info"
                 );
               }}
-              className="flex items-center gap-1 h-8 px-2.5 rounded-[var(--corner-sm)] text-xs font-semibold text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer"
+              className="flex items-center gap-1 h-8 px-2.5 rounded-[var(--corner-sm)] text-xs font-semibold text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)] transition cursor-pointer"
               title="Silenciar / Ativar áudio transmitido da tela"
             >
               {localScreenStream.getAudioTracks()[0]?.enabled === false ? (
                 <>
-                  <VolumeX className="h-3.5 w-3.5 text-rose-400" />
-                  <span className="text-[length:var(--step-0)] text-rose-300">Mudo</span>
+                  <VolumeX className="h-3.5 w-3.5 text-[var(--danger)]" />
+                  <span className="text-[length:var(--step-0)] text-[var(--danger)]">Mudo</span>
                 </>
               ) : (
                 <>
-                  <Volume2 className="h-3.5 w-3.5 text-emerald-400" />
-                  <span className="text-[length:var(--step-0)] text-emerald-300">Com Som</span>
+                  <Volume2 className="h-3.5 w-3.5 text-[var(--live)]" />
+                  <span className="text-[length:var(--step-0)] text-[var(--live)]">Com Som</span>
                 </>
               )}
             </button>
@@ -167,10 +167,10 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
               type="button"
               onClick={onToggleFocus}
               aria-label={isFocused ? "Desafixar transmissão" : "Fixar transmissão"}
-              className={`h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40 ${
+              className={`h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ink)] ${
                 isFocused
-                  ? "bg-white text-black shadow-sm"
-                  : "text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08]"
+                  ? "bg-[var(--ink)] text-[var(--tone-0)] shadow-sm"
+                  : "text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)]"
               }`}
               title={isFocused ? "Desafixar transmissão" : "Fixar transmissão"}
             >
@@ -183,7 +183,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
             type="button"
             onClick={onToggleFitMode}
             aria-label={fitMode === "contain" ? "Preencher janela (Zoom)" : "Ajustar à janela (Fit)"}
-            className="h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40"
+            className="h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ink)]"
             title={fitMode === "contain" ? "Preencher janela (Zoom)" : "Ajustar à janela (Fit)"}
           >
             {fitMode === "contain" ? (
@@ -198,7 +198,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
             type="button"
             onClick={onTogglePip}
             aria-label="Ativar Mini-player flutuante (PiP)"
-            className="h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40"
+            className="h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ink)]"
             title="Mini-player flutuante (PiP)"
           >
             <PictureInPicture2 className="h-4 w-4" aria-hidden="true" />
@@ -209,7 +209,7 @@ export const ScreenShareStage: React.FC<ScreenShareStageProps> = ({
             type="button"
             onClick={onRequestFullscreen}
             aria-label="Tela cheia da transmissão"
-            className="h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/40"
+            className="h-8 w-8 flex items-center justify-center rounded-[var(--corner-sm)] text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)] transition cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ink)]"
             title="Tela cheia da transmissão"
           >
             <Maximize2 className="h-4 w-4" aria-hidden="true" />

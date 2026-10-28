@@ -132,11 +132,11 @@ export const renderVoiceRoomIcon = (
 const THEME_COLORS = [
   { id: "purple", label: "Neon Purple", value: "#8B5CF6", border: "border-purple-500", bg: "bg-purple-500/20" },
   { id: "cyan", label: "Retro Cyan", value: "#06B6D4", border: "border-cyan-500", bg: "bg-cyan-500/20" },
-  { id: "amber", label: "Sunset Amber", value: "#F59E0B", border: "border-amber-500", bg: "bg-amber-500/20" },
-  { id: "red", label: "Crimson Red", value: "#EF4444", border: "border-rose-500", bg: "bg-rose-500/20" },
-  { id: "emerald", label: "Cyber Emerald", value: "#10B981", border: "border-emerald-500", bg: "bg-emerald-500/20" },
+  { id: "amber", label: "Sunset Amber", value: "#F59E0B", border: "border-transparent", bg: "bg-[var(--tone-3)]" },
+  { id: "red", label: "Crimson Red", value: "#EF4444", border: "border-transparent", bg: "bg-[color-mix(in_srgb,var(--danger)_18%,transparent)]" },
+  { id: "emerald", label: "Cyber Emerald", value: "#10B981", border: "border-transparent", bg: "bg-[var(--tone-3)]" },
   { id: "blue", label: "Cobalt Blue", value: "#3B82F6", border: "border-blue-500", bg: "bg-blue-500/20" },
-  { id: "monochrome", label: "Monochrome Ice", value: "#F8FAFC", border: "border-white", bg: "bg-white/20" },
+  { id: "monochrome", label: "Monochrome Ice", value: "#F8FAFC", border: "border-white", bg: "bg-[var(--tone-4)]" },
 ];
 
 export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
@@ -334,7 +334,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
 
         <motion.div
           {...modalMotion}
-          className="relative z-10 flex w-full max-w-[720px] max-h-[90vh] flex-col overflow-hidden rounded-[var(--corner-lg)] border border-white/10 bg-[var(--tone-1)] shadow-[0_40px_120px_rgba(0,0,0,0.82)]"
+          className="relative z-10 flex w-full max-w-[720px] max-h-[90vh] flex-col overflow-hidden rounded-[var(--corner-lg)] border border-transparent bg-[var(--tone-1)] shadow-[0_40px_120px_rgba(0,0,0,0.82)]"
           style={{ boxShadow: `0 40px 120px rgba(0,0,0,0.82), 0 0 0 1px ${themeColor}22, 0 24px 80px ${themeColor}18` }}
         >
           <div
@@ -347,7 +347,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
               <p className="text-[length:var(--step-0)] font-black uppercase tracking-[0.22em] text-[var(--ink-faint)]">
                 {isEditing ? "Ajustar canal" : "Novo canal"}
               </p>
-              <h3 className="mt-1 text-xl font-black tracking-tight text-white">
+              <h3 className="mt-1 text-xl font-black tracking-tight text-[var(--ink)]">
                 {isEditing ? "Editar canal de voz" : "Criar canal de voz"}
               </h3>
               <p className="mt-1 text-xs text-[var(--ink-faint)]">
@@ -357,14 +357,14 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[var(--ink-muted)] transition hover:bg-white/10 hover:text-white cursor-pointer"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-transparent bg-[var(--tone-3)] text-[var(--ink-muted)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)] cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
 
           <div className="relative space-y-5 overflow-y-auto px-6 pb-5 scrollbar-thin scrollbar-thumb-white/10">
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+            <div className="overflow-hidden rounded-2xl border border-transparent bg-[var(--tone-3)]">
               {shownBanner ? (
                 <img src={shownBanner} alt="" className="aspect-[3/1] w-full object-cover" />
               ) : (
@@ -383,17 +383,17 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="truncate text-sm font-black text-white">
+                    <p className="truncate text-sm font-black text-[var(--ink)]">
                       {roomName.trim() || fallbackDefaultName}
                     </p>
                     {isPrivate ? (
-                      <Lock className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+                      <Lock className="h-3.5 w-3.5 shrink-0 text-[var(--ink)]" />
                     ) : (
                       <Unlock className="h-3.5 w-3.5 shrink-0 text-[var(--ink-faint)]" />
                     )}
                   </div>
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
+                    <span className="inline-flex items-center gap-1 rounded-md border border-transparent bg-[var(--tone-3)] px-2 py-0.5 text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
                       {CATEGORIES.find((item) => item.id === category)?.icon}
                       {CATEGORIES.find((item) => item.id === category)?.label}
                     </span>
@@ -405,7 +405,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
 
             <div className="space-y-1.5">
               <label className="text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-muted)]">Nome do canal</label>
-              <input
+              <input aria-label="Nome do canal"
                 type="text"
                 placeholder={fallbackDefaultName}
                 value={roomName}
@@ -413,11 +413,11 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                   setRoomName(e.target.value);
                   setError(null);
                 }}
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-white placeholder-white/30 outline-none transition focus:border-white/30 focus:bg-white/[0.07]"
+                className="h-11 w-full rounded-xl border border-transparent bg-[var(--tone-3)] px-4 text-sm font-semibold text-[var(--ink)] placeholder-white/30 outline-none transition focus:border-transparent focus:bg-[var(--tone-4)]"
               />
             </div>
 
-            <div className="space-y-3 rounded-2xl border border-white/8 bg-white/[0.025] p-4">
+            <div className="space-y-3 rounded-2xl border border-transparent bg-[var(--tone-3)] p-4">
               <label className="flex items-center gap-1.5 text-[length:var(--step-0)] font-black uppercase tracking-wider text-[var(--ink-muted)]">
                 <Palette className="h-3.5 w-3.5 text-[var(--ink-muted)]" />
                 Identidade visual
@@ -436,7 +436,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                         setCustomAvatarUrl("");
                       }}
                       className={`flex h-10 w-full items-center justify-center rounded-xl border transition cursor-pointer ${
-                        isSelected ? "" : "border-white/8 bg-white/[0.04] text-[var(--ink-faint)] hover:border-white/15 hover:bg-white/[0.08] hover:text-white"
+                        isSelected ? "" : "border-transparent bg-[var(--tone-3)] text-[var(--ink-faint)] hover:border-transparent hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                       }`}
                       style={isSelected
                         ? { borderColor: themeColor, backgroundColor: `${themeColor}28`, color: themeColor, boxShadow: `0 0 16px ${themeColor}30` }
@@ -449,7 +449,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                 })}
               </div>
 
-              <div className="space-y-2 border-t border-white/6 pt-3">
+              <div className="space-y-2 border-t border-transparent pt-3">
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-[length:var(--step-0)] font-medium text-[var(--ink-faint)]">
                     <ImageIcon className="h-3.5 w-3.5" />
@@ -459,7 +459,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setCustomAvatarUrl("")}
-                      className="flex items-center gap-1 text-[length:var(--step-0)] font-bold text-rose-400 transition hover:text-rose-300 cursor-pointer"
+                      className="flex items-center gap-1 text-[length:var(--step-0)] font-bold text-[var(--danger)] transition hover:text-[var(--danger)] cursor-pointer"
                     >
                       <X className="h-3 w-3" />
                       Remover
@@ -468,18 +468,18 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                 </div>
 
                 {customAvatarUrl ? (
-                  <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 p-2.5">
-                    <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-white/15 bg-black/40">
+                  <div className="flex items-center gap-3 rounded-xl border border-transparent bg-black/30 p-2.5">
+                    <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-transparent bg-black/40">
                       <img src={customAvatarUrl} alt="Preview" className="h-full w-full object-cover" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-bold text-white">Imagem ativa no canal</p>
+                      <p className="truncate text-xs font-bold text-[var(--ink)]">Imagem ativa no canal</p>
                       <p className="truncate text-[length:var(--step-0)] text-[var(--ink-faint)]">Vai aparecer na lista de salas</p>
                     </div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-[auto_1fr]">
-                    <label className="flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/8 px-3.5 text-xs font-bold text-white transition hover:bg-white/12">
+                    <label className="flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-transparent bg-[var(--tone-3)] px-3.5 text-xs font-bold text-[var(--ink)] transition hover:bg-[var(--tone-4)]">
                       <Upload className="h-3.5 w-3.5 text-[var(--ink)]" />
                       Carregar
                       <input
@@ -491,12 +491,12 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                     </label>
                     <div className="relative flex items-center">
                       <LinkIcon className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-[var(--ink-faint)]" />
-                      <input
+                      <input aria-label="Link da imagem do canal"
                         type="text"
                         placeholder="https://..."
                         value={customAvatarUrl}
                         onChange={(e) => setCustomAvatarUrl(e.target.value)}
-                        className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-9 pr-3 text-xs font-medium text-white placeholder-white/30 outline-none transition focus:border-white/25"
+                        className="h-10 w-full rounded-xl border border-transparent bg-[var(--tone-3)] pl-9 pr-3 text-xs font-medium text-[var(--ink)] placeholder-white/30 outline-none transition focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -521,7 +521,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                           transform: isSelected ? "scale(1.12)" : undefined,
                         }}
                       >
-                        {isSelected && <Check className="h-3.5 w-3.5 text-black" />}
+                        {isSelected && <Check className="h-3.5 w-3.5 text-[var(--tone-0)]" />}
                       </button>
                     );
                   })}
@@ -544,7 +544,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                         ? { borderColor: `${themeColor}80`, backgroundColor: `${themeColor}18`, boxShadow: `inset 0 0 0 1px ${themeColor}30` }
                         : { borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(255,255,255,0.02)" }}
                     >
-                      <div className={`flex items-center gap-2 text-xs font-black ${isSelected ? "text-white" : "text-[var(--ink)]"}`}>
+                      <div className={`flex items-center gap-2 text-xs font-black ${isSelected ? "text-[var(--ink)]" : "text-[var(--ink)]"}`}>
                         <span style={isSelected ? { color: themeColor } : undefined}>{cat.icon}</span>
                         <span>{cat.label}</span>
                       </div>
@@ -564,11 +564,11 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                   type="button"
                   onClick={() => setIsPrivate(false)}
                   className={`rounded-2xl border p-3 text-left transition cursor-pointer ${
-                    !isPrivate ? "border-white/25 bg-white/[0.08]" : "border-white/8 bg-white/[0.02] hover:bg-white/[0.04]"
+                    !isPrivate ? "border-transparent bg-[var(--tone-3)]" : "border-transparent bg-[var(--tone-3)] hover:bg-[var(--tone-4)]"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 text-xs font-black text-white">
-                    <Unlock className="h-3.5 w-3.5 text-emerald-400" />
+                  <div className="flex items-center gap-1.5 text-xs font-black text-[var(--ink)]">
+                    <Unlock className="h-3.5 w-3.5 text-[var(--live)]" />
                     Sala pública
                   </div>
                   <p className="mt-1 text-[length:var(--step-0)] leading-snug text-[var(--ink-faint)]">
@@ -579,11 +579,11 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                   type="button"
                   onClick={() => setIsPrivate(true)}
                   className={`rounded-2xl border p-3 text-left transition cursor-pointer ${
-                    isPrivate ? "border-amber-400/40 bg-amber-400/10" : "border-white/8 bg-white/[0.02] hover:bg-white/[0.04]"
+                    isPrivate ? "border-transparent bg-[var(--tone-3)]" : "border-transparent bg-[var(--tone-3)] hover:bg-[var(--tone-4)]"
                   }`}
                 >
-                  <div className="flex items-center gap-1.5 text-xs font-black text-white">
-                    <Lock className="h-3.5 w-3.5 text-amber-400" />
+                  <div className="flex items-center gap-1.5 text-xs font-black text-[var(--ink)]">
+                    <Lock className="h-3.5 w-3.5 text-[var(--ink)]" />
                     Sala privada
                   </div>
                   <p className="mt-1 text-[length:var(--step-0)] leading-snug text-[var(--ink-faint)]">
@@ -593,7 +593,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
               </div>
             </div>
 
-            <div className="space-y-2.5 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+            <div className="space-y-2.5 rounded-2xl border border-transparent bg-[var(--tone-3)] p-3.5">
               <div className="flex items-center justify-between">
                 <span className="text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">Banner</span>
                 <div className="flex items-center gap-2">
@@ -605,12 +605,12 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                         setBannerBlob(null);
                         setBannerPreview("");
                       }}
-                      className="cursor-pointer text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition hover:text-white"
+                      className="cursor-pointer text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
                     >
                       Remover
                     </button>
                   )}
-                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-white/[0.08] px-3 py-1.5 text-[length:var(--step-0)] font-semibold text-white transition hover:bg-white/[0.14]">
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] px-3 py-1.5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)]">
                     <Upload className="h-3.5 w-3.5" />
                     {shownBanner ? "Trocar imagem" : "Escolher imagem"}
                     <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={handleBannerPick} />
@@ -626,7 +626,7 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                 rows={2}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Sobre o que é essa sala?"
-                className="w-full resize-none rounded-xl border border-white/10 bg-black/35 px-3.5 py-2.5 text-xs font-medium text-white placeholder-white/30 outline-none transition focus:border-white/30"
+                className="w-full resize-none rounded-xl border border-transparent bg-black/35 px-3.5 py-2.5 text-xs font-medium text-[var(--ink)] placeholder-white/30 outline-none transition focus:border-transparent"
               />
               <p className="text-right text-[length:var(--step-0)] tabular-nums text-[var(--ink-faint)]">{description.length}/200</p>
             </div>
@@ -635,16 +635,16 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
-                className="space-y-1.5 rounded-2xl border border-amber-400/15 bg-amber-400/[0.06] p-3.5"
+                className="space-y-1.5 rounded-2xl border border-transparent bg-[var(--tone-3)] p-3.5"
               >
                 <label className="flex items-center justify-between text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
                   <span className="flex items-center gap-1.5">
-                    <KeyRound className="h-3.5 w-3.5 text-amber-400" />
+                    <KeyRound className="h-3.5 w-3.5 text-[var(--ink)]" />
                     Senha da sala
                   </span>
                 </label>
                 <div className="relative flex items-center">
-                  <input
+                  <input aria-label="Senha da sala"
                     type={showPassword ? "text" : "password"}
                     placeholder={hadPassword ? "Deixe em branco para manter a senha atual" : "Mínimo de 3 caracteres"}
                     value={password}
@@ -652,12 +652,12 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
                       setPassword(e.target.value);
                       setError(null);
                     }}
-                    className="h-10 w-full rounded-xl border border-white/10 bg-black/35 px-3.5 pr-10 text-xs font-semibold text-white placeholder-white/30 outline-none transition focus:border-white/30"
+                    className="h-10 w-full rounded-xl border border-transparent bg-black/35 px-3.5 pr-10 text-xs font-semibold text-[var(--ink)] placeholder-white/30 outline-none transition focus:border-transparent"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 text-[var(--ink-faint)] transition hover:text-white cursor-pointer"
+                    className="absolute right-3 text-[var(--ink-faint)] transition hover:text-[var(--ink)] cursor-pointer"
                   >
                     <IconSwap active={showPassword} a={<Eye className="h-4 w-4" />} b={<EyeOff className="h-4 w-4" />} />
                   </button>
@@ -666,18 +666,18 @@ export const CreateChannelModal: React.FC<CreateChannelModalProps> = ({
             )}
 
             {error && (
-              <p className="rounded-xl border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-xs font-medium text-rose-300">
+              <p className="rounded-xl border border-transparent bg-[color-mix(in_srgb,var(--danger)_18%,transparent)] px-3 py-2 text-xs font-medium text-[var(--danger)]">
                 {error}
               </p>
             )}
           </div>
 
-          <div className="relative flex gap-3 border-t border-white/8 bg-black/40 px-6 py-4">
+          <div className="relative flex gap-3 border-t border-transparent bg-black/40 px-6 py-4">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="flex-1 rounded-xl border border-white/8 bg-white/5 py-2.5 text-xs font-bold text-white transition hover:bg-white/10 cursor-pointer disabled:opacity-50"
+              className="flex-1 rounded-xl border border-transparent bg-[var(--tone-3)] py-2.5 text-xs font-bold text-[var(--ink)] transition hover:bg-[var(--tone-4)] cursor-pointer disabled:opacity-50"
             >
               Cancelar
             </button>
