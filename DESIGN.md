@@ -1,6 +1,6 @@
 ---
 name: Pherielium
-description: "Hub de jogos no estilo Gaming OS: cinza-carvão fosco, profundidade por tom e borda fina, e o jogo como única coisa que brilha (na Home e na tela do jogo, a arte nítida é a própria tela, como num console, com a tinta como único destaque)."
+description: "Hub de jogos no estilo Gaming OS: cinza-carvão fosco, profundidade por degrau de tom e botões preenchidos sem contorno, e o jogo como única coisa que brilha (na Home e na tela do jogo, a arte nítida é a própria tela, como num console, com a tinta como único destaque)."
 colors:
   chrome-black: "#000000"
   charcoal-base: "#0A0A0A"
@@ -15,6 +15,7 @@ colors:
   ink-faint: "#959595"
   live-green: "#30d158"
   screen-error: "#ff8a80"
+  danger-red: "#ff453a"
   tier-iron: "rgb(148 155 163)"
   tier-bronze: "rgb(205 127 50)"
   tier-silver: "rgb(203 209 220)"
@@ -83,7 +84,8 @@ typography:
     letterSpacing: "0"
     fontFeature: "'tnum' 1"
 rounded:
-  key: "6px"
+  key: "8px"
+  console-tile: "14px"
   control: "12px"
   card: "20px"
   panel: "28px"
@@ -116,7 +118,7 @@ components:
     padding: "0 20px"
   console-tile:
     backgroundColor: "{colors.charcoal-raised}"
-    rounded: "{rounded.key}"
+    rounded: "{rounded.console-tile}"
     height: "clamp(96px, calc(20px + 10vh), 170px)"
     width: "clamp(96px, calc(20px + 10vh), 170px)"
   console-tile-focused:
@@ -136,28 +138,28 @@ components:
   console-tab-item:
     textColor: "{colors.ink-muted}"
     typography: "{typography.console-label}"
-    rounded: "{rounded.pill}"
+    rounded: "{rounded.control}"
     height: "calc(clamp(34px, 1.9vw, 52px) - 12px)"
     padding: "0 12px"
   console-tab-item-active:
-    textColor: "{colors.ink}"
-    rounded: "{rounded.pill}"
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.charcoal-base}"
+    rounded: "{rounded.control}"
   console-chip:
+    backgroundColor: "{colors.charcoal-overlay}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.pill}"
+    rounded: "{rounded.control}"
     height: "clamp(34px, 1.9vw, 52px)"
     width: "clamp(34px, 1.9vw, 52px)"
   console-chip-hover:
-    backgroundColor: "{colors.charcoal-overlay}"
+    backgroundColor: "{colors.charcoal-line}"
   console-start:
-    textColor: "{colors.ink}"
-    typography: "{typography.console-label}"
-    rounded: "{rounded.key}"
-    height: "calc(clamp(48px, 2.9vw, 76px) * 1.2)"
-    padding: "0 calc(clamp(48px, 2.9vw, 76px) * 0.4)"
-  console-start-hover:
     backgroundColor: "{colors.ink}"
     textColor: "{colors.charcoal-base}"
+    typography: "{typography.console-label}"
+    rounded: "{rounded.card}"
+    height: "calc(clamp(48px, 2.9vw, 76px) * 1.2)"
+    padding: "0 calc(clamp(48px, 2.9vw, 76px) * 0.4)"
   console-progress-fill:
     backgroundColor: "{colors.ink}"
     height: "4px"
@@ -214,9 +216,9 @@ foco é a própria tela, nítida e de ponta a ponta, e a interface é fina, em c
 nas bordas. A Home tem uma barra de duas linhas (marca, hora, menu, busca e perfil em cima; as abas
 da biblioteca embaixo) e uma fileira de capas quadradas em que a focada cresce 1,3× sem anel, com o
 nome da loja logo abaixo; o nome do jogo não é desenhado, a arte e a capa já o dizem. Ao abrir um
-jogo, a arte fica no lugar e a interface sobe. Aqui o destaque é sempre a **tinta**: contorno de
-tinta na aba ativa, o "Iniciar o jogo" que vira tinta cheia, o item de conquista em foco que ganha
-contorno de tinta. A direção foi pinada pelo usuário a partir do conceito de interface de PS5 de
+jogo, a arte fica no lugar e a interface sobe. Aqui o destaque é sempre a **tinta**: o bloco de
+tinta que desliza para a aba ativa, o "Iniciar o jogo" em tinta cheia, o item de conquista em foco
+com um preenchimento claro. A direção foi pinada pelo usuário a partir do conceito de interface de PS5 de
 Paweł Durczok (Dribbble), e empresta só estrutura e movimento: nenhuma marca, ícone ou arte da
 PlayStation, e as cores são as da escala Dark do projeto (o azulado do conceito foi recusado). A Home
 "fliperama depois do expediente" (letreiro e gabinetes) e as paredes de pôsteres saíram do código e
@@ -230,11 +232,11 @@ jogo estilo console) trocando só as superfícies: `--tone-0..4` passam a deriva
 **Key Characteristics:**
 - Monocromático em escada de cinzas; um único acento de cor, o verde "ao vivo".
 - Profundidade por tom e hairline, sem sombra em repouso.
-- Pílulas e cantos contínuos (squircle) no app; no console, canto de 6 px (o da tecla) nas peças de conteúdo e pílulas nos controles; nunca cantos retos.
+- Cantos contínuos (squircle) em tudo: controles em `--corner-sm`, cartões em `--corner-md`/`--corner-lg`, capas e itens do console em 14 px; só pontos de estado e avatares redondos; nunca cantos retos.
 - Tinta cheia para tudo o que se lê; piso de 13 px.
 - Na Home e na tela do jogo, a arte do jogo em foco é o fundo, nítida e de ponta a ponta; véus só onde há interface.
 - Na Home, a capa quadrada focada cresce 1,3× para cima, sem anel, com a loja escrita embaixo; ao abrir, a arte fica e a interface sobe.
-- No console, o destaque é o contorno ou o preenchimento de tinta; caixa alta pequena para abas, rótulos e dicas.
+- No console, o destaque é o preenchimento de tinta (nunca contorno); caixa alta pequena para abas, rótulos e dicas.
 - Mola curta; reduzir movimento respeitado.
 
 ## Colors
@@ -242,7 +244,7 @@ jogo estilo console) trocando só as superfícies: `--tone-0..4` passam a deriva
 Uma escada de cinzas neutros quase sem matiz (a escala Dark pinada), com tinta branca fria por cima, um verde só para "ao vivo" e as cores de tier só nos troféus.
 
 ### Primary
-- **Tinta Branca Fria** (`--ink`): todo texto principal e o destaque do sistema: fundo do botão primário em pílula, anel de foco, contorno da aba ativa (Home e tela do jogo), contorno do item de conquista em foco, preenchimento da barra de troféus e "Iniciar o jogo" ao passar o mouse ou focar. É a "cor de ação"; por ser a mais clara, é naturalmente rara em cada tela.
+- **Tinta Branca Fria** (`--ink`): todo texto principal e o destaque do sistema: fundo do botão primário em pílula, anel de foco, bloco da aba ativa (Home, tela do jogo, Amigos, Troféus e Perfil), cursor do item de conquista em foco, preenchimento da barra de troféus e o "Iniciar o jogo". É a "cor de ação"; por ser a mais clara, é naturalmente rara em cada tela.
 
 ### Secondary
 - **Cores de Tier** (`--tier-iron`, `--tier-bronze`, `--tier-silver`, `--tier-gold`, `--tier-platinum`): ferro, bronze, prata, ouro e platina dos troféus. Vivem só dentro de troféus e conquistas (os valores espelham `TIER_STYLES`, guardados por teste). Nunca pintam a interface; a barra de progresso de troféus da tela do jogo é em tinta, não em tier.
@@ -251,13 +253,15 @@ Uma escada de cinzas neutros quase sem matiz (a escala Dark pinada), com tinta b
 - **Verde Ao Vivo** (`--live`): o único acento de cor da interface. Só para estado ativo em tempo real (online, falando, transmitindo, em chamada; na tela do jogo, o ponto em "Em execução" e o número de amigos jogando). Nunca decorativo.
 - **Vermelho de Erro** (`--screen-error`): só o aviso de falha ao iniciar, na tela do jogo, claro o bastante para ler sobre a arte escurecida. Não é acento: é o estado de erro e some quando o erro some.
 
+- **Vermelho de Perigo** (`--danger`, #ff453a): ação destrutiva e estado "desligado de propósito": desligar a chamada, microfone mutado, "Não perturbe" ativo, remover amigo. Nunca decorativo; sempre acompanhado de ícone ou texto.
+
 ### Neutral
 - **Preto Base** (`--gray-0` / `--surface-base`): o fundo absoluto do app no tema padrão, também do notch e da barra de título (`--chrome-black`) e a cor dos véus da arte na Home. Nos outros temas o preto absoluto continua exclusivo do notch e da barra de título.
 - **Carvão Base** (`--gray-1` / `--tone-0`): superfície dos cards e containers mais profundos, um degrau acima do preto de fundo; é também o fundo e a cor do véu da tela do jogo, e o texto sobre tinta (aba ativa, "Iniciar" aceso).
 - **Carvão Fundo** (`--tone-1`): degrau intermediário entre base e elevado; fundo dos itens de conquista recente e do menu Opções (a 94%).
 - **Carvão Elevado** (`--gray-2` / `--tone-2`): cards, painéis, campos, o corpo da capa sem arte o corpo da capa sem arte na Home e a base dos botões pequenos e das teclas sobre a arte (a 80–85%).
-- **Carvão Sobreposto** (`--gray-3` / `--tone-3`): menus, hover de linha, bordas visíveis, hover das abas e dos botões pequenos, contorno dos cartões de conquista.
-- **Linha de Carvão** (`--gray-4` / `--tone-4`): trilha de interruptor desligado, divisores fortes, contorno dos botões pequenos e das teclas de dica sobre a arte.
+- **Carvão Sobreposto** (`--gray-3` / `--tone-3`): menus, botões secundários preenchidos, hover de linha e das abas, teclas de dica.
+- **Linha de Carvão** (`--gray-4` / `--tone-4`): trilha de interruptor desligado, divisores fortes, hover dos botões preenchidos e o degrau de "selecionado" nas listas.
 - **Grafite** (#525252) e **Cinza Cinza** (#8A8A8A): bordas em hover e estados desabilitados.
 - **Tinta Suave** (`--ink-muted`, escala 700): texto secundário (cerca de 14:1 sobre o preto), abas inativas, rótulos dos números, a loja sob a capa focada, a hora, as dicas de tecla. Fica perto da tinta principal; a hierarquia vem de tamanho e peso, não só de tom. A escala também define o passo 800 (#E5E5E5, `--gray-9`), ainda sem uso na interface.
 - **Tinta Apagada** (`--ink-faint`): rótulos e legendas (4,6:1, o piso de legibilidade), como o nome do jogo sobre cada conquista.
@@ -306,7 +310,7 @@ a interface fica nas bordas, sem rolagem da página:
   entre elas. Linha 1: marca em círculo e a hora à esquerda; menu de ações da biblioteca (reticências:
   adicionar, filtrar, sincronizar), busca (círculo que cresce para a esquerda, até 360 px) e perfil à
   direita. Linha 2: as abas da biblioteca, alinhadas à esquerda.
-- **Abas**: caixa alta pequena, a ativa com contorno de tinta; chips Q e E (LB e RB com controle
+- **Abas**: caixa alta pequena, a ativa num bloco de tinta que desliza até a aba clicada; chips Q e E (LB e RB com controle
   conectado) nas pontas e um "+" para criar coleção. Muitas abas rolam, com fade nas pontas.
 - **Uma fileira de capas quadradas** (`--console-tile-h`, de 96 a 170 px; espaço `--console-gap`),
   dentro das margens laterais, ancorada na base. Na aba "Todos os jogos", os jogados recentemente vêm
@@ -358,8 +362,8 @@ só onde a interface fica:
 - **Capa focada na Home:** sem anel; só uma sombra curta deslocada para baixo (até
   `0 14px 30px -8px rgb(0 0 0 / 0.85)`, que cresce e some junto com o foco, por mola) separa a capa
   da arte do fundo. É sombra de estado: só a focada tem.
-- **Sobre a arte**, botões pequenos e teclas usam carvão elevado a 80–85% com contorno de linha de
-  carvão, sem desfoque: legíveis em qualquer capa.
+- **Sobre a arte**, botões pequenos e teclas usam carvão sobreposto a 85–88%, preenchidos e sem
+  contorno nem desfoque: legíveis em qualquer capa.
 
 ### Named Rules
 **A Regra do Plano em Repouso.** Superfícies são planas. Sombra, quando existir, é resposta a estado (foco da capa ou elevação de painel flutuante), nunca decoração.
@@ -373,30 +377,45 @@ controle (12 px), cartão (20 px) e painel (28 px); cartões grandes de destaque
 tema padrão, `--radius-card` é 30 px. Onde o WebView2 suporta `corner-shape: squircle`, todo canto vira
 contínuo; círculos e pílulas ficam redondos.
 
-No console (Home e tela do jogo) as peças de conteúdo usam o canto pequeno da **tecla** (6 px,
-`--console-tile-radius`): a capa quadrada, a caixa "Iniciar o jogo", o item de conquista, o ícone da
-conquista, o menu Opções e as teclas de dica. As peças de controle seguem em pílula: botões
-redondos, as abas (contorno em pílula) e a busca. A barra de progresso de troféus (4 px) é uma cápsula.
+No console (Home e tela do jogo) as peças de conteúdo usam `--console-tile-radius` (14 px): a capa
+quadrada, o item de conquista, o ícone da conquista e o menu Opções; as teclas de dica usam 8 px.
+As peças de controle (botões, abas, busca, a caixa "Iniciar o jogo") usam `--corner-sm`/`--corner-md`,
+squircle, e não mais pílula nem círculo. A barra de progresso de troféus (4 px) é uma cápsula.
 Bordas são hairlines de 1 px em `--tone-3` ou `--tone-4`, ou ausentes quando o degrau de tom já separa.
-Os contornos de foco do console (aba ativa, item de conquista) são de 1,5 px em tinta.
+O foco do console é um preenchimento, não um contorno: o bloco de tinta da aba ativa e o cursor claro do item de conquista.
 
 ## Components
 
-Pílulas táteis e silenciosas: botões cheios em pílula, cards de canto largo separados por tom, sem
+Blocos táteis e silenciosos: botões preenchidos de canto squircle, cards de canto largo separados por tom, sem
 borda pesada nem sombra.
 
 ### Buttons
-- **Shape:** pílula completa (999 px), 40 a 48 px de altura.
+- **Shape:** squircle de `--corner-sm` (12 px), 48 a 56 px de altura no app e nas chamadas; 40 px na barra do console.
 - **Primary:** fundo tinta com texto carvão base, peso 600, padding 0 24 px; ícone de "play" preenchido à esquerda em "Jogar/Continuar". Quando o jogo está rodando, vira estado: o ícone dá lugar ao ponto verde ao vivo e o texto a "Em execução", desabilitado.
 - **Hover / Focus:** cresce a 1.03 no hover e encolhe a 0.97 ao pressionar (mola curta); foco = anel de 2 px em tinta, afastado 2 px, sobre qualquer fundo.
-- **Secondary / Ghost:** fundo carvão elevado, borda de 1 px em carvão sobreposto, texto tinta; no hover sobe para carvão sobreposto.
-- **Botão pequeno sobre a arte:** círculo de `--control-h` (34 a 52 px), carvão elevado a 85% com contorno de 1 px em linha de carvão, ícone em tinta; no hover sobe para carvão sobreposto. Voltar na tela do jogo e "Tentar de novo". Favoritar, editar e controle do jogo vivem no menu Opções.
+- **Secondary / Ghost:** fundo `--tone-3`, sem borda, texto tinta; no hover sobe para `--tone-4`. Perigo: fundo `--danger` com texto carvão base, ou `--danger` a 20% com texto `--danger` para estados como "mutado".
+- **Botão pequeno sobre a arte:** quadrado squircle de `--control-h` (34 a 52 px), carvão sobreposto a 88%, sem contorno, ícone em tinta; no hover sobe para a linha de carvão. Voltar na tela do jogo e "Tentar de novo". Favoritar, editar e controle do jogo vivem no menu Opções.
 
 ### Navigation
 - **Style:** sidebar de borda (gaveta de 96 px recolhida, 272 px aberta) com destinos em pílula; item ativo = fundo tinta com texto escuro (`--nav-active-bg`/`--nav-active-ink`).
-- **Abas do console (Home e tela do jogo):** texto em Rótulo de console (caixa alta, 700), tinta suave em repouso, com 1,5 px de contorno transparente; no hover o texto vira tinta e a aba ativa ganha contorno de tinta (pílula, sem preenchimento). Altura `--control-h` − 12 px, padding de 12 px. Q e E (LB e RB, com os glifos do controle) trocam, em chips de 6 px nas pontas; na Home há também um "+" para criar coleção. Na tela do jogo a linha fica acima do título.
+- **Abas do console (Home e tela do jogo):** texto em Rótulo de console (caixa alta, 700), tinta suave em repouso; no hover o texto vira tinta sobre `--tone-3` e a aba ativa é um bloco de tinta com texto carvão que **desliza** de uma aba para a outra (`.console-tab-pill`, posicionado por `useSlidingPill`; em Amigos, Troféus, Perfil e Salas, `HorizontalTabs` com `.t-tabs--squircle`). Altura `--control-h` − 8 px, padding de 16 px. Q e E (LB e RB, com os glifos do controle) trocam, em chips de 8 px nas pontas; na Home há também um "+" para criar coleção. Na tela do jogo a linha fica acima do título.
 - **Menus:** painéis de carvão elevado com canto de 16–28 px; itens de 10–12 px de canto, destaque único para mouse e teclado, e confirmações destrutivas por "segurar" (sair da conta).
 - **Roleta de opções:** listas curtas em coluna que correm por mola, com a opção em foco em negrito branco com seta e as vizinhas apagadas e desfocadas.
+
+### Botões e abas preenchidos (Home, tela do jogo, Amigos, Troféus, Perfil, chamadas)
+Botões e abas não têm contorno: são blocos preenchidos com cantos squircle (`--corner-sm` nos controles, `--corner-md` nos cartões; as capas do console usam `--console-tile-radius`, 14 px). A aba ativa é um bloco de tinta com texto carvão que **desliza** até a aba clicada (`.console-tab-pill` + `useSlidingPill` no console; `HorizontalTabs` com `.t-tabs--squircle` em Amigos). "Iniciar o jogo" e as ações principais são tinta cheia; as secundárias, `--tone-3`. A busca é um campo preenchido, sem aura. O cursor da lista de conquistas é um preenchimento, não um contorno. Pontos de presença e contadores pequenos continuam redondos. Sem arte de jogo por baixo (Amigos, Mods, Configurações), o vídeo de fundo (em loop) aparece a 40%.
+
+### Páginas de sistema (Amigos, Troféus, Perfil)
+Compartilham a moldura `ConsolePageLayout`: um rótulo pequeno em caixa alta, as leituras em número grande (`.console-stats`, mono, unidade pequena), as ações à direita e as abas deslizantes embaixo, com a largura máxima de 1280 px e `--safe-x`/`--safe-y` de margem. A troca de aba ou filtro entra por `SectionTransition` (sobe 8 px e sai do desfoque de 2 px em 250 ms; só aparece, sem deslocamento, com "reduzir movimento"). Cada página escolhe uma coisa dominante: a lista e o painel do amigo, a patente e a escalada de troféus, a capa e a identidade do jogador.
+
+### Patente (rank + nível)
+`RankBadge`: a imagem do rank (bronze, prata, ouro ou platina) e o nível em mono ao lado, numa peça só; o nome do rank fica no `title` e para leitor de tela. É a única leitura de nível da interface.
+
+### Capa que acabou de chegar (Home)
+Duas entradas diferentes, só em `console-reveal`. **Adicionar** (jogo novo pelo modal ou jogo posto num filtro): a capa sobe da base com mola (1,2 s) e um anel de tinta se abre ao redor. **Sincronizar**: as capas se revelam da esquerda para a direita em cascata (70 ms entre uma e outra, no máximo 14), com um clarão que assenta na arte. Trocar de aba, buscar ou filtrar não conta como chegada.
+
+### Fundo em vídeo
+O vídeo ambiente roda em loop, a 40% de opacidade, só nas telas sem arte de jogo (Amigos, Mods, Configurações). Na Home nítida a arte o cobre e ele nem é montado. Com "reduzir movimento" o fundo fica estático, e a troca de estado transiciona só cor, fundo, borda e opacidade (120 ms).
 
 ### Cards / Containers
 - **Corner Style:** 20 a 30 px (cartões grandes `rounded-3xl`), contínuos.
@@ -418,7 +437,7 @@ Duas linhas sobre a arte, sem fundo próprio (o véu de topo basta). Linha 1: ma
 
 ### Capa da fileira (assinatura da Home)
 A capa quadrada de um jogo na fileira da Home, sempre com brilho cheio (a arte de fundo já diz qual está em foco).
-- **Shape:** canto de 6 px (`--console-tile-radius`), fundo carvão elevado; sem arte, o título em legenda de tinta suave no canto de baixo.
+- **Shape:** canto de 14 px (`--console-tile-radius`), fundo carvão elevado; sem arte, o título em legenda de tinta suave no canto de baixo.
 - **Foco:** cresce 1,3× (`--console-focus-scale`) para cima, por mola (React Spring, tensão 340, atrito 32), sem anel de contorno. A sombra de estado cresce junto. Só a capa focada fica na ordem de Tab.
 - **Loja:** abaixo da capa focada, em Rótulo de console e tinta suave (10 px de afastamento).
 - **Troca de arte:** a arte de fundo nova entra assentando (opacidade e escala 1,03 → 1 em 700 ms) enquanto a anterior apaga.
@@ -433,10 +452,10 @@ contorno (linha de carvão, carvão elevado a 80%, canto de 6 px). Home: "Botão
 - **Abrir:** a tela aparece em fade de 520 ms (`--screen-open`, curva `--screen-ease`) e a interface sobe 24 px; como a arte é a mesma da Home, parece que ela ficou no lugar. Fechar: 260 ms (`--screen-close`).
 - **Modo lista:** a arte e a coluna da esquerda deslizam juntas em 600 ms, curva sem quique; a lista entra subindo 16 px logo depois (420 ms, 120 ms de atraso). O bloco do título desliza junto.
 - **Bloco do título:** abas, loja em Rótulo de console, título em `--fs-hero` × 0,5 e os números grandes; "Conquistas recentes" aparece como um link com seta para abrir o modo lista.
-- **Iniciar o jogo:** retângulo de canto 6 px e 1,2× `--cta-h` de altura, fundo carvão base a 55% e contorno de 1 px em tinta a 70%, texto em Rótulo de console à esquerda e à direita um círculo de tinta com "play" (o glifo A com controle). No hover ou foco, a caixa vira tinta cheia e o círculo inverte. Iniciando, vira "Iniciando…"; rodando, "Em execução" com o ponto verde, desabilitada a 75%. O erro de início aparece abaixo, em `--screen-error`.
-- **Menu Opções:** abre com o botão da linha de dicas ou a tecla O (Esc fecha), acima das dicas: lista curta em carvão fundo a 94% com contorno de 1 px em linha de carvão e canto de 6 px, itens em Rótulo (600) que no hover ou foco sobem para carvão sobreposto. Favoritar ou desfavoritar, editar o jogo e o controle do jogo.
+- **Iniciar o jogo:** caixa de tinta cheia de canto `--corner-md` e 1,2× `--cta-h` de altura, texto carvão em Rótulo de console à esquerda e à direita um bloco carvão com "play" (o glifo A com controle). No hover ou foco, a caixa clareia levemente (opacidade 0,9). Iniciando, vira "Iniciando…"; rodando, "Em execução" com o ponto verde, desabilitada a 75%. O erro de início aparece abaixo, em `--screen-error`.
+- **Menu Opções:** abre com o botão da linha de dicas ou a tecla O (Esc fecha), acima das dicas: lista curta em carvão fundo a 94%, sem contorno, de canto 14 px, itens em Rótulo (600) que no hover ou foco sobem para carvão sobreposto. Favoritar ou desfavoritar, editar o jogo e o controle do jogo.
 - **Progresso de troféus:** rótulo em tinta suave à esquerda e porcentagem em mono à direita; abaixo, trilha de 4 px em tinta a 18% com o preenchimento em tinta, que corre em 520 ms.
-- **Conquista recente:** item de carvão fundo com contorno transparente de 1,5 px e canto de 6 px; no hover ou foco o contorno vira tinta (o item em foco, como o selecionado de uma lista de console). Ícone de 56 px (canto 6 px), nome do jogo em tinta apagada, nome da conquista em Body 600, descrição em tinta suave e, à direita, a data (desbloqueada) ou a raridade (próxima) em mono. As próximas a desbloquear ficam sem fundo, com o ícone cinza e um cadeado.
+- **Conquista recente:** item de carvão fundo de canto 14 px; o item em foco ganha o cursor (um preenchimento de tinta a 12% que salta de um item para o outro). Ícone de 56 px (canto 6 px), nome do jogo em tinta apagada, nome da conquista em Body 600, descrição em tinta suave e, à direita, a data (desbloqueada) ou a raridade (próxima) em mono. As próximas a desbloquear ficam sem fundo, com o ícone cinza e um cadeado.
 - **Reduzir movimento:** troca seca, sem subida nem deslize.
 
 ### Mascote e notch (assinatura)
@@ -450,7 +469,7 @@ mexer só quando o pedido for explícito.
 - **Do** separar camadas por degrau de tom (#0A0A0A → #171717 → #262626) e hairline de 1 px, nunca por sombra.
 - **Do** usar tinta cheia (`--ink`, `--ink-muted`, `--ink-faint`) para todo texto lido, com piso de 13 px.
 - **Do** usar só o verde ao vivo (#30d158) como cor de acento, e só para estado ativo em tempo real.
-- **Do** dar a todo botão do app o formato de pílula e a todo cartão o canto contínuo grande; no console, as peças de conteúdo (capa, "Iniciar o jogo", conquista, menu Opções) usam o canto de 6 px da tecla.
+- **Do** dar a todo botão e aba um bloco preenchido de canto squircle (`--corner-sm`) e a todo cartão o canto contínuo grande; no console, as peças de conteúdo (capa, conquista, menu Opções) usam o canto de 14 px.
 - **Do** deixar a arte do jogo em foco como fundo nítido, de ponta a ponta, na Home e na tela do jogo, escurecida só onde há interface.
 - **Do** marcar o foco do console pelo tamanho (capa 1,3×) e pelo contorno ou preenchimento de tinta (aba ativa, item de conquista, "Iniciar o jogo"), não por brilho nem por cor.
 - **Do** escrever abas, rótulos de número, loja e dicas do console em caixa alta pequena, em Rótulo de console.
@@ -466,6 +485,6 @@ mexer só quando o pedido for explícito.
 - **Don't** usar marca, logotipo ou arte da PlayStation na Home e na tela do jogo; da referência vêm só estrutura e movimento (os glifos de botão seguem a família do controle conectado).
 - **Don't** usar texto menor que 13 px nem branco translúcido sobre cinza para texto que se lê.
 - **Don't** pintar a interface com cores além do cinza e do verde ao vivo; a cor vive na arte e nos troféus, e o vermelho só no aviso de erro.
-- **Don't** criar cantos retos, nem cantos de 4–6 px fora das peças de conteúdo do console; botões e abas continuam em pílula.
+- **Don't** criar cantos retos, botões só com contorno ou contorno de qualquer tipo para dizer "selecionado"; o estado se diz por preenchimento e por tom.
 - **Don't** desenhar o nome do jogo na Home nem um anel de contorno na capa focada; o foco é o tamanho.
 - **Don't** transformar o Pherielium em loja: nada de preço, "Comprar" ou recomendação de compra.

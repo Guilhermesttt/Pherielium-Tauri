@@ -6,7 +6,7 @@
  *   - text-[10px..36px]        -> text-[length:var(--step-N)]  (piso de 13px; 9px ou menos fica: contadores)
  *   - bg-[#cinza]              -> bg-[var(--tone-N)]           (pela luminância; mantém o /opacidade)
  *   - text-[#cinza claro]      -> var(--ink*)  ;  text-[#cinza escuro] -> var(--tone-0)
- *   - rounded-[10px..40px]     -> rounded-[var(--corner-sm|md|lg)]  (18 raios diferentes viram 3)
+ *   - rounded-[10px..40px]     -> um dos tokens --corner-sm, --corner-md ou --corner-lg  (18 raios diferentes viram 3)
  *
  * Por que um script: são ~3.000 ocorrências em ~250 arquivos; à mão erraria e não daria para revisar.
  * Idempotente (rodar de novo não muda nada). Fica de fora o que não faz parte do hub

@@ -44,3 +44,6 @@ src-tauri/windows/drivers/*.exe
 # Estado local de ferramentas de design e de IA (caminhos da máquina, caches de hook)
 .gemini/
 .impeccable/
+
+# skills instaladas localmente (terceiros)
+.claude/skills/
