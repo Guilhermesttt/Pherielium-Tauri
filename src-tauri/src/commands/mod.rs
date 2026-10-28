@@ -26,5 +26,7 @@ pub mod audio_capture;
 pub mod controller_config;
 pub mod system;
 pub mod virtual_pad;
+pub mod hidhide_cloak;
+pub mod pad_engine;
 pub mod system_perf;
 

@@ -42,6 +42,7 @@ React + TypeScript (WebView2)
 | `store/sessions.rs` | sessões de tempo de jogo (abre, heartbeat, recupera órfãs) |
 | `overlay.rs`, `achievements*.rs`, `emulator_detector.rs` | overlay e conquistas |
 | `controller_config.rs`, `virtual_pad.rs`, `hardware.rs` | controle e drivers (ViGEmBus, HidHide) |
+| `pad_engine.rs`, `hidhide_cloak.rs` | emulação de controle: lê o controle XInput físico, aplica o perfil do jogo e alimenta um Xbox 360 virtual enquanto o jogo roda; o HidHide (via `HidHideCLI.exe`) esconde o físico do jogo. O que foi escondido é gravado em disco e desfeito ao fechar o app, ao fim do jogo ou na abertura seguinte após uma queda. Limites: só XInput, sem botão Guide, sem repasse de vibração |
 
 ## Fluxo de dados: presença e jogo (hoje)
 
