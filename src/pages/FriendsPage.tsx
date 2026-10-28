@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from "react";
+import { SectionTransition } from "../components/ui/SectionTransition";
 import { isManualDnd, setManualDnd } from "../services/presenceStatus";
 import {
   BellOff,
@@ -8,7 +9,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { SystemPageShell } from "../components/ui/SystemPageShell";
+import { ConsolePageLayout } from "../components/ui/ConsolePageLayout";
 import ModalShell from "../components/ui/ModalShell";
 import { StandardEmptyState } from "../components/ui/StateViews";
 import { usePreferences, type LauncherLanguage } from "../context/PreferencesContext";
@@ -78,10 +79,9 @@ export const FriendsPageActions: React.FC<{
       type="button"
       aria-pressed={dnd}
       onClick={onToggleDnd}
-      className={`inline-flex h-11 cursor-pointer items-center gap-2 rounded-full px-5 text-[length:var(--step-0)] font-semibold ring-1 transition-colors ${
-        dnd
-          ? "bg-[var(--tone-3)] text-[var(--ink)] ring-[color:var(--danger)]"
-          : "bg-[var(--surface-raised)] text-[var(--ink-muted)] ring-[color:var(--border-subtle)] hover:text-[var(--ink)]"
+      title="Não perturbe"
+      className={`inline-flex h-12 cursor-pointer items-center gap-2.5 rounded-[var(--corner-sm)] px-5 text-[length:var(--step-0)] font-semibold transition-colors ${
+        dnd ? "bg-[var(--danger)] text-[var(--tone-0)]" : "bg-[var(--tone-3)] text-[var(--ink)] hover:bg-[var(--tone-4)]"
       }`}
     >
       <BellOff className="h-4 w-4" aria-hidden />
@@ -91,7 +91,7 @@ export const FriendsPageActions: React.FC<{
       type="button"
       onMouseEnter={() => playSound?.("hover")}
       onClick={onAddFriendClick}
-      className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full bg-[var(--ink)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
+      className="inline-flex h-12 cursor-pointer items-center gap-2.5 rounded-[var(--corner-sm)] bg-[var(--ink)] px-6 text-[length:var(--fs-label)] font-bold uppercase tracking-[0.06em] text-[var(--tone-0)] transition active:scale-[0.97] hover:opacity-90"
     >
       <UserPlus className="h-4 w-4" aria-hidden />
       Adicionar amigo
@@ -156,9 +156,19 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
   useGamepadButton("L1", () => switchTab(-1), true, 10);
 
   return (
-    <SystemPageShell
+    <ConsolePageLayout
       title="Amigos"
-      description={friends.length > 0 ? `${friends.length} amigos · ${onlineCount} online · ${playingCount} jogando` : "Conecte-se e jogue junto."}
+      systemPage=""
+      emptyLine="Conecte-se e jogue junto."
+      readings={
+        friends.length > 0
+          ? [
+              { label: "Amigos", value: friends.length },
+              { label: "Online", value: onlineCount },
+              { label: "Jogando", value: playingCount, live: true },
+            ]
+          : null
+      }
       actions={
         <FriendsPageActions
           dnd={dnd}
@@ -171,16 +181,18 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
           playSound={playSound}
         />
       }
+      tabs={
+        <FriendsSubTabs
+          activeTab={activeSubTab}
+          onTabChange={(id) => setActiveSubTab(id)}
+          incomingRequestsCount={incomingRequests.length}
+          totalFriendsCount={friends.length}
+          unreadCount={totalUnreadCount}
+          playSound={playSound}
+        />
+      }
     >
-      <FriendsSubTabs
-        activeTab={activeSubTab}
-        onTabChange={(id) => setActiveSubTab(id)}
-        incomingRequestsCount={incomingRequests.length}
-        totalFriendsCount={friends.length}
-        unreadCount={totalUnreadCount}
-        playSound={playSound}
-      />
-
+      <SectionTransition id={activeSubTab}>
       {/* Estado vazio de página inteira: sem nenhum amigo ainda, evita mostrar
           o layout de 2 colunas totalmente vazio (identidade + busca + grade). */}
       {activeSubTab === "AMIGOS" && friends.length === 0 && (
@@ -266,7 +278,8 @@ export const FriendsPage: React.FC<FriendsPageProps> = React.memo(({
           playSound={playSound}
         />
       )}
-    </SystemPageShell>
+      </SectionTransition>
+    </ConsolePageLayout>
   );
 });
 

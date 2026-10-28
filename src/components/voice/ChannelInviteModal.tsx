@@ -115,18 +115,18 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
 
         <motion.div
           {...modalMotion}
-          className="glass-panel relative flex flex-col w-full max-w-md max-h-[80vh] overflow-hidden rounded-3xl border border-white/10 shadow-[0_30px_90px_rgba(0,0,0,0.95)] z-10"
+          className="glass-panel relative flex flex-col w-full max-w-md max-h-[80vh] overflow-hidden rounded-3xl border border-transparent shadow-[0_30px_90px_rgba(0,0,0,0.95)] z-10"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4.5 border-b border-white/8 bg-black/30 backdrop-blur-md">
+          <div className="flex items-center justify-between px-6 py-4.5 border-b border-transparent bg-black/30 backdrop-blur-md">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white border border-white/10 shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--tone-3)] text-[var(--ink)] border border-transparent shadow-sm">
                 <UserPlus className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-sm font-black text-white tracking-tight uppercase flex items-center gap-2">
+                <h3 className="text-sm font-black text-[var(--ink)] tracking-tight uppercase flex items-center gap-2">
                   <span>Convidar Amigos</span>
-                  <span className="text-[length:var(--step-0)] font-mono font-normal text-[var(--ink-muted)] bg-white/10 px-1.5 py-0.5 rounded border border-white/10">
+                  <span className="text-[length:var(--step-0)] font-mono font-normal text-[var(--ink-muted)] bg-[var(--tone-3)] px-1.5 py-0.5 rounded border border-transparent">
                     {availableFriends.length}
                   </span>
                 </h3>
@@ -138,7 +138,7 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="h-8 w-8 flex items-center justify-center rounded-xl bg-white/5 text-[var(--ink-muted)] hover:text-white hover:bg-white/15 transition cursor-pointer"
+              className="h-8 w-8 flex items-center justify-center rounded-xl bg-[var(--tone-3)] text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)] transition cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
@@ -148,19 +148,19 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
           <div className="px-5 pt-4 pb-2">
             <div className="relative flex items-center">
               <Search className="absolute left-3.5 h-4 w-4 text-[var(--ink-faint)] pointer-events-none" />
-              <input
+              <input aria-label="Buscar amigo por nome"
                 type="text"
                 placeholder="Buscar amigo por nome..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
-                className="w-full h-10 pl-10 pr-4 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-white placeholder-white/30 focus:outline-none focus:border-white/30 focus:bg-white/10 transition"
+                className="w-full h-10 pl-10 pr-4 rounded-xl bg-[var(--tone-3)] border border-transparent text-xs font-semibold text-[var(--ink)] placeholder-white/30 focus:outline-none focus:border-transparent focus:bg-[var(--tone-4)] transition"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 text-[var(--ink-faint)] hover:text-white transition"
+                  className="absolute right-3 text-[var(--ink-faint)] hover:text-[var(--ink)] transition"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -189,12 +189,12 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
                 return (
                   <div
                     key={friend.id}
-                    className="flex items-center justify-between p-2.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/6 hover:border-white/12 transition-all duration-150"
+                    className="flex items-center justify-between p-2.5 rounded-2xl bg-[var(--tone-3)] hover:bg-[var(--tone-4)] border border-transparent hover:border-transparent transition-all duration-150"
                   >
                     {/* Friend Avatar & Info */}
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
-                        <div className="h-10 w-10 rounded-full overflow-hidden border border-white/10 bg-white/5">
+                        <div className="h-10 w-10 rounded-full overflow-hidden border border-transparent bg-[var(--tone-3)]">
                           {friend.avatar ? (
                             <img
                               src={friend.avatar}
@@ -202,7 +202,7 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-white/10 text-xs font-black text-white">
+                            <div className="flex h-full w-full items-center justify-center bg-[var(--tone-3)] text-xs font-black text-[var(--ink)]">
                               {friend.name.slice(0, 2).toUpperCase()}
                             </div>
                           )}
@@ -211,16 +211,16 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
                         <span
                           className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#111218] ${
                             friend.status === "online"
-                              ? "bg-emerald-500"
+                              ? "bg-[var(--live)]"
                               : friend.status === "playing"
                               ? "bg-purple-500"
-                              : "bg-white/30"
+                              : "bg-[var(--tone-4)]"
                           }`}
                         />
                       </div>
 
                       <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-white truncate max-w-[170px]">
+                        <h4 className="text-xs font-bold text-[var(--ink)] truncate max-w-[170px]">
                           {friend.name}
                         </h4>
                         <p className="text-[length:var(--step-0)] text-[var(--ink-faint)] truncate max-w-[170px]">
@@ -240,10 +240,10 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
                       onClick={() => void handleSendInvite(friend)}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
                         isInvited
-                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 cursor-default"
+                          ? "bg-[var(--tone-3)] text-[var(--live)] border border-transparent cursor-default"
                           : isSending
-                          ? "bg-white/10 text-[var(--ink-muted)] border border-white/10"
-                          : "bg-white text-black hover:bg-white/90 shadow-md hover:scale-105 active:scale-95"
+                          ? "bg-[var(--tone-3)] text-[var(--ink-muted)] border border-transparent"
+                          : "bg-[var(--ink)] text-[var(--tone-0)] hover:opacity-90 shadow-md hover:scale-105 active:scale-95"
                       }`}
                     >
                       {isInvited ? (
@@ -270,7 +270,7 @@ export const ChannelInviteModal: React.FC<ChannelInviteModalProps> = ({
           </div>
 
           {/* Footer Info */}
-          <div className="px-6 py-3 border-t border-white/8 bg-black/20 text-center">
+          <div className="px-6 py-3 border-t border-transparent bg-black/20 text-center">
             <p className="text-[length:var(--step-0)] text-[var(--ink-faint)] flex items-center justify-center gap-1.5">
               <Radio className="h-3 w-3 text-[var(--ink-muted)] animate-pulse" />
               <span>O amigo receberá uma mensagem interativa com botão para entrar na call</span>

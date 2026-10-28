@@ -58,7 +58,7 @@ const WelcomeLogoPreview: React.FC<{ shouldReduceMotion?: boolean | null }> = ({
       transition={
         shouldReduceMotion ? { duration: 0.2 } : { duration: 0.6, ease: "easeOut" }
       }
-      className="pointer-events-none absolute h-36 w-36 rounded-full bg-white/[0.08] blur-2xl"
+      className="pointer-events-none absolute h-36 w-36 rounded-full bg-[var(--tone-3)] blur-2xl"
     />
 
     <motion.div
@@ -74,7 +74,7 @@ const WelcomeLogoPreview: React.FC<{ shouldReduceMotion?: boolean | null }> = ({
       <img
         src={desktopIcon}
         alt="Símbolo Pherielium"
-        className="h-24 w-24 sm:h-28 sm:w-28 rounded-[var(--corner-lg)] object-cover border border-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_18px_40px_rgba(0,0,0,0.7)]"
+        className="h-24 w-24 sm:h-28 sm:w-28 rounded-[var(--corner-lg)] object-cover border border-transparent shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_18px_40px_rgba(0,0,0,0.7)]"
         draggable={false}
       />
     </motion.div>
@@ -91,7 +91,7 @@ const LibraryPreview: React.FC<{ shouldReduceMotion?: boolean | null }> = ({
 }) => {
   return (
     <div className="relative flex items-center justify-center">
-      <div className="pointer-events-none absolute h-36 w-36 rounded-full bg-white/[0.06] blur-2xl" />
+      <div className="pointer-events-none absolute h-36 w-36 rounded-full bg-[var(--tone-3)] blur-2xl" />
 
       <div className="relative z-10 flex items-center justify-center">
         {/* Capa da esquerda (acomoda atrás) */}
@@ -107,9 +107,9 @@ const LibraryPreview: React.FC<{ shouldReduceMotion?: boolean | null }> = ({
               ? { duration: 0.2 }
               : { type: "spring", bounce: 0.1, duration: 0.45, delay: 0.05 }
           }
-          className="absolute flex h-[76px] w-[54px] flex-col items-center justify-center rounded-xl border border-white/10 bg-gradient-to-b from-[#252525] to-[#121212] shadow-[0_10px_24px_rgba(0,0,0,0.6)]"
+          className="absolute flex h-[76px] w-[54px] flex-col items-center justify-center rounded-[var(--corner-sm)] border border-transparent bg-gradient-to-b from-[#252525] to-[#121212] shadow-[0_10px_24px_rgba(0,0,0,0.6)]"
         >
-          <div className="h-4 w-4 rounded-full bg-white/10" />
+          <div className="h-4 w-4 rounded-full bg-[var(--tone-3)]" />
         </motion.div>
 
         {/* Capa da direita (acomoda atrás) */}
@@ -125,9 +125,9 @@ const LibraryPreview: React.FC<{ shouldReduceMotion?: boolean | null }> = ({
               ? { duration: 0.2 }
               : { type: "spring", bounce: 0.1, duration: 0.45, delay: 0.08 }
           }
-          className="absolute flex h-[76px] w-[54px] flex-col items-center justify-center rounded-xl border border-white/10 bg-gradient-to-b from-[#252525] to-[#121212] shadow-[0_10px_24px_rgba(0,0,0,0.6)]"
+          className="absolute flex h-[76px] w-[54px] flex-col items-center justify-center rounded-[var(--corner-sm)] border border-transparent bg-gradient-to-b from-[#252525] to-[#121212] shadow-[0_10px_24px_rgba(0,0,0,0.6)]"
         >
-          <div className="h-4 w-4 rounded-full bg-white/10" />
+          <div className="h-4 w-4 rounded-full bg-[var(--tone-3)]" />
         </motion.div>
 
         {/* Capa principal no centro */}
@@ -143,7 +143,7 @@ const LibraryPreview: React.FC<{ shouldReduceMotion?: boolean | null }> = ({
               ? { duration: 0.2 }
               : { type: "spring", bounce: 0.15, duration: 0.4 }
           }
-          className="relative z-20 flex h-[94px] w-[68px] flex-col items-center justify-center rounded-[var(--corner-md)] border border-white/20 bg-gradient-to-b from-[#2D2D2D] via-[#1C1C1C] to-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_16px_36px_rgba(0,0,0,0.75)]"
+          className="relative z-20 flex h-[94px] w-[68px] flex-col items-center justify-center rounded-[var(--corner-md)] border border-transparent bg-gradient-to-b from-[#2D2D2D] via-[#1C1C1C] to-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_16px_36px_rgba(0,0,0,0.75)]"
         >
           <Gamepad2 className="h-7 w-7 text-[var(--ink)]" strokeWidth={1.75} />
 
@@ -171,10 +171,10 @@ const LibraryPreview: React.FC<{ shouldReduceMotion?: boolean | null }> = ({
                 ? { duration: 0.2 }
                 : { delay: 0.42, duration: 0.65, ease: "easeInOut" }
             }
-            className="mt-2 flex items-center gap-1 rounded-full border border-white/20 bg-white/15 px-2 py-0.5 shadow-sm"
+            className="mt-2 flex items-center gap-1 rounded-full border border-transparent bg-[var(--tone-4)] px-2 py-0.5 shadow-sm"
           >
-            <Plus className="h-2.5 w-2.5 text-white" strokeWidth={2.5} />
-            <span className="text-[8.5px] font-bold uppercase tracking-wider text-white">
+            <Plus className="h-2.5 w-2.5 text-[var(--ink)]" strokeWidth={2.5} />
+            <span className="text-[8.5px] font-bold uppercase tracking-wider text-[var(--ink)]">
               Novo
             </span>
           </motion.div>
@@ -256,7 +256,7 @@ const TrophyXPPreview: React.FC<TrophyXPPreviewProps> = ({
         className="relative z-10"
       >
         {/* Acabamento uniforme para eliminar ruído da textura azul */}
-        <div className="relative flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center overflow-hidden rounded-[var(--corner-md)] border border-white/20 bg-gradient-to-b from-[#2A2A2A] via-[#1E1E1E] to-[#121212] shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_14px_32px_rgba(0,0,0,0.7)]">
+        <div className="relative flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center overflow-hidden rounded-[var(--corner-md)] border border-transparent bg-gradient-to-b from-[#2A2A2A] via-[#1E1E1E] to-[#121212] shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_14px_32px_rgba(0,0,0,0.7)]">
           <img
             src={platinaLogo}
             alt="Emblema Platina Pherielium"
@@ -295,7 +295,7 @@ const TrophyXPPreview: React.FC<TrophyXPPreviewProps> = ({
         className="mt-2.5 flex flex-col items-center gap-1.5"
       >
         <div className="flex items-center gap-1.5">
-          <span className="rounded border border-white/10 bg-white/10 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-widest text-[var(--ink-muted)]">
+          <span className="rounded border border-transparent bg-[var(--tone-3)] px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-widest text-[var(--ink-muted)]">
             Demonstração
           </span>
           <span className="text-[length:var(--step-0)] font-semibold tracking-tight text-[var(--ink)]">
@@ -305,7 +305,7 @@ const TrophyXPPreview: React.FC<TrophyXPPreviewProps> = ({
 
         {/* Barra de XP e pontuação */}
         <div className="flex items-center gap-2">
-          <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/15">
+          <div className="h-1.5 w-28 overflow-hidden rounded-full bg-[var(--tone-4)]">
             <motion.div
               initial={shouldReduceMotion ? { width: "75%" } : { width: "0%" }}
               animate={{ width: "75%" }}
@@ -334,7 +334,7 @@ const TrophyXPPreview: React.FC<TrophyXPPreviewProps> = ({
           type="button"
           onClick={handlePlaySound}
           title={`Ouvir som do troféu (${THEME_NAMES[soundTheme] || "Pherielium"})`}
-          className="flex cursor-pointer items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white"
+          className="flex cursor-pointer items-center gap-1 rounded-[var(--corner-sm)] border border-transparent bg-[var(--tone-3)] px-2 py-0.5 text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] transition-colors hover:border-transparent hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
         >
           <Volume2 className="h-2.5 w-2.5" />
           <span>Som ({THEME_SHORT_NAMES[soundTheme] || "Tema"})</span>
@@ -343,7 +343,7 @@ const TrophyXPPreview: React.FC<TrophyXPPreviewProps> = ({
         <button
           type="button"
           onClick={handleReplay}
-          className="flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-1 rounded-[var(--corner-sm)] border border-transparent bg-[var(--tone-3)] px-2 py-0.5 text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] transition-colors hover:border-transparent hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
         >
           <RotateCcw className="h-2.5 w-2.5" />
           <span>Rever</span>
@@ -364,7 +364,7 @@ const FriendsVoicePreview: React.FC<{ shouldReduceMotion?: boolean | null }> = (
   return (
     <div className="relative flex items-center justify-center">
       {/* Luz ambiente verde esmeralda sutil */}
-      <div className="pointer-events-none absolute h-36 w-36 rounded-full bg-emerald-500/[0.08] blur-2xl" />
+      <div className="pointer-events-none absolute h-36 w-36 rounded-full bg-[var(--tone-3)] blur-2xl" />
 
       <div className="relative z-10 flex items-center justify-center">
         {/* Dois arcos discretos ao redor do avatar reagindo por um instante */}
@@ -408,9 +408,9 @@ const FriendsVoicePreview: React.FC<{ shouldReduceMotion?: boolean | null }> = (
               ? { duration: 0.2 }
               : { type: "spring", bounce: 0.1, duration: 0.4 }
           }
-          className="relative flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-full border border-white/20 bg-gradient-to-b from-[#252525] via-[#1A1A1A] to-[#101010] shadow-[inset_0_2px_4px_rgba(255,255,255,0.22),0_16px_36px_rgba(0,0,0,0.7)]"
+          className="relative flex h-20 w-20 sm:h-22 sm:w-22 items-center justify-center rounded-full border border-transparent bg-gradient-to-b from-[#252525] via-[#1A1A1A] to-[#101010] shadow-[inset_0_2px_4px_rgba(255,255,255,0.22),0_16px_36px_rgba(0,0,0,0.7)]"
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[var(--ink)]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-transparent bg-[var(--tone-3)] text-[var(--ink)]">
             <Users className="h-6 w-6" strokeWidth={1.75} />
           </div>
 
@@ -448,22 +448,22 @@ const OverlayPreview: React.FC<{ shouldReduceMotion?: boolean | null }> = ({
 }) => {
   return (
     <div className="relative flex items-center justify-center">
-      <div className="pointer-events-none absolute h-36 w-36 rounded-full bg-blue-500/[0.08] blur-2xl" />
+      <div className="pointer-events-none absolute h-36 w-36 rounded-full bg-[var(--tone-3)] blur-2xl" />
 
       {/* Mini cena de jogo no fundo */}
-      <div className="relative h-[116px] w-[220px] overflow-hidden rounded-2xl border border-white/15 bg-[var(--tone-1)] shadow-[0_16px_36px_rgba(0,0,0,0.7)]">
+      <div className="relative h-[116px] w-[220px] overflow-hidden rounded-[var(--corner-md)] border border-transparent bg-[var(--tone-1)] shadow-[0_16px_36px_rgba(0,0,0,0.7)]">
         {/* Atmosfera imersiva de gameplay */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#0F172A] via-[#0A0E1A] to-[#05070B]" />
         {/* Grade de terreno 3D em perspectiva sutil */}
-        <div className="absolute inset-x-0 bottom-0 h-10 border-t border-white/5 bg-[linear-gradient(to_bottom,transparent,rgba(255,255,255,0.03))]" />
+        <div className="absolute inset-x-0 bottom-0 h-10 border-t border-transparent bg-[linear-gradient(to_bottom,transparent,rgba(255,255,255,0.03))]" />
         {/* Retículo de mira central discreto */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="h-1.5 w-1.5 rounded-full bg-white/25" />
+          <div className="h-1.5 w-1.5 rounded-full bg-[var(--tone-4)]" />
         </div>
         {/* Mini HUD de jogo no canto superior esquerdo */}
         <div className="absolute left-2.5 top-2 flex items-center gap-1 opacity-50">
-          <div className="h-1 w-6 rounded-full bg-red-400/80" />
-          <div className="h-1 w-4 rounded-full bg-sky-400/80" />
+          <div className="h-1 w-6 rounded-full bg-[color-mix(in_srgb,var(--danger)_18%,transparent)]" />
+          <div className="h-1 w-4 rounded-full bg-[var(--tone-3)]" />
         </div>
 
         {/* Uma miniatura do painel se abre sobre a cena de jogo e se acomoda */}
@@ -477,12 +477,12 @@ const OverlayPreview: React.FC<{ shouldReduceMotion?: boolean | null }> = ({
               ? { duration: 0.2 }
               : { type: "spring", bounce: 0.12, duration: 0.45, delay: 0.1 }
           }
-          className="absolute inset-y-1.5 left-2 flex w-[138px] flex-col justify-between rounded-xl border border-white/20 bg-[var(--tone-2)]/92 p-2 shadow-[0_12px_28px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md"
+          className="absolute inset-y-1.5 left-2 flex w-[138px] flex-col justify-between rounded-[var(--corner-sm)] border border-transparent bg-[var(--tone-2)]/92 p-2 shadow-[0_12px_28px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md"
         >
           {/* Topo do overlay */}
-          <div className="flex items-center justify-between border-b border-white/10 pb-1">
+          <div className="flex items-center justify-between border-b border-transparent pb-1">
             <div className="flex items-center gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.8)]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--tone-3)] shadow-[0_0_6px_rgba(56,189,248,0.8)]" />
               <span className="text-[8.5px] font-bold tracking-tight text-[var(--ink)]">
                 Pherielium
               </span>
@@ -492,8 +492,8 @@ const OverlayPreview: React.FC<{ shouldReduceMotion?: boolean | null }> = ({
 
           {/* Conteúdo miniatura */}
           <div className="my-1 space-y-1">
-            <div className="flex items-center gap-1 rounded border border-white/5 bg-white/5 p-1">
-              <Users className="h-2.5 w-2.5 text-emerald-400" />
+            <div className="flex items-center gap-1 rounded border border-transparent bg-[var(--tone-3)] p-1">
+              <Users className="h-2.5 w-2.5 text-[var(--live)]" />
               <span className="text-[7.5px] font-medium text-[var(--ink)]">
                 3 Amigos Online
               </span>
@@ -501,9 +501,9 @@ const OverlayPreview: React.FC<{ shouldReduceMotion?: boolean | null }> = ({
           </div>
 
           {/* Atalho de ativação */}
-          <div className="flex items-center justify-between border-t border-white/10 pt-0.5">
+          <div className="flex items-center justify-between border-t border-transparent pt-0.5">
             <span className="text-[7.5px] font-medium text-[var(--ink-muted)]">Atalho</span>
-            <span className="rounded bg-white/10 px-1 py-0.5 text-[7px] font-bold text-[var(--ink)]">
+            <span className="rounded bg-[var(--tone-3)] px-1 py-0.5 text-[7px] font-bold text-[var(--ink)]">
               Ctrl+Shift+O
             </span>
           </div>
@@ -709,7 +709,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({
       backdropClassName="bg-black/80 backdrop-blur-md"
       ariaLabel="Tour de Boas-Vindas ao Pherielium"
       gamepadPriority={260}
-      className="overflow-hidden rounded-[var(--corner-lg)] border border-white/10 bg-[var(--tone-2)] p-0 shadow-[0_32px_90px_rgba(0,0,0,0.8)]"
+      className="overflow-hidden rounded-[var(--corner-lg)] border border-transparent bg-[var(--tone-2)] p-0 shadow-[0_32px_90px_rgba(0,0,0,0.8)]"
     >
       <div className="relative overflow-hidden">
         {/* Banner superior com iluminação adaptativa e altura ampliada estável */}
@@ -767,7 +767,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({
               onClose();
             }}
             aria-label="Fechar guia"
-            className="absolute right-3.5 top-3.5 z-20 grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-black/45 text-[var(--ink-muted)] backdrop-blur-sm transition-colors hover:border-white/20 hover:bg-black/65 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
+            className="absolute right-3.5 top-3.5 z-20 grid h-8 w-8 place-items-center rounded-full border border-transparent bg-black/45 text-[var(--ink-muted)] backdrop-blur-sm transition-colors hover:border-transparent hover:bg-black/65 hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
           >
             <X className="h-4 w-4" />
           </button>
@@ -799,11 +799,11 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({
                   <p className="text-[length:var(--step-0)] font-semibold uppercase tracking-[0.16em] text-[var(--ink-muted)]">
                     {current.category}
                   </p>
-                  <span className="rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-0.5 text-[length:var(--step-0)] font-medium tracking-wider text-[var(--ink-muted)]">
+                  <span className="rounded-full border border-transparent bg-[var(--tone-3)] px-2.5 py-0.5 text-[length:var(--step-0)] font-medium tracking-wider text-[var(--ink-muted)]">
                     {currentStep + 1} de {steps.length}
                   </span>
                 </div>
-                <h2 className="mt-1 text-[length:var(--step-3)] font-bold leading-tight tracking-tight text-white">
+                <h2 className="mt-1 text-[length:var(--step-3)] font-bold leading-tight tracking-tight text-[var(--ink)]">
                   {current.title}
                 </h2>
                 <p className="mt-1 text-[length:var(--step-0)] font-normal leading-relaxed text-[var(--ink-muted)]">
@@ -818,7 +818,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center gap-2.5 rounded-2xl border border-white/20 bg-white/10 p-3 text-white"
+                      className="flex items-center gap-2.5 rounded-[var(--corner-md)] border border-transparent bg-[var(--tone-3)] p-3 text-[var(--ink)]"
                     >
                       <Check className="h-4 w-4 text-[#30D158]" strokeWidth={2.5} />
                       <span className="text-[length:var(--step-0)] font-medium">{actionFeedback}</span>
@@ -839,17 +839,17 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({
                             handleNext();
                           }
                         }}
-                        className="group relative flex w-full cursor-pointer items-center gap-3.5 rounded-2xl border border-white/12 bg-white/[0.04] p-3 text-left transition-all duration-200 hover:border-white/25 hover:bg-white/[0.08] active:scale-[0.99]"
+                        className="group relative flex w-full cursor-pointer items-center gap-3.5 rounded-[var(--corner-md)] border border-transparent bg-[var(--tone-3)] p-3 text-left transition-all duration-200 hover:border-transparent hover:bg-[var(--tone-4)] active:scale-[0.99]"
                       >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-white shadow-inner">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--corner-sm)] border border-transparent bg-[var(--tone-3)] text-[var(--ink)] shadow-inner">
                           <RefreshCw className="h-5 w-5 text-[var(--ink)] transition-transform duration-300 group-hover:rotate-45" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between">
-                            <p className="text-[length:var(--step-1)] font-semibold text-white">
+                            <p className="text-[length:var(--step-1)] font-semibold text-[var(--ink)]">
                               Conectar uma plataforma
                             </p>
-                            <ChevronRight className="h-4 w-4 text-[var(--ink-faint)] transition-all group-hover:translate-x-0.5 group-hover:text-white" />
+                            <ChevronRight className="h-4 w-4 text-[var(--ink-faint)] transition-all group-hover:translate-x-0.5 group-hover:text-[var(--ink)]" />
                           </div>
                           <p className="mt-0.5 text-[length:var(--step-0)] font-normal leading-relaxed text-[var(--ink-muted)]">
                             Vincule sua conta Steam ou Epic para sincronização automática.
@@ -872,17 +872,17 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({
                             handleNext();
                           }
                         }}
-                        className="group relative flex w-full cursor-pointer items-center gap-3.5 rounded-2xl border border-white/12 bg-white/[0.04] p-3 text-left transition-all duration-200 hover:border-white/25 hover:bg-white/[0.08] active:scale-[0.99]"
+                        className="group relative flex w-full cursor-pointer items-center gap-3.5 rounded-[var(--corner-md)] border border-transparent bg-[var(--tone-3)] p-3 text-left transition-all duration-200 hover:border-transparent hover:bg-[var(--tone-4)] active:scale-[0.99]"
                       >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-white shadow-inner">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--corner-sm)] border border-transparent bg-[var(--tone-3)] text-[var(--ink)] shadow-inner">
                           <Plus className="h-5 w-5 text-[var(--ink)] transition-transform duration-300 group-hover:scale-110" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between">
-                            <p className="text-[length:var(--step-1)] font-semibold text-white">
+                            <p className="text-[length:var(--step-1)] font-semibold text-[var(--ink)]">
                               Adicionar jogo do computador
                             </p>
-                            <span className="rounded bg-white/10 px-1.5 py-0.5 text-[length:var(--step-0)] font-medium text-[var(--ink-muted)]">
+                            <span className="rounded bg-[var(--tone-3)] px-1.5 py-0.5 text-[length:var(--step-0)] font-medium text-[var(--ink-muted)]">
                               Ctrl + N
                             </span>
                           </div>
@@ -899,7 +899,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({
                           playSound?.("navigate");
                           handleNext();
                         }}
-                        className="w-full cursor-pointer py-1 text-center text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] transition-colors hover:text-white"
+                        className="w-full cursor-pointer py-1 text-center text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] transition-colors hover:text-[var(--ink)]"
                       >
                         Fazer isso depois →
                       </button>
@@ -914,13 +914,13 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({
                     return (
                       <li
                         key={index}
-                        className="flex items-start gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-2.5"
+                        className="flex items-start gap-3 rounded-[var(--corner-sm)] border border-transparent bg-[var(--tone-3)] p-2.5"
                       >
-                        <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border border-white/15 bg-white/5 text-[var(--ink)]">
+                        <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border border-transparent bg-[var(--tone-3)] text-[var(--ink)]">
                           <Icon className="h-3.5 w-3.5" strokeWidth={2} />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-[length:var(--step-0)] font-semibold leading-snug text-white">
+                          <p className="text-[length:var(--step-0)] font-semibold leading-snug text-[var(--ink)]">
                             {item.title}
                           </p>
                           <p className="mt-0.5 text-[length:var(--step-0)] font-normal leading-relaxed text-[var(--ink-muted)]">
@@ -948,8 +948,8 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({
                 aria-label={`Ir para passo ${i + 1}`}
                 className={`h-1.5 cursor-pointer rounded-full transition-all duration-300 ${
                   i === currentStep
-                    ? "w-5 bg-white"
-                    : "w-1.5 bg-white/25 hover:bg-white/45"
+                    ? "w-5 bg-[var(--ink)]"
+                    : "w-1.5 bg-[var(--tone-4)] hover:bg-[var(--tone-4)]"
                 }`}
               />
             ))}
@@ -963,7 +963,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({
                   type="button"
                   onClick={handlePrev}
                   aria-label="Passo anterior"
-                  className="flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/10 px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-white/15 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 active:scale-[0.98]"
+                  className="flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-[var(--corner-sm)] border border-transparent bg-[var(--tone-3)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--tone-4)] active:scale-[0.98]"
                 >
                   <ChevronLeft className="h-4 w-4" />
                   <span>Voltar</span>
@@ -976,7 +976,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({
                     onClose();
                   }}
                   aria-label="Pular apresentação"
-                  className="flex h-11 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-white/10 px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-white/15 hover:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 active:scale-[0.98]"
+                  className="flex h-11 cursor-pointer items-center justify-center rounded-[var(--corner-sm)] border border-transparent bg-[var(--tone-3)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--tone-4)] active:scale-[0.98]"
                 >
                   Pular
                 </button>
@@ -990,7 +990,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({
                     ? "Começar a Jogar"
                     : "Próximo passo"
                 }
-                className="flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[#E8E8E8] px-4 text-[length:var(--step-0)] font-semibold text-[#111] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white active:scale-[0.98]"
+                className="flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-[var(--corner-sm)] bg-[#E8E8E8] px-4 text-[length:var(--step-0)] font-semibold text-[#111] transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white active:scale-[0.98]"
               >
                 <span>
                   {currentStep === steps.length - 1 ? "Começar a Jogar" : "Continuar"}

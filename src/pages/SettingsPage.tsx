@@ -1,6 +1,7 @@
 import { restartTour } from "../tour/tourSteps";
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { SectionTransition } from "../components/ui/SectionTransition";
 import {
   Activity,
   Bell,
@@ -954,7 +955,7 @@ export const SettingsChoice: React.FC<{
     aria-pressed={active}
     onClick={onClick}
     onMouseEnter={onHover}
-    className="relative flex flex-col justify-between cursor-pointer overflow-hidden rounded-2xl border px-4 py-3 text-left transition duration-200 hover:scale-[1.015] hover:border-[color:var(--border-strong)] hover:bg-[var(--tone-3)] active:scale-[0.985]"
+    className="relative flex flex-col justify-between cursor-pointer overflow-hidden rounded-[var(--corner-md)] border px-4 py-3 text-left transition duration-200 hover:scale-[1.015] hover:border-[color:var(--border-strong)] hover:bg-[var(--tone-3)] active:scale-[0.985]"
     style={{
       background: active
         ? "var(--launcher-accent-soft)"
@@ -971,18 +972,18 @@ export const SettingsChoice: React.FC<{
           style={{ background: swatch }}
         />
       )}
-      <span className="text-xs font-bold text-[var(--ink)] whitespace-nowrap truncate min-w-0">
+      <span className="text-[length:var(--step-0)] font-bold text-[var(--ink)] whitespace-nowrap truncate min-w-0">
         {label}
       </span>
     </div>
     {hint && (
-      <span className="text-xs font-medium text-[var(--ink-muted)] whitespace-nowrap truncate block min-w-0">
+      <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] whitespace-nowrap truncate block min-w-0">
         {hint}
       </span>
     )}
     {active && (
       <span
-        className="pointer-events-none absolute inset-0 rounded-2xl"
+        className="pointer-events-none absolute inset-0 rounded-[var(--corner-md)]"
         style={{
           boxShadow:
             "inset 0 0 0 1px rgb(var(--launcher-accent) / 0.28), 0 0 28px rgb(var(--launcher-accent) / 0.16)",
@@ -1217,25 +1218,25 @@ export const renderThemeMiniatureContent = (
       // Pherielium: Preto carvão + branco neutro, superfícies foscas, luz localizada no elemento em foco
       return (
         <div
-          className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-white/10 bg-[var(--tone-1)] shadow-inner relative`}
+          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-[var(--tone-1)] shadow-inner relative`}
         >
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-white/10 bg-[var(--tone-2)] shrink-0">
-            <div className="h-1 w-5 rounded-full bg-white/30" />
-            <div className="h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_4px_rgba(255,255,255,0.8)]" />
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[var(--tone-2)] shrink-0">
+            <div className="h-1 w-5 rounded-full bg-[var(--tone-4)]" />
+            <div className="h-1.5 w-1.5 rounded-full bg-[var(--ink)] shadow-[0_0_4px_rgba(255,255,255,0.8)]" />
           </div>
           <div className="flex flex-1 min-h-0">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-white/10 bg-[var(--tone-2)]">
-              <div className="h-1 w-full rounded-full bg-white/40" />
-              <div className="h-1 w-3/4 rounded-full bg-white/20" />
-              <div className="h-1 w-4/5 rounded-full bg-white/20" />
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-[var(--tone-2)]">
+              <div className="h-1 w-full rounded-full bg-[var(--tone-4)]" />
+              <div className="h-1 w-3/4 rounded-full bg-[var(--tone-4)]" />
+              <div className="h-1 w-4/5 rounded-full bg-[var(--tone-4)]" />
             </div>
             <div className="flex-1 p-2 flex gap-1.5 items-center justify-center bg-[var(--tone-1)]">
-              <div className="w-1/2 h-8 rounded-lg border border-white/50 bg-[var(--tone-3)] shadow-[0_0_12px_rgba(255,255,255,0.15),inset_0_1px_0_rgba(255,255,255,0.25)] flex flex-col items-center justify-center gap-1">
-                <div className="h-1 w-4 rounded-full bg-white" />
-                <div className="h-0.5 w-2.5 rounded-full bg-white/40" />
+              <div className="w-1/2 h-8 rounded-[10px] border border-transparent bg-[var(--tone-3)] shadow-[0_0_12px_rgba(255,255,255,0.15),inset_0_1px_0_rgba(255,255,255,0.25)] flex flex-col items-center justify-center gap-1">
+                <div className="h-1 w-4 rounded-full bg-[var(--ink)]" />
+                <div className="h-0.5 w-2.5 rounded-full bg-[var(--tone-4)]" />
               </div>
-              <div className="w-1/2 h-7 rounded-md border border-white/5 bg-white/[0.03] opacity-40 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-white/20" />
+              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-40 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-[var(--tone-4)]" />
               </div>
             </div>
           </div>
@@ -1246,27 +1247,27 @@ export const renderThemeMiniatureContent = (
       // PS5: Branco porcelana + azul elétrico pontual, contornos suaves e iluminação fria nas bordas
       return (
         <div
-          className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-white/12 bg-[var(--tone-1)] shadow-inner relative`}
+          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-[var(--tone-1)] shadow-inner relative`}
         >
           <div className="absolute top-0 inset-x-0 h-[1.5px] bg-[#2979FF] opacity-90 shadow-[0_0_8px_#2979FF]" />
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-white/10 bg-[#121620] shrink-0">
-            <div className="h-1 w-6 rounded-full bg-white/30" />
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[#121620] shrink-0">
+            <div className="h-1 w-6 rounded-full bg-[var(--tone-4)]" />
             <div className="h-1.5 w-1.5 rounded-full bg-[#2979FF] shadow-[0_0_6px_#2979FF]" />
           </div>
           <div className="flex flex-1 min-h-0">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-white/10 bg-[#0F131C]">
-              <div className="h-1 w-full rounded-full bg-white/35" />
-              <div className="h-1 w-3/4 rounded-full bg-white/15" />
-              <div className="h-1 w-4/5 rounded-full bg-white/15" />
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-[#0F131C]">
+              <div className="h-1 w-full rounded-full bg-[var(--tone-4)]" />
+              <div className="h-1 w-3/4 rounded-full bg-[var(--tone-4)]" />
+              <div className="h-1 w-4/5 rounded-full bg-[var(--tone-4)]" />
             </div>
             <div className="flex-1 p-2 flex gap-1.5 items-center justify-center bg-[var(--tone-1)]">
               {/* Botão/Card Branco Porcelana com linha azul discreta no estado selecionado */}
-              <div className="w-1/2 h-8 rounded-lg bg-[#F5F6F8] shadow-[0_4px_12px_rgba(0,0,0,0.6)] flex flex-col items-center justify-between p-1 relative overflow-hidden">
+              <div className="w-1/2 h-8 rounded-[10px] bg-[#F5F6F8] shadow-[0_4px_12px_rgba(0,0,0,0.6)] flex flex-col items-center justify-between p-1 relative overflow-hidden">
                 <div className="h-1 w-4 rounded-full bg-[#111] mt-0.5" />
                 <div className="h-[2px] w-full bg-[#2979FF] rounded-full shadow-[0_0_5px_#2979FF]" />
               </div>
-              <div className="w-1/2 h-7 rounded-md border border-white/10 bg-white/[0.04] opacity-40 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-white/30" />
+              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-40 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-[var(--tone-4)]" />
               </div>
             </div>
           </div>
@@ -1277,7 +1278,7 @@ export const renderThemeMiniatureContent = (
       // PSP: Grafite + prata com champagne discreto, reflexos de vidro fumê e ondas horizontais suaves
       return (
         <div
-          className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-white/10 bg-[var(--tone-2)] shadow-inner relative`}
+          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-[var(--tone-2)] shadow-inner relative`}
         >
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_0%,rgba(214,188,145,0.18)_0%,transparent_65%)] pointer-events-none" />
           <svg
@@ -1296,23 +1297,23 @@ export const renderThemeMiniatureContent = (
               strokeWidth="1"
             />
           </svg>
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-white/10 bg-white/[0.04] backdrop-blur-xs shrink-0 z-10">
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[var(--tone-3)] backdrop-blur-xs shrink-0 z-10">
             <div className="h-1 w-6 rounded-full bg-[#CBD5E1]/40" />
             <div className="h-1.5 w-1.5 rounded-full bg-[#E2E8F0] shadow-[0_0_4px_rgba(226,232,240,0.6)]" />
           </div>
           <div className="flex flex-1 min-h-0 z-10">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-white/10 bg-black/30 backdrop-blur-xs">
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-black/30 backdrop-blur-xs">
               <div className="h-1 w-full rounded-full bg-[#CBD5E1]/50" />
               <div className="h-1 w-3/4 rounded-full bg-[#CBD5E1]/25" />
               <div className="h-1 w-4/5 rounded-full bg-[#CBD5E1]/25" />
             </div>
             <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
-              <div className="w-1/2 h-8 rounded-lg border border-[#CBD5E1]/60 bg-[#CBD5E1]/20 backdrop-blur-sm shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.4)] flex flex-col items-center justify-center gap-1">
+              <div className="w-1/2 h-8 rounded-[10px] border border-[#CBD5E1]/60 bg-[#CBD5E1]/20 backdrop-blur-sm shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.4)] flex flex-col items-center justify-center gap-1">
                 <div className="h-1 w-4 rounded-full bg-[#E2E8F0]" />
                 <div className="h-0.5 w-2.5 rounded-full bg-[#D4AF37]/80" />
               </div>
-              <div className="w-1/2 h-7 rounded-md border border-white/10 bg-white/[0.03] opacity-40 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-white/20" />
+              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-40 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-[var(--tone-4)]" />
               </div>
             </div>
           </div>
@@ -1323,7 +1324,7 @@ export const renderThemeMiniatureContent = (
       // PS4: Azul médio intenso com gradientes amplos e sensação de ondas
       return (
         <div
-          className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-blue-500/20 bg-gradient-to-b from-[#002466] to-[#001033] shadow-inner relative`}
+          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-gradient-to-b from-[#002466] to-[#001033] shadow-inner relative`}
         >
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none opacity-30"
@@ -1333,21 +1334,21 @@ export const renderThemeMiniatureContent = (
             <path d="M-10 38 Q 40 18 135 50" stroke="#0070D1" strokeWidth="2" />
             <path d="M-10 50 Q 50 25 135 60" stroke="#38BDF8" strokeWidth="1" />
           </svg>
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-blue-400/15 bg-blue-950/40 shrink-0 z-10">
-            <div className="h-1 w-6 rounded-full bg-blue-200/40" />
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[var(--tone-3)] shrink-0 z-10">
+            <div className="h-1 w-6 rounded-full bg-[var(--tone-3)]" />
             <div className="h-1.5 w-1.5 rounded-full bg-[#0070D1] shadow-[0_0_6px_#0070D1]" />
           </div>
           <div className="flex flex-1 min-h-0 z-10">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-blue-400/15 bg-blue-950/30">
-              <div className="h-1 w-full rounded-full bg-blue-200/50" />
-              <div className="h-1 w-3/4 rounded-full bg-blue-200/25" />
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-[var(--tone-3)]">
+              <div className="h-1 w-full rounded-full bg-[var(--tone-3)]" />
+              <div className="h-1 w-3/4 rounded-full bg-[var(--tone-3)]" />
             </div>
             <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
-              <div className="w-1/2 h-8 rounded-lg border border-blue-400/50 bg-blue-600/35 shadow-[0_0_12px_rgba(0,112,209,0.35)] flex items-center justify-center">
-                <div className="h-1 w-4 rounded-full bg-white" />
+              <div className="w-1/2 h-8 rounded-[10px] border border-transparent bg-[var(--tone-3)] shadow-[0_0_12px_rgba(0,112,209,0.35)] flex items-center justify-center">
+                <div className="h-1 w-4 rounded-full bg-[var(--ink)]" />
               </div>
-              <div className="w-1/2 h-7 rounded-md border border-blue-400/20 bg-blue-900/20 opacity-50 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-blue-200/30" />
+              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-50 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-[var(--tone-3)]" />
               </div>
             </div>
           </div>
@@ -1358,25 +1359,25 @@ export const renderThemeMiniatureContent = (
       // PS2: Azul profundo + ciano em pequenos detalhes, profundidade escura e formas geométricas
       return (
         <div
-          className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-indigo-500/20 bg-[#00081C] shadow-inner relative`}
+          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-[#00081C] shadow-inner relative`}
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_100%,rgba(0,210,255,0.08)_0%,transparent_60%)] pointer-events-none" />
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-indigo-900/40 bg-[#000D2B] shrink-0">
-            <div className="h-1 w-6 rounded-full bg-indigo-300/30" />
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[#000D2B] shrink-0">
+            <div className="h-1 w-6 rounded-full bg-[var(--tone-3)]" />
             <div className="h-1.5 w-1.5 rounded-full bg-[#00D2FF] shadow-[0_0_6px_#00D2FF]" />
           </div>
           <div className="flex flex-1 min-h-0">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-indigo-900/40 bg-[#000A24]">
-              <div className="h-1 w-full rounded-full bg-indigo-300/40" />
-              <div className="h-1 w-3/4 rounded-full bg-indigo-300/20" />
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-[#000A24]">
+              <div className="h-1 w-full rounded-full bg-[var(--tone-3)]" />
+              <div className="h-1 w-3/4 rounded-full bg-[var(--tone-3)]" />
             </div>
             <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
-              <div className="w-1/2 h-8 rounded-lg border border-[#1D4ED8] bg-[#1D4ED8]/30 shadow-[0_0_10px_rgba(29,78,216,0.3)] flex flex-col items-center justify-center gap-1">
-                <div className="h-1 w-4 rounded-full bg-white/90" />
+              <div className="w-1/2 h-8 rounded-[10px] border border-[#1D4ED8] bg-[#1D4ED8]/30 shadow-[0_0_10px_rgba(29,78,216,0.3)] flex flex-col items-center justify-center gap-1">
+                <div className="h-1 w-4 rounded-full bg-[var(--ink)]" />
                 <div className="h-0.5 w-1.5 rounded-full bg-[#00D2FF]" />
               </div>
-              <div className="w-1/2 h-7 rounded-md border border-indigo-900/30 bg-indigo-950/20 opacity-40 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-indigo-300/20" />
+              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-40 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-[var(--tone-3)]" />
               </div>
             </div>
           </div>
@@ -1386,23 +1387,23 @@ export const renderThemeMiniatureContent = (
     case "gamecube":
       return (
         <div
-          className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-purple-500/20 bg-[#10081C] shadow-inner relative`}
+          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-[#10081C] shadow-inner relative`}
         >
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-purple-900/40 bg-[#1A0D30] shrink-0">
-            <div className="h-1 w-6 rounded-full bg-purple-300/30" />
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[#1A0D30] shrink-0">
+            <div className="h-1 w-6 rounded-full bg-[var(--tone-3)]" />
             <div className="h-1.5 w-1.5 rounded-full bg-[#8B5CF6] shadow-[0_0_6px_#8B5CF6]" />
           </div>
           <div className="flex flex-1 min-h-0">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-purple-900/40 bg-[#160B28]">
-              <div className="h-1 w-full rounded-full bg-purple-300/40" />
-              <div className="h-1 w-3/4 rounded-full bg-purple-300/20" />
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-[#160B28]">
+              <div className="h-1 w-full rounded-full bg-[var(--tone-3)]" />
+              <div className="h-1 w-3/4 rounded-full bg-[var(--tone-3)]" />
             </div>
             <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
-              <div className="w-1/2 h-8 rounded-lg border border-purple-500/50 bg-purple-600/30 shadow-[0_0_10px_rgba(139,92,246,0.3)] flex items-center justify-center">
-                <div className="h-1 w-4 rounded-full bg-white" />
+              <div className="w-1/2 h-8 rounded-[10px] border border-transparent bg-[var(--tone-3)] shadow-[0_0_10px_rgba(139,92,246,0.3)] flex items-center justify-center">
+                <div className="h-1 w-4 rounded-full bg-[var(--ink)]" />
               </div>
-              <div className="w-1/2 h-7 rounded-md border border-purple-900/30 bg-purple-950/20 opacity-40 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-purple-300/20" />
+              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-40 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-[var(--tone-3)]" />
               </div>
             </div>
           </div>
@@ -1412,23 +1413,23 @@ export const renderThemeMiniatureContent = (
     case "xbox360":
       return (
         <div
-          className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-green-500/20 bg-[var(--tone-1)] shadow-inner relative`}
+          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-[var(--tone-1)] shadow-inner relative`}
         >
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-green-900/40 bg-[var(--tone-2)] shrink-0">
-            <div className="h-1 w-6 rounded-full bg-green-300/30" />
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[var(--tone-2)] shrink-0">
+            <div className="h-1 w-6 rounded-full bg-[var(--tone-3)]" />
             <div className="h-1.5 w-1.5 rounded-full bg-[#22C55E] shadow-[0_0_6px_#22C55E]" />
           </div>
           <div className="flex flex-1 min-h-0">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-green-900/40 bg-[var(--tone-1)]">
-              <div className="h-1 w-full rounded-full bg-green-300/40" />
-              <div className="h-1 w-3/4 rounded-full bg-green-300/20" />
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-[var(--tone-1)]">
+              <div className="h-1 w-full rounded-full bg-[var(--tone-3)]" />
+              <div className="h-1 w-3/4 rounded-full bg-[var(--tone-3)]" />
             </div>
             <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
-              <div className="w-1/2 h-8 rounded-lg border border-green-500/50 bg-green-600/30 shadow-[0_0_10px_rgba(34,197,94,0.3)] flex items-center justify-center">
-                <div className="h-1 w-4 rounded-full bg-white" />
+              <div className="w-1/2 h-8 rounded-[10px] border border-transparent bg-[var(--tone-3)] shadow-[0_0_10px_rgba(34,197,94,0.3)] flex items-center justify-center">
+                <div className="h-1 w-4 rounded-full bg-[var(--ink)]" />
               </div>
-              <div className="w-1/2 h-7 rounded-md border border-green-900/30 bg-green-950/20 opacity-40 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-green-300/20" />
+              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-40 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-[var(--tone-3)]" />
               </div>
             </div>
           </div>
@@ -1438,23 +1439,23 @@ export const renderThemeMiniatureContent = (
     case "cyberpunk":
       return (
         <div
-          className={`${containerClassName} rounded-xl overflow-hidden flex flex-col border border-yellow-500/25 bg-[var(--tone-1)] shadow-inner relative`}
+          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-[var(--tone-1)] shadow-inner relative`}
         >
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-yellow-500/20 bg-[var(--tone-2)] shrink-0">
-            <div className="h-1 w-6 rounded-full bg-yellow-400/40" />
+          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[var(--tone-2)] shrink-0">
+            <div className="h-1 w-6 rounded-full bg-[var(--tone-3)]" />
             <div className="h-1.5 w-1.5 rounded-full bg-[#FCEE0A] shadow-[0_0_6px_#FCEE0A]" />
           </div>
           <div className="flex flex-1 min-h-0">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-yellow-500/20 bg-[var(--tone-1)]">
-              <div className="h-1 w-full rounded-full bg-yellow-400/40" />
-              <div className="h-1 w-3/4 rounded-full bg-yellow-400/20" />
+            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-[var(--tone-1)]">
+              <div className="h-1 w-full rounded-full bg-[var(--tone-3)]" />
+              <div className="h-1 w-3/4 rounded-full bg-[var(--tone-3)]" />
             </div>
             <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
-              <div className="w-1/2 h-8 rounded-lg border border-[#FCEE0A] bg-[#FCEE0A]/25 shadow-[0_0_12px_rgba(252,238,10,0.35)] flex items-center justify-center">
+              <div className="w-1/2 h-8 rounded-[10px] border border-[#FCEE0A] bg-[#FCEE0A]/25 shadow-[0_0_12px_rgba(252,238,10,0.35)] flex items-center justify-center">
                 <div className="h-1 w-4 rounded-full bg-[#FCEE0A]" />
               </div>
-              <div className="w-1/2 h-7 rounded-md border border-cyan-400/30 bg-cyan-950/20 opacity-40 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-cyan-300/30" />
+              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-40 flex items-center justify-center">
+                <div className="h-1 w-3 rounded-full bg-[var(--tone-3)]" />
               </div>
             </div>
           </div>
@@ -1479,7 +1480,7 @@ export const ThemePreviewCard: React.FC<{
       <button
         type="button"
         onClick={onClick}
-        className={`relative p-1 rounded-2xl transition-[transform,opacity,box-shadow,background-color,border-color] duration-200 ease-out transform-gpu will-change-transform cursor-pointer ${
+        className={`relative p-1 rounded-[var(--corner-md)] transition-[transform,opacity,box-shadow,background-color,border-color] duration-200 ease-out transform-gpu will-change-transform cursor-pointer ${
           active
             ? "scale-[1.02] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] shadow-[0_0_16px_rgba(255,255,255,0.12),inset_0_1px_0_rgba(255,255,255,0.22)]"
             : "border border-[color:var(--border-subtle)] bg-[var(--tone-3)] opacity-75 hover:opacity-100 hover:border-[color:var(--border-subtle)] hover:scale-[1.01]"
@@ -2228,7 +2229,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
             className="flex-1 rounded-[var(--corner-lg)] bg-[var(--tone-1)] overflow-y-auto no-scrollbar relative"
             style={{ contain: "layout paint" }}
           >
-            <div className="p-8 md:p-10 space-y-8 w-full max-w-[760px]">
+            <SectionTransition id={activeTab} className="p-8 md:p-10 space-y-8 w-full max-w-[760px]">
               {/* ABA GERAL */}
               {activeTab === "general" && (
                 <div className="space-y-6 animate-in fade-in duration-300">
@@ -2290,7 +2291,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                               new CustomEvent("pherielium:restart-tour"),
                             );
                           }}
-                          className="inline-flex h-8 items-center justify-center gap-2 rounded-xl bg-[var(--tone-4)] hover:bg-[var(--tone-4)] px-3.5 text-xs font-semibold text-[var(--ink)] transition-colors cursor-pointer active:scale-95"
+                          className="inline-flex h-8 items-center justify-center gap-2 rounded-[var(--corner-sm)] bg-[var(--tone-4)] hover:bg-[var(--tone-4)] px-3.5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors cursor-pointer active:scale-95"
                         >
                           <Sparkles className="h-3.5 w-3.5" />
                           <span>Rever tutorial</span>
@@ -2350,7 +2351,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                           isThemeSelected(opt),
                         ) || COMPLETE_THEME_OPTIONS[0];
                       return (
-                        <div className="mb-7 p-4 sm:p-5 rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-1)] relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-5 shadow-inner">
+                        <div className="mb-7 p-4 sm:p-5 rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--tone-1)] relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-5 shadow-inner">
                           <div
                             className="absolute -top-12 -left-12 w-48 h-48 rounded-full blur-3xl pointer-events-none opacity-20"
                             style={{ backgroundColor: activeTheme.accentColor }}
@@ -2369,11 +2370,11 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
 
                             <div className="min-w-0 space-y-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-[var(--ink)] tracking-wide">
+                                <span className="text-[length:var(--step-0)] font-bold text-[var(--ink)] tracking-wide">
                                   {activeTheme.label}
                                 </span>
                                 <span
-                                  className="text-[length:var(--step-0)] font-semibold px-1.5 py-0.5 rounded-md border"
+                                  className="text-[length:var(--step-0)] font-semibold px-1.5 py-0.5 rounded-[10px] border"
                                   style={{
                                     color: activeTheme.accentColor,
                                     borderColor: `${activeTheme.accentColor}40`,
@@ -2394,7 +2395,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                               type="button"
                               onClick={onPreviewSound}
                               onMouseEnter={() => playSound("hover")}
-                              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-[var(--tone-4)] hover:bg-[var(--tone-4)] active:scale-95 border border-[color:var(--border-subtle)] text-[var(--ink)] text-xs font-semibold transition cursor-pointer shadow-sm"
+                              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-[var(--corner-sm)] bg-[var(--tone-4)] hover:bg-[var(--tone-4)] active:scale-95 border border-[color:var(--border-subtle)] text-[var(--ink)] text-[length:var(--step-0)] font-semibold transition cursor-pointer shadow-sm"
                             >
                               <Volume2 className="h-3.5 w-3.5 text-[var(--ink-muted)]" />
                               <span>Ouvir amostra de som</span>
@@ -2468,7 +2469,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                         <button
                           type="button"
                           onClick={onPreviewSound}
-                          className="text-[length:var(--step-0)] bg-[var(--tone-4)] hover:bg-[var(--tone-4)] px-2.5 py-1 rounded-xl text-[var(--ink)] font-medium transition-colors cursor-pointer"
+                          className="text-[length:var(--step-0)] bg-[var(--tone-4)] hover:bg-[var(--tone-4)] px-2.5 py-1 rounded-[var(--corner-sm)] text-[var(--ink)] font-medium transition-colors cursor-pointer"
                         >
                           {t("test")}
                         </button>
@@ -2491,7 +2492,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                           type="button"
                           onClick={() => onTestOverlayAchievement()}
                           onMouseEnter={() => playSound("hover")}
-                          className="text-[length:var(--step-0)] bg-[var(--tone-4)] hover:bg-[var(--tone-4)] px-2.5 py-1 rounded-xl text-[var(--ink)] font-medium transition-colors cursor-pointer"
+                          className="text-[length:var(--step-0)] bg-[var(--tone-4)] hover:bg-[var(--tone-4)] px-2.5 py-1 rounded-[var(--corner-sm)] text-[var(--ink)] font-medium transition-colors cursor-pointer"
                         >
                           {t("test")}
                         </button>
@@ -2513,7 +2514,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                         <button
                           type="button"
                           onClick={onTestNotificationSound}
-                          className="text-[length:var(--step-0)] bg-[var(--tone-4)] hover:bg-[var(--tone-4)] px-2.5 py-1 rounded-xl text-[var(--ink)] font-medium transition-colors cursor-pointer"
+                          className="text-[length:var(--step-0)] bg-[var(--tone-4)] hover:bg-[var(--tone-4)] px-2.5 py-1 rounded-[var(--corner-sm)] text-[var(--ink)] font-medium transition-colors cursor-pointer"
                         >
                           {t("test")}
                         </button>
@@ -2644,7 +2645,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                           </div>
                         </SettingsRow>
 
-                        <div className="rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-4">
+                        <div className="rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-4">
                           <p className="text-[length:var(--step-0)] font-semibold text-[var(--ink)]">
                             {perfCopy.liveTitle}
                           </p>
@@ -2669,7 +2670,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             ].map((stat) => (
                               <div
                                 key={stat.label}
-                                className="rounded-xl border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-3 py-3"
+                                className="rounded-[var(--corner-sm)] border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-3 py-3"
                               >
                                 <p className="text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[var(--ink-faint)]">
                                   {stat.label}
@@ -2703,9 +2704,9 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                     </div>
 
                     {/* Bloco alinhado unificado: avatar, nome e e-mail */}
-                    <div className="p-4 rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-2)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="p-4 rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--tone-2)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="flex items-center gap-3.5 min-w-0">
-                        <div className="relative flex h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--surface-base)]">
+                        <div className="relative flex h-12 w-12 shrink-0 overflow-hidden rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--surface-base)]">
                           {userProfile?.photoURL || user?.photoURL ? (
                             <img
                               src={
@@ -2747,7 +2748,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                         <button
                           type="button"
                           onClick={() => setIsLogoutModalOpen(true)}
-                          className="px-3.5 py-1.5 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--danger)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] rounded-xl text-[length:var(--step-0)] font-medium transition-colors cursor-pointer active:scale-95 flex items-center gap-1.5"
+                          className="px-3.5 py-1.5 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--danger)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] rounded-[var(--corner-sm)] text-[length:var(--step-0)] font-medium transition-colors cursor-pointer active:scale-95 flex items-center gap-1.5"
                         >
                           <LogOut className="h-3.5 w-3.5" />
                           <span>Sair da conta</span>
@@ -2777,7 +2778,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             !user?.email ||
                             passwordResetSent
                           }
-                          className="px-3.5 py-1.5 bg-[var(--color-surface)] hover:bg-[var(--tone-3)] border border-[color:var(--border-subtle)] rounded-xl text-[length:var(--step-0)] font-medium text-[var(--ink)] transition disabled:opacity-50 active:scale-95 cursor-pointer"
+                          className="px-3.5 py-1.5 bg-[var(--color-surface)] hover:bg-[var(--tone-3)] border border-[color:var(--border-subtle)] rounded-[var(--corner-sm)] text-[length:var(--step-0)] font-medium text-[var(--ink)] transition disabled:opacity-50 active:scale-95 cursor-pointer"
                         >
                           {passwordResetSent
                             ? detailCopy.emailSent
@@ -2793,7 +2794,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                       description="Token de acesso assinado e verificado localmente com criptografia de transporte TLS 1.3"
                       hasBorder={false}
                       action={
-                        <div className="flex items-center gap-1.5 text-[var(--live)] bg-[var(--tone-3)] border border-[color:color-mix(in_srgb,var(--live)_35%,transparent)] px-2.5 py-1 rounded-xl text-[length:var(--step-0)] font-medium">
+                        <div className="flex items-center gap-1.5 text-[var(--live)] bg-[var(--tone-3)] border border-[color:color-mix(in_srgb,var(--live)_35%,transparent)] px-2.5 py-1 rounded-[var(--corner-sm)] text-[length:var(--step-0)] font-medium">
                           <ShieldCheck className="h-3.5 w-3.5" />
                           <span>Token ativo</span>
                         </div>
@@ -2857,7 +2858,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             <button
                               onClick={onDisconnectSteam}
                               disabled={steamDisconnecting}
-                              className="px-3 py-1 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--danger)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] rounded-xl text-[length:var(--step-0)] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer"
+                              className="px-3 py-1 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--danger)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] rounded-[var(--corner-sm)] text-[length:var(--step-0)] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer"
                             >
                               {steamDisconnecting
                                 ? "Desconectando..."
@@ -2865,7 +2866,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             </button>
                           ) : steamConnecting ? (
                             <div className="flex items-center gap-2">
-                              <span className="flex items-center gap-2 px-2.5 py-1 bg-[var(--tone-3)] border border-[color:var(--border-subtle)] rounded-xl text-[length:var(--step-0)] text-[var(--ink-muted)]">
+                              <span className="flex items-center gap-2 px-2.5 py-1 bg-[var(--tone-3)] border border-[color:var(--border-subtle)] rounded-[var(--corner-sm)] text-[length:var(--step-0)] text-[var(--ink-muted)]">
                                 <ThinkingOrbLoader
                                   size={20}
                                   preset="connecting"
@@ -2881,7 +2882,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                                 <button
                                   type="button"
                                   onClick={onCancelSteamConnect}
-                                  className="px-2 py-1 bg-[var(--tone-4)] hover:bg-[var(--tone-4)] border border-[color:var(--border-subtle)] text-[var(--ink)] rounded-xl text-[length:var(--step-0)] font-medium transition-colors active:scale-95 cursor-pointer"
+                                  className="px-2 py-1 bg-[var(--tone-4)] hover:bg-[var(--tone-4)] border border-[color:var(--border-subtle)] text-[var(--ink)] rounded-[var(--corner-sm)] text-[length:var(--step-0)] font-medium transition-colors active:scale-95 cursor-pointer"
                                   title="Cancelar tentativa de conexão"
                                 >
                                   Cancelar
@@ -2891,7 +2892,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                           ) : (
                             <button
                               onClick={onConnectSteam}
-                              className="px-3.5 py-1.5 bg-[var(--tone-4)] hover:bg-[var(--tone-4)] border border-[color:var(--border-subtle)] text-[var(--ink)] rounded-xl text-[length:var(--step-0)] font-medium transition-colors active:scale-95 cursor-pointer"
+                              className="px-3.5 py-1.5 bg-[var(--tone-4)] hover:bg-[var(--tone-4)] border border-[color:var(--border-subtle)] text-[var(--ink)] rounded-[var(--corner-sm)] text-[length:var(--step-0)] font-medium transition-colors active:scale-95 cursor-pointer"
                             >
                               {t("connectSteam")}
                             </button>
@@ -2942,7 +2943,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             <button
                               onClick={onDisconnectDiscord}
                               disabled={discordDisconnecting}
-                              className="px-3 py-1 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--danger)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] rounded-xl text-[length:var(--step-0)] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer"
+                              className="px-3 py-1 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--danger)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] rounded-[var(--corner-sm)] text-[length:var(--step-0)] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer"
                             >
                               {discordDisconnecting
                                 ? "Desconectando..."
@@ -2950,7 +2951,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             </button>
                           ) : discordConnecting ? (
                             <div className="flex items-center gap-2">
-                              <span className="flex items-center gap-2 px-2.5 py-1 bg-[var(--tone-3)] border border-[color:var(--border-subtle)] rounded-xl text-[length:var(--step-0)] text-[var(--ink-muted)]">
+                              <span className="flex items-center gap-2 px-2.5 py-1 bg-[var(--tone-3)] border border-[color:var(--border-subtle)] rounded-[var(--corner-sm)] text-[length:var(--step-0)] text-[var(--ink-muted)]">
                                 <LinearProgress
                                   className="w-10"
                                   label={t("connecting")}
@@ -2966,7 +2967,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                                 <button
                                   type="button"
                                   onClick={onCancelDiscordConnect}
-                                  className="px-2 py-1 bg-[var(--tone-4)] hover:bg-[var(--tone-4)] border border-[color:var(--border-subtle)] text-[var(--ink)] rounded-xl text-[length:var(--step-0)] font-medium transition-colors active:scale-95 cursor-pointer"
+                                  className="px-2 py-1 bg-[var(--tone-4)] hover:bg-[var(--tone-4)] border border-[color:var(--border-subtle)] text-[var(--ink)] rounded-[var(--corner-sm)] text-[length:var(--step-0)] font-medium transition-colors active:scale-95 cursor-pointer"
                                   title="Cancelar tentativa de conexão"
                                 >
                                   Cancelar
@@ -2976,7 +2977,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                           ) : (
                             <button
                               onClick={onConnectDiscord}
-                              className="px-3.5 py-1.5 bg-[var(--tone-4)] hover:bg-[var(--tone-4)] border border-[color:var(--border-subtle)] text-[var(--ink)] rounded-xl text-[length:var(--step-0)] font-medium transition-colors active:scale-95 cursor-pointer"
+                              className="px-3.5 py-1.5 bg-[var(--tone-4)] hover:bg-[var(--tone-4)] border border-[color:var(--border-subtle)] text-[var(--ink)] rounded-[var(--corner-sm)] text-[length:var(--step-0)] font-medium transition-colors active:scale-95 cursor-pointer"
                             >
                               {t("connectDiscord")}
                             </button>
@@ -3028,7 +3029,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             <button
                               onClick={onDisconnectEpic}
                               disabled={epicDisconnecting}
-                              className="px-3 py-1 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--danger)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] rounded-xl text-[length:var(--step-0)] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer"
+                              className="px-3 py-1 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--danger)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] rounded-[var(--corner-sm)] text-[length:var(--step-0)] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer"
                             >
                               {epicDisconnecting
                                 ? "Desconectando..."
@@ -3038,7 +3039,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             <button
                               onClick={onConnectEpic}
                               disabled={epicConnecting}
-                              className="px-3.5 py-1.5 bg-[var(--tone-4)] hover:bg-[var(--tone-4)] border border-[color:var(--border-subtle)] text-[var(--ink)] rounded-xl text-[length:var(--step-0)] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer"
+                              className="px-3.5 py-1.5 bg-[var(--tone-4)] hover:bg-[var(--tone-4)] border border-[color:var(--border-subtle)] text-[var(--ink)] rounded-[var(--corner-sm)] text-[length:var(--step-0)] font-medium transition-colors disabled:opacity-50 active:scale-95 cursor-pointer"
                             >
                               {epicConnecting ? (
                                 <span className="flex items-center gap-2">
@@ -3153,7 +3154,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                       }
                       action={
                         <span
-                          className={`inline-flex items-center gap-1.5 text-[length:var(--step-0)] font-semibold px-2.5 py-1 rounded-xl border transition-colors ${
+                          className={`inline-flex items-center gap-1.5 text-[length:var(--step-0)] font-semibold px-2.5 py-1 rounded-[var(--corner-sm)] border transition-colors ${
                             isGamepadConnected
                               ? "bg-[var(--tone-3)] text-[var(--live)] border-[color:color-mix(in_srgb,var(--live)_35%,transparent)]"
                               : "bg-[var(--color-surface)] text-[var(--ink-muted)] border-[color:var(--border-subtle)]"
@@ -3197,7 +3198,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             )}
                           </span>
                           {batteryCharging && (
-                            <span className="inline-flex items-center gap-1 text-[length:var(--step-0)] uppercase font-bold text-[var(--live)] bg-[var(--tone-3)] border border-[color:color-mix(in_srgb,var(--live)_35%,transparent)] px-2 py-0.5 rounded-lg">
+                            <span className="inline-flex items-center gap-1 text-[length:var(--step-0)] uppercase font-bold text-[var(--live)] bg-[var(--tone-3)] border border-[color:color-mix(in_srgb,var(--live)_35%,transparent)] px-2 py-0.5 rounded-[10px]">
                               {t("charging")}
                             </span>
                           )}
@@ -3205,14 +3206,14 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             batteryLevel <= 20 &&
                             !batteryCharging &&
                             isGamepadConnected && (
-                              <span className="inline-flex items-center gap-1 text-[length:var(--step-0)] uppercase font-bold text-[var(--danger)] bg-[var(--tone-3)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] px-2 py-0.5 rounded-lg">
+                              <span className="inline-flex items-center gap-1 text-[length:var(--step-0)] uppercase font-bold text-[var(--danger)] bg-[var(--tone-3)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] px-2 py-0.5 rounded-[10px]">
                                 {t("lowBattery")}
                               </span>
                             )}
                           <button
                             type="button"
                             onClick={() => setShowControllerStatusModal(true)}
-                            className="px-2.5 py-1 bg-[var(--color-surface)] hover:bg-[var(--tone-3)] border border-[color:var(--border-subtle)] text-[var(--ink)] rounded-lg text-[length:var(--step-0)] font-medium transition-colors ml-1 active:scale-95 cursor-pointer"
+                            className="px-2.5 py-1 bg-[var(--color-surface)] hover:bg-[var(--tone-3)] border border-[color:var(--border-subtle)] text-[var(--ink)] rounded-[10px] text-[length:var(--step-0)] font-medium transition-colors ml-1 active:scale-95 cursor-pointer"
                           >
                             {t("details")}
                           </button>
@@ -3238,7 +3239,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                                 : led.requestAccess
                             }
                             disabled={led.status === "connecting"}
-                            className="px-3.5 py-1.5 bg-[var(--tone-4)] hover:bg-[var(--tone-4)] border border-[color:var(--border-subtle)] text-[var(--ink)] rounded-xl text-[length:var(--step-0)] font-medium transition-colors disabled:opacity-50 cursor-pointer active:scale-95"
+                            className="px-3.5 py-1.5 bg-[var(--tone-4)] hover:bg-[var(--tone-4)] border border-[color:var(--border-subtle)] text-[var(--ink)] rounded-[var(--corner-sm)] text-[length:var(--step-0)] font-medium transition-colors disabled:opacity-50 cursor-pointer active:scale-95"
                           >
                             {led.status === "connected"
                               ? controllerCopy[4]
@@ -3363,7 +3364,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             setIsTestingMic(!isTestingMic);
                             playSound("hover");
                           }}
-                          className={`px-3.5 py-1.5 text-[length:var(--step-0)] rounded-xl font-medium transition cursor-pointer active:scale-95 flex items-center gap-2 ${
+                          className={`px-3.5 py-1.5 text-[length:var(--step-0)] rounded-[var(--corner-sm)] font-medium transition cursor-pointer active:scale-95 flex items-center gap-2 ${
                             isTestingMic
                               ? "bg-[var(--tone-3)] text-[var(--danger)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)]"
                               : "bg-[var(--tone-4)] hover:bg-[var(--tone-4)] text-[var(--ink)] border border-[color:var(--border-subtle)]"
@@ -3376,7 +3377,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                         </button>
                       }
                     >
-                      <div className="p-3.5 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--surface-base)] space-y-2.5">
+                      <div className="p-3.5 rounded-[var(--corner-sm)] border border-[color:var(--border-subtle)] bg-[var(--surface-base)] space-y-2.5">
                         <div className="flex items-center justify-between text-[length:var(--step-0)]">
                           <div className="flex items-center gap-2">
                             <span className="text-[var(--ink-muted)]">
@@ -3474,7 +3475,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                             onClick={() =>
                               setIsVideoPreviewOn(!isVideoPreviewOn)
                             }
-                            className={`px-3 py-1.5 border rounded-xl text-[length:var(--step-0)] font-medium transition cursor-pointer active:scale-95 ${
+                            className={`px-3 py-1.5 border rounded-[var(--corner-sm)] text-[length:var(--step-0)] font-medium transition cursor-pointer active:scale-95 ${
                               isVideoPreviewOn
                                 ? "bg-[var(--ink)] text-[var(--tone-0)] border-white shadow-sm"
                                 : "bg-[var(--color-surface)] hover:bg-[var(--tone-3)] border-[color:var(--border-subtle)] text-[var(--ink)]"
@@ -3511,7 +3512,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                       }
                     >
                       {isVideoPreviewOn && (
-                        <div className="relative w-full aspect-video rounded-2xl bg-black overflow-hidden border border-[color:var(--border-subtle)] mt-3">
+                        <div className="relative w-full aspect-video rounded-[var(--corner-md)] bg-black overflow-hidden border border-[color:var(--border-subtle)] mt-3">
                           <video
                             ref={videoPreviewRef}
                             autoPlay
@@ -3674,7 +3675,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                               };
                               window.addEventListener("keydown", onKey, true);
                             }}
-                            className={`min-w-[80px] px-3 py-1.5 rounded-xl border text-[length:var(--step-0)] font-mono font-medium transition-colors ${isRecordingPttKey ? "bg-[var(--tone-3)] text-[var(--warn)] border-[color:color-mix(in_srgb,var(--warn)_35%,transparent)]" : "bg-[var(--tone-4)] text-[var(--ink)] border-[color:var(--border-subtle)]"}`}
+                            className={`min-w-[80px] px-3 py-1.5 rounded-[var(--corner-sm)] border text-[length:var(--step-0)] font-mono font-medium transition-colors ${isRecordingPttKey ? "bg-[var(--tone-3)] text-[var(--warn)] border-[color:color-mix(in_srgb,var(--warn)_35%,transparent)]" : "bg-[var(--tone-4)] text-[var(--ink)] border-[color:var(--border-subtle)]"}`}
                           >
                             {isRecordingPttKey
                               ? "Pressione..."
@@ -3798,7 +3799,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                       <button
                         onClick={onTestOverlayWelcome}
                         onMouseEnter={() => playSound("hover")}
-                        className="p-3.5 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] border border-[color:var(--border-subtle)] rounded-xl text-left transition active:scale-[0.98] cursor-pointer"
+                        className="p-3.5 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] border border-[color:var(--border-subtle)] rounded-[var(--corner-sm)] text-left transition active:scale-[0.98] cursor-pointer"
                       >
                         <span className="block text-[length:var(--step-0)] font-medium text-[var(--ink)]">
                           {detailCopy.testWelcome}
@@ -3810,7 +3811,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                       <button
                         onClick={() => onTestOverlayAchievement("bronze")}
                         onMouseEnter={() => playSound("hover")}
-                        className="p-3.5 bg-[rgb(var(--tier-bronze)/0.1)] hover:bg-[rgb(var(--tier-bronze)/0.2)] border border-[rgb(var(--tier-bronze)/0.3)] rounded-xl text-left transition active:scale-[0.98] cursor-pointer"
+                        className="p-3.5 bg-[rgb(var(--tier-bronze)/0.1)] hover:bg-[rgb(var(--tier-bronze)/0.2)] border border-[rgb(var(--tier-bronze)/0.3)] rounded-[var(--corner-sm)] text-left transition active:scale-[0.98] cursor-pointer"
                       >
                         <span className="block text-[length:var(--step-0)] font-medium text-[rgb(var(--tier-bronze))]">
                           {detailCopy.testBronze}
@@ -3822,7 +3823,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                       <button
                         onClick={() => onTestOverlayAchievement("silver")}
                         onMouseEnter={() => playSound("hover")}
-                        className="p-3.5 bg-[rgb(var(--tier-silver)/0.10)] hover:bg-[rgb(var(--tier-silver)/0.20)] border border-[rgb(var(--tier-silver)/0.3)] rounded-xl text-left transition active:scale-[0.98] cursor-pointer"
+                        className="p-3.5 bg-[rgb(var(--tier-silver)/0.10)] hover:bg-[rgb(var(--tier-silver)/0.20)] border border-[rgb(var(--tier-silver)/0.3)] rounded-[var(--corner-sm)] text-left transition active:scale-[0.98] cursor-pointer"
                       >
                         <span className="block text-[length:var(--step-0)] font-medium text-[rgb(var(--tier-silver))]">
                           {detailCopy.testSilver}
@@ -3834,7 +3835,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                       <button
                         onClick={() => onTestOverlayAchievement("gold")}
                         onMouseEnter={() => playSound("hover")}
-                        className="p-3.5 bg-[rgb(var(--tier-gold)/0.1)] hover:bg-[rgb(var(--tier-gold)/0.2)] border border-[rgb(var(--tier-gold)/0.3)] rounded-xl text-left transition active:scale-[0.98] cursor-pointer"
+                        className="p-3.5 bg-[rgb(var(--tier-gold)/0.1)] hover:bg-[rgb(var(--tier-gold)/0.2)] border border-[rgb(var(--tier-gold)/0.3)] rounded-[var(--corner-sm)] text-left transition active:scale-[0.98] cursor-pointer"
                       >
                         <span className="block text-[length:var(--step-0)] font-medium text-[rgb(var(--tier-gold))]">
                           {detailCopy.testGold}
@@ -3846,7 +3847,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                       <button
                         onClick={() => onTestOverlayAchievement("platinum")}
                         onMouseEnter={() => playSound("hover")}
-                        className="p-3.5 col-span-2 bg-[rgb(var(--tier-platinum)/0.1)] hover:bg-[rgb(var(--tier-platinum)/0.2)] border border-[rgb(var(--tier-platinum)/0.3)] rounded-xl text-left transition active:scale-[0.98] cursor-pointer"
+                        className="p-3.5 col-span-2 bg-[rgb(var(--tier-platinum)/0.1)] hover:bg-[rgb(var(--tier-platinum)/0.2)] border border-[rgb(var(--tier-platinum)/0.3)] rounded-[var(--corner-sm)] text-left transition active:scale-[0.98] cursor-pointer"
                       >
                         <span className="block text-[length:var(--step-0)] font-medium text-[rgb(var(--tier-platinum))]">
                           {detailCopy.testPlatinum}
@@ -3862,7 +3863,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
 
               {/* ABA MASCOTE E NOTCH */}
               {activeTab === "mascot" && <NotchSettingsTab />}
-            </div>
+            </SectionTransition>
           </main>
         </div>
 
@@ -3876,7 +3877,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
               className="fixed inset-0 z-[200] flex items-center justify-center bg-[var(--surface-base)] "
             >
               <div
-                className="border border-[var(--color-ui-detail)] rounded-2xl p-6 w-[320px] transform-gpu"
+                className="border border-[var(--color-ui-detail)] rounded-[var(--corner-md)] p-6 w-[320px] transform-gpu"
                 style={{
                   background:
                     "linear-gradient(145deg, rgba(20,20,24,0.7) 0%, rgba(10,10,14,0.85) 100%)",
@@ -3917,7 +3918,7 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                 </div>
                 <button
                   onClick={() => setShowControllerStatusModal(false)}
-                  className="w-full py-2 bg-[var(--tone-4)] hover:bg-[var(--tone-4)] text-[var(--ink)] rounded-lg text-[length:var(--step-0)] font-medium transition-colors cursor-pointer active:scale-98"
+                  className="w-full py-2 bg-[var(--tone-4)] hover:bg-[var(--tone-4)] text-[var(--ink)] rounded-[10px] text-[length:var(--step-0)] font-medium transition-colors cursor-pointer active:scale-98"
                 >
                   {diagnosticsCopy.close}
                 </button>

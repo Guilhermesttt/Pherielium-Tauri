@@ -10,6 +10,7 @@ import { PlatformGlyph } from "./PlatformGlyph";
 import { FavoriteBadge } from "./FavoriteBadge";
 import { formatAgo, formatSession, type LastTrophy } from "./consoleInfo";
 import { formatPlayedHours, getGamePlayedHours } from "../../../utils/playtime";
+import { revealDelayMs, type Reveal } from "../../../services/gameReveal";
 
 export interface ConsoleHomeProps {
   rows: WallRow[];
@@ -27,6 +28,8 @@ export interface ConsoleHomeProps {
   sessionStartedAt?: number | null;
   /** A tela do jogo está abrindo por cima: a fileira some em fade (como no conceito). */
   hidden?: boolean;
+  /** Capas que acabaram de chegar (jogo adicionado ou sincronizado): entram com animação. */
+  reveal?: Record<string, Reveal>;
   playSound: (type: SoundEffectType) => void;
 }
 
@@ -50,6 +53,7 @@ export const ConsoleHome: React.FC<ConsoleHomeProps> = ({
   lastTrophy,
   sessionStartedAt = null,
   hidden = false,
+  reveal,
   playSound,
 }) => {
   const reducedMotion = useReducedMotion();
@@ -136,6 +140,7 @@ export const ConsoleHome: React.FC<ConsoleHomeProps> = ({
                 key={game.id}
                 game={game}
                 isFocused={isFocused}
+                reveal={reveal?.[game.id]}
                 reducedMotion={reducedMotion ?? false}
                 buttonRef={isFocused ? focusedRef : undefined}
                 onSelect={() => {
@@ -221,6 +226,7 @@ const FocusedGameInfo: React.FC<{
 interface SpringConsoleTileProps {
   game: Game;
   isFocused: boolean;
+  reveal?: Reveal;
   reducedMotion: boolean;
   buttonRef?: React.MutableRefObject<HTMLButtonElement | null>;
   onSelect: () => void;
@@ -229,7 +235,7 @@ interface SpringConsoleTileProps {
 }
 
 const SpringConsoleTile = React.memo<SpringConsoleTileProps>(
-  ({ game, isFocused, reducedMotion, buttonRef, onSelect, onMenuAction, playSound }) => {
+  ({ game, isFocused, reveal, reducedMotion, buttonRef, onSelect, onMenuAction, playSound }) => {
     const poster = game.cardImage || game.image;
     // capa que não carrega (link quebrado): mostra o nome do jogo em vez do ícone de imagem quebrada
     const [posterFailed, setPosterFailed] = useState(false);
@@ -251,7 +257,11 @@ const SpringConsoleTile = React.memo<SpringConsoleTileProps>(
         playSound={playSound}
       >
         {({ openMenu }) => (
-          <span className="relative block shrink-0">
+          <span
+            className="console-reveal relative block shrink-0"
+            data-reveal={reveal?.kind}
+            style={reveal ? ({ "--reveal-delay": `${revealDelayMs(reveal)}ms` } as React.CSSProperties) : undefined}
+          >
           <animated.button
             ref={buttonRef as any}
             type="button"

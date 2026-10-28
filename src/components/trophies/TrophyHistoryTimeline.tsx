@@ -298,7 +298,7 @@ const TimelineXpRow = React.memo<{
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(idx, 8) * 0.02 }}
       title={formatFullDate(event.created_at)}
-      className="group relative flex items-center justify-between gap-4 rounded-xl border border-white/[0.05] bg-[var(--tone-1)]/70 p-3 sm:p-3.5 hover:bg-[var(--tone-2)] hover:border-white/10 transition border-l-2 border-l-emerald-400/80"
+      className="group relative flex items-center justify-between gap-4 rounded-xl border border-white/[0.05] bg-[var(--tone-1)]/70 p-3 sm:p-3.5 hover:bg-[var(--tone-2)] hover:border-white/10 transition"
     >
       <div className="flex items-center gap-3.5 min-w-0 flex-1">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-105 transition-transform">

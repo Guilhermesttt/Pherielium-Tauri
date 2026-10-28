@@ -72,10 +72,10 @@ export const CallControlDock: React.FC<CallControlDockProps> = ({
   return (
     <nav
       aria-label="Controles da chamada"
-      className="flex shrink-0 select-none items-center gap-2 rounded-full border border-white/10 bg-[var(--tone-2)]/80 px-3 py-2.5 shadow-[0_24px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
+      className="flex shrink-0 select-none items-center gap-3 rounded-[var(--corner-lg)] bg-[color-mix(in_srgb,var(--tone-2)_90%,transparent)] p-3 backdrop-blur-xl"
     >
       {/* Grupo Principal: Comunicação Ativa (Microfone, Som, Câmera, Transmissão) */}
-      <div className="flex items-center gap-1.5" role="group" aria-label="Controles de mídia">
+      <div className="flex items-center gap-2" role="group" aria-label="Controles de mídia">
         <CallControlButton
           icon={
             !isMicAvailable ? (
@@ -128,10 +128,10 @@ export const CallControlDock: React.FC<CallControlDockProps> = ({
       </div>
 
       {/* Divisor Visual Sutil Base 4/8 */}
-      <div className="mx-1 h-6 w-px shrink-0 bg-white/[0.1]" aria-hidden="true" />
+      <div className="mx-1 h-8 w-px shrink-0 bg-[var(--tone-4)]" aria-hidden="true" />
 
       {/* Grupo Secundário: Ajustes & Personalização da Esfera */}
-      <div className="flex items-center gap-1.5" role="group" aria-label="Ajustes e efeitos">
+      <div className="flex items-center gap-2" role="group" aria-label="Ajustes e efeitos">
         {onOpenOrbloomCustomizer && (
           <CallControlButton
             icon={<Sparkles className="h-4 w-4" />}
@@ -150,7 +150,7 @@ export const CallControlDock: React.FC<CallControlDockProps> = ({
       </div>
 
       {/* Divisor Visual Sutil Base 4/8 */}
-      <div className="mx-1 h-6 w-px shrink-0 bg-white/[0.1]" aria-hidden="true" />
+      <div className="mx-1 h-8 w-px shrink-0 bg-[var(--tone-4)]" aria-hidden="true" />
 
       {/* Grupo Destrutivo: Sair da Chamada */}
       <CallControlButton

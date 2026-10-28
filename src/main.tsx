@@ -33,6 +33,7 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const DesignLab = import.meta.env.DEV ? lazy(() => import("./pages/DesignLab")) : null;
 const DesignLabSettings = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabSettings")) : null;
 const DesignLabTrophies = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabTrophies")) : null;
+const DesignLabProfile = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabProfile")) : null;
 const DesignLabMods = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabMods")) : null;
 const DesignLabShell = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabShell")) : null;
 const DesignLabDetail = import.meta.env.DEV ? lazy(() => import("./pages/DesignLabDetail")) : null;
@@ -113,7 +114,7 @@ const desktopRoutes = [
           </Suspense>
         ),
       },
-      ...(DesignLab && DesignLabSettings && DesignLabTrophies && DesignLabMods && DesignLabShell && DesignLabDetail && DesignLabConsole && DesignLabCall && DesignLabFriends && DesignLabKeyboard
+      ...(DesignLab && DesignLabSettings && DesignLabTrophies && DesignLabProfile && DesignLabMods && DesignLabShell && DesignLabDetail && DesignLabConsole && DesignLabCall && DesignLabFriends && DesignLabKeyboard
         ? [
             {
               path: "design-lab",
@@ -144,6 +145,14 @@ const desktopRoutes = [
               element: (
                 <Suspense fallback={routeFallback}>
                   <DesignLabMods />
+                </Suspense>
+              ),
+            },
+            {
+              path: "design-lab/profile",
+              element: (
+                <Suspense fallback={routeFallback}>
+                  <DesignLabProfile />
                 </Suspense>
               ),
             },

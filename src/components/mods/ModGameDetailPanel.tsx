@@ -1089,7 +1089,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                     onClose();
                   }}
                   aria-label="Voltar para os jogos"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--surface-base)] text-[var(--ink-muted)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--surface-base)] text-[var(--ink-muted)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </button>
@@ -1098,7 +1098,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                 </div>
               </div>
 
-              <div className="flex w-full shrink-0 items-center gap-1 overflow-x-auto rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--surface-base)] p-1.5 backdrop-blur-xl thin-scrollbar xl:w-auto xl:gap-2">
+              <div className="flex w-full shrink-0 items-center gap-1 overflow-x-auto rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--surface-base)] p-1.5 backdrop-blur-xl thin-scrollbar xl:w-auto xl:gap-2">
                 {([
                   ["discover", "Descobrir", Sparkles],
                   ["installed", `Meus mods ${installedMods.length ? `(${installedMods.length})` : ""}`, PackageOpen],
@@ -1112,7 +1112,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                       playSound("navigate");
                       setActiveTab(id);
                     }}
-                    className={`flex min-w-max flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[length:var(--step-0)] font-semibold transition sm:px-4 sm:text-[length:var(--step-0)] xl:flex-none ${
+                    className={`flex min-w-max flex-1 items-center justify-center gap-2 rounded-[var(--corner-sm)] px-3 py-2.5 text-[length:var(--step-0)] font-semibold transition sm:px-4 sm:text-[length:var(--step-0)] xl:flex-none ${
                       activeTab === id
                         ? "bg-[var(--tone-4)] text-[var(--ink)] shadow-lg"
                         : "text-[var(--ink-faint)] hover:bg-[var(--tone-3)] hover:text-[var(--ink-muted)]"
@@ -1125,7 +1125,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
               </div>
             </header>
 
-            <div className="min-h-0 flex-1 overflow-hidden rounded-3xl border border-[color:var(--border-subtle)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_30px_100px_rgba(0,0,0,0.55)] flex flex-col transform-gpu"
+            <div className="min-h-0 flex-1 overflow-hidden rounded-[var(--corner-lg)] border border-[color:var(--border-subtle)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_30px_100px_rgba(0,0,0,0.55)] flex flex-col transform-gpu"
               style={{
                 background: "rgba(255, 255, 255, 0.02)",
                 backdropFilter: "blur(20px) saturate(180%)",
@@ -1145,7 +1145,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                       <div className="mb-3 flex shrink-0 flex-wrap items-center gap-3">
                         <div className="relative min-w-60 flex-1">
                           <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-faint)]" />
-                          <input
+                          <input aria-label="Pesquisar mod ou colar a URL de um mod"
                             value={searchTerm}
                             onChange={(event) => {
                               setSearchTerm(event.target.value);
@@ -1159,7 +1159,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               }
                             }}
                             placeholder="Pesquisar ou colar a URL de um mod"
-                            className="h-12 w-full rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] pl-11 pr-4 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-[color:var(--border-subtle)]"
+                            className="h-12 w-full rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] pl-11 pr-4 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-[color:var(--border-subtle)]"
                           />
                         </div>
                         {pastedModUrl && (
@@ -1167,7 +1167,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             type="button"
                             onClick={() => void importModFromUrl()}
                             disabled={urlImportLoading}
-                            className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)] disabled:opacity-40"
+                            className="flex h-12 items-center justify-center gap-2 rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)] disabled:opacity-40"
                           >
                             {urlImportLoading
                               ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
@@ -1182,7 +1182,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             setCatalogPage(1);
                           }}
                           aria-label="Ordenar catálogo"
-                          className="h-12 rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-1)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] outline-none focus:border-[color:var(--border-subtle)]"
+                          className="h-12 rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--tone-1)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] outline-none focus:border-[color:var(--border-subtle)]"
                         >
                           <option value="featured">Destaques</option>
                           <option value="recent">Mais recentes</option>
@@ -1190,7 +1190,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           <option value="endorsements">Mais apoiados</option>
                           <option value="name">Nome A–Z</option>
                         </select>
-                        <span className="rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-3 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)]">
+                        <span className="rounded-[var(--corner-sm)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-3 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)]">
                           {loading
                             ? "Carregando"
                             : searchTerm.trim()
@@ -1208,7 +1208,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         </p>
                       )}
                       {urlImportError && (
-                        <p className="mb-4 shrink-0 rounded-xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] text-[var(--danger)]">
+                        <p className="mb-4 shrink-0 rounded-[var(--corner-sm)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] text-[var(--danger)]">
                           {urlImportError}
                         </p>
                       )}
@@ -1223,7 +1223,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         ) : loading ? (
                           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
                             {Array.from({ length: 6 }).map((_, index) => (
-                              <div key={index} className="h-56 animate-pulse rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)]" />
+                              <div key={index} className="h-56 animate-pulse rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)]" />
                             ))}
                           </div>
                         ) : error ? (
@@ -1245,7 +1245,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                   playSound("select");
                                   selectMod(mod);
                                 }}
-                                className={`group overflow-hidden rounded-2xl border text-left transition ${
+                                className={`group overflow-hidden rounded-[var(--corner-md)] border text-left transition ${
                                   selectedMod?.id === mod.id
                                     ? "border-[color:var(--border-strong)] bg-[var(--tone-4)] shadow-[0_18px_50px_rgba(0,0,0,0.45)]"
                                     : "border-[color:var(--border-subtle)] bg-[var(--tone-2)] hover:-translate-y-0.5 hover:border-[color:var(--border-strong)] hover:bg-[var(--tone-3)]"
@@ -1265,11 +1265,11 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     </div>
                                   )}
                                   <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent" />
-                                  <span className="absolute bottom-2 left-2 rounded-md border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-2 py-1 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]">
+                                  <span className="absolute bottom-2 left-2 rounded-[10px] border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-2 py-1 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]">
                                     {mod.feed || "Nexus"}
                                   </span>
                                   {installedMods.find((entry) => entry.id === mod.id) && (
-                                    <span className="absolute right-2 top-2 flex items-center gap-1 rounded-md border border-[color:color-mix(in_srgb,var(--live)_35%,transparent)] bg-[var(--tone-3)] px-2 py-1 text-[length:var(--step-0)] font-semibold text-[var(--live)]">
+                                    <span className="absolute right-2 top-2 flex items-center gap-1 rounded-[10px] border border-[color:color-mix(in_srgb,var(--live)_35%,transparent)] bg-[var(--tone-3)] px-2 py-1 text-[length:var(--step-0)] font-semibold text-[var(--live)]">
                                       <CheckCircle2 className="h-3 w-3" />
                                       {installedMods.find((entry) => entry.id === mod.id)?.status === "installed"
                                         ? "Instalado"
@@ -1300,7 +1300,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     goToCatalogPage(catalogSlice.page - 1);
                                   }}
                                   disabled={catalogSlice.page <= 1}
-                                  className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--tone-3)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-[var(--tone-3)] disabled:hover:text-[var(--ink-muted)]"
+                                  className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-[var(--tone-3)] disabled:hover:text-[var(--ink-muted)]"
                                 >
                                   <ChevronLeft className="h-4 w-4" aria-hidden />
                                   Anterior
@@ -1315,7 +1315,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     goToCatalogPage(catalogSlice.page + 1);
                                   }}
                                   disabled={catalogSlice.page >= catalogSlice.pageCount}
-                                  className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--tone-3)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-[var(--tone-3)] disabled:hover:text-[var(--ink-muted)]"
+                                  className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition-colors hover:bg-[var(--tone-4)] hover:text-[var(--ink)] disabled:cursor-default disabled:opacity-40 disabled:hover:bg-[var(--tone-3)] disabled:hover:text-[var(--ink-muted)]"
                                 >
                                   Próxima
                                   <ChevronRight className="h-4 w-4" aria-hidden />
@@ -1330,7 +1330,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                     <aside className="min-h-0 flex-1 xl:flex-1 overflow-y-auto p-4 sm:p-5 xl:p-6 thin-scrollbar border-t border-[color:var(--border-subtle)] xl:border-t-0">
                       {selectedMod ? (
                         <motion.div key={selectedMod.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                          <div className="mb-5 overflow-hidden rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)]">
+                          <div className="mb-5 overflow-hidden rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)]">
                             {selectedMod.pictureUrl ? (
                               <img src={selectedMod.pictureUrl} alt="" className="h-48 w-full object-cover" />
                             ) : (
@@ -1341,7 +1341,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           </div>
                           <h2 className="mt-2 text-2xl font-semibold leading-tight text-[var(--ink)]">{selectedMod.name}</h2>
                           {selectedMod.author && (
-                            <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-[var(--ink-faint)]">
+                            <p className="mt-2 flex items-center gap-1.5 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)]">
                               <UserRound className="h-3.5 w-3.5" />
                               Por {selectedMod.author}
                             </p>
@@ -1350,12 +1350,12 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             {selectedMod.summary || "Este mod não possui uma descrição curta."}
                           </p>
 
-                          <div className={`mt-6 rounded-2xl border p-4 ${
+                          <div className={`mt-6 rounded-[var(--corner-md)] border p-4 ${
                             nexusConnection.connected
                               ? "border-[color:color-mix(in_srgb,var(--live)_35%,transparent)] bg-[var(--tone-3)]"
                               : "border-[color:color-mix(in_srgb,var(--warn)_35%,transparent)] bg-[var(--tone-3)]"
                           }`}>
-                            <div className={`flex items-center gap-2 text-xs font-bold ${
+                            <div className={`flex items-center gap-2 text-[length:var(--step-0)] font-bold ${
                               nexusConnection.connected ? "text-[var(--live)]" : "text-[var(--warn)]"
                             }`}>
                               <ShieldCheck className={`h-4 w-4 ${
@@ -1379,7 +1379,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               type="button"
                               onClick={() => void loadSelectedModFiles()}
                               disabled={!nexusConnection.connected || filesLoading}
-                              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--ink)] px-3 py-3 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-[var(--tone-4)] disabled:text-[var(--ink-faint)]"
+                              className="flex w-full items-center justify-center gap-2 rounded-[var(--corner-sm)] bg-[var(--ink)] px-3 py-3 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-[var(--tone-4)] disabled:text-[var(--ink-faint)]"
                             >
                               {filesLoading
                                 ? <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -1389,14 +1389,14 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                             <button
                               type="button"
                               onClick={() => openModPage(selectedMod)}
-                              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-2.5 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
+                              className="flex w-full items-center justify-center gap-2 rounded-[var(--corner-sm)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-2.5 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                             >
                               <ExternalLink className="h-3.5 w-3.5" /> Abrir página na Nexus
                             </button>
                           </div>
 
                           {awaitingFileId && (
-                            <div className="mt-3 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-3">
+                            <div className="mt-3 rounded-[var(--corner-sm)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-3">
                               <p className="text-[length:var(--step-0)] font-bold text-[var(--ink)]">
                                 Escolha o download gratuito na Nexus
                               </p>
@@ -1408,7 +1408,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
 
                           {downloadState
                             && (!downloadState.gameDomain || downloadState.gameDomain === gameDomain) && (
-                            <div className={`mt-3 rounded-xl border px-3 py-3 ${
+                            <div className={`mt-3 rounded-[var(--corner-sm)] border px-3 py-3 ${
                               downloadState.status === "error"
                                 ? "border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)]"
                                 : downloadState.status === "completed"
@@ -1447,7 +1447,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                       }}
                                     />
                                   </div>
-                                  <p className="mt-1.5 text-xs text-[var(--ink-muted)]">
+                                  <p className="mt-1.5 text-[length:var(--step-0)] text-[var(--ink-muted)]">
                                     {formatBytes(downloadState.receivedBytes || 0)}
                                     {downloadState.totalBytes
                                       ? ` de ${formatBytes(downloadState.totalBytes)}`
@@ -1456,8 +1456,8 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                 </>
                               )}
                               {downloadState.status === "error" && (
-                                <div className="mt-2.5 rounded-lg border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] p-2.5 text-left">
-                                  <p className="text-xs leading-relaxed text-[var(--danger)] font-medium">
+                                <div className="mt-2.5 rounded-[10px] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] p-2.5 text-left">
+                                  <p className="text-[length:var(--step-0)] leading-relaxed text-[var(--danger)] font-medium">
                                     {downloadState.error || "Falha durante o download do mod."}
                                   </p>
                                   <div className="mt-2 flex items-center gap-2">
@@ -1468,14 +1468,14 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                           void requestFreeNexusDownload(fileGroups.main);
                                         }
                                       }}
-                                      className="rounded-lg bg-[var(--tone-4)] px-2.5 py-1 text-xs font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)] focus-visible:ring-2 focus-visible:ring-[color:var(--border-strong)]"
+                                      className="rounded-[10px] bg-[var(--tone-4)] px-2.5 py-1 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)] focus-visible:ring-2 focus-visible:ring-[color:var(--border-strong)]"
                                     >
                                       Tentar novamente
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => void onChooseFolder()}
-                                      className="rounded-lg border border-[color:var(--border-subtle)] px-2.5 py-1 text-xs font-medium text-[var(--ink)] transition hover:bg-[var(--tone-4)]"
+                                      className="rounded-[10px] border border-[color:var(--border-subtle)] px-2.5 py-1 text-[length:var(--step-0)] font-medium text-[var(--ink)] transition hover:bg-[var(--tone-4)]"
                                     >
                                       Verificar pasta
                                     </button>
@@ -1484,22 +1484,22 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               )}
                               {downloadState.status === "completed"
                                 && downloadState.installationError && (
-                                <div className="mt-2.5 rounded-lg border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-2.5 text-left">
-                                  <p className="text-xs leading-relaxed text-[var(--ink)] font-medium">
+                                <div className="mt-2.5 rounded-[10px] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-2.5 text-left">
+                                  <p className="text-[length:var(--step-0)] leading-relaxed text-[var(--ink)] font-medium">
                                     {downloadState.installationError}
                                   </p>
                                   <div className="mt-2 flex items-center gap-2">
                                     <button
                                       type="button"
                                       onClick={() => void onChooseFolder()}
-                                      className="rounded-lg bg-[var(--tone-4)] px-2.5 py-1 text-xs font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)]"
+                                      className="rounded-[10px] bg-[var(--tone-4)] px-2.5 py-1 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)]"
                                     >
                                       Definir pasta do jogo
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => void openNexusDownloadLocation()}
-                                      className="rounded-lg border border-[color:var(--border-subtle)] px-2.5 py-1 text-xs font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
+                                      className="rounded-[10px] border border-[color:var(--border-subtle)] px-2.5 py-1 text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] transition hover:text-[var(--ink)]"
                                     >
                                       Abrir pasta baixada
                                     </button>
@@ -1510,7 +1510,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => void openNexusDownloadLocation()}
-                                  className="mt-2 flex items-center gap-1.5 rounded-lg border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-2.5 py-1 text-xs font-medium text-[var(--ink)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[color:var(--border-strong)]"
+                                  className="mt-2 flex items-center gap-1.5 rounded-[10px] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-2.5 py-1 text-[length:var(--step-0)] font-medium text-[var(--ink)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)] focus-visible:ring-2 focus-visible:ring-[color:var(--border-strong)]"
                                 >
                                   <FolderOpen className="h-3.5 w-3.5" />
                                   Mostrar arquivo
@@ -1520,7 +1520,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           )}
 
                           {filesError && (
-                            <p className="mt-3 rounded-xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-[var(--danger)]">
+                            <p className="mt-3 rounded-[var(--corner-sm)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-[var(--danger)]">
                               {filesError}
                             </p>
                           )}
@@ -1574,7 +1574,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         <div className="flex min-h-full flex-col items-center justify-center text-center">
                           <Sparkles className="mb-3 h-7 w-7 text-[var(--ink-faint)]" />
                           <p className="text-sm font-bold text-[var(--ink-faint)]">Selecione um mod</p>
-                          <p className="mt-1 text-xs text-[var(--ink-faint)]">As informações aparecerão aqui.</p>
+                          <p className="mt-1 text-[length:var(--step-0)] text-[var(--ink-faint)]">As informações aparecerão aqui.</p>
                         </div>
                       )}
                     </aside>
@@ -1593,7 +1593,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div>
                           <h2 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Meus mods</h2>
-                          <p className="mt-1 text-xs text-[var(--ink-faint)]">Acompanhe downloads e gerencie os mods já instalados.</p>
+                          <p className="mt-1 text-[length:var(--step-0)] text-[var(--ink-faint)]">Acompanhe downloads e gerencie os mods já instalados.</p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <button
@@ -1603,14 +1603,14 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               void openDownloadedModsFolder();
                             }}
                             disabled={folderActionBusy}
-                            className="flex items-center gap-2 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)] disabled:cursor-wait disabled:opacity-50"
+                            className="flex items-center gap-2 rounded-[var(--corner-sm)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)] disabled:cursor-wait disabled:opacity-50"
                           >
                             {folderActionBusy
                               ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
                               : <FolderOpen className="h-3.5 w-3.5" />}
                             Abrir pasta dos mods
                           </button>
-                          <span className="rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] font-bold text-[var(--ink-faint)]">
+                          <span className="rounded-[var(--corner-sm)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] font-bold text-[var(--ink-faint)]">
                             {installedMods.filter((mod) =>
                               (optimisticModStates[mod.id] ?? mod.enabled)).length} ativos
                           </span>
@@ -1622,13 +1622,13 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         const acInfo = getAntiCheatInfo(game?.id, gameDomain);
                         if (!acInfo) return null;
                         return (
-                          <div className="mb-5 flex items-start gap-3 rounded-2xl border border-[color:color-mix(in_srgb,var(--warn)_35%,transparent)] bg-[var(--tone-3)] p-4 text-[var(--warn)] backdrop-blur-md">
+                          <div className="mb-5 flex items-start gap-3 rounded-[var(--corner-md)] border border-[color:color-mix(in_srgb,var(--warn)_35%,transparent)] bg-[var(--tone-3)] p-4 text-[var(--warn)] backdrop-blur-md">
                             <ShieldAlert className="h-5 w-5 shrink-0 text-[var(--warn)] mt-0.5" />
                             <div>
-                              <h4 className="text-xs font-bold text-[var(--warn)]">
+                              <h4 className="text-[length:var(--step-0)] font-bold text-[var(--warn)]">
                                 Aviso de Proteção Anti-Cheat ({acInfo.antiCheatEngine})
                               </h4>
-                              <p className="mt-1 text-xs text-[var(--warn)] leading-relaxed">
+                              <p className="mt-1 text-[length:var(--step-0)] text-[var(--warn)] leading-relaxed">
                                 {acInfo.warningNotice}
                               </p>
                             </div>
@@ -1638,13 +1638,13 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
 
                       {/* AVISO DE CONFLITO DE ARQUIVOS */}
                       {modConflicts.length > 0 && (
-                        <div className="mb-5 flex items-start gap-3 rounded-2xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] p-4 text-[var(--danger)] backdrop-blur-md">
+                        <div className="mb-5 flex items-start gap-3 rounded-[var(--corner-md)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] p-4 text-[var(--danger)] backdrop-blur-md">
                           <AlertCircle className="h-5 w-5 shrink-0 text-[var(--danger)] mt-0.5" />
                           <div className="flex-1">
-                            <h4 className="text-xs font-bold text-[var(--danger)]">
+                            <h4 className="text-[length:var(--step-0)] font-bold text-[var(--danger)]">
                               Conflito de Arquivos Detectado ({modConflicts.length} arquivo{modConflicts.length === 1 ? "" : "s"} afetado{modConflicts.length === 1 ? "" : "s"})
                             </h4>
-                            <p className="mt-1 text-xs text-[var(--danger)] leading-relaxed">
+                            <p className="mt-1 text-[length:var(--step-0)] text-[var(--danger)] leading-relaxed">
                               Múltiplos mods ativos modificam o mesmo arquivo no jogo. O arquivo do último mod ativado sobrescreverá os anteriores.
                             </p>
                             <div className="mt-2 space-y-1">
@@ -1659,12 +1659,12 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                       )}
 
                       {/* GERENCIAMENTO DE PERFIS DE MODS */}
-                      <div className="mb-6 rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-4 flex flex-wrap items-center justify-between gap-3">
+                      <div className="mb-6 rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-4 flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <Settings2 className="h-4 w-4 text-[var(--ink-muted)]" />
-                          <span className="text-xs font-bold text-[var(--ink)]">Perfil de Mods:</span>
+                          <span className="text-[length:var(--step-0)] font-bold text-[var(--ink)]">Perfil de Mods:</span>
                           {modProfiles.length === 0 ? (
-                            <span className="text-xs text-[var(--ink-faint)]">Padrão</span>
+                            <span className="text-[length:var(--step-0)] text-[var(--ink-faint)]">Padrão</span>
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               {modProfiles.map((prof) => (
@@ -1672,7 +1672,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                   key={prof.id}
                                   type="button"
                                   onClick={() => void handleApplyModProfile(prof)}
-                                  className="cursor-pointer rounded-lg border border-[color:var(--border-subtle)] bg-[var(--tone-4)] px-2.5 py-1 text-[length:var(--step-0)] font-bold text-[var(--ink)] transition hover:bg-[var(--tone-4)] active:scale-95"
+                                  className="cursor-pointer rounded-[10px] border border-[color:var(--border-subtle)] bg-[var(--tone-4)] px-2.5 py-1 text-[length:var(--step-0)] font-bold text-[var(--ink)] transition hover:bg-[var(--tone-4)] active:scale-95"
                                 >
                                   {prof.name}
                                 </button>
@@ -1683,17 +1683,17 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
 
                         {showProfileSave ? (
                           <div className="flex items-center gap-2">
-                            <input
+                            <input aria-label="Nome do perfil de mods"
                               type="text"
                               value={newProfileName}
                               onChange={(e) => setNewProfileName(e.target.value)}
                               placeholder="Nome do perfil"
-                              className="h-8 rounded-lg border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-2.5 text-xs text-[var(--ink)] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--border-strong)]"
+                              className="h-8 rounded-[10px] border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-2.5 text-[length:var(--step-0)] text-[var(--ink)] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--border-strong)]"
                             />
                             <button
                               type="button"
                               onClick={() => void handleSaveModProfile()}
-                              className="cursor-pointer rounded-lg bg-[var(--ink)] px-3 py-1.5 text-[length:var(--step-0)] font-semibold uppercase text-[var(--tone-0)] transition hover:opacity-90"
+                              className="cursor-pointer rounded-[10px] bg-[var(--ink)] px-3 py-1.5 text-[length:var(--step-0)] font-semibold uppercase text-[var(--tone-0)] transition hover:opacity-90"
                             >
                               Salvar
                             </button>
@@ -1709,7 +1709,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           <button
                             type="button"
                             onClick={() => setShowProfileSave(true)}
-                            className="cursor-pointer rounded-lg border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-1.5 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
+                            className="cursor-pointer rounded-[10px] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-3 py-1.5 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                           >
                             + Salvar como Novo Perfil
                           </button>
@@ -1717,19 +1717,19 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                       </div>
 
                       {folderActionError && (
-                        <p className="mb-4 rounded-xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-[var(--danger)]">
+                        <p className="mb-4 rounded-[var(--corner-sm)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-[var(--danger)]">
                           {folderActionError}
                         </p>
                       )}
 
                       {installedActionError && (
-                        <p className="mb-4 rounded-xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-[var(--danger)]">
+                        <p className="mb-4 rounded-[var(--corner-sm)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-[var(--danger)]">
                           {installedActionError}
                         </p>
                       )}
 
                       {scriptIssues.length > 0 && (
-                        <div role="alert" className="mb-4 rounded-xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] p-3.5">
+                        <div role="alert" className="mb-4 rounded-[var(--corner-sm)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] p-3.5">
                           <p className="text-[length:var(--step-1)] font-semibold text-[var(--danger)]">
                             O jogo não conseguiu compilar os scripts dos mods
                           </p>
@@ -1747,7 +1747,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                       playSound("select");
                                       void window.electronAPI?.openExternalUrl?.(requirementSearchUrl(gameDomain, issue.requirement ?? ""));
                                     }}
-                                    className="cursor-pointer rounded-full bg-[var(--tone-4)] px-3 py-1.5 font-semibold text-[var(--ink)] transition-opacity hover:opacity-80"
+                                    className="cursor-pointer rounded-[var(--corner-sm)] bg-[var(--tone-4)] px-3 py-1.5 font-semibold text-[var(--ink)] transition-opacity hover:opacity-80"
                                   >
                                     Procurar no Nexus
                                   </button>
@@ -1850,7 +1850,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           <Download className="h-5 w-5 text-[var(--ink-muted)]" />
                           Gerenciador de Downloads
                         </h2>
-                        <p className="mt-0.5 text-xs text-[var(--ink-faint)]">
+                        <p className="mt-0.5 text-[length:var(--step-0)] text-[var(--ink-faint)]">
                           Acompanhe em tempo real os downloads e instalações de mods acionados na Nexus.
                         </p>
                       </div>
@@ -1859,7 +1859,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         <button
                           type="button"
                           onClick={handleClearCompletedDownloads}
-                          className="flex items-center gap-2 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-4 py-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
+                          className="flex items-center gap-2 rounded-[var(--corner-sm)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-4 py-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                         >
                           <Trash2 className="h-3.5 w-3.5 text-[var(--danger)]" />
                           Limpar Concluídos
@@ -1868,10 +1868,10 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                     </div>
 
                     {downloadHistory.length === 0 ? (
-                      <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-8 text-center">
+                      <div className="flex min-h-64 flex-col items-center justify-center rounded-[var(--corner-md)] border border-dashed border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-8 text-center">
                         <Download className="mb-3 h-10 w-10 text-[var(--ink-faint)]" />
                         <p className="text-sm font-semibold text-[var(--ink-muted)]">Nenhum download registrado</p>
-                        <p className="mt-1 max-w-sm text-xs leading-relaxed text-[var(--ink-faint)]">
+                        <p className="mt-1 max-w-sm text-[length:var(--step-0)] leading-relaxed text-[var(--ink-faint)]">
                           Ao iniciar um download na Nexus Mods, o progresso e o status de instalação aparecerão aqui automaticamente.
                         </p>
                       </div>
@@ -1908,25 +1908,25 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         <h2 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Configurar integração</h2>
                       </div>
 
-                      <div className="rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-5">
+                      <div className="rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-5">
                         <div className="mb-3 flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2 text-xs font-semibold text-[var(--ink-muted)]">
+                          <div className="flex items-center gap-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]">
                             <KeyRound className="h-4 w-4" /> Conta Nexus de desenvolvimento
                           </div>
                           {nexusConnection.connected && (
-                            <span className="rounded-md bg-[var(--tone-3)] px-2 py-1 text-[length:var(--step-0)] font-semibold text-[var(--live)]">
+                            <span className="rounded-[10px] bg-[var(--tone-3)] px-2 py-1 text-[length:var(--step-0)] font-semibold text-[var(--live)]">
                               Conectado
                             </span>
                           )}
                         </div>
 
                         {connectionLoading ? (
-                          <div className="flex h-20 items-center justify-center gap-2 text-xs text-[var(--ink-faint)]">
+                          <div className="flex h-20 items-center justify-center gap-2 text-[length:var(--step-0)] text-[var(--ink-faint)]">
                             <LoaderCircle className="h-4 w-4 animate-spin" />
                             Verificando conexão
                           </div>
                         ) : nexusConnection.connected ? (
-                          <div className="rounded-xl border border-[color:color-mix(in_srgb,var(--live)_35%,transparent)] bg-[var(--tone-3)] p-4">
+                          <div className="rounded-[var(--corner-sm)] border border-[color:color-mix(in_srgb,var(--live)_35%,transparent)] bg-[var(--tone-3)] p-4">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                               <div>
                                 <p className="text-sm font-semibold text-[var(--live)]">
@@ -1946,7 +1946,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                 type="button"
                                 onClick={() => void removeNexusConnection()}
                                 disabled={connectionBusy}
-                                className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[color:var(--border-subtle)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)] transition hover:bg-[var(--tone-3)] hover:text-[var(--ink)] disabled:opacity-40"
+                                className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-[var(--corner-sm)] border border-[color:var(--border-subtle)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)] transition hover:bg-[var(--tone-3)] hover:text-[var(--ink)] disabled:opacity-40"
                               >
                                 {connectionBusy
                                   ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
@@ -1957,12 +1957,12 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                           </div>
                         ) : (
                           <>
-                            <p className="mb-4 text-xs leading-relaxed text-[var(--ink-faint)]">
+                            <p className="mb-4 text-[length:var(--step-0)] leading-relaxed text-[var(--ink-faint)]">
                               Durante a avaliação, cada pessoa usa sua própria chave pessoal. Ela não é enviada ao Render,
                               Netlify, Supabase ou aos servidores do Phelierium.
                             </p>
                             {!nexusConnection.encryptionAvailable ? (
-                              <p className="rounded-xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-4 py-3 text-xs text-[var(--danger)]">
+                              <p className="rounded-[var(--corner-sm)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-4 py-3 text-[length:var(--step-0)] text-[var(--danger)]">
                                 A criptografia segura do sistema operacional não está disponível.
                               </p>
                             ) : (
@@ -1976,13 +1976,13 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                     autoComplete="off"
                                     spellCheck={false}
                                     aria-label="Chave pessoal Nexus"
-                                    className="h-12 w-full rounded-xl border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-4 pr-11 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-[color:var(--border-subtle)]"
+                                    className="h-12 w-full rounded-[var(--corner-sm)] border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-4 pr-11 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-[color:var(--border-subtle)]"
                                   />
                                   <button
                                     type="button"
                                     onClick={() => setShowPersonalKey((visible) => !visible)}
                                     aria-label={showPersonalKey ? "Ocultar chave" : "Mostrar chave"}
-                                    className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--ink-faint)] transition hover:bg-[var(--tone-3)] hover:text-[var(--ink-muted)]"
+                                    className="absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[10px] text-[var(--ink-faint)] transition hover:bg-[var(--tone-3)] hover:text-[var(--ink-muted)]"
                                   >
                                     {showPersonalKey
                                       ? <EyeOff className="h-4 w-4" />
@@ -1993,7 +1993,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                                   type="button"
                                   onClick={() => void connectPersonalKey()}
                                   disabled={connectionBusy || personalKey.trim().length < 32}
-                                  className="flex h-12 items-center justify-center gap-2 rounded-xl bg-[var(--ink)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-35"
+                                  className="flex h-12 items-center justify-center gap-2 rounded-[var(--corner-sm)] bg-[var(--ink)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-35"
                                 >
                                   {connectionBusy && <LoaderCircle className="h-4 w-4 animate-spin" />}
                                   Validar e salvar
@@ -2012,43 +2012,43 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                         )}
 
                         {connectionError && (
-                          <p className="mt-3 rounded-xl border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-[var(--danger)]">
+                          <p className="mt-3 rounded-[var(--corner-sm)] border border-[color:color-mix(in_srgb,var(--danger)_35%,transparent)] bg-[var(--tone-3)] px-3 py-2 text-[length:var(--step-0)] leading-relaxed text-[var(--danger)]">
                             {connectionError}
                           </p>
                         )}
                       </div>
 
-                      <div className="rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-5">
-                        <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-[var(--ink-muted)]">
+                      <div className="rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-5">
+                        <div className="mb-3 flex items-center gap-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]">
                           <FolderOpen className="h-4 w-4" /> Pasta do jogo
                         </div>
                         <button
                           type="button"
                           onClick={() => void onChooseFolder()}
-                          className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-4 text-left transition hover:bg-[var(--tone-3)]"
+                          className="flex min-h-14 w-full items-center gap-3 rounded-[var(--corner-sm)] border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-4 text-left transition hover:bg-[var(--tone-3)]"
                         >
                           <HardDrive className="h-4 w-4 shrink-0 text-[var(--ink-faint)]" />
-                          <span className="min-w-0 flex-1 truncate text-xs font-bold text-[var(--ink-muted)]">
+                          <span className="min-w-0 flex-1 truncate text-[length:var(--step-0)] font-bold text-[var(--ink-muted)]">
                             {gameFolder || "Selecionar pasta do jogo"}
                           </span>
                           {gameFolder && <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--live)]" />}
                         </button>
                       </div>
 
-                      <div className="rounded-2xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-5">
-                        <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-[var(--ink-muted)]">
+                      <div className="rounded-[var(--corner-md)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] p-5">
+                        <div className="mb-3 flex items-center gap-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)]">
                           <PackageOpen className="h-4 w-4" /> Domínio Nexus
                         </div>
-                        <p className="mb-4 text-xs leading-relaxed text-[var(--ink-faint)]">
+                        <p className="mb-4 text-[length:var(--step-0)] leading-relaxed text-[var(--ink-faint)]">
                           É o trecho da URL antes de <code className="text-[var(--ink-muted)]">/mods</code>.
                           Exemplo: <code className="text-[var(--ink-muted)]">skyrimspecialedition</code>.
                         </p>
                         <div className="flex flex-col gap-2 sm:flex-row">
-                          <input
+                          <input aria-label="Domínio do jogo no Nexus"
                             value={domainDraft}
                             onChange={(event) => setDomainDraft(cleanDomain(event.target.value))}
                             placeholder="dominio-do-jogo"
-                            className="h-12 min-w-0 flex-1 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-4 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-[color:var(--border-subtle)]"
+                            className="h-12 min-w-0 flex-1 rounded-[var(--corner-sm)] border border-[color:var(--border-subtle)] bg-[var(--surface-base)] px-4 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--ink-faint)] focus:border-[color:var(--border-subtle)]"
                           />
                           <button
                             type="button"
@@ -2059,7 +2059,7 @@ const ModGameDetailPanel: React.FC<ModGameDetailPanelProps> = ({
                               setActiveTab("discover");
                             }}
                             disabled={!domainDraft}
-                            className="h-12 rounded-xl bg-[var(--ink)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-35"
+                            className="h-12 rounded-[var(--corner-sm)] bg-[var(--ink)] px-5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-35"
                           >
                             Salvar
                           </button>
@@ -2083,14 +2083,14 @@ const EmptyCatalog: React.FC<{
   description: string;
   onAction: () => void;
 }> = ({ title, description, onAction }) => (
-  <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[color:var(--border-subtle)] bg-[var(--tone-2)] px-6 text-center">
+  <div className="flex min-h-64 flex-col items-center justify-center rounded-[var(--corner-md)] border border-dashed border-[color:var(--border-subtle)] bg-[var(--tone-2)] px-6 text-center">
     <PackageOpen className="mb-3 h-7 w-7 text-[var(--ink-faint)]" />
     <p className="text-sm font-semibold text-[var(--ink-muted)]">{title}</p>
-    <p className="mt-1 max-w-md text-xs leading-relaxed text-[var(--ink-faint)]">{description}</p>
+    <p className="mt-1 max-w-md text-[length:var(--step-0)] leading-relaxed text-[var(--ink-faint)]">{description}</p>
     <button
       type="button"
       onClick={onAction}
-      className="mt-4 rounded-xl border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-4 py-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
+      className="mt-4 rounded-[var(--corner-sm)] border border-[color:var(--border-subtle)] bg-[var(--tone-3)] px-4 py-2 text-[length:var(--step-0)] font-semibold text-[var(--ink-faint)] transition hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
     >
       Continuar
     </button>

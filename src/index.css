@@ -1236,13 +1236,17 @@ html[data-launcher-theme="xbox360"] {
     scroll-behavior: auto;
   }
 
+  /* Sem deslocamento, escala nem animação em loop; a troca de estado continua legível: cor, fundo,
+     borda e opacidade ainda transicionam num fade curto (zerar tudo deixava o foco e o hover secos). */
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
+    transition-property: opacity, color, background-color, border-color, outline-color, fill, stroke !important;
+    transition-duration: 120ms !important;
+    transition-timing-function: ease-out !important;
   }
 }
 
@@ -1727,14 +1731,11 @@ video {
   overflow: hidden;
   border-radius: var(--corner-lg);
   background: var(--tone-1);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--ink) 9%, transparent),
-    0 30px 90px rgba(0, 0, 0, 0.7);
 }
 
 .ic-band {
   position: relative;
-  height: 104px;
+  height: 120px;
   overflow: hidden;
   background:
     radial-gradient(120% 140% at 12% 100%, color-mix(in srgb, var(--ink) 14%, transparent) 0%, transparent 60%),
@@ -1744,12 +1745,12 @@ video {
 /* ondas saindo do avatar (centro do selo: 24px + 32px da esquerda, na base da faixa) */
 .ic-ripple {
   position: absolute;
-  left: 24px;
-  bottom: -32px;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--ink) 35%, transparent);
+  left: 32px;
+  bottom: -40px;
+  width: 80px;
+  height: 80px;
+  border-radius: var(--corner-md);
+  background: color-mix(in srgb, var(--ink) 16%, transparent);
   opacity: 0;
   animation: ic-ripple 2.2s var(--ease-out) infinite;
 }
@@ -1776,7 +1777,7 @@ video {
 }
 
 .ic-body {
-  padding: 0 24px 24px;
+  padding: 0 32px 32px;
 }
 
 .ic-avatar {
@@ -1784,15 +1785,12 @@ video {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
-  margin-top: -32px;
+  width: 80px;
+  height: 80px;
+  margin-top: -40px;
   overflow: hidden;
   border-radius: var(--corner-md);
-  background: var(--tone-1);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent),
-    0 4px 24px rgba(0, 0, 0, 0.5);
+  background: var(--tone-3);
 }
 
 .ic-title {
@@ -1807,8 +1805,8 @@ video {
 
 .ic-meta {
   display: grid;
-  gap: 4px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 12px;
 }
 
 .ic-row {
@@ -1821,14 +1819,13 @@ video {
 }
 
 .ic-divider {
-  height: 1px;
-  margin: 16px 0;
-  background: linear-gradient(90deg, transparent, var(--tone-4) 20%, var(--tone-4) 80%, transparent);
+  height: 0;
+  margin: 12px 0;
 }
 
 .ic-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
 }
 
 .ic-actions button {
@@ -1836,9 +1833,9 @@ video {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 44px;
-  border-radius: var(--node);
-  font-size: 14px;
+  height: 56px;
+  border-radius: var(--corner-sm);
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -1856,18 +1853,17 @@ video {
   flex: 1;
   background: var(--ink);
   color: var(--tone-0);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .ic-decline {
-  padding: 0 18px;
-  background: rgba(236, 74, 74, 0.16);
-  color: #ff9090;
+  padding: 0 24px;
+  background: color-mix(in srgb, var(--danger) 20%, transparent);
+  color: var(--danger);
   transition: background-color var(--duration-quick) var(--ease-smooth-out);
 }
 
 .ic-decline:hover:not(:disabled) {
-  background: rgba(236, 74, 74, 0.22);
+  background: color-mix(in srgb, var(--danger) 30%, transparent);
 }
 
 /* toque dos botões: encolhe até 0.99 */
@@ -2033,6 +2029,31 @@ video {
   will-change: transform, width, height, top;
   z-index: 0;
   pointer-events: none;
+}
+
+/* Abas em cantos squircle e preenchidas (sem contorno): a ativa é um bloco de tinta que desliza */
+.t-tabs--squircle {
+  --tabs-bar-bg: transparent;
+  --tabs-pill-bg: var(--ink);
+  --tabs-text-muted: var(--ink-muted);
+  --tabs-text-active: var(--ink);
+  --tabs-text-on-pill: var(--tone-0);
+  --tabs-hover-bg: var(--tone-3);
+  padding: 0;
+  gap: 6px;
+  border-radius: var(--corner-sm);
+}
+
+.t-tabs--squircle .t-tab,
+.t-tabs--squircle .t-tabs-pill {
+  border-radius: var(--corner-sm);
+}
+
+.t-tabs--squircle .t-tab {
+  height: auto;
+  padding: 0 20px;
+  font-size: var(--fs-label);
+  font-weight: 700;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2992,6 +3013,7 @@ html[data-ui-style="refined"] {
 }
 
 html[data-ui-style="refined"] :is(.ctl-circle, .ctl-pill) {
+  border-radius: var(--corner-sm);
   border-color: transparent;
   background: color-mix(in srgb, var(--tone-2) 88%, transparent);
   box-shadow: none;
@@ -3129,7 +3151,7 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
   --console-tile-h: clamp(190px, 25vh, 340px);
   /* capas verticais (600x900 da Steam): a largura é 2/3 da altura, a arte cabe sem cortar */
   --console-tile-ratio: 0.667;
-  --console-tile-radius: 6px;
+  --console-tile-radius: 14px;
   --console-focus-scale: 1.2;
   --console-gap: clamp(10px, 0.8vw, 20px);
   --console-shadow-room: 40px;
@@ -3172,22 +3194,51 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
 /* abas da biblioteca, como numa tela inicial de console: texto em caixa alta pequena,
    a ativa com contorno de tinta, chips de troca de aba (LB/RB ou Q/E) nas pontas */
 .console-tab-item {
+  position: relative;
+  z-index: 1;
   font-size: var(--fs-label);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink-muted);
-  border: 1.5px solid transparent;
-  transition: color var(--dur-focus) ease-out, border-color var(--dur-focus) ease-out;
+  border-radius: var(--corner-sm);
+  transition: color var(--dur-focus) ease-out, background-color var(--dur-focus) ease-out;
 }
 
 .console-tab-item:hover {
   color: var(--ink);
+  background: var(--tone-3);
 }
 
 .console-tab-item[data-active="true"] {
-  color: var(--ink);
-  border-color: var(--ink);
+  color: var(--tone-0);
+  background: transparent;
+}
+
+/* o bloco de tinta atrás da aba ativa: desliza de uma aba para a outra (posição vem de useSlidingPill) */
+.console-tab-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: var(--ink);
+  border-radius: var(--corner-sm);
+  transition:
+    transform var(--tabs-dur, 250ms) var(--tabs-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    width var(--tabs-dur, 250ms) var(--tabs-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    height var(--tabs-dur, 250ms) var(--tabs-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    opacity var(--tabs-dur, 250ms) ease-out;
+  will-change: transform, width;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .console-tab-pill {
+    transition: none;
+  }
 }
 
 .console-bumper {
@@ -3195,15 +3246,14 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  min-width: 26px;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 6px;
-  border: 1px solid var(--tone-4);
+  min-width: 28px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 8px;
   font-size: var(--fs-label);
   font-weight: 700;
   color: var(--ink-muted);
-  background: transparent;
+  background: var(--tone-3);
 }
 
 /* bloco de informações do jogo em foco, acima da fileira: nome, horas, último troféu e sessão */
@@ -3294,10 +3344,9 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
   font-family: inherit;
   font-size: var(--fs-label);
   color: var(--ink);
-  border: 1px solid var(--tone-4);
-  background: color-mix(in srgb, var(--tone-2) 80%, transparent);
-  border-radius: 6px;
-  padding: 1px 6px;
+  background: color-mix(in srgb, var(--tone-3) 85%, transparent);
+  border-radius: 8px;
+  padding: 2px 8px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3365,16 +3414,112 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
     linear-gradient(90deg, color-mix(in srgb, var(--tone-0) 40%, transparent) 0%, transparent 30%);
 }
 
+/* Capa que acabou de chegar à fileira (Home). Duas entradas diferentes:
+   "add"  = a pessoa adicionou (jogo novo ou jogo posto num filtro): a capa sobe da base com uma mola e
+            um anel de tinta se abre ao redor dela;
+   "sync" = veio de uma sincronização: as capas se revelam da esquerda para a direita em cascata
+            (o atraso de cada uma vem de --reveal-delay), com um clarão que assenta na arte. */
+.console-reveal[data-reveal="add"] {
+  animation: console-add 1.2s var(--ease-smooth-out) both;
+}
+
+.console-reveal[data-reveal="add"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--console-tile-radius);
+  pointer-events: none;
+  animation: console-add-ring 1.1s var(--ease-smooth-out) 0.35s both;
+}
+
+@keyframes console-add {
+  0% {
+    opacity: 0;
+    transform: translateY(32px) scale(0.6);
+    filter: blur(8px);
+  }
+
+  45% {
+    opacity: 1;
+    transform: translateY(-8px) scale(1.07);
+    filter: blur(0);
+  }
+
+  70% {
+    transform: translateY(2px) scale(0.985);
+  }
+
+  100% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes console-add-ring {
+  0% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--ink) 70%, transparent);
+  }
+
+  100% {
+    opacity: 0;
+    box-shadow: 0 0 0 18px color-mix(in srgb, var(--ink) 0%, transparent);
+  }
+}
+
+.console-reveal[data-reveal="sync"] {
+  animation: console-sync 0.8s var(--ease-smooth-out) both;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+.console-reveal[data-reveal="sync"] img {
+  animation: console-sync-art 0.9s var(--ease-smooth-out) both;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+@keyframes console-sync {
+  0% {
+    opacity: 0;
+    transform: translateX(-24px) scale(0.94);
+    clip-path: inset(0 100% 0 0 round var(--console-tile-radius));
+  }
+
+  100% {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 0 0 0 round var(--console-tile-radius));
+  }
+}
+
+@keyframes console-sync-art {
+  0% {
+    filter: brightness(2.2) saturate(0);
+  }
+
+  100% {
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .console-reveal[data-reveal],
+  .console-reveal[data-reveal]::after,
+  .console-reveal[data-reveal] img {
+    animation: none;
+  }
+}
+
 /* botões pequenos sobre a arte: base e contorno próprios, legíveis em qualquer capa */
 .console-chip {
   color: var(--ink);
-  background: color-mix(in srgb, var(--tone-2) 85%, transparent);
-  border: 1px solid var(--tone-4);
+  background: color-mix(in srgb, var(--tone-3) 88%, transparent);
   transition: background-color var(--dur-focus) ease-out;
 }
 
 .console-chip:hover {
-  background: var(--tone-3);
+  background: var(--tone-4);
 }
 
 /* números grandes com unidade pequena ("23h 19m") */
@@ -3424,20 +3569,17 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
 
 /* Iniciar o jogo: caixa de contorno que acende ao passar o mouse ou focar */
 .console-start {
-  border-radius: var(--console-tile-radius, 6px);
-  color: var(--ink);
-  background: color-mix(in srgb, var(--tone-0) 55%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ink) 70%, transparent);
+  border-radius: var(--corner-md);
+  color: var(--tone-0);
+  background: var(--ink);
   transition:
-    background-color var(--dur-focus) ease-out,
-    color var(--dur-focus) ease-out,
+    opacity var(--dur-focus) ease-out,
     transform var(--dur-focus) var(--screen-ease);
 }
 
 .console-start:hover:not(:disabled),
 .console-start:focus-visible {
-  background: var(--ink);
-  color: var(--tone-0);
+  opacity: 0.9;
 }
 
 .console-start:active:not(:disabled) {
@@ -3450,8 +3592,9 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
 }
 
 .console-start-icon {
-  background: var(--ink);
-  color: var(--tone-0);
+  background: var(--tone-0);
+  color: var(--ink);
+  border-radius: var(--corner-sm);
 }
 
 .console-start:hover:not(:disabled) .console-start-icon,
@@ -3487,12 +3630,13 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
 
 /* busca da lista de troféus */
 .console-search {
-  border: 1.5px solid var(--tone-4);
-  transition: border-color var(--dur-focus) ease-out;
+  background: var(--tone-2);
+  border-radius: var(--corner-sm);
+  transition: background-color var(--dur-focus) ease-out;
 }
 
 .console-search:focus-within {
-  border-color: var(--ink);
+  background: var(--tone-3);
 }
 
 /* linha de troféu: separada por um filete, sem caixa (como a lista do conceito) */
@@ -3514,9 +3658,8 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
 
 .console-ach {
   background: var(--tone-1);
-  border: 1.5px solid transparent;
-  border-radius: var(--console-tile-radius, 6px);
-  transition: border-color var(--dur-focus) ease-out, background-color var(--dur-focus) ease-out;
+  border-radius: var(--console-tile-radius, 14px);
+  transition: background-color var(--dur-focus) ease-out;
 }
 
 .console-ach[data-state="next"] {
@@ -3536,8 +3679,8 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
   top: 0;
   z-index: 1;
   pointer-events: none;
-  border: 1.5px solid var(--ink);
-  border-radius: var(--console-tile-radius, 6px);
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: var(--console-tile-radius, 14px);
   transition: transform 180ms var(--screen-ease), height 180ms var(--screen-ease);
 }
 

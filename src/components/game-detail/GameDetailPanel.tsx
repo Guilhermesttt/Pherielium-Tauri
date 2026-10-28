@@ -470,7 +470,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
             reducedEffects
           >
             {galleryItems.length > 0 && (
-              <div className="relative w-full rounded-3xl overflow-hidden">
+              <div className="relative w-full rounded-[var(--corner-lg)] overflow-hidden">
                 <FramerCarouselThumbnails items={galleryItems} initialIndex={state.currentGalleryIndex} />
 
                 <button
@@ -478,7 +478,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                     closeGallery();
                     playSound("modalClose");
                   }}
-                  className="absolute top-4 right-4 w-10 h-10 aspect-square rounded-full shrink-0 flex items-center justify-center p-0 bg-black/60 border border-white/20 text-white hover:bg-black/90 transition-colors z-50"
+                  className="absolute top-4 right-4 w-10 h-10 aspect-square rounded-full shrink-0 flex items-center justify-center p-0 bg-black/60 border border-transparent text-[var(--ink)] hover:bg-black/90 transition-colors z-50"
                   aria-label={copy.close}
                 >
                   <X className="w-5 h-5" />
@@ -510,25 +510,25 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                 <motion.div
                   animate={{ y: [0, -8, 0], rotate: [10, 25, 10], opacity: [0.7, 1, 0.7] }}
                   transition={{ repeat: Infinity, duration: 3, ease: "easeInOut", delay: 0.2 }}
-                  className="absolute top-6 left-2 w-5 h-6 bg-white/10  border border-white/20 rounded-sm shadow-sm"
+                  className="absolute top-6 left-2 w-5 h-6 bg-[var(--tone-3)]  border border-transparent rounded-sm shadow-sm"
                   style={{ clipPath: "polygon(0 0, 100% 15%, 85% 100%, 15% 100%)" }}
                 />
                 <motion.div
                   animate={{ y: [0, 12, 0], rotate: [-15, -30, -15], opacity: [0.5, 0.8, 0.5] }}
                   transition={{ repeat: Infinity, duration: 4, ease: "easeInOut", delay: 0.8 }}
-                  className="absolute bottom-6 left-6 w-4 h-5 bg-[var(--color-surface)]  border border-white/10 rounded-sm shadow-sm"
+                  className="absolute bottom-6 left-6 w-4 h-5 bg-[var(--color-surface)]  border border-transparent rounded-sm shadow-sm"
                   style={{ clipPath: "polygon(10% 0, 100% 0, 90% 100%, 0 85%)" }}
                 />
                 <motion.div
                   animate={{ y: [0, -15, 0], rotate: [45, 60, 45], opacity: [0.8, 1, 0.8] }}
                   transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut", delay: 0.5 }}
-                  className="absolute top-10 right-4 w-6 h-6 bg-white/10  border border-white/20 rounded-sm shadow-sm"
+                  className="absolute top-10 right-4 w-6 h-6 bg-[var(--tone-3)]  border border-transparent rounded-sm shadow-sm"
                   style={{ clipPath: "polygon(0 15%, 100% 0, 85% 100%, 15% 85%)" }}
                 />
                 <motion.div
                   animate={{ y: [0, 10, 0], rotate: [-20, -5, -20], opacity: [0.6, 0.9, 0.6] }}
                   transition={{ repeat: Infinity, duration: 4.5, ease: "easeInOut", delay: 1.2 }}
-                  className="absolute bottom-8 right-6 w-5 h-5 bg-[var(--color-surface)]  border border-white/10 rounded-sm shadow-sm"
+                  className="absolute bottom-8 right-6 w-5 h-5 bg-[var(--color-surface)]  border border-transparent rounded-sm shadow-sm"
                   style={{ clipPath: "polygon(15% 0, 100% 15%, 85% 100%, 0 85%)" }}
                 />
 
@@ -550,7 +550,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
               </div>
 
               {/* Text Content */}
-              <h2 className="text-[length:var(--step-2)] font-semibold text-white tracking-tight mb-2 text-center">
+              <h2 className="text-[length:var(--step-2)] font-semibold text-[var(--ink)] tracking-tight mb-2 text-center">
                 {copy.removeGame || "Delete File"}
               </h2>
               <p className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] text-center leading-[1.4] mb-8 px-2 max-w-[240px]">
@@ -566,7 +566,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                     playSound("back");
                   }}
                   disabled={state.isDeleting}
-                  className="flex-1 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/5 text-[length:var(--step-1)] font-medium text-white transition-all disabled:opacity-40"
+                  className="flex-1 py-3 rounded-[var(--corner-sm)] bg-[var(--tone-3)] hover:bg-[var(--tone-4)] border border-transparent text-[length:var(--step-1)] font-medium text-[var(--ink)] transition-all disabled:opacity-40"
                 >
                   {copy.cancel}
                 </button>
@@ -574,7 +574,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                   type="button"
                   onClick={actions.handleDeleteGame}
                   disabled={state.isDeleting}
-                  className="flex-1 py-3 rounded-full bg-[#FF453A] hover:bg-[#FF5147] border border-[#FF453A]/50 text-[length:var(--step-1)] font-medium text-white hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-40"
+                  className="flex-1 py-3 rounded-[var(--corner-sm)] bg-[#FF453A] hover:bg-[#FF5147] border border-[#FF453A]/50 text-[length:var(--step-1)] font-medium text-[var(--ink)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-40"
                 >
                   {state.isDeleting ? copy.removing : (copy.remove || "Delete")}
                 </button>
@@ -659,18 +659,18 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                     className="relative w-40 h-40 flex items-center justify-center mb-8"
                   >
                     <div
-                      className="absolute inset-0 rounded-full border border-white/10 animate-ping"
+                      className="absolute inset-0 rounded-full border border-transparent animate-ping"
                       style={{ animationDuration: "3s" }}
                     />
                     <div
-                      className="absolute inset-4 rounded-full border-t border-white/30 animate-spin"
+                      className="absolute inset-4 rounded-full border-t border-transparent animate-spin"
                       style={{ animationDuration: "2s" }}
                     />
                     <div
-                      className="absolute inset-8 rounded-full border-b border-white/60 animate-spin"
+                      className="absolute inset-8 rounded-full border-b border-transparent animate-spin"
                       style={{ animationDirection: "reverse", animationDuration: "1.5s" }}
                     />
-                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-[var(--tone-3)] flex items-center justify-center">
                       {game.logoImage ? (
                         <img src={game.logoImage} alt="" className="w-12 object-contain opacity-80 animate-pulse" />
                       ) : (
@@ -679,7 +679,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                     </div>
                   </motion.div>
 
-                  <h2 className="text-3xl md:text-4xl font-display font-semibold tracking-[-0.03em] text-white mb-3">
+                  <h2 className="text-3xl md:text-4xl font-display font-semibold tracking-[-0.03em] text-[var(--ink)] mb-3">
                     {game.title}
                   </h2>
                   <p className="text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] animate-pulse">

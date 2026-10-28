@@ -11,6 +11,9 @@ import { buildBoard, formatLastSeen, isFriendOnline, type GameGroup } from "./fr
 import type { DiscordFriendState } from "./discordFriendGroups";
 import type { DiscordFriendActions } from "../../hooks/useDiscordFriendMatches";
 import { IconSwap } from "../ui/IconSwap";
+import { HorizontalTabs } from "../ui/HorizontalTabs";
+import { RankBadge } from "../ui/RankBadge";
+import { SectionTransition } from "../ui/SectionTransition";
 
 export { formatLastSeen } from "./friendsBoard";
 
@@ -87,7 +90,7 @@ const Avatar: React.FC<{ friend: SocialFriend; size: number; ring?: boolean }> =
   return (
   <span className="relative inline-block shrink-0 align-middle" style={{ width: size, height: size }}>
     <span
-      className={`block h-full w-full overflow-hidden rounded-[28%] bg-[var(--tone-3)] ${ring ? "ring-2 ring-[rgb(var(--launcher-accent))]" : ""}`}
+      className={`block h-full w-full overflow-hidden rounded-[28%] bg-[var(--tone-3)] ${ring ? "ring-2 ring-[var(--live)]" : ""}`}
     >
       {friend.avatar && !broken ? (
         <img
@@ -162,7 +165,7 @@ const DiscordFriendAction: React.FC<{
     }
   };
   const primary =
-    "inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--ink)] text-[length:var(--step-1)] font-semibold text-[var(--tone-0)] transition active:scale-[0.98] disabled:opacity-60";
+    "inline-flex h-12 w-full items-center justify-center gap-2 rounded-[var(--corner-sm)] bg-[var(--ink)] text-[length:var(--step-1)] font-semibold text-[var(--tone-0)] transition active:scale-[0.98] disabled:opacity-60";
   return (
     <div className="space-y-2 rounded-[var(--corner-md)] bg-[var(--surface-base)] p-4">
       <p className="flex items-center gap-2 text-[length:var(--step-0)] text-[var(--ink-faint)]">
@@ -199,18 +202,21 @@ const DiscordFriendAction: React.FC<{
   );
 };
 
-const SectionTitle: React.FC<{ children: React.ReactNode; count?: number; hint?: string }> = ({ children, count, hint }) => (
-  <div className="mb-3 flex items-baseline gap-2.5 px-1">
-    <h3 className="font-display text-[length:var(--step-3)] font-semibold leading-none text-[var(--ink)]">{children}</h3>
-    {count !== undefined && <span className="text-[length:var(--step-1)] tabular-nums text-[var(--ink-faint)]">{count}</span>}
-    {hint && <span className="text-[length:var(--step-0)] text-[var(--ink-faint)]">{hint}</span>}
-  </div>
+/** Rótulo de seção no tom do console: caixa alta pequena e a contagem em mono. */
+const SectionLabel: React.FC<{ children: React.ReactNode; count?: number }> = ({ children, count }) => (
+  <h3 className="mb-3 flex items-baseline gap-2.5 px-0.5 text-[length:var(--fs-label)] font-bold uppercase tracking-[0.08em] text-[var(--ink-muted)]">
+    {children}
+    {count !== undefined && <span className="font-metric text-[length:var(--step-0)] font-normal tracking-normal text-[var(--ink-faint)]">{count}</span>}
+  </h3>
 );
 
+const TILE = "rounded-[var(--corner-md)]";
+const CONTROL = "rounded-[var(--corner-sm)]";
+
 /**
- * Amigos como um quadro de jogos: em cima, quem está jogando o quê (cada jogo é um bloco com a
- * arte dele); depois quem está online; os offline ficam quietos no fim. Selecionar alguém abre o
- * painel ao lado com as ações.
+ * Amigos como uma tela de console: em cima, quem está jogando o quê (cada jogo é um bloco com a
+ * arte dele); depois quem está online; os offline ficam quietos no fim. O item selecionado ganha o
+ * contorno de tinta, como a lista de conquistas, e o painel ao lado traz as ações.
  */
 export const FriendsRoster: React.FC<FriendsRosterProps> = ({
   friends,
@@ -260,54 +266,46 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
       {/* Quadro */}
       <div className="min-w-0">
-        <div className="mb-5 flex flex-wrap items-center gap-3">
-          <div className="relative min-w-[220px] flex-1">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-faint)]" />
+        <div className="mb-8 flex flex-wrap items-center gap-4">
+          <div className="relative min-w-[260px] flex-1">
+            <Search className="pointer-events-none absolute left-4.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-faint)]" />
             <input
               id="friends-search-input"
               aria-label="Buscar amigos"
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Buscar por nome ou jogo"
-              className="h-11 w-full rounded-full bg-[var(--surface-raised)] pl-11 pr-4 text-[length:var(--step-1)] text-[var(--ink)] ring-1 ring-[color:var(--border-subtle)] placeholder:text-[var(--ink-faint)]"
+              className={`${CONTROL} h-12 w-full bg-[var(--tone-2)] pl-12 pr-5 text-[length:var(--step-1)] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--ink-faint)] focus:bg-[var(--tone-3)]`}
             />
           </div>
-          <div role="tablist" aria-label="Filtrar por presença" className="flex gap-1.5">
-            {FILTERS.map((x) => (
-              <button
-                key={x.id}
-                role="tab"
-                type="button"
-                aria-selected={filter === x.id}
-                onClick={() => {
-                  playSound?.("select");
-                  onFilterChange(x.id);
-                }}
-                className={`h-11 rounded-full px-5 text-[length:var(--step-0)] font-semibold transition-colors ${
-                  filter === x.id ? "bg-[var(--ink)] text-[var(--tone-0)]" : "bg-[var(--surface-raised)] text-[var(--ink-muted)] ring-1 ring-[color:var(--border-subtle)] hover:text-[var(--ink)]"
-                }`}
-              >
-                {x.label}
-              </button>
-            ))}
-          </div>
+          <HorizontalTabs
+            activeId={filter}
+            onChange={(id) => {
+              playSound?.("select");
+              onFilterChange(id as RosterFilter);
+            }}
+            className="t-tabs--squircle"
+            tabClassName="flex h-12 items-center text-[length:var(--fs-label)] font-bold uppercase tracking-[0.06em] whitespace-nowrap"
+            tabs={FILTERS.map((x) => ({ id: x.id, label: x.label }))}
+          />
         </div>
 
+        <SectionTransition id={filter}>
         {visible.length === 0 ? (
-          <p className="rounded-[var(--corner-lg)] bg-[var(--surface-raised)] px-6 py-14 text-center text-[length:var(--step-1)] text-[var(--ink-muted)] ring-1 ring-[color:var(--border-subtle)]">
+          <p className={`${TILE} bg-[var(--tone-1)] px-6 py-14 text-center text-[length:var(--step-1)] text-[var(--ink-muted)]`}>
             Ninguém por aqui com esse filtro. Tente outro nome ou volte para Todos.
           </p>
         ) : (
-          <div className="space-y-9">
+          <div className="space-y-12">
             {board.playing.length > 0 && (
               <section aria-label="Jogando agora">
-                <SectionTitle count={board.playing.reduce((n, g) => n + g.friends.length, 0)}>Jogando agora</SectionTitle>
-                <div className="space-y-3">
+                <SectionLabel count={board.playing.reduce((n, g) => n + g.friends.length, 0)}>Jogando agora</SectionLabel>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
                   {board.playing.map((g) => (
-                    <GameBlock key={g.title} group={g} selectedId={selectedId} onPick={pick} unread={unread} />
+                    <GameTile key={g.title} group={g} selectedId={selectedId} onPick={pick} unread={unread} />
                   ))}
                 </div>
               </section>
@@ -315,8 +313,8 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
 
             {board.online.length > 0 && (
               <section aria-label="Online">
-                <SectionTitle count={board.online.length}>Online</SectionTitle>
-                <ul className="grid grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-2.5">
+                <SectionLabel count={board.online.length}>Online</SectionLabel>
+                <ul className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
                   {board.online.map((f) => (
                     <li key={f.id}>
                       <button
@@ -324,11 +322,11 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
                         aria-current={f.id === selectedId}
                         onMouseEnter={() => playSound?.("hover")}
                         onClick={() => pick(f)}
-                        className={`flex w-full items-center gap-3.5 rounded-[var(--corner-md)] p-3 text-left ring-1 transition-colors ${
-                          f.id === selectedId ? "bg-[var(--surface-overlay)] ring-[color:var(--border-strong)]" : "bg-[var(--surface-raised)] ring-[color:var(--border-subtle)] hover:bg-[var(--surface-overlay)]"
+                        className={`${TILE} flex w-full cursor-pointer items-center gap-4 p-4 text-left transition-colors duration-[var(--dur-focus)] ${
+                          f.id === selectedId ? "bg-[var(--tone-4)]" : "bg-[var(--tone-2)] hover:bg-[var(--tone-3)]"
                         }`}
                       >
-                        <Avatar friend={f} size={48} />
+                        <Avatar friend={f} size={56} />
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-2 text-[length:var(--step-1)] font-semibold text-[var(--ink)]">
                             <PresenceDot friend={f} />
@@ -337,7 +335,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
                           <span className="block truncate text-[length:var(--step-0)] text-[var(--ink-muted)]">{statusLine(f)}</span>
                         </span>
                         {unread(f) > 0 && (
-                          <span className="min-w-6 rounded-full bg-[var(--ink)] px-2 text-center text-[length:var(--step-0)] font-bold leading-6 text-[var(--tone-0)]">{unread(f)}</span>
+                          <span className="font-metric min-w-6 rounded-full bg-[var(--ink)] px-2 text-center text-[length:var(--step-0)] font-bold leading-6 text-[var(--tone-0)]">{unread(f)}</span>
                         )}
                       </button>
                     </li>
@@ -348,8 +346,8 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
 
             {board.offline.length > 0 && (
               <section aria-label="Offline">
-                <SectionTitle count={board.offline.length}>Offline</SectionTitle>
-                <ul className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+                <SectionLabel count={board.offline.length}>Offline</SectionLabel>
+                <ul className="grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
                   {board.offline.map((f) => (
                     <li key={f.id}>
                       <button
@@ -357,11 +355,11 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
                         aria-current={f.id === selectedId}
                         onMouseEnter={() => playSound?.("hover")}
                         onClick={() => pick(f)}
-                        className={`flex w-full items-center gap-3 rounded-[var(--corner-sm)] px-3 py-2 text-left transition-colors ${
-                          f.id === selectedId ? "bg-[var(--tone-3)]" : "hover:bg-[var(--tone-2)]"
+                        className={`${CONTROL} flex w-full cursor-pointer items-center gap-3.5 px-4 py-3 text-left transition-colors duration-[var(--dur-focus)] ${
+                          f.id === selectedId ? "bg-[var(--tone-4)]" : "hover:bg-[var(--tone-2)]"
                         }`}
                       >
-                        <Avatar friend={f} size={36} />
+                        <Avatar friend={f} size={44} />
                         <span className="flex min-w-0 flex-1 items-center gap-2 text-[length:var(--step-1)] text-[var(--ink)]">
                           <PresenceDot friend={f} />
                           <span className="truncate">{f.name}</span>
@@ -380,8 +378,10 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
           </div>
         )}
 
+        </SectionTransition>
+
         {discord && (
-          <div className="mt-8 flex items-center justify-between gap-3 rounded-[var(--corner-md)] bg-[var(--surface-raised)] px-5 py-3.5 text-[length:var(--step-1)] ring-1 ring-[color:var(--border-subtle)]">
+          <div className={`${TILE} mt-10 flex items-center justify-between gap-3 bg-[var(--tone-1)] px-5 py-3.5 text-[length:var(--step-1)]`}>
             <span className="flex items-center gap-2.5 text-[var(--ink-muted)]">
               <FontAwesomeIcon icon={faDiscord} className="h-[18px] w-[18px] shrink-0 text-[#8c9eff]" aria-hidden />
               {discord.connected ? "Discord conectado" : "Veja seus amigos do Discord aqui"}
@@ -390,7 +390,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
               <button
                 type="button"
                 onClick={discord.onConnect}
-                className="rounded-full bg-[var(--ink)] px-4 py-1.5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] active:scale-95"
+                className="cursor-pointer rounded-[var(--corner-sm)] bg-[var(--ink)] px-5 py-2.5 text-[length:var(--step-0)] font-semibold text-[var(--tone-0)] active:scale-95"
               >
                 Conectar
               </button>
@@ -417,7 +417,7 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
             discordMatch={discordMatch}
           />
         ) : (
-          <div className="flex min-h-[18rem] items-center justify-center rounded-[var(--corner-lg)] bg-[var(--surface-raised)] px-8 text-center text-[length:var(--step-1)] text-[var(--ink-muted)] ring-1 ring-[color:var(--border-subtle)]">
+          <div className={`${TILE} flex min-h-[18rem] items-center justify-center bg-[var(--tone-1)] px-8 text-center text-[length:var(--step-1)] text-[var(--ink-muted)]`}>
             Selecione um amigo para conversar, ligar ou ver o perfil.
           </div>
         )}
@@ -426,56 +426,49 @@ export const FriendsRoster: React.FC<FriendsRosterProps> = ({
   );
 };
 
-/** Um jogo com quem está nele: a arte do jogo ocupa o bloco e os amigos aparecem como chips. */
-const GameBlock: React.FC<{
+/** Um jogo com quem está nele: a arte ocupa o bloco de ponta a ponta e os amigos ficam na base. */
+const GameTile: React.FC<{
   group: GameGroup;
   selectedId: string | null;
   onPick: (f: SocialFriend) => void;
   unread: (f: SocialFriend) => number;
-}> = ({ group, selectedId, onPick, unread }) => {
-  return (
-    <article className="overflow-hidden rounded-[var(--corner-lg)] bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)]">
-      <div
-        className="relative h-[120px] overflow-hidden"
-        style={{ background: "linear-gradient(120deg, var(--surface-overlay), var(--surface-raised))" }}
-      >
-        {group.art && (
-          <img src={group.art} alt="" aria-hidden className="absolute right-0 top-0 h-full w-3/5 object-cover object-center" loading="lazy" />
-        )}
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(90deg, var(--surface-raised) 0%, color-mix(in srgb, var(--surface-raised) 78%, transparent) 38%, transparent 100%)" }}
-        />
-        <div className="absolute inset-x-6 bottom-4">
-          <h4 className="truncate font-display text-[length:var(--step-4)] font-bold leading-none text-[var(--ink)]">{group.title}</h4>
-          <p className="mt-1.5 flex items-center gap-1.5 text-[length:var(--step-1)] text-[rgb(var(--launcher-accent))]">
-            <Gamepad2 className="h-4 w-4" />
-            {group.friends.length === 1 ? "1 amigo jogando" : `${group.friends.length} amigos jogando`}
-          </p>
-        </div>
-      </div>
-      <ul className="flex flex-wrap gap-2 p-3">
+}> = ({ group, selectedId, onPick, unread }) => (
+  <article className={`${TILE} relative isolate flex min-h-[220px] flex-col justify-end overflow-hidden bg-[var(--tone-1)]`}>
+    {group.art && <img src={group.art} alt="" aria-hidden loading="lazy" className="absolute inset-0 -z-10 h-full w-full object-cover object-top" />}
+    <div
+      className="absolute inset-0 -z-10"
+      style={{ background: "linear-gradient(0deg, color-mix(in srgb, var(--tone-0) 92%, transparent) 0%, color-mix(in srgb, var(--tone-0) 55%, transparent) 55%, transparent 100%)" }}
+    />
+    <div className="p-5">
+      <h4 className="truncate text-[length:var(--step-2)] font-semibold leading-tight text-[var(--ink)]">{group.title}</h4>
+      <p className="mt-0.5 flex items-center gap-1.5 text-[length:var(--step-0)] font-semibold uppercase tracking-[0.06em] text-[var(--live)]">
+        <Gamepad2 className="h-4 w-4" aria-hidden />
+        <span className="font-metric">{group.friends.length}</span> {group.friends.length === 1 ? "amigo jogando" : "amigos jogando"}
+      </p>
+      <ul className="mt-4 flex flex-wrap gap-2">
         {group.friends.map((f) => (
           <li key={f.id}>
             <button
               type="button"
               aria-current={f.id === selectedId}
+              aria-label={f.name}
+              title={f.name}
               onClick={() => onPick(f)}
-              className={`flex items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-4 ring-1 transition-colors ${
-                f.id === selectedId ? "bg-[var(--surface-overlay)] text-[var(--ink)] ring-2 ring-[color:var(--ink)]" : "bg-[var(--surface-base)] text-[var(--ink)] ring-[color:var(--border-subtle)] hover:bg-[var(--surface-overlay)]"
+              className={`${CONTROL} relative cursor-pointer p-1 transition-colors duration-[var(--dur-focus)] ${
+                f.id === selectedId ? "bg-[var(--ink)]" : "bg-[color-mix(in_srgb,var(--tone-0)_55%,transparent)] hover:bg-[var(--tone-4)]"
               }`}
             >
-              <Avatar friend={f} size={32} />
-              <PresenceDot friend={f} />
-              <span className="text-[length:var(--step-1)] font-semibold">{f.name}</span>
-              {unread(f) > 0 && <span className="rounded-full bg-[rgb(var(--launcher-accent))] px-1.5 text-[length:var(--step-0)] font-bold text-black">{unread(f)}</span>}
+              <Avatar friend={f} size={40} />
+              {unread(f) > 0 && (
+                <span className="font-metric absolute -right-1.5 -top-1.5 rounded-full bg-[var(--ink)] px-1.5 text-[length:var(--step-0)] font-bold leading-5 text-[var(--tone-0)]">{unread(f)}</span>
+              )}
             </button>
           </li>
         ))}
       </ul>
-    </article>
-  );
-};
+    </div>
+  </article>
+);
 
 const FriendDrawer: React.FC<{
   friend: SocialFriend;
@@ -495,24 +488,22 @@ const FriendDrawer: React.FC<{
   useEffect(() => setConfirmRemove(false), [friend.id]);
   const playing = friend.status === "playing";
   const seen = !isFriendOnline(friend) ? formatLastSeen(friend.lastSeen) : "";
-  const small =
-    "inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--tone-3)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)] active:scale-[0.97]";
+  const chip =
+    "inline-flex h-12 flex-1 cursor-pointer items-center justify-center gap-2 rounded-[var(--corner-sm)] bg-[var(--tone-3)] px-4 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition hover:bg-[var(--tone-4)] active:scale-[0.97]";
 
   return (
-    <div className="overflow-hidden rounded-[var(--corner-lg)] bg-[var(--surface-raised)] ring-1 ring-[color:var(--border-subtle)]">
-      {/* Capa: avatar e nome ficam juntos na base, alinhados pelo centro */}
-      <div className="relative h-[168px] overflow-hidden bg-[var(--surface-overlay)]">
+    <div className={`${TILE} overflow-hidden bg-[var(--tone-1)]`}>
+      {/* Capa: a arte do perfil de ponta a ponta; avatar e nome juntos na base */}
+      <div className="relative h-[200px] overflow-hidden bg-[var(--tone-2)]">
         {banner ? (
           <img src={banner} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
         ) : (
-          friend.avatar && (
-            <img src={friend.avatar} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-125 object-cover opacity-45 blur-2xl" />
-          )
+          friend.avatar && <img src={friend.avatar} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-125 object-cover opacity-45 blur-2xl" />
         )}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent 20%, color-mix(in srgb, var(--surface-raised) 92%, transparent) 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent 15%, color-mix(in srgb, var(--tone-1) 94%, transparent) 100%)" }} />
         <div className="absolute inset-x-5 bottom-4 flex items-center gap-4">
           <span className="relative">
-            <Avatar friend={friend} size={76} ring={playing} />
+            <Avatar friend={friend} size={80} ring={playing} />
             {loading && (
               <span className="absolute inset-0 flex items-center justify-center rounded-[28%] bg-[var(--surface-base)]/70">
                 <Loader2 className="h-5 w-5 animate-spin text-[var(--ink)]" />
@@ -520,45 +511,51 @@ const FriendDrawer: React.FC<{
             )}
           </span>
           <div className="min-w-0">
-            <h2 className="flex items-center gap-2.5 font-display text-[length:var(--step-3)] font-bold leading-tight text-[var(--ink)]">
+            <h2 className="flex items-center gap-2.5 text-[length:var(--step-3)] font-semibold leading-tight text-[var(--ink)]">
               <PresenceDot friend={friend} size={11} />
               <span className="truncate">{friend.name}</span>
             </h2>
-            <p className={`flex items-center gap-1.5 text-[length:var(--step-1)] ${playing ? "font-semibold text-[rgb(var(--launcher-accent))]" : "text-[var(--ink-muted)]"}`}>
-              {playing && <Gamepad2 className="h-4 w-4 shrink-0" />}
+            <p className={`flex items-center gap-1.5 text-[length:var(--step-0)] ${playing ? "font-semibold text-[var(--live)]" : "text-[var(--ink-muted)]"}`}>
+              {playing && <Gamepad2 className="h-4 w-4 shrink-0" aria-hidden />}
               <span className="truncate">{statusLine(friend)}</span>
             </p>
           </div>
         </div>
       </div>
 
-      <div className="space-y-5 p-5">
+      <div className="space-y-6 p-6">
         {friend.source === "discord_friend" && discordMatch && <DiscordFriendAction friend={friend} match={discordMatch} />}
+
         <button
           type="button"
           onClick={() => {
             playSound?.("select");
             onOpenChat(friend);
           }}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--ink)] text-[length:var(--step-1)] font-semibold text-[var(--tone-0)] transition active:scale-[0.98]"
+          className="flex h-14 w-full cursor-pointer items-center justify-between gap-3 rounded-[var(--corner-sm)] bg-[var(--ink)] pl-6 pr-3 text-[length:var(--fs-label)] font-bold uppercase tracking-[0.06em] text-[var(--tone-0)] transition active:scale-[0.98] hover:opacity-90"
         >
-          <MessageSquare className="h-4 w-4" />
-          Conversar
-          {unread > 0 && <span className="rounded-full bg-[var(--tone-0)] px-2 text-[length:var(--step-0)] text-[var(--ink)]">{unread}</span>}
+          <span className="flex items-center gap-2.5">
+            Conversar
+            {unread > 0 && <span className="font-metric rounded-full bg-[var(--tone-0)] px-2 text-[length:var(--step-0)] leading-5 text-[var(--ink)]">{unread}</span>}
+          </span>
+          <span className="flex h-10 w-10 items-center justify-center rounded-[var(--corner-sm)] bg-[var(--tone-0)] text-[var(--ink)]">
+            <MessageSquare className="h-4 w-4" aria-hidden />
+          </span>
         </button>
+
         <div className="flex gap-2">
           {onStartVoiceCall && (
             <>
               <button
                 type="button"
                 onClick={() => onStartVoiceCall(friend, false)}
-                className={`${small} ${inCall ? "animate-pulse bg-[rgb(var(--launcher-accent))]! text-black!" : ""}`}
+                className={`${chip} ${inCall ? "!bg-[var(--live)] !text-[var(--tone-0)]" : ""}`}
               >
-                <Phone className="h-4 w-4" />
+                <Phone className="h-4 w-4" aria-hidden />
                 {inCall ? "Em chamada" : "Ligar"}
               </button>
-              <button type="button" onClick={() => onStartVoiceCall(friend, true)} className={small}>
-                <Video className="h-4 w-4" />
+              <button type="button" onClick={() => onStartVoiceCall(friend, true)} className={chip}>
+                <Video className="h-4 w-4" aria-hidden />
                 Vídeo
               </button>
             </>
@@ -569,66 +566,55 @@ const FriendDrawer: React.FC<{
               playSound?.("select");
               onViewProfile(friend);
             }}
-            className={small}
+            className={chip}
           >
             Perfil
           </button>
         </div>
 
-        {/* Nível: o número é o destaque, o rank dá a cor */}
-        <div className="rounded-[var(--corner-md)] bg-[var(--surface-base)] p-4">
-          <div className="flex items-end justify-between gap-3">
+        {/* Nível e rank numa peça só (imagem do rank + número), depois origem e última vez online */}
+        <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+          {level ? <RankBadge level={level} size={64} /> : <span className="font-metric text-[length:var(--step-3)] text-[var(--ink-faint)]">—</span>}
+          <dl className="console-stats flex flex-wrap items-end gap-x-8 gap-y-3">
             <div>
-              <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">Nível</p>
-              <p className="font-display text-[44px] font-bold leading-none tabular-nums text-[var(--ink)]">{level ? level.level : "—"}</p>
+              <dt>Origem</dt>
+              <dd className="console-stats-text">
+                {friend.source === "checkpoint" ? "Pherielium" : friend.source?.startsWith("discord") ? "Discord" : "Local"}
+              </dd>
             </div>
-            {level && (
-              <p className="pb-1 text-[length:var(--step-1)] font-semibold" style={{ color: level.rankColor }}>
-                {level.rank}
-              </p>
-            )}
-          </div>
-          {level && level.xpForNextLevel > 0 ? (
-            <>
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--tone-4)]">
-                <div className="h-full rounded-full" style={{ width: `${Math.min(100, Math.max(0, level.progress))}%`, background: level.rankColor }} />
+            {seen && (
+              <div>
+                <dt>Visto</dt>
+                <dd className="console-stats-text">{seen}</dd>
               </div>
-              <p className="mt-1.5 text-[length:var(--step-0)] text-[var(--ink-faint)]">{Math.round(level.progress)}% para o próximo nível</p>
-            </>
-          ) : (
-            !level && <p className="mt-2 text-[length:var(--step-0)] text-[var(--ink-faint)]">O nível aparece quando o perfil do amigo carregar.</p>
-          )}
+            )}
+          </dl>
         </div>
-
-        <dl className="flex flex-wrap gap-x-8 gap-y-2 text-[length:var(--step-0)]">
+        {level && level.xpForNextLevel > 0 ? (
           <div>
-            <dt className="text-[var(--ink-faint)]">Origem</dt>
-            <dd className="font-semibold text-[var(--ink)]">
-              {friend.source === "checkpoint" ? "Pherielium" : friend.source?.startsWith("discord") ? "Discord" : "Local"}
-            </dd>
-          </div>
-          {seen && (
-            <div>
-              <dt className="text-[var(--ink-faint)]">Última vez online</dt>
-              <dd className="font-semibold text-[var(--ink)]">{seen}</dd>
+            <div className="console-progress">
+              <span style={{ width: `${Math.min(100, Math.max(0, level.progress))}%` }} />
             </div>
-          )}
-        </dl>
+            <p className="font-metric mt-1.5 text-[length:var(--step-0)] text-[var(--ink-muted)]">{Math.round(level.progress)}% para o próximo nível</p>
+          </div>
+        ) : (
+          !level && <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">O nível aparece quando o perfil do amigo carregar.</p>
+        )}
 
-        <div className="border-t border-[color:var(--border-subtle)] pt-4">
+        <div className="border-t border-[color:var(--tone-3)] pt-4">
           {confirmRemove ? (
             <div className="flex flex-wrap items-center gap-3 text-[length:var(--step-0)]">
               <span className="text-[var(--ink-muted)]">Remover {friend.name} dos amigos?</span>
-              <button type="button" onClick={() => onRemoveFriend(friend)} className="rounded-full bg-[var(--danger)] px-4 py-1.5 font-semibold text-[var(--tone-0)]">
+              <button type="button" onClick={() => onRemoveFriend(friend)} className="cursor-pointer rounded-[var(--corner-sm)] bg-[var(--danger)] px-4 py-2 font-semibold text-[var(--tone-0)]">
                 Remover
               </button>
-              <button type="button" onClick={() => setConfirmRemove(false)} className="text-[var(--ink-muted)] hover:text-[var(--ink)]">
+              <button type="button" onClick={() => setConfirmRemove(false)} className="cursor-pointer text-[var(--ink-muted)] hover:text-[var(--ink)]">
                 Cancelar
               </button>
             </div>
           ) : (
-            <button type="button" onClick={() => setConfirmRemove(true)} className="inline-flex items-center gap-2 text-[length:var(--step-0)] text-[var(--ink-faint)] hover:text-[var(--danger)]">
-              <UserMinus className="h-4 w-4" />
+            <button type="button" onClick={() => setConfirmRemove(true)} className="inline-flex cursor-pointer items-center gap-2 text-[length:var(--step-0)] text-[var(--ink-faint)] hover:text-[var(--danger)]">
+              <UserMinus className="h-4 w-4" aria-hidden />
               Remover amigo
             </button>
           )}

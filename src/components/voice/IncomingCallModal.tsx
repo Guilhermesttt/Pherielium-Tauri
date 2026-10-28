@@ -85,7 +85,7 @@ export const IncomingCallModal: React.FC<IncomingCallModalProps> = ({
           aria-modal="true"
           aria-label={`${invite.callerName} está te ligando`}
         >
-          <motion.div {...modalMotion} className="ic-card w-full max-w-[340px]">
+          <motion.div {...modalMotion} className="ic-card w-full max-w-[400px]">
             {/* faixa do topo: as ondas saem do avatar enquanto toca */}
             <div className="ic-band" aria-hidden="true">
               {!busy && (
@@ -103,7 +103,7 @@ export const IncomingCallModal: React.FC<IncomingCallModalProps> = ({
                 {invite.callerAvatar ? (
                   <img src={invite.callerAvatar} alt="" className="h-full w-full object-cover" draggable={false} />
                 ) : (
-                  <span className="text-[length:var(--step-3)] font-semibold tracking-tight text-[var(--ink)]">
+                  <span className="text-[length:var(--step-4)] font-semibold tracking-tight text-[var(--ink)]">
                     {invite.callerName.slice(0, 2).toUpperCase()}
                   </span>
                 )}

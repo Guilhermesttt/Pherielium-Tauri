@@ -49,14 +49,19 @@ export const GameEnvironment: React.FC<GameEnvironmentProps> = ({
       }}
       aria-hidden="true"
     >
-      {/* 1. Vídeo ambiente: só textura de movimento, bem abaixo da arte do jogo */}
-      <div className="absolute inset-0 transform-gpu will-change-transform opacity-20">
-        <PVideoBackground
-          src={videoUrl || bgVideo}
-          className="absolute inset-0 w-full h-full object-cover"
-          opacity={0.35}
-        />
-      </div>
+      {/* 1. Vídeo ambiente. Com a arte de um jogo por cima ele é só textura de movimento; sem arte
+          (Amigos, Mods, Configurações…) ele é o fundo da tela, então aparece de verdade.
+          Na Home nítida a arte cobre a tela inteira com opacidade cheia: o vídeo ficaria escondido e
+          ainda gastaria decodificação de VP9 a cada quadro, então nem é montado. */}
+      {!(sharp && artwork) && (
+        <div className={`absolute inset-0 transform-gpu will-change-transform ${artwork ? "opacity-20" : "opacity-100"}`}>
+          <PVideoBackground
+            src={videoUrl || bgVideo}
+            className="absolute inset-0 w-full h-full object-cover"
+            opacity={artwork ? 0.35 : 0.4}
+          />
+        </div>
+      )}
 
       {/* 2. Artwork Atmospheric Canvas (Game as Environment) */}
       <AnimatePresence mode="sync" initial={false}>

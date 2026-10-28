@@ -2,7 +2,7 @@ import React from "react";
 import { NotificationProvider } from "../components/NotificationCenter";
 import { PreferencesProvider } from "../context/PreferencesContext";
 import { GamepadProvider } from "../context/GamepadContext";
-import { SystemPageShell } from "../components/ui/SystemPageShell";
+import { ConsolePageLayout } from "../components/ui/ConsolePageLayout";
 import { FriendsSubTabs, type SocialSubTab } from "../components/social/FriendsSubTabs";
 import { FriendsRoster, type RosterFilter } from "../components/friends/FriendsRoster";
 import { FriendsPageActions } from "../pages/FriendsPage";
@@ -53,18 +53,24 @@ const DesignLabFriends: React.FC = () => {
       <PreferencesProvider>
         <GamepadProvider>
           <div className="flex h-full flex-col">
-            <SystemPageShell
+            <ConsolePageLayout
               title="Amigos"
-              description={`${FRIENDS.length} amigos · ${online} online · ${playing} jogando`}
+              readings={[
+                { label: "Amigos", value: FRIENDS.length },
+                { label: "Online", value: online },
+                { label: "Jogando", value: playing, live: true },
+              ]}
               actions={<FriendsPageActions dnd={false} onToggleDnd={noop} onAddFriendClick={noop} />}
+              tabs={
+                <FriendsSubTabs
+                  activeTab={tab}
+                  onTabChange={setTab}
+                  incomingRequestsCount={2}
+                  totalFriendsCount={FRIENDS.length}
+                  unreadCount={3}
+                />
+              }
             >
-              <FriendsSubTabs
-                activeTab={tab}
-                onTabChange={setTab}
-                incomingRequestsCount={2}
-                totalFriendsCount={FRIENDS.length}
-                unreadCount={3}
-              />
               <FriendsRoster
                 friends={FRIENDS}
                 games={GAMES}
@@ -79,7 +85,7 @@ const DesignLabFriends: React.FC = () => {
                 onRemoveFriend={noop}
                 discord={{ connected: false, onConnect: noop }}
               />
-            </SystemPageShell>
+            </ConsolePageLayout>
           </div>
         </GamepadProvider>
       </PreferencesProvider>

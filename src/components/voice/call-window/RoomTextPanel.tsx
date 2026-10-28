@@ -83,9 +83,9 @@ export const RoomTextPanel: React.FC<{
 
   return (
     <aside className="flex h-full w-72 shrink-0 flex-col border-l border-[#161616] bg-[var(--tone-1)]">
-      <div className="border-b border-[#161616] px-4 py-3 text-xs font-semibold text-white">Texto da sala</div>
+      <div className="border-b border-[#161616] px-4 py-3 text-xs font-semibold text-[var(--ink)]">Texto da sala</div>
       <div className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
-        {error ? <p className="text-[length:var(--step-0)] text-amber-300/80">{error}</p> : null}
+        {error ? <p className="text-[length:var(--step-0)] text-[var(--ink)]">{error}</p> : null}
         {messages.map((message) => (
           <div key={message.id} className={message.mine ? "text-right" : "text-left"}>
             <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">{message.senderName}</p>
@@ -94,11 +94,11 @@ export const RoomTextPanel: React.FC<{
         ))}
       </div>
       <form onSubmit={(event) => void send(event)} className="border-t border-[#161616] p-3">
-        <input
+        <input aria-label="Mensagem da sala"
           value={text}
           onChange={(event) => setText(event.target.value)}
           placeholder="Mensagem da sala"
-          className="w-full rounded-lg border border-[#161616] bg-black px-3 py-2 text-xs text-white outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+          className="w-full rounded-lg border border-[#161616] bg-black px-3 py-2 text-xs text-[var(--ink)] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ink)]"
         />
       </form>
     </aside>

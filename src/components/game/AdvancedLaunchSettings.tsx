@@ -62,7 +62,7 @@ export const AdvancedLaunchSettings: React.FC<AdvancedLaunchSettingsProps> = ({
               <label className="mb-1.5 flex items-center gap-1.5 text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[var(--ink-muted)]">
                 <Monitor className="h-3 w-3" /> Monitor de Exibição
               </label>
-              <input
+              <input aria-label="Monitor do jogo"
                 type="number"
                 min={0}
                 max={4}
@@ -94,7 +94,7 @@ export const AdvancedLaunchSettings: React.FC<AdvancedLaunchSettingsProps> = ({
             <label className="mb-1.5 flex items-center gap-1.5 text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[var(--ink-muted)]">
               <Terminal className="h-3 w-3" /> Argumentos de Linha de Comando
             </label>
-            <input
+            <input aria-label="Argumentos de linha de comando"
               type="text"
               value={commandLineArgs}
               onChange={(e) => onArgsChange?.(e.target.value)}
@@ -107,7 +107,7 @@ export const AdvancedLaunchSettings: React.FC<AdvancedLaunchSettingsProps> = ({
             <label className="mb-1.5 flex items-center gap-1.5 text-[length:var(--step-0)] font-bold uppercase tracking-wider text-[var(--ink-muted)]">
               <FolderOpen className="h-3 w-3" /> Diretório de Trabalho (CWD)
             </label>
-            <input
+            <input aria-label="Pasta de trabalho do jogo"
               type="text"
               value={workingDirectory}
               onChange={(e) => onWorkDirChange?.(e.target.value)}

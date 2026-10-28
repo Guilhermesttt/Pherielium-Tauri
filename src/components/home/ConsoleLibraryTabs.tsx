@@ -9,6 +9,7 @@ import {
   type CustomLibraryFilter,
 } from "../../services/customLibraryFilters";
 import { CustomFilterModal } from "./CustomFilterModal";
+import { useSlidingPill } from "../../hooks/useSlidingPill";
 
 export interface ConsoleLibraryTabsProps {
   activeCategory: string;
@@ -69,6 +70,8 @@ export const ConsoleLibraryTabs: React.FC<ConsoleLibraryTabsProps> = ({
 
   // Muitas abas (colecoes do usuario): o trilho rola e ganha fade nas bordas com overflow.
   const trackRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLSpanElement>(null);
+  useSlidingPill(trackRef, pillRef, `${activeCategory}|${allTabs.length}`);
   const [overflow, setOverflow] = useState({ left: false, right: false });
 
   const updateOverflow = useCallback(() => {
@@ -143,9 +146,10 @@ export const ConsoleLibraryTabs: React.FC<ConsoleLibraryTabsProps> = ({
         <div
           ref={trackRef}
           onScroll={updateOverflow}
-          className="no-scrollbar flex min-w-0 items-center gap-1 overflow-x-auto"
+          className="no-scrollbar relative flex min-w-0 items-center gap-1.5 overflow-x-auto"
           style={fadeMask ? { maskImage: fadeMask, WebkitMaskImage: fadeMask } : undefined}
         >
+          <span ref={pillRef} className="console-tab-pill" aria-hidden="true" />
           {allTabs.map((tab) => {
             const isActive = activeCategory === tab.id;
             return (
@@ -166,7 +170,7 @@ export const ConsoleLibraryTabs: React.FC<ConsoleLibraryTabsProps> = ({
                   }}
                   title={tab.label}
                   data-active={isActive}
-                  className={`console-tab-item relative flex h-[calc(var(--control-h)-12px)] items-center pl-3 ${"isCustom" in tab && tab.filter ? "pr-7" : "pr-3"} rounded-full whitespace-nowrap cursor-pointer select-none`}
+                  className={`console-tab-item relative flex h-[calc(var(--control-h)-8px)] items-center pl-4 ${"isCustom" in tab && tab.filter ? "pr-8" : "pr-4"} whitespace-nowrap cursor-pointer select-none`}
                 >
                   <span className="max-w-[18ch] truncate">{tab.label}</span>
 
@@ -178,7 +182,7 @@ export const ConsoleLibraryTabs: React.FC<ConsoleLibraryTabsProps> = ({
                       onClick={(e) => handleOpenEdit(tab.filter, e)}
                       title="Editar este filtro"
                       aria-label={`Editar o filtro ${tab.label}`}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-0 group-hover/tab:opacity-100 focus-visible:opacity-100 p-0.5 rounded-full hover:bg-[var(--tone-4)] text-[var(--ink-muted)] hover:text-[var(--ink)] transition-opacity"
+                      className="absolute right-2 top-1/2 z-10 -translate-y-1/2 opacity-0 group-hover/tab:opacity-100 focus-visible:opacity-100 p-1 rounded-[8px] hover:bg-[var(--tone-4)] text-[var(--ink-muted)] hover:text-[var(--ink)] transition-opacity"
                     >
                       <Settings2 className="h-[1.1em] w-[1.1em]" />
                     </button>

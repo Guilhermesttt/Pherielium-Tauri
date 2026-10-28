@@ -1,6 +1,7 @@
 import React from "react";
-import { MessageSquare, Phone, RadioReceiver, Users, UserPlus } from "lucide-react";
 import type { SoundEffectType } from "../../hooks/useSoundEffects";
+import { useGamepad } from "../../context/GamepadContext";
+import { ControllerButtonGlyph } from "../ui/ControllerButtonGlyph";
 import { HorizontalTabs } from "../ui/HorizontalTabs";
 
 export type SocialSubTab = "AMIGOS" | "CHAT" | "SALAS" | "SOLICITAÇÕES";
@@ -14,6 +15,10 @@ export interface FriendsSubTabsProps {
   playSound?: (type: SoundEffectType) => void;
 }
 
+/**
+ * Abas da página de Amigos no formato das abas da Home: caixa alta pequena, a ativa com contorno
+ * de tinta e, com controle conectado, os chips LB e RB nas pontas (os mesmos que trocam de aba).
+ */
 export const FriendsSubTabs: React.FC<FriendsSubTabsProps> = ({
   activeTab,
   onTabChange,
@@ -21,57 +26,52 @@ export const FriendsSubTabs: React.FC<FriendsSubTabsProps> = ({
   unreadCount,
   playSound,
 }) => {
-  const tabs = [
-    { id: "AMIGOS" as SocialSubTab, label: "Amigos", icon: Users },
-    { id: "CHAT" as SocialSubTab, label: "Chats", icon: MessageSquare, badge: unreadCount },
-    { id: "SALAS" as SocialSubTab, label: "Canais de Voz", icon: RadioReceiver },
-    { id: "SOLICITAÇÕES" as SocialSubTab, label: "Solicitações", icon: UserPlus, badge: incomingRequestsCount },
+  const gamepad = useGamepad();
+  const family = gamepad?.gamepadFamily || "xbox";
+  const connected = Boolean(gamepad?.isGamepadConnected);
+
+  const tabs: { id: SocialSubTab; label: string; badge?: number }[] = [
+    { id: "AMIGOS", label: "Amigos" },
+    { id: "CHAT", label: "Chats", badge: unreadCount },
+    { id: "SALAS", label: "Canais de voz" },
+    { id: "SOLICITAÇÕES", label: "Solicitações", badge: incomingRequestsCount },
   ];
 
   return (
-    <div className="w-full flex justify-center mb-6 z-10 relative">
-      {/* Abas sobre superfície sólida */}
-      <div
-        className="flex items-center rounded-full px-2 py-2 ring-1 ring-[color:var(--border-subtle)]"
-        style={{ background: "var(--surface-raised)" }}
-      >
-        {/* Abas de Navegação */}
-        <HorizontalTabs
-          activeId={activeTab}
-          onChange={(id) => {
-            if (activeTab !== id) {
-              onTabChange(id as SocialSubTab);
-              playSound?.("select");
-            }
-          }}
-          className="!bg-transparent !p-0 gap-1 border-0"
-          tabClassName="flex items-center gap-2 !px-6 !py-3 !h-auto text-[length:var(--step-0)] font-semibold tracking-wide"
-          tabs={tabs.map(tab => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return {
-              id: tab.id,
-              label: (
-                <div className="flex items-center gap-2" onMouseEnter={() => playSound?.("hover")}>
-                  <Icon className="w-4 h-4 opacity-70" />
-                  <span>{tab.label}</span>
-                  {tab.badge !== undefined && tab.badge > 0 && (
-                    <span
-                      className={`ml-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1.5 text-[length:var(--step-0)] font-bold ${isActive
-                        ? "bg-[var(--tabs-badge-active-bg)] text-[var(--tabs-badge-active-text)]"
-                        : "bg-[var(--tone-4)] text-[var(--ink-muted)]"
-                        }`}
-                    >
-                      {tab.badge}
-                    </span>
-                  )}
-                </div>
-              )
-            };
-          })}
-        />
-
-      </div>
+    <div className="console-tabs flex max-w-full min-w-0 items-center gap-2" role="tablist" aria-label="Seções de amigos">
+      {connected && (
+        <span className="console-bumper" title="Aba anterior" aria-hidden="true">
+          <ControllerButtonGlyph button="LB" gamepadFamily={family} size={16} />
+        </span>
+      )}
+      <HorizontalTabs
+        activeId={activeTab}
+        onChange={(id) => {
+          if (id === activeTab) return;
+          onTabChange(id as SocialSubTab);
+          playSound?.("select");
+        }}
+        className="t-tabs--squircle min-w-0 flex-wrap"
+        tabClassName="flex h-12 items-center gap-2.5 text-[length:var(--fs-label)] font-bold uppercase tracking-[0.06em] whitespace-nowrap select-none"
+        tabs={tabs.map((tab) => ({
+          id: tab.id,
+          label: (
+            <span className="flex items-center gap-2.5" onMouseEnter={() => playSound?.("hover")}>
+              {tab.label}
+              {tab.badge !== undefined && tab.badge > 0 && (
+                <span className="font-metric min-w-5 rounded-full bg-[var(--tone-4)] px-1.5 text-center text-[length:var(--step-0)] font-bold leading-5 text-[var(--ink)]">
+                  {tab.badge}
+                </span>
+              )}
+            </span>
+          ),
+        }))}
+      />
+      {connected && (
+        <span className="console-bumper" title="Próxima aba" aria-hidden="true">
+          <ControllerButtonGlyph button="RB" gamepadFamily={family} size={16} />
+        </span>
+      )}
     </div>
   );
 };

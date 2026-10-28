@@ -395,16 +395,16 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
       <motion.div
         {...modalMotion}
         style={{ cornerShape: "squircle" } as React.CSSProperties}
-        className="relative w-full max-w-xl max-h-[92vh] flex flex-col rounded-[var(--corner-lg)] bg-[var(--tone-1)]/95 border border-[#161616] text-white shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl overflow-hidden"
+        className="relative w-full max-w-xl max-h-[92vh] flex flex-col rounded-[var(--corner-lg)] bg-[var(--tone-1)]/95 border border-[#161616] text-[var(--ink)] shadow-[0_30px_70px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl overflow-hidden"
       >
         {/* Cabeçalho */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-[#161616]">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-[var(--corner-sm)] bg-white/[0.06] flex items-center justify-center text-purple-300">
+            <div className="h-8 w-8 rounded-[var(--corner-sm)] bg-[var(--tone-3)] flex items-center justify-center text-purple-300">
               <Sparkles className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-white tracking-tight">
+              <h2 className="text-base font-semibold text-[var(--ink)] tracking-tight">
                 Orbloom
               </h2>
               <p className="text-[length:var(--step-0)] text-[var(--ink-faint)]">Personalize o visual do seu orbe</p>
@@ -416,7 +416,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
             onClick={onClose}
             style={{ cornerShape: "squircle" } as React.CSSProperties}
             aria-label="Fechar"
-            className="p-1.5 rounded-full text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+            className="p-1.5 rounded-full text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)] transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
@@ -428,7 +428,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
               {/* Card Principal de Demonstração (Fiel ao vault.rickybharti.com) */}
               <div
                 style={{ cornerShape: "squircle" } as React.CSSProperties}
-                className="relative flex flex-col items-center justify-center p-6 rounded-[var(--corner-md)] bg-[var(--tone-1)] border border-white/[0.08] shadow-inner text-center overflow-hidden"
+                className="relative flex flex-col items-center justify-center p-6 rounded-[var(--corner-md)] bg-[var(--tone-1)] border border-transparent shadow-inner text-center overflow-hidden"
               >
                 {/* Botões do canto superior direito */}
                 <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
@@ -436,16 +436,16 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                     type="button"
                     onClick={handleToggleMic}
                     style={{ cornerShape: "squircle" } as React.CSSProperties}
-                    className="px-3 py-1.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-xs font-medium text-[var(--ink)] border border-white/[0.08] shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-xs font-medium text-[var(--ink)] border border-transparent shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
                   >
                     {isMicActive ? (
                       <>
-                        <MicOff className="h-3.5 w-3.5 text-rose-400" />
+                        <MicOff className="h-3.5 w-3.5 text-[var(--danger)]" />
                         <span>Parar microfone</span>
                       </>
                     ) : (
                       <>
-                        <Mic className="h-3.5 w-3.5 text-emerald-400" />
+                        <Mic className="h-3.5 w-3.5 text-[var(--live)]" />
                         <span>Ativar microfone</span>
                       </>
                     )}
@@ -455,7 +455,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                     type="button"
                     onClick={handleRemix}
                     style={{ cornerShape: "squircle" } as React.CSSProperties}
-                    className="px-3 py-1.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-xs font-medium text-[var(--ink)] border border-white/[0.08] shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-xs font-medium text-[var(--ink)] border border-transparent shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
                   >
                     <Shuffle className="h-3.5 w-3.5" />
                     <span>Remixar</span>
@@ -478,7 +478,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                 <div className="flex items-center justify-center gap-2 text-xs text-[var(--ink-muted)] mb-1">
                   <span
                     className={`h-2 w-2 rounded-full ${
-                      isMicActive ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" : "bg-white/20"
+                      isMicActive ? "bg-[var(--live)] shadow-[0_0_8px_rgba(52,211,153,0.8)]" : "bg-[var(--tone-4)]"
                     }`}
                   />
                   <span>
@@ -497,13 +497,13 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
               {/* Seção Controls (Controles) */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-white tracking-tight">
+                  <h3 className="text-sm font-semibold text-[var(--ink)] tracking-tight">
                     Controles
                   </h3>
                   <button
                     type="button"
                     onClick={() => setShowAdvancedControls((prev) => !prev)}
-                    className="text-xs text-[var(--ink-muted)] hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                    className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] transition-colors cursor-pointer flex items-center gap-1"
                   >
                     <Sliders className="h-3 w-3" />
                     <span>{showAdvancedControls ? "Ocultar mais opções" : "Mais opções"}</span>
@@ -516,11 +516,11 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                     type="button"
                     onClick={() => setIsPresetDropdownOpen((prev) => !prev)}
                     style={{ cornerShape: "squircle" } as React.CSSProperties}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-[var(--corner-md)] bg-[var(--tone-2)] hover:bg-[var(--tone-3)] border border-white/[0.08] text-sm text-white transition-all cursor-pointer shadow-sm"
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-[var(--corner-md)] bg-[var(--tone-2)] hover:bg-[var(--tone-3)] border border-transparent text-sm text-[var(--ink)] transition-all cursor-pointer shadow-sm"
                   >
                     <span className="text-[var(--ink-muted)] font-medium">Estilo do orbe</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-white">
+                      <span className="font-semibold text-[var(--ink)]">
                         {currentDetails.name}
                       </span>
                       <ChevronDown
@@ -540,7 +540,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                         exit={{ opacity: 0, y: -6 }}
                         transition={{ type: "spring", bounce: 0.1, duration: 0.2 }}
                         style={{ cornerShape: "squircle" } as React.CSSProperties}
-                        className="absolute top-full left-0 right-0 mt-2 p-2 rounded-[var(--corner-md)] bg-[var(--tone-2)]/95 border border-white/[0.1] backdrop-blur-xl shadow-2xl z-30 max-h-72 overflow-y-auto custom-scrollbar"
+                        className="absolute top-full left-0 right-0 mt-2 p-2 rounded-[var(--corner-md)] bg-[var(--tone-2)]/95 border border-transparent backdrop-blur-xl shadow-2xl z-30 max-h-72 overflow-y-auto custom-scrollbar"
                       >
                         {(Object.keys(groupedPresets) as Array<keyof typeof groupedPresets>).map(
                           (category) => (
@@ -559,12 +559,12 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                                       style={{ cornerShape: "squircle" } as React.CSSProperties}
                                       className={`w-full flex items-center justify-between px-3 py-2 rounded-[var(--corner-sm)] text-xs font-medium transition-colors cursor-pointer ${
                                         isSelected
-                                          ? "bg-white/15 text-white"
-                                          : "text-[var(--ink-muted)] hover:bg-white/[0.07] hover:text-white"
+                                          ? "bg-[var(--tone-4)] text-[var(--ink)]"
+                                          : "text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
                                       }`}
                                     >
                                       <span>{preset.name}</span>
-                                      {isSelected && <Check className="h-3.5 w-3.5 text-white" />}
+                                      {isSelected && <Check className="h-3.5 w-3.5 text-[var(--ink)]" />}
                                     </button>
                                   );
                                 })}
@@ -582,7 +582,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                   <div className="flex justify-between text-xs text-[var(--ink-muted)] px-1">
                     <span>Estado do orbe</span>
                   </div>
-                  <div className="flex items-center gap-1.5 p-1 rounded-[var(--corner-sm)] bg-[var(--tone-2)] border border-white/[0.06]">
+                  <div className="flex items-center gap-1.5 p-1 rounded-[var(--corner-sm)] bg-[var(--tone-2)] border border-transparent">
                     {(["idle", "listening", "thinking", "speaking", "success", "error"] as OrbState[]).map((st) => (
                       <button
                         key={st}
@@ -591,7 +591,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                         style={{ cornerShape: "squircle" } as React.CSSProperties}
                         className={`flex-1 py-1.5 text-xs font-semibold rounded-[var(--corner-sm)] transition-all cursor-pointer ${
                           activeOrbState === st
-                            ? "bg-white/15 text-white shadow-sm"
+                            ? "bg-[var(--tone-4)] text-[var(--ink)] shadow-sm"
                             : "text-[var(--ink-faint)] hover:text-[var(--ink)]"
                         }`}
                       >
@@ -609,18 +609,18 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-                      className="space-y-5 pt-3 border-t border-white/[0.06] overflow-hidden"
+                      className="space-y-5 pt-3 border-t border-transparent overflow-hidden"
                     >
                       {/* Appearance (Cores e Parâmetros) */}
-                      <div className="space-y-3 p-4 rounded-[var(--corner-md)] bg-[var(--tone-2)] border border-white/[0.06]">
-                        <h4 className="text-[length:var(--step-0)] font-semibold text-white">Aparência</h4>
+                      <div className="space-y-3 p-4 rounded-[var(--corner-md)] bg-[var(--tone-2)] border border-transparent">
+                        <h4 className="text-[length:var(--step-0)] font-semibold text-[var(--ink)]">Aparência</h4>
 
                         {/* Cores */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
                           <div>
                             <span className="text-[length:var(--step-0)] text-[var(--ink-muted)] block mb-1">Cor base</span>
-                            <div className="flex items-center gap-2 bg-[var(--tone-1)] p-1.5 rounded-[var(--corner-sm)] border border-white/10">
-                              <input
+                            <div className="flex items-center gap-2 bg-[var(--tone-1)] p-1.5 rounded-[var(--corner-sm)] border border-transparent">
+                              <input aria-label="Cor base"
                                 type="color"
                                 value={baseColor}
                                 onChange={(e) => setBaseColor(e.target.value)}
@@ -632,8 +632,8 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
 
                           <div>
                             <span className="text-[length:var(--step-0)] text-[var(--ink-muted)] block mb-1">Cor interior</span>
-                            <div className="flex items-center gap-2 bg-[var(--tone-1)] p-1.5 rounded-[var(--corner-sm)] border border-white/10">
-                              <input
+                            <div className="flex items-center gap-2 bg-[var(--tone-1)] p-1.5 rounded-[var(--corner-sm)] border border-transparent">
+                              <input aria-label="Cor interior"
                                 type="color"
                                 value={interiorColor}
                                 onChange={(e) => setInteriorColor(e.target.value)}
@@ -645,8 +645,8 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
 
                           <div>
                             <span className="text-[length:var(--step-0)] text-[var(--ink-muted)] block mb-1">Destaque um</span>
-                            <div className="flex items-center gap-2 bg-[var(--tone-1)] p-1.5 rounded-[var(--corner-sm)] border border-white/10">
-                              <input
+                            <div className="flex items-center gap-2 bg-[var(--tone-1)] p-1.5 rounded-[var(--corner-sm)] border border-transparent">
+                              <input aria-label="Destaque um"
                                 type="color"
                                 value={accents[0]}
                                 onChange={(e) => setAccents([e.target.value, accents[1], accents[2]])}
@@ -658,8 +658,8 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
 
                           <div>
                             <span className="text-[length:var(--step-0)] text-[var(--ink-muted)] block mb-1">Destaque dois</span>
-                            <div className="flex items-center gap-2 bg-[var(--tone-1)] p-1.5 rounded-[var(--corner-sm)] border border-white/10">
-                              <input
+                            <div className="flex items-center gap-2 bg-[var(--tone-1)] p-1.5 rounded-[var(--corner-sm)] border border-transparent">
+                              <input aria-label="Destaque dois"
                                 type="color"
                                 value={accents[1]}
                                 onChange={(e) => setAccents([accents[0], e.target.value, accents[2]])}
@@ -671,8 +671,8 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
 
                           <div>
                             <span className="text-[length:var(--step-0)] text-[var(--ink-muted)] block mb-1">Destaque três</span>
-                            <div className="flex items-center gap-2 bg-[var(--tone-1)] p-1.5 rounded-[var(--corner-sm)] border border-white/10">
-                              <input
+                            <div className="flex items-center gap-2 bg-[var(--tone-1)] p-1.5 rounded-[var(--corner-sm)] border border-transparent">
+                              <input aria-label="Destaque três"
                                 type="color"
                                 value={accents[2]}
                                 onChange={(e) => setAccents([accents[0], accents[1], e.target.value])}
@@ -684,7 +684,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
 
                           <div>
                             <span className="text-[length:var(--step-0)] text-[var(--ink-muted)] block mb-1">Semente</span>
-                            <div className="flex items-center justify-between bg-[var(--tone-1)] px-2.5 py-1.5 rounded-[var(--corner-sm)] border border-white/10">
+                            <div className="flex items-center justify-between bg-[var(--tone-1)] px-2.5 py-1.5 rounded-[var(--corner-sm)] border border-transparent">
                               <span className="text-[length:var(--step-0)] font-mono text-[var(--ink)]">{seed.toFixed(2)}</span>
                             </div>
                           </div>
@@ -709,7 +709,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                                   intensity: parseFloat(e.target.value),
                                 }))
                               }
-                              className="w-full accent-white cursor-pointer h-1.5 bg-white/10 rounded-lg appearance-none"
+                              className="w-full accent-white cursor-pointer h-1.5 bg-[var(--tone-3)] rounded-lg appearance-none"
                             />
                           </div>
 
@@ -730,7 +730,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                                   detail: parseFloat(e.target.value),
                                 }))
                               }
-                              className="w-full accent-white cursor-pointer h-1.5 bg-white/10 rounded-lg appearance-none"
+                              className="w-full accent-white cursor-pointer h-1.5 bg-[var(--tone-3)] rounded-lg appearance-none"
                             />
                           </div>
 
@@ -751,7 +751,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                                   glass: parseFloat(e.target.value),
                                 }))
                               }
-                              className="w-full accent-white cursor-pointer h-1.5 bg-white/10 rounded-lg appearance-none"
+                              className="w-full accent-white cursor-pointer h-1.5 bg-[var(--tone-3)] rounded-lg appearance-none"
                             />
                           </div>
 
@@ -772,15 +772,15 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                                   glow: parseFloat(e.target.value),
                                 }))
                               }
-                              className="w-full accent-white cursor-pointer h-1.5 bg-white/10 rounded-lg appearance-none"
+                              className="w-full accent-white cursor-pointer h-1.5 bg-[var(--tone-3)] rounded-lg appearance-none"
                             />
                           </div>
                         </div>
                       </div>
 
                       {/* Voice response */}
-                      <div className="space-y-3 p-4 rounded-[var(--corner-md)] bg-[var(--tone-2)] border border-white/[0.06]">
-                        <h4 className="text-[length:var(--step-0)] font-semibold text-white">Resposta à voz</h4>
+                      <div className="space-y-3 p-4 rounded-[var(--corner-md)] bg-[var(--tone-2)] border border-transparent">
+                        <h4 className="text-[length:var(--step-0)] font-semibold text-[var(--ink)]">Resposta à voz</h4>
                         <div className="grid grid-cols-3 gap-3 text-xs">
                           <div>
                             <div className="flex justify-between text-[var(--ink-muted)] mb-1">
@@ -799,7 +799,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                                   brightness: parseFloat(e.target.value),
                                 }))
                               }
-                              className="w-full accent-white cursor-pointer h-1.5 bg-white/10 rounded-lg appearance-none"
+                              className="w-full accent-white cursor-pointer h-1.5 bg-[var(--tone-3)] rounded-lg appearance-none"
                             />
                           </div>
 
@@ -820,7 +820,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                                   motion: parseFloat(e.target.value),
                                 }))
                               }
-                              className="w-full accent-white cursor-pointer h-1.5 bg-white/10 rounded-lg appearance-none"
+                              className="w-full accent-white cursor-pointer h-1.5 bg-[var(--tone-3)] rounded-lg appearance-none"
                             />
                           </div>
 
@@ -841,15 +841,15 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                                   pulse: parseFloat(e.target.value),
                                 }))
                               }
-                              className="w-full accent-white cursor-pointer h-1.5 bg-white/10 rounded-lg appearance-none"
+                              className="w-full accent-white cursor-pointer h-1.5 bg-[var(--tone-3)] rounded-lg appearance-none"
                             />
                           </div>
                         </div>
                       </div>
 
                       {/* Motion & Rendering */}
-                      <div className="space-y-3 p-4 rounded-[var(--corner-md)] bg-[var(--tone-2)] border border-white/[0.06]">
-                        <h4 className="text-[length:var(--step-0)] font-semibold text-white">Movimento & Qualidade</h4>
+                      <div className="space-y-3 p-4 rounded-[var(--corner-md)] bg-[var(--tone-2)] border border-transparent">
+                        <h4 className="text-[length:var(--step-0)] font-semibold text-[var(--ink)]">Movimento & Qualidade</h4>
                         <div className="grid grid-cols-2 gap-3 text-xs">
                           <div>
                             <div className="flex justify-between text-[var(--ink-muted)] mb-1">
@@ -868,7 +868,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                                   speed: parseFloat(e.target.value),
                                 }))
                               }
-                              className="w-full accent-white cursor-pointer h-1.5 bg-white/10 rounded-lg appearance-none"
+                              className="w-full accent-white cursor-pointer h-1.5 bg-[var(--tone-3)] rounded-lg appearance-none"
                             />
                           </div>
 
@@ -889,7 +889,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                                   drift: parseFloat(e.target.value),
                                 }))
                               }
-                              className="w-full accent-white cursor-pointer h-1.5 bg-white/10 rounded-lg appearance-none"
+                              className="w-full accent-white cursor-pointer h-1.5 bg-[var(--tone-3)] rounded-lg appearance-none"
                             />
                           </div>
                         </div>
@@ -903,7 +903,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
                                 type="button"
                                 onClick={() => setQualityProfile(q)}
                                 className={`px-2 py-1 rounded text-xs font-semibold transition ${
-                                  qualityProfile === q ? "bg-white text-black" : "bg-white/10 text-[var(--ink-muted)]"
+                                  qualityProfile === q ? "bg-[var(--ink)] text-[var(--tone-0)]" : "bg-[var(--tone-3)] text-[var(--ink-muted)]"
                                 }`}
                               >
                                 {QUALITY_LABELS[q]}
@@ -920,12 +920,12 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
         </div>
 
         {/* Rodapé de Ações */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-white/[0.06] bg-[var(--tone-1)]">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-transparent bg-[var(--tone-1)]">
           <button
             type="button"
             onClick={handleResetDefault}
             style={{ cornerShape: "squircle" } as React.CSSProperties}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-[var(--corner-sm)] text-xs font-medium text-[var(--ink-muted)] hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-[var(--corner-sm)] text-xs font-medium text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--tone-4)] transition-colors cursor-pointer"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             <span>Restaurar Padrão</span>
@@ -936,9 +936,9 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
               type="button"
               onClick={handleSaveDefault}
               style={{ cornerShape: "squircle" } as React.CSSProperties}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-[var(--corner-sm)] bg-white text-black font-semibold text-xs shadow-lg hover:bg-white/90 active:scale-95 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-[var(--corner-sm)] bg-[var(--ink)] text-[var(--tone-0)] font-semibold text-xs shadow-lg hover:opacity-90 active:scale-95 transition-all cursor-pointer"
             >
-              <Sparkles className="h-3.5 w-3.5 text-black" />
+              <Sparkles className="h-3.5 w-3.5 text-[var(--tone-0)]" />
               <span>Salvar como Meu Padrão</span>
             </button>
           </div>
@@ -951,7 +951,7 @@ export const OrbloomCustomizerModal: React.FC<OrbloomCustomizerModalProps> = ({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
-              className="absolute bottom-16 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-emerald-500/90 text-white text-xs font-semibold backdrop-blur-md shadow-xl flex items-center gap-1.5 z-50 pointer-events-none"
+              className="absolute bottom-16 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-[var(--tone-3)] text-[var(--ink)] text-xs font-semibold backdrop-blur-md shadow-xl flex items-center gap-1.5 z-50 pointer-events-none"
             >
               <Check className="h-3.5 w-3.5" />
               <span>Configuração salva com sucesso!</span>

@@ -1,5 +1,5 @@
 import React from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   MicOff,
   VolumeX,
@@ -17,7 +17,6 @@ import { OrbloomOrb, mapCallToOrbState } from "../OrbloomOrb";
 import { VideoRenderer } from "./VideoRenderer";
 import { useAdaptiveGrid } from "./useAdaptiveGrid";
 import { gridSpring, tileEnter } from "./motionTokens";
-import { spotlightMotion } from "./spotlight";
 
 interface VoiceOnlyStageProps {
   feeds: CallFeed[];
@@ -70,9 +69,6 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
   onVideoElement,
 }) => {
   const peopleFeeds = feeds.filter((f) => !f.isScreen);
-  const reduceMotion = Boolean(useReducedMotion());
-  // Destaque no falante: só faz sentido com mais de uma pessoa na grade
-  const anySpeaking = peopleFeeds.length > 1 && peopleFeeds.some((f) => f.isSpeaking);
   const isAlone = peopleFeeds.length <= 1 && screenFeeds.length === 0;
 
   const findScreenFeedFor = (peerId?: string) =>
@@ -107,11 +103,11 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
               type="button"
               onClick={onRefocusStream}
               style={{ cornerShape: "squircle" } as React.CSSProperties}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 text-xs font-semibold backdrop-blur-md shadow-lg transition active:scale-95 cursor-pointer"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] hover:bg-[var(--tone-3)] text-[var(--live)] border border-transparent text-xs font-semibold backdrop-blur-md shadow-lg transition active:scale-95 cursor-pointer"
             >
               <MonitorUp className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Transmissão ao vivo em andamento</span>
-              <span className="text-white underline pl-1">Focar tela</span>
+              <span className="text-[var(--ink)] underline pl-1">Focar tela</span>
             </button>
           </div>
         )}
@@ -128,10 +124,10 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
               onContextMenu?.(e as any, single);
             }
           }}
-          className={`relative group flex flex-col items-center justify-center rounded-[var(--corner-lg)] bg-white/[0.04] ring-1 transition-[background-color,box-shadow] duration-300 w-64 sm:w-72 h-[290px] sm:h-[310px] p-5 text-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 overflow-hidden ${
+          className={`relative group flex flex-col items-center justify-center rounded-[var(--corner-lg)] bg-[var(--tone-3)] ring-1 transition-[background-color,box-shadow] duration-300 w-64 sm:w-72 h-[290px] sm:h-[310px] p-5 text-center cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ink)] overflow-hidden ${
             isSpeaking
-              ? "ring-white/45 shadow-[0_0_44px_rgba(255,255,255,0.1)]"
-              : "ring-white/[0.07] hover:ring-white/15 hover:bg-white/[0.06]"
+              ? "ring-2 ring-[color:var(--live)]"
+              : "ring-transparent hover:bg-[var(--tone-4)]"
           }`}
         >
           {single?.cameraStream ? (
@@ -145,23 +141,23 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
               <div className="relative z-10 mt-auto space-y-1">
-                <h3 className="text-sm font-bold text-white tracking-tight truncate max-w-[200px] flex items-center justify-center gap-1.5">
+                <h3 className="text-sm font-bold text-[var(--ink)] tracking-tight truncate max-w-[200px] flex items-center justify-center gap-1.5">
                   {isSpeaking && (
                     <span className="inline-flex items-center gap-0.5 h-3 shrink-0" aria-label="Falando">
                       <motion.span
                         animate={{ height: ["4px", "12px", "4px"] }}
                         transition={{ repeat: Infinity, duration: 0.55, ease: "easeInOut" }}
-                        className="w-0.5 rounded-full bg-white/90"
+                        className="w-0.5 rounded-full bg-[var(--ink)]"
                       />
                       <motion.span
                         animate={{ height: ["8px", "14px", "6px"] }}
                         transition={{ repeat: Infinity, duration: 0.45, delay: 0.12, ease: "easeInOut" }}
-                        className="w-0.5 rounded-full bg-white/90"
+                        className="w-0.5 rounded-full bg-[var(--ink)]"
                       />
                       <motion.span
                         animate={{ height: ["4px", "10px", "4px"] }}
                         transition={{ repeat: Infinity, duration: 0.65, delay: 0.06, ease: "easeInOut" }}
-                        className="w-0.5 rounded-full bg-white/90"
+                        className="w-0.5 rounded-full bg-[var(--ink)]"
                       />
                     </span>
                   )}
@@ -177,17 +173,11 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                 {/* Halo suave no contorno ao falar */}
                 {isSpeaking && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.92 }}
-                    animate={{
-                      opacity: [0.4, 0.85, 0.4],
-                      scale: [1, 1.05, 1],
-                    }}
-                    transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
                     className="absolute -inset-2.5 rounded-full pointer-events-none"
-                    style={{
-                      border: "1.5px solid rgba(255, 255, 255, 0.45)",
-                      boxShadow: "0 0 20px rgba(255, 255, 255, 0.22), inset 0 0 10px rgba(255, 255, 255, 0.12)",
-                    }}
+                    style={{ border: "2px solid var(--live)" }}
                   />
                 )}
 
@@ -216,8 +206,8 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                 <div
                   className={`absolute h-[92px] w-[92px] rounded-full overflow-hidden border transition duration-200 z-10 bg-[var(--tone-1)] flex items-center justify-center ${
                     isSpeaking
-                      ? "border-white/70 shadow-[0_0_14px_rgba(255,255,255,0.28)]"
-                      : "border-white/12"
+                      ? "border-transparent "
+                      : "border-transparent"
                   }`}
                   style={{
                     boxShadow: "inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 4px 12px rgba(0, 0, 0, 0.7)",
@@ -230,7 +220,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                       className="h-full w-full object-cover rounded-full"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center font-bold text-white text-2xl tracking-tight select-none">
+                    <div className="flex h-full w-full items-center justify-center font-bold text-[var(--ink)] text-2xl tracking-tight select-none">
                       {single?.title?.slice(0, 2).toUpperCase() || "VC"}
                     </div>
                   )}
@@ -239,7 +229,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                 {single?.isMuted && (
                   <div
                     title="Microfone desativado"
-                    className="absolute bottom-1 right-1 p-1.5 rounded-full bg-[var(--tone-2)] border border-white/20 text-[var(--ink-muted)] shadow-md ring-2 ring-[#0F0F0F] z-20"
+                    className="absolute bottom-1 right-1 p-1.5 rounded-full bg-[var(--tone-2)] border border-transparent text-[var(--ink-muted)] shadow-md ring-2 ring-[#0F0F0F] z-20"
                   >
                     <MicOff className="h-3 w-3 text-[var(--ink-muted)]" aria-hidden="true" />
                   </div>
@@ -254,21 +244,21 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                       <motion.span
                         animate={{ height: ["4px", "12px", "4px"] }}
                         transition={{ repeat: Infinity, duration: 0.55, ease: "easeInOut" }}
-                        className="w-0.5 rounded-full bg-white/90"
+                        className="w-0.5 rounded-full bg-[var(--ink)]"
                       />
                       <motion.span
                         animate={{ height: ["8px", "14px", "6px"] }}
                         transition={{ repeat: Infinity, duration: 0.45, delay: 0.12, ease: "easeInOut" }}
-                        className="w-0.5 rounded-full bg-white/90"
+                        className="w-0.5 rounded-full bg-[var(--ink)]"
                       />
                       <motion.span
                         animate={{ height: ["4px", "10px", "4px"] }}
                         transition={{ repeat: Infinity, duration: 0.65, delay: 0.06, ease: "easeInOut" }}
-                        className="w-0.5 rounded-full bg-white/90"
+                        className="w-0.5 rounded-full bg-[var(--ink)]"
                       />
                     </span>
                   )}
-                  <h3 className="text-sm font-semibold text-white tracking-tight truncate">
+                  <h3 className="text-sm font-semibold text-[var(--ink)] tracking-tight truncate">
                     {single?.title || "Você"}
                   </h3>
                   {single?.isMuted && (
@@ -290,7 +280,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                     onOpenInvite();
                   }}
                   style={{ cornerShape: "squircle" } as React.CSSProperties}
-                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[var(--corner-sm)] bg-white/[0.06] hover:bg-white/[0.12] text-white border border-white/[0.08] text-xs font-semibold shadow-sm transition active:scale-96 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[var(--corner-sm)] bg-[var(--tone-3)] hover:bg-[var(--tone-4)] text-[var(--ink)] border border-transparent text-xs font-semibold shadow-sm transition active:scale-96 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ink)]"
                 >
                   <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Convidar Amigos</span>
@@ -345,7 +335,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                 width: tileWidth,
                 height: tileHeight,
               } as React.CSSProperties}
-              className="group relative flex items-center justify-center rounded-[var(--corner-lg)] overflow-hidden bg-[var(--tone-0)] border border-sky-400/50 shadow-[0_0_30px_rgba(56,189,248,0.22),inset_0_1px_0_rgba(255,255,255,0.06)] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60"
+              className="group relative flex items-center justify-center rounded-[var(--corner-lg)] overflow-hidden bg-[var(--tone-0)] border border-transparent shadow-[0_0_30px_rgba(56,189,248,0.22),inset_0_1px_0_rgba(255,255,255,0.06)] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--tone-4)]"
             >
               {screenFeed.stream ? (
                 <VideoRenderer stream={screenFeed.stream} fitMode="cover" muted className="h-full w-full opacity-90" />
@@ -360,7 +350,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
               {/* Badge "AO VIVO" */}
               <div
                 style={{ cornerShape: "squircle" } as React.CSSProperties}
-                className="absolute top-2.5 left-2.5 flex items-center gap-1 px-2 py-1 rounded-[9px] bg-rose-500/90 text-white text-[length:var(--step-0)] font-bold z-10 shadow-md"
+                className="absolute top-2.5 left-2.5 flex items-center gap-1 px-2 py-1 rounded-[9px] bg-[color-mix(in_srgb,var(--danger)_18%,transparent)] text-[var(--ink)] text-[length:var(--step-0)] font-bold z-10 shadow-md"
               >
                 <Radio className="h-2.5 w-2.5 animate-pulse" aria-hidden="true" />
                 <span>AO VIVO</span>
@@ -373,7 +363,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                   onFocusScreen?.(screenFeed.id);
                 }}
                 style={{ cornerShape: "squircle" } as React.CSSProperties}
-                className="absolute top-2.5 right-2.5 flex items-center gap-1 px-2 py-1 rounded-[9px] bg-black/55 hover:bg-sky-500/80 text-sky-200 hover:text-white text-[length:var(--step-0)] font-semibold z-10 backdrop-blur-md cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70"
+                className="absolute top-2.5 right-2.5 flex items-center gap-1 px-2 py-1 rounded-[9px] bg-black/55 hover:bg-[var(--tone-3)] text-[var(--ink)] hover:text-[var(--ink)] text-[length:var(--step-0)] font-semibold z-10 backdrop-blur-md cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--tone-4)]"
               >
                 <span>Focar tela</span>
               </button>
@@ -382,7 +372,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
               <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center gap-2 z-10">
                 <div
                   style={{ cornerShape: "squircle" } as React.CSSProperties}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[var(--corner-sm)] bg-black/50 border border-sky-400/30 backdrop-blur-md text-sky-300 text-xs font-semibold tracking-tight truncate"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[var(--corner-sm)] bg-black/50 border border-transparent backdrop-blur-md text-[var(--ink)] text-xs font-semibold tracking-tight truncate"
                 >
                   <Monitor className="h-3 w-3 shrink-0" aria-hidden="true" />
                   <span className="truncate">{screenFeed.title} está transmitindo</span>
@@ -402,7 +392,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                 key={feed.id}
                 layout
                 initial={tileEnter.initial}
-                animate={{ ...tileEnter.animate, ...spotlightMotion(isSpeaking, anySpeaking, reduceMotion) }}
+                animate={tileEnter.animate}
                 exit={tileEnter.exit}
                 transition={tileEnter.transition}
                 role="button"
@@ -412,7 +402,6 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                   cornerShape: "squircle",
                   width: tileWidth,
                   height: tileHeight,
-                  zIndex: isSpeaking && anySpeaking ? 2 : 1,
                 } as React.CSSProperties}
                 onClick={() => {
                   if (isPresenting && presentingScreen && onFocusScreen) {
@@ -426,12 +415,12 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                     onContextMenu?.(e as any, feed);
                   }
                 }}
-                className={`group relative flex flex-col items-center justify-center rounded-[var(--corner-lg)] bg-white/[0.04] ring-1 transition-[background-color,box-shadow] duration-300 text-center outline-none focus-visible:ring-2 focus-visible:ring-white/40 overflow-hidden ${
-                  isPresenting
-                    ? "ring-sky-400/60 shadow-[0_0_28px_rgba(56,189,248,0.2)] cursor-pointer"
-                    : isSpeaking
-                      ? "ring-white/45 shadow-[0_0_40px_rgba(255,255,255,0.1)]"
-                      : "ring-white/[0.07] hover:ring-white/15 hover:bg-white/[0.06] cursor-default"
+                className={`group relative flex flex-col items-center justify-center rounded-[var(--corner-lg)] bg-[var(--tone-3)] ring-1 transition-[background-color,box-shadow] duration-300 text-center outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ink)] overflow-hidden ${
+                  isSpeaking
+                    ? `ring-2 ring-[color:var(--live)] ${isPresenting ? "cursor-pointer" : ""}`
+                    : isPresenting
+                      ? "ring-transparent hover:bg-[var(--tone-4)] cursor-pointer"
+                      : "ring-transparent hover:bg-[var(--tone-4)] cursor-default"
                 }`}
               >
                 {/* Botão de 3 pontos — morph plus-to-menu */}
@@ -444,10 +433,10 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                     e.stopPropagation();
                     onContextMenu?.(e, feed);
                   }}
-                  className={`absolute top-2 right-2 p-1.5 rounded-full border text-[var(--ink-muted)] hover:text-white z-30 cursor-pointer shadow-sm transition-[background-color,border-color,transform] duration-200 ${
+                  className={`absolute top-2 right-2 p-1.5 rounded-full border text-[var(--ink-muted)] hover:text-[var(--ink)] z-30 cursor-pointer shadow-sm transition-[background-color,border-color,transform] duration-200 ${
                     activeMenuFeedId === feed.id
-                      ? "opacity-100 bg-white/20 border-white/25 scale-105"
-                      : "opacity-0 group-hover:opacity-100 bg-white/[0.06] hover:bg-white/[0.14] border-white/[0.08]"
+                      ? "opacity-100 bg-[var(--tone-4)] border-transparent scale-105"
+                      : "opacity-0 group-hover:opacity-100 bg-[var(--tone-3)] hover:bg-[var(--tone-4)] border-transparent"
                   }`}
                   style={{ transitionTimingFunction: "cubic-bezier(0.34,1.25,0.64,1)" }}
                   title="Ajustar volume / Opções"
@@ -469,7 +458,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                 {isPresenting && (
                   <div
                     style={{ cornerShape: "squircle" } as React.CSSProperties}
-                    className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-[var(--corner-sm)] bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[length:var(--step-0)] font-bold z-30 backdrop-blur-md"
+                    className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-[var(--corner-sm)] bg-[var(--tone-3)] border border-transparent text-[var(--ink)] text-[length:var(--step-0)] font-bold z-30 backdrop-blur-md"
                     title={`${feed.title} está compartilhando a tela — clique para focar`}
                   >
                     <Monitor className="h-2.5 w-2.5" aria-hidden="true" />
@@ -495,23 +484,23 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                             <motion.span
                               animate={{ height: ["4px", "12px", "4px"] }}
                               transition={{ repeat: Infinity, duration: 0.55, ease: "easeInOut" }}
-                              className="w-0.5 rounded-full bg-white/90"
+                              className="w-0.5 rounded-full bg-[var(--ink)]"
                             />
                             <motion.span
                               animate={{ height: ["8px", "14px", "6px"] }}
                               transition={{ repeat: Infinity, duration: 0.45, delay: 0.12, ease: "easeInOut" }}
-                              className="w-0.5 rounded-full bg-white/90"
+                              className="w-0.5 rounded-full bg-[var(--ink)]"
                             />
                             <motion.span
                               animate={{ height: ["4px", "10px", "4px"] }}
                               transition={{ repeat: Infinity, duration: 0.65, delay: 0.06, ease: "easeInOut" }}
-                              className="w-0.5 rounded-full bg-white/90"
+                              className="w-0.5 rounded-full bg-[var(--ink)]"
                             />
                           </span>
                         )}
                         <span
                           className={`tracking-tight truncate font-semibold drop-shadow-md ${
-                            isPresenting ? "text-sky-300" : "text-white"
+                            isPresenting ? "text-[var(--ink)]" : "text-[var(--ink)]"
                           }`}
                           style={{ fontSize: layout.nameSize, maxWidth: tileWidth - 40 }}
                         >
@@ -541,17 +530,11 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                       {/* Resposta suave no contorno ao falar (Halo discreto de luz) */}
                       {isSpeaking && (
                         <motion.div
-                          initial={{ opacity: 0, scale: 0.92 }}
-                          animate={{
-                            opacity: [0.4, 0.85, 0.4],
-                            scale: [1, 1.05, 1],
-                          }}
-                          transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.2 }}
                           className="absolute -inset-2 rounded-full pointer-events-none"
-                          style={{
-                            border: "1.5px solid rgba(255, 255, 255, 0.45)",
-                            boxShadow: "0 0 20px rgba(255, 255, 255, 0.22), inset 0 0 10px rgba(255, 255, 255, 0.12)",
-                          }}
+                          style={{ border: "2px solid var(--live)" }}
                         />
                       )}
 
@@ -578,8 +561,8 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                       <div
                         className={`absolute rounded-full overflow-hidden border transition duration-200 z-10 bg-[var(--tone-1)] flex items-center justify-center ${
                           isSpeaking
-                            ? "border-white/70 shadow-[0_0_14px_rgba(255,255,255,0.28)]"
-                            : "border-white/12"
+                            ? "border-transparent "
+                            : "border-transparent"
                         }`}
                         style={{
                           height: layout.avatarSize,
@@ -595,7 +578,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                           />
                         ) : (
                           <div
-                            className="flex h-full w-full items-center justify-center font-bold text-white tracking-tight select-none"
+                            className="flex h-full w-full items-center justify-center font-bold text-[var(--ink)] tracking-tight select-none"
                             style={{ fontSize: Math.max(13, Math.round(layout.avatarSize * 0.38)) }}
                           >
                             {feed.title.slice(0, 2).toUpperCase()}
@@ -607,7 +590,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                       {feed.isMuted && (
                         <div
                           title="Microfone desativado"
-                          className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[var(--tone-2)] border border-white/20 text-[var(--ink-muted)] shadow-md ring-2 ring-[#0F0F0F] z-20"
+                          className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[var(--tone-2)] border border-transparent text-[var(--ink-muted)] shadow-md ring-2 ring-[#0F0F0F] z-20"
                         >
                           <MicOff className="h-3 w-3 text-[var(--ink-muted)]" aria-hidden="true" />
                         </div>
@@ -615,7 +598,7 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                       {feed.isDeafened && (
                         <div
                           title="Áudio silenciado"
-                          className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[var(--tone-2)] border border-white/20 text-[var(--ink-muted)] shadow-md ring-2 ring-[#0F0F0F] z-20"
+                          className="absolute bottom-0 right-0 p-1.5 rounded-full bg-[var(--tone-2)] border border-transparent text-[var(--ink-muted)] shadow-md ring-2 ring-[#0F0F0F] z-20"
                         >
                           <VolumeX className="h-3 w-3 text-[var(--ink-muted)]" aria-hidden="true" />
                         </div>
@@ -630,24 +613,24 @@ export const VoiceOnlyStage: React.FC<VoiceOnlyStageProps> = ({
                             <motion.span
                               animate={{ height: ["4px", "12px", "4px"] }}
                               transition={{ repeat: Infinity, duration: 0.55, ease: "easeInOut" }}
-                              className="w-0.5 rounded-full bg-white/90"
+                              className="w-0.5 rounded-full bg-[var(--ink)]"
                             />
                             <motion.span
                               animate={{ height: ["8px", "14px", "6px"] }}
                               transition={{ repeat: Infinity, duration: 0.45, delay: 0.12, ease: "easeInOut" }}
-                              className="w-0.5 rounded-full bg-white/90"
+                              className="w-0.5 rounded-full bg-[var(--ink)]"
                             />
                             <motion.span
                               animate={{ height: ["4px", "10px", "4px"] }}
                               transition={{ repeat: Infinity, duration: 0.65, delay: 0.06, ease: "easeInOut" }}
-                              className="w-0.5 rounded-full bg-white/90"
+                              className="w-0.5 rounded-full bg-[var(--ink)]"
                             />
                           </span>
                         )}
 
                         <span
                           className={`tracking-tight truncate font-semibold ${
-                            isPresenting ? "text-sky-300" : "text-white"
+                            isPresenting ? "text-[var(--ink)]" : "text-[var(--ink)]"
                           }`}
                           style={{ fontSize: layout.nameSize, maxWidth: tileWidth - 40 }}
                         >
