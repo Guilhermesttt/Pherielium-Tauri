@@ -14,6 +14,7 @@ import type { SoundEffectType } from "../../../hooks/useSoundEffects";
 import type { GamepadFamily } from "../../../context/GamepadContext";
 import { ControllerButtonGlyph } from "../../ui/ControllerButtonGlyph";
 import { useSlidingPill } from "../../../hooks/useSlidingPill";
+import { useHoldToLaunch } from "../../../hooks/useHoldToLaunch";
 import { formatRarity, formatUnlockDate, pickRecentAchievements, splitPlaytime, trophyPercent } from "./consoleScreen";
 
 /** Textos desta tela que não existem no copy do painel (pt-BR, en-US, es-ES). */
@@ -26,6 +27,7 @@ const SCREEN_COPY = {
     friendsPlaying: "Amigos jogando",
     trophyProgress: "Progresso de troféus",
     start: "Iniciar o jogo",
+    holdToStart: "Segure para iniciar",
     recent: "Conquistas recentes",
     seeAll: "Ver todas",
     next: "dos jogadores têm",
@@ -46,6 +48,7 @@ const SCREEN_COPY = {
     friendsPlaying: "Friends playing",
     trophyProgress: "Trophy progress",
     start: "Start the game",
+    holdToStart: "Hold to start",
     recent: "Recent achievements",
     seeAll: "See all",
     next: "of players have it",
@@ -66,6 +69,7 @@ const SCREEN_COPY = {
     friendsPlaying: "Amigos jugando",
     trophyProgress: "Progreso de trofeos",
     start: "Iniciar el juego",
+    holdToStart: "Mantén para iniciar",
     recent: "Logros recientes",
     seeAll: "Ver todos",
     next: "de los jugadores lo tienen",
@@ -224,7 +228,17 @@ export const ConsoleGameScreen: React.FC<ConsoleGameScreenProps> = (props) => {
     return () => window.removeEventListener("keydown", onKey);
   }, [isOpen]);
 
-  const startLabel = isRunning ? copy.running : isLaunching ? copy.launching : t.start;
+  // Iniciar exige segurar (mouse, Enter/Espaço ou X no controle) para não abrir o jogo sem querer.
+  const hold = useHoldToLaunch({
+    onComplete: onLaunch,
+    enabled: isOpen && isPlayTab && !optionsOpen && !isLaunching && !isRunning,
+    // com foco em outro controle da tela, X é "ativar esse controle" e não o início do jogo
+    canStartFromGamepad: () => {
+      const focused = document.activeElement;
+      return !(focused instanceof HTMLElement && focused !== document.body && scrollRef.current?.contains(focused));
+    },
+  });
+  const startLabel = isRunning ? copy.running : isLaunching ? copy.launching : t.holdToStart;
 
   return (
     <div
@@ -411,18 +425,27 @@ export const ConsoleGameScreen: React.FC<ConsoleGameScreenProps> = (props) => {
             )}
             <button
               type="button"
-              onClick={onLaunch}
               disabled={isLaunching || isRunning}
-              className="console-start pointer-events-auto flex h-[calc(var(--cta-h)*1.2)] items-center justify-between gap-4 px-[calc(var(--cta-h)*0.4)] text-left"
+              data-holding={hold.holding || undefined}
+              aria-label={`${startLabel} (${t.start})`}
+              {...hold.pointerHandlers}
+              className="console-start pointer-events-auto relative flex h-[calc(var(--cta-h)*1.2)] touch-none select-none items-center justify-between gap-4 overflow-hidden px-[calc(var(--cta-h)*0.4)] text-left"
             >
-              <span className="flex items-center gap-2 text-[length:var(--fs-label)] font-bold uppercase tracking-[0.06em]">
+              <span
+                className="console-start-fill"
+                style={{ transform: `scaleX(${hold.progress})` }}
+                aria-hidden="true"
+              />
+              <span className="relative flex items-center gap-2 text-[length:var(--fs-label)] font-bold uppercase tracking-[0.06em]">
                 {isRunning && <span className="h-2.5 w-2.5 rounded-full bg-[var(--live)]" aria-hidden="true" />}
                 {startLabel}
               </span>
               {isGamepadConnected ? (
-                <ControllerButtonGlyph button="A" gamepadFamily={gamepadFamily} size={22} />
+                <span className="relative flex">
+                  <ControllerButtonGlyph button="A" gamepadFamily={gamepadFamily} size={22} />
+                </span>
               ) : (
-                <span className="console-start-icon flex h-8 w-8 items-center justify-center" aria-hidden="true">
+                <span className="console-start-icon relative flex h-8 w-8 items-center justify-center" aria-hidden="true">
                   <Play className="h-3 w-3 fill-current" />
                 </span>
               )}
@@ -433,8 +456,25 @@ export const ConsoleGameScreen: React.FC<ConsoleGameScreenProps> = (props) => {
               </p>
             )}
 
+            <AnimatePresence>
             {optionsOpen && (
-              <div ref={optionsRef} className="console-options pointer-events-auto flex flex-col" role="menu" aria-label={t.options}>
+              <motion.div
+                ref={optionsRef}
+                key="options"
+                initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -6, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -4, scale: 0.98 }}
+                transition={{ duration: 0.2, ease: EASE_OUT }}
+                style={{ transformOrigin: "top right" }}
+                className="console-options pointer-events-auto flex flex-col"
+                role="menu"
+                aria-label={t.options}
+                // o mouse move o mesmo destaque que o D-pad: um item ativo por vez
+                onPointerOver={(event) => {
+                  const item = (event.target as HTMLElement).closest<HTMLElement>('[role="menuitem"]');
+                  if (item && item !== document.activeElement) item.focus({ preventScroll: true });
+                }}
+              >
                 {onToggleFavorite && (
                   <button
                     type="button"
@@ -474,8 +514,9 @@ export const ConsoleGameScreen: React.FC<ConsoleGameScreenProps> = (props) => {
                     {t.controller}
                   </button>
                 )}
-              </div>
+              </motion.div>
             )}
+            </AnimatePresence>
 
             {/* Legendas só com controle; com mouse e teclado fica um botão de opções discreto (ou a tecla O) */}
             {isGamepadConnected ? (

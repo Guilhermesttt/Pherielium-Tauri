@@ -17,6 +17,8 @@ import { useGameDetailAsync } from "../../hooks/useGameDetailAsync";
 import { useGameDetailActions } from "../../hooks/useGameDetailActions";
 
 import { GameLaunchIntro } from "./GameLaunchIntro";
+import { GameLaunchIntroPlain, PLAIN_LAUNCH_INTRO_MS } from "./GameLaunchIntroPlain";
+import { useNotchConfig } from "../../mascot/useNotchConfig";
 import { ConsoleTrophyList } from "./console/ConsoleTrophyList";
 import { GameDetailSocialMods } from "./GameDetailSocialMods";
 import GameControllerPanel from "./GameControllerPanel";
@@ -44,6 +46,10 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
   const { user, userProfile } = useAuth();
   const { language, closeOnLaunch, gameBootIntroEnabled, gameBootIntroSoundEnabled, effectsVolume, soundTheme } = usePreferences();
   const { notify } = useNotification();
+  // O mascote da intro entrega o voo ao notch; sem notch ligado a intro usa a versão sem Pherie.
+  const notchEnabled = useNotchConfig().enabled;
+  const mascotIntro = gameBootIntroEnabled && notchEnabled;
+  const plainIntro = gameBootIntroEnabled && !notchEnabled;
   const { isGamepadConnected, gamepadFamily, activeInputType } = useGamepad();
   // Guarda DE QUAL JOGO o painel de controle está aberto, em vez de um booleano:
   // ao trocar de jogo o painel fecha sozinho (o id deixa de bater), sem efeito
@@ -105,7 +111,8 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
     launchProfile: asyncData.launchProfile,
     user,
     closeOnLaunch,
-    launchIntroEnabled: gameBootIntroEnabled,
+    launchIntroEnabled: mascotIntro,
+    launchIntroDelayMs: plainIntro ? PLAIN_LAUNCH_INTRO_MS : 0,
     copy,
     notify,
     onClose,
@@ -224,7 +231,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
     }
   }, isOpen, GAMEPAD_PRIORITY.overlay);
 
-  // Botão X / A para iniciar ou interagir
+  // Botão X / A para interagir com o controle em foco
   useGamepadButton("X", () => {
     if (!isOpen || state.galleryModalOpen || state.deleteModalOpen || state.isLaunching) return;
 
@@ -234,12 +241,8 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
       scrollRef.current?.contains(document.activeElement)
     ) {
       activateElementWithController(document.activeElement);
-      return;
     }
-
-    if (state.activeTab === copy.tabPlay) {
-      actions.handleLaunch();
-    }
+    // iniciar o jogo é "segurar X" no botão Iniciar (useHoldToLaunch), não um toque
   }, isOpen && !state.galleryModalOpen && !state.deleteModalOpen, GAMEPAD_PRIORITY.overlay);
 
   // Botão Quadrado / X para fotos
@@ -607,7 +610,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
               ============================================================ */}
           {/* Intro nova: mascote põe os fones, o hub se recolhe e ele voa até o notch (overlay) */}
           <AnimatePresence>
-            {state.isLaunching && gameBootIntroEnabled && game && (
+            {state.isLaunching && mascotIntro && game && (
               <GameLaunchIntro
                 key="launch-intro"
                 title={game.title}
@@ -623,6 +626,13 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
                   }
                 }}
               />
+            )}
+          </AnimatePresence>
+
+          {/* Intro sem mascote: notch desligado */}
+          <AnimatePresence>
+            {state.isLaunching && plainIntro && game && (
+              <GameLaunchIntroPlain key="launch-intro-plain" title={game.title} heroImage={heroImage} launchingLabel={copy.launching} />
             )}
           </AnimatePresence>
 
