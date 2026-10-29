@@ -176,6 +176,17 @@ pub fn gaming_devices() -> Result<Vec<String>, CloakError> {
     Ok(parse_gaming_devices(&cli::run(&["--dev-gaming"])?))
 }
 
+/// Dispositivos escondidos agora (`--dev-list`), seja por este app ou não.
+pub fn hidden_devices() -> Result<Vec<String>, CloakError> {
+    let output = cli::run(&["--dev-list"])?;
+    // `--dev-list` imprime um `--dev-hide "<caminho>"` por dispositivo.
+    Ok(output
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("--dev-hide"))
+        .map(|rest| rest.trim().trim_matches('"').to_string())
+        .collect())
+}
+
 /// Esconde `devices` de todo app que não seja `exe`. Idempotente quanto ao registro em disco.
 pub fn hide(devices: &[String], exe: &Path) -> Result<CloakRecord, CloakError> {
     let cloak_was_on = cloak_is_on(&cli::run(&["--cloak-state"])?);

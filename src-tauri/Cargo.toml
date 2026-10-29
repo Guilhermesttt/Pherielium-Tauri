@@ -97,6 +97,12 @@ windows = { version = "0.58", features = [
   "Win32_Security", # CreateEventW (captura de áudio orientada a evento)
   "Win32_UI_Input_KeyboardAndMouse",
   "Win32_UI_Input_XboxController",
+  "Media",
+  "Media_Control",
+  "Storage_Streams",
+  "Foundation",
+  "Foundation_Collections",
+  "Win32_System_Com",
 ] }
 
 # Gamepad virtual: fala com o driver ViGEmBus, que o usuário instala à parte.

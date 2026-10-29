@@ -225,14 +225,16 @@ export const updateVirtualPad = (state: PadState) =>
  * virtual enquanto o JOGO está em foco?
  *
  * Sim: `pad_engine` (Rust) lê o controle por XInput, esconde o físico do jogo pelo HidHide e
- * alimenta o Xbox 360 virtual. Começa ao iniciar um jogo cujo perfil tem `emulateXinput` e
- * termina quando o jogo fecha. Só controles XInput por enquanto.
+ * alimenta o Xbox 360 virtual (XInput, DualShock 4 e DualSense). Começa ao iniciar um jogo cujo perfil tem `emulateXinput` e
+ * termina quando o jogo fecha.
  */
 export const EMULATION_ENGINE_READY = true;
 
 export interface PadEngineStatus {
   running: boolean;
   physicalSlot: number | null;
+  /** De onde vem a leitura. */
+  physicalSource: "xinput" | "dualshock4" | "dualsense" | null;
   physicalHidden: boolean;
 }
 

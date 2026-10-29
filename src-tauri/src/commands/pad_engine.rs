@@ -7,9 +7,9 @@
 //! HidHide, (3) só então liga o pad virtual. Se o virtual entrasse antes, ele apareceria na lista
 //! de controles de jogo e seria escondido junto.
 //!
-//! Limites conhecidos: só lê controles que falam XInput (Xbox e compatíveis); DualSense/DualShock
-//! nativos ainda não. O botão Guide não existe na API pública do XInput. A vibração do jogo não é
-//! repassada ao controle físico.
+//! Controles lidos: XInput (Xbox e compatíveis) e, direto por HID, DualShock 4 e DualSense (`pad_hid`).
+//! Limites conhecidos: o botão Guide só existe nos controles Sony (o XInput público não o expõe) e a
+//! vibração do jogo não é repassada ao controle físico.
 
 use serde::Serialize;
 
@@ -26,6 +26,8 @@ pub struct RawPad {
     pub left_y: i16,
     pub right_x: i16,
     pub right_y: i16,
+    /// Botão Guide/PS. Só os controles lidos por HID informam.
+    pub guide: bool,
 }
 
 mod mask {
@@ -88,7 +90,7 @@ pub fn map_to_pad(raw: &RawPad, settings: &ControllerSettings) -> PadState {
         dpad_down: held(mask::DPAD_DOWN),
         dpad_left: held(mask::DPAD_LEFT),
         dpad_right: held(mask::DPAD_RIGHT),
-        guide: false,
+        guide: raw.guide,
     }
 }
 
@@ -96,8 +98,10 @@ pub fn map_to_pad(raw: &RawPad, settings: &ControllerSettings) -> PadState {
 #[serde(rename_all = "camelCase")]
 pub struct PadEngineStatus {
     pub running: bool,
-    /// Slot XInput do controle físico em uso.
+    /// Slot XInput do controle físico em uso (ausente quando a leitura é por HID).
     pub physical_slot: Option<u32>,
+    /// De onde vem a leitura: "xinput", "dualshock4" ou "dualsense".
+    pub physical_source: Option<&'static str>,
     /// O controle físico foi escondido do jogo (HidHide).
     pub physical_hidden: bool,
 }
@@ -106,8 +110,10 @@ pub struct PadEngineStatus {
 mod imp {
     use super::{map_to_pad, PadEngineStatus, RawPad};
     use crate::commands::hidhide_cloak::{self, CloakRecord};
+    use crate::commands::pad_hid::SonyPad;
     use crate::commands::virtual_pad;
     use crate::store::controller_profiles::ControllerSettings;
+    use std::ffi::CString;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::{Arc, Mutex, OnceLock};
     use std::thread::JoinHandle;
@@ -117,11 +123,69 @@ mod imp {
 
     /// ~250 Hz. Mais que isso só gasta CPU: o ViGEm não entrega mais rápido que o jogo lê.
     const POLL_INTERVAL: Duration = Duration::from_millis(4);
+    const HID_READ_TIMEOUT_MS: i32 = 4;
+
+    /// Qual controle físico alimenta o motor.
+    enum Selected {
+        XInput { slot: u32 },
+        Sony { pad: SonyPad, path: CString, vendor: u16, product: u16 },
+    }
+
+    impl Selected {
+        fn label(&self) -> &'static str {
+            match self {
+                Selected::XInput { .. } => "xinput",
+                Selected::Sony { pad: SonyPad::DualShock4, .. } => "dualshock4",
+                Selected::Sony { pad: SonyPad::DualSense, .. } => "dualsense",
+            }
+        }
+    }
+
+    /// O que o laço lê, já aberto.
+    enum Source {
+        XInput(u32),
+        Hid { pad: SonyPad, device: hidapi::HidDevice, last: RawPad },
+    }
+
+    impl Source {
+        /// Leitura atual; `None` = controle desconectado.
+        fn read(&mut self) -> Option<RawPad> {
+            match self {
+                Source::XInput(slot) => {
+                    let raw = read_slot(*slot);
+                    std::thread::sleep(POLL_INTERVAL);
+                    raw
+                }
+                Source::Hid { pad, device, last } => {
+                    let mut buf = [0u8; 128];
+                    // Espera até 4 ms pelo próximo relatório e depois esvazia a fila: só o mais
+                    // recente importa, e processar atrasados deixaria a entrada arrastada.
+                    let mut timeout = HID_READ_TIMEOUT_MS;
+                    loop {
+                        match device.read_timeout(&mut buf, timeout) {
+                            Ok(0) => return Some(*last),
+                            Ok(n) => {
+                                if let Some(raw) = pad.parse(&buf[..n]) {
+                                    *last = raw;
+                                }
+                                timeout = 0;
+                            }
+                            Err(_) => {
+                                std::thread::sleep(POLL_INTERVAL);
+                                return None;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     struct Running {
         stop: Arc<AtomicBool>,
         worker: JoinHandle<()>,
-        physical_slot: u32,
+        slot: Option<u32>,
+        source: &'static str,
         cloak: Option<CloakRecord>,
     }
 
@@ -146,11 +210,66 @@ mod imp {
             left_y: pad.sThumbLY,
             right_x: pad.sThumbRX,
             right_y: pad.sThumbRY,
+            guide: false,
         })
     }
 
     fn first_connected_slot() -> Option<u32> {
         (0..4u32).find(|slot| read_slot(*slot).is_some())
+    }
+
+    /// Controle Sony conectado (USB ou Bluetooth), pelo caminho HID que o hidapi enxerga.
+    fn first_sony_pad() -> Option<Selected> {
+        let api = hidapi::HidApi::new().ok()?;
+        let found = api.device_list().find_map(|info| {
+            let pad = SonyPad::from_ids(info.vendor_id(), info.product_id())?;
+            // O DualSense/DS4 expõem várias interfaces; só a de gamepad (usage page 1, usage 5) manda estado.
+            if info.usage_page() != 0x01 || info.usage() != 0x05 {
+                return None;
+            }
+            Some(Selected::Sony {
+                pad,
+                path: info.path().to_owned(),
+                vendor: info.vendor_id(),
+                product: info.product_id(),
+            })
+        });
+        found
+    }
+
+    /// Prefere XInput (Xbox e quem emula XInput); sem ele, procura um controle Sony.
+    fn select_physical() -> Result<Selected, String> {
+        if let Some(slot) = first_connected_slot() {
+            return Ok(Selected::XInput { slot });
+        }
+        first_sony_pad().ok_or_else(|| {
+            "Nenhum controle compatível foi encontrado (XInput, DualShock 4 ou DualSense). Confira se ele está conectado."
+                .to_string()
+        })
+    }
+
+    /// Só o controle escolhido é escondido: esconder todos tiraria dos jogos outros controles ligados.
+    fn devices_to_hide(selected: &Selected, all: Vec<String>) -> Vec<String> {
+        match selected {
+            Selected::XInput { .. } => all,
+            Selected::Sony { vendor, product, .. } => {
+                let needle = format!("VID_{vendor:04X}&PID_{product:04X}");
+                all.into_iter().filter(|p| p.to_ascii_uppercase().contains(&needle)).collect()
+            }
+        }
+    }
+
+    fn open_source(selected: Selected) -> Result<(Source, Option<u32>), String> {
+        match selected {
+            Selected::XInput { slot } => Ok((Source::XInput(slot), Some(slot))),
+            Selected::Sony { pad, path, .. } => {
+                let api = hidapi::HidApi::new().map_err(|e| format!("hidapi indisponível: {e}"))?;
+                let device = api
+                    .open_path(&path)
+                    .map_err(|e| format!("não foi possível abrir o controle: {e}"))?;
+                Ok((Source::Hid { pad, device, last: RawPad::default() }, None))
+            }
+        }
     }
 
     pub fn start(settings: ControllerSettings) -> Result<(), String> {
@@ -160,20 +279,25 @@ mod imp {
         }
 
         // 1) Controle físico ANTES do virtual existir, senão o slot do virtual seria escolhido.
-        let physical_slot = first_connected_slot().ok_or_else(|| {
-            "Nenhum controle compatível com XInput foi encontrado (controles PlayStation nativos ainda não são suportados pela emulação)."
-                .to_string()
-        })?;
+        let selected = select_physical()?;
+        let label = selected.label();
 
         // 2) Esconde o físico do jogo. Falha aqui aborta: sem isso a entrada duplicaria.
-        let devices = hidhide_cloak::gaming_devices().map_err(|e| e.to_string())?;
+        let devices = devices_to_hide(&selected, hidhide_cloak::gaming_devices().map_err(|e| e.to_string())?);
         if devices.is_empty() {
-            return Err("O HidHide não listou nenhum controle de jogo para esconder.".into());
+            return Err("O HidHide não listou o controle para esconder do jogo.".into());
         }
         let exe = std::env::current_exe().map_err(|e| format!("executável atual indisponível: {e}"))?;
         let cloak = hidhide_cloak::hide(&devices, &exe).map_err(|e| e.to_string())?;
 
-        // 3) Liga o pad virtual; se falhar, devolve o físico antes de reportar.
+        // 3) Abre o controle (já escondido: este app está na lista de permitidos) e liga o virtual.
+        let (source, slot) = match open_source(selected) {
+            Ok(opened) => opened,
+            Err(e) => {
+                let _ = hidhide_cloak::restore(&cloak);
+                return Err(e);
+            }
+        };
         if let Err(e) = virtual_pad::attach_engine_pad() {
             let _ = hidhide_cloak::restore(&cloak);
             return Err(e);
@@ -183,31 +307,30 @@ mod imp {
         let worker_stop = Arc::clone(&stop);
         let worker = std::thread::Builder::new()
             .name("pad-engine".into())
-            .spawn(move || run_loop(physical_slot, settings, worker_stop))
+            .spawn(move || run_loop(source, settings, worker_stop))
             .map_err(|e| {
                 let _ = virtual_pad::detach_engine_pad();
                 let _ = hidhide_cloak::restore(&cloak);
                 format!("não foi possível iniciar o motor: {e}")
             })?;
 
-        *guard = Some(Running { stop, worker, physical_slot, cloak: Some(cloak) });
+        *guard = Some(Running { stop, worker, slot, source: label, cloak: Some(cloak) });
         Ok(())
     }
 
-    fn run_loop(slot: u32, settings: ControllerSettings, stop: Arc<AtomicBool>) {
+    fn run_loop(mut source: Source, settings: ControllerSettings, stop: Arc<AtomicBool>) {
         // SAFETY: par timeBeginPeriod/timeEndPeriod com o mesmo valor; sem timer fino o sleep de 4 ms
         // viraria ~15 ms no Windows e a entrada ficaria arrastada.
         unsafe { timeBeginPeriod(1) };
         let mut last = None;
         while !stop.load(Ordering::Relaxed) {
             // Controle desconectado: manda neutro uma vez e espera ele voltar.
-            let next = read_slot(slot).map(|raw| map_to_pad(&raw, &settings)).unwrap_or_default();
+            let next = source.read().map(|raw| map_to_pad(&raw, &settings)).unwrap_or_default();
             if last.as_ref() != Some(&next) {
                 // Falha de envio não derruba o motor: o próximo quadro tenta de novo.
                 let _ = virtual_pad::update_engine_pad(&next);
                 last = Some(next);
             }
-            std::thread::sleep(POLL_INTERVAL);
         }
         // Solta tudo para o jogo não ficar com botão "preso" ao encerrar.
         let _ = virtual_pad::update_engine_pad(&Default::default());
@@ -239,16 +362,23 @@ mod imp {
     }
 
     pub fn status() -> PadEngineStatus {
+        let idle = PadEngineStatus {
+            running: false,
+            physical_slot: None,
+            physical_source: None,
+            physical_hidden: false,
+        };
         match engine().lock() {
             Ok(guard) => match guard.as_ref() {
                 Some(r) => PadEngineStatus {
                     running: true,
-                    physical_slot: Some(r.physical_slot),
+                    physical_slot: r.slot,
+                    physical_source: Some(r.source),
                     physical_hidden: r.cloak.is_some(),
                 },
-                None => PadEngineStatus { running: false, physical_slot: None, physical_hidden: false },
+                None => idle,
             },
-            Err(_) => PadEngineStatus { running: false, physical_slot: None, physical_hidden: false },
+            Err(_) => idle,
         }
     }
 }
@@ -265,7 +395,7 @@ mod imp {
         Ok(())
     }
     pub fn status() -> PadEngineStatus {
-        PadEngineStatus { running: false, physical_slot: None, physical_hidden: false }
+        PadEngineStatus { running: false, physical_slot: None, physical_source: None, physical_hidden: false }
     }
 }
 
@@ -407,6 +537,27 @@ mod tests {
         let pad = seen.expect("o XInput não enxergou o botão A do pad virtual");
         assert_eq!(pad.bRightTrigger, 255);
         assert!(pad.sThumbLX > 32000);
+    }
+
+    /// Ponta a ponta COM controle físico: escolhe o controle, esconde-o pelo HidHide, liga o virtual,
+    /// deixa o motor rodar e então desfaz tudo, conferindo que o controle voltou a ficar visível.
+    /// Mexe de verdade no HidHide por ~2 s. `cargo test --lib engine_round_trip -- --ignored --nocapture`
+    #[test]
+    #[ignore = "esconde o controle conectado por alguns segundos"]
+    #[cfg(target_os = "windows")]
+    fn engine_round_trip_with_real_controller() {
+        let settings = ControllerSettings { emulate_xinput: true, ..ControllerSettings::default() };
+        imp::start(settings).expect("motor deveria ligar com um controle conectado");
+        let status = imp::status();
+        println!("status: {status:?}");
+        assert!(status.running && status.physical_hidden);
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+        imp::stop().expect("desligar e restaurar o controle");
+        assert!(!imp::status().running);
+
+        let hidden = crate::commands::hidhide_cloak::hidden_devices().expect("--dev-list");
+        println!("escondidos depois de parar: {hidden:?}");
+        assert!(hidden.is_empty(), "o controle ficou escondido: {hidden:?}");
     }
 
     #[test]

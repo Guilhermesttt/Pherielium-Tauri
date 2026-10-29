@@ -14,6 +14,7 @@ use commands::audio_capture::{
     desktop_audio_capabilities, desktop_audio_selftest, desktop_audio_start, desktop_audio_stop, stream_debug_set,
     CaptureManager,
 };
+use commands::notch_widgets::{lyrics_lookup, weather_lookup};
 use commands::pad_engine::{pad_engine_start, pad_engine_status, pad_engine_stop};
 use commands::virtual_pad::{
     virtual_pad_attach, virtual_pad_detach, virtual_pad_is_attached, virtual_pad_update,
@@ -241,6 +242,7 @@ pub fn run() {
             system_set_open_at_login,
             system_is_fullscreen_active,
             system_get_media_info,
+            system_get_media_thumbnail,
             controller_profile_resolve,
             controller_profile_get,
             controller_profile_save,
@@ -257,6 +259,8 @@ pub fn run() {
             virtual_pad_is_attached,
             virtual_pad_update,
             pad_engine_start,
+            lyrics_lookup,
+            weather_lookup,
             pad_engine_stop,
             pad_engine_status,
             desktop_audio_capabilities,
