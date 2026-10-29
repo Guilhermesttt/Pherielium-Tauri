@@ -5,6 +5,7 @@ import { PHERIELIUM_LOGO_PATH } from "../../constants/assets";
 import { FOCUS_TRANSITION } from "../../styles/motion";
 import { ConsoleLibraryTabs } from "./ConsoleLibraryTabs";
 import { TopBarClock } from "./TopBarClock";
+import { HubMascot } from "./HubMascot";
 import { ProfileDropdown } from "../ui/ProfileDropdown";
 import {
   DropdownMenu,
@@ -141,6 +142,7 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
           </div>
         </button>
         <TopBarClock />
+        <HubMascot />
       </div>
 
       <div className="flex min-w-0 items-center justify-end gap-[var(--gap-inline)]">

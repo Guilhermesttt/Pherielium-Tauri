@@ -5,13 +5,12 @@ import { cn } from "../../lib/utils";
 import { usePreferences } from "../../context/PreferencesContext";
 import { useSoundEffects } from "../../hooks/useSoundEffects";
 import { MASCOT_MOODS, PherieMascot, getMascotBaseMood, setMascotBaseMood, type MascotMood } from "../notch/PherieMascot";
-import { normalizeHex } from "../../mascot/mascotColor";
 import {
   DEFAULT_NOTCH_CONFIG,
-  NOTCH_BODY_PRESETS,
   type NotchConfig,
 } from "../../mascot/notchConfig";
 import { saveNotchConfig, useNotchConfig } from "../../mascot/useNotchConfig";
+import { MAX_WEATHER_CITY_LENGTH, NOTCH_WIDGET_OPTIONS } from "../../mascot/notchConfig";
 import { MascotCustomizer } from "../../mascot/MascotCustomizer";
 import {
   EVENT_DURATION_SCALE_RANGE,
@@ -60,15 +59,11 @@ const HoverMascot: React.FC<React.ComponentProps<typeof PherieMascot>> = (props)
 };
 
 /** Prévia fiel da barra do notch com a configuração atual. */
-const NotchPreview: React.FC<{ config: NotchConfig; mood: MascotMood }> = ({ config, mood }) => (
+const NotchPreview: React.FC<{ config: NotchConfig }> = ({ config }) => (
   <div className="relative h-[64px] w-[210px]">
     {config.enabled ? (
       <div className="absolute left-1/2 top-0 flex h-10 w-[178px] -translate-x-1/2 items-center rounded-b-[var(--corner-sm)] bg-black px-3">
-        <div className="flex flex-1 items-center">
-          {config.showMascot && (
-            <PherieMascot size={26} mood={mood} bodyColor={config.bodyColor} shape={config.shape} />
-          )}
-        </div>
+        <div className="flex-1" />
         <span className="text-[length:var(--step-0)] font-semibold tabular-nums text-white">{config.showClock ? "17:30" : ""}</span>
         <div className="flex-1" />
       </div>
@@ -118,11 +113,7 @@ export const NotchSettingsTab: React.FC = () => {
     }, 150);
   }, []);
 
-  const [hexText, setHexText] = useState(draft.bodyColor ?? "");
-  useEffect(() => setHexText(draft.bodyColor ?? ""), [draft.bodyColor]);
-
   const [appliedMood, setAppliedMood] = useState<MascotMood | null>(() => getMascotBaseMood());
-  const previewMood: MascotMood = appliedMood ?? "idle";
   const off = !draft.enabled;
 
   const toggle = (key: keyof NotchConfig, extra?: () => void) => (checked: boolean) => {
@@ -159,7 +150,7 @@ export const NotchSettingsTab: React.FC = () => {
               )}
             </div>
             <div className="p-6 md:w-1/2 flex items-center justify-center bg-black/20">
-              <NotchPreview config={draft} mood={previewMood} />
+              <NotchPreview config={draft} />
             </div>
           </div>
         </div>
@@ -257,9 +248,9 @@ export const NotchSettingsTab: React.FC = () => {
           </Row>
         </Card>
 
-        <Card title="Pherie">
+        <Card title="Pherie" hint="A Pherie fica no topo do hub, ao lado do relógio. A notch mostra só informações.">
           <Row
-            title="Mostrar a Pherie"
+            title="Mostrar a Pherie no hub"
             action={<Switch checked={draft.showMascot} onCheckedChange={toggle("showMascot")} disabled={off} />}
           />
           <Row
@@ -275,68 +266,49 @@ export const NotchSettingsTab: React.FC = () => {
             }
           />
 
-          <div className="mt-5">
-            <div className="text-[length:var(--step-0)] font-medium text-[var(--ink)] mb-2.5">Cor do corpo</div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              {NOTCH_BODY_PRESETS.map(({ hex, label }) => {
-                const selected = draft.bodyColor === hex;
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    title={label}
-                    aria-label={label}
-                    aria-pressed={selected}
-                    onClick={() => {
-                      update({ bodyColor: hex });
-                      playSound("hover");
-                    }}
-                    className={cn(
-                      "h-8 w-8 rounded-full border-2 transition cursor-pointer",
-                      selected ? "border-white scale-110 shadow-lg shadow-white/10" : "border-transparent hover:scale-105",
-                    )}
-                    style={hex ? { backgroundColor: hex } : { backgroundImage: "linear-gradient(#34343a,#16161a)" }}
-                  />
-                );
-              })}
-              <label
-                title="Cor personalizada"
-                className="relative h-8 w-8 rounded-full border-2 border-white/25 cursor-pointer overflow-hidden hover:scale-105 transition-transform"
-                style={{ backgroundImage: "conic-gradient(#e8483f,#f0b429,#3ecf8e,#3b93f0,#8b5cf6,#e152b0,#e8483f)" }}
-              >
-                <input
-                  type="color"
-                  aria-label="Cor personalizada"
-                  value={draft.bodyColor ?? "#3b93f0"}
-                  onChange={(e) => update({ bodyColor: normalizeHex(e.target.value, null) })}
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        </Card>
+
+        <Card title="Widgets" hint="Aparecem na aba Início ao abrir a notch. A música surge sozinha quando algo toca.">
+          {NOTCH_WIDGET_OPTIONS.map(({ id, label, description }, i) => (
+            <Row
+              key={id}
+              hasBorder={i < NOTCH_WIDGET_OPTIONS.length - 1 || draft.widgets.includes("weather")}
+              title={label}
+              description={description}
+              action={
+                <Switch
+                  checked={draft.widgets.includes(id)}
+                  onCheckedChange={(checked) =>
+                    update({ widgets: checked ? [...draft.widgets, id] : draft.widgets.filter((w) => w !== id) })
+                  }
+                  disabled={off}
                 />
-              </label>
-              <input
-                type="text"
-                inputMode="text"
-                spellCheck={false}
-                placeholder="#RRGGBB"
-                value={hexText}
-                onChange={(e) => {
-                  const text = e.target.value;
-                  setHexText(text);
-                  const hex = normalizeHex(text, null);
-                  if (hex) update({ bodyColor: hex });
-                  else if (text.trim() === "") update({ bodyColor: null });
-                }}
-                className="h-8 w-[96px] rounded-lg border border-white/10 bg-white/[0.04] px-2.5 font-mono text-[length:var(--step-0)] text-[var(--ink)] outline-none focus:border-white/30"
-              />
-            </div>
-            <p className="mt-2 text-[length:var(--step-0)] text-[var(--ink-faint)]">
-              O rosto e o fone se ajustam sozinhos para continuar legíveis em qualquer cor.
-            </p>
-          </div>
+              }
+            />
+          ))}
+          {draft.widgets.includes("weather") && (
+            <Row
+              hasBorder={false}
+              title="Cidade do clima"
+              description="Só o nome é enviado ao Open-Meteo; o app não usa GPS nem o seu IP."
+              action={
+                <input
+                  type="text"
+                  value={draft.weatherCity}
+                  maxLength={MAX_WEATHER_CITY_LENGTH}
+                  placeholder="Ex.: Recife"
+                  disabled={off}
+                  onChange={(e) => update({ weatherCity: e.target.value })}
+                  className="h-9 w-[180px] rounded-lg border border-white/10 bg-white/[0.04] px-3 text-[length:var(--step-0)] text-[var(--ink)] outline-none focus:border-white/30 disabled:opacity-40"
+                />
+              }
+            />
+          )}
         </Card>
 
         <Card
           title="Expressões da Pherie"
-          hint="Clique em uma expressão para aplicar no mascote do notch. Passe o mouse sobre o Pherie para animá-lo."
+          hint="Clique em uma expressão para aplicar na Pherie do hub. Passe o mouse sobre ela para animá-la."
         >
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
             <button
@@ -374,14 +346,14 @@ export const NotchSettingsTab: React.FC = () => {
                 )}
                 title={label}
               >
-                <HoverMascot size={40} mood={id} bodyColor={draft.bodyColor} shape={draft.shape} />
+                <HoverMascot size={40} mood={id} />
                 <span className="text-[length:var(--step-0)] font-medium text-[var(--ink-muted)] leading-none">{label}</span>
               </button>
             ))}
           </div>
         </Card>
 
-        <Card title="Visual avançado" hint="Chapéu, itens, balão de fala e o estilo do notch (cantos, brilho, opacidade).">
+        <Card title="Estilo do notch" hint="Cantos, brilho e opacidade do notch.">
           <MascotCustomizer />
         </Card>
 

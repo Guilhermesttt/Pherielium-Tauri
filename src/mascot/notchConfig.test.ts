@@ -94,4 +94,22 @@ describe("avisos do notch (mutedEvents e eventDurationScale)", () => {
     expect(notchConfigsEqual(a, { ...DEFAULT_NOTCH_CONFIG, mutedEvents: ["welcome" as const] })).toBe(true);
     expect(notchConfigsEqual(a, DEFAULT_NOTCH_CONFIG)).toBe(false);
   });
+
+  it("widgets: descarta ids inválidos e repetidos, e aceita lista vazia", () => {
+    const cfg = sanitizeNotchConfig({ widgets: ["calendar", "lixo", "calendar", "weather", 3] });
+    expect(cfg.widgets).toEqual(["calendar", "weather"]);
+    expect(sanitizeNotchConfig({ widgets: [] }).widgets).toEqual([]);
+    expect(sanitizeNotchConfig({ widgets: "calendar" }).widgets).toEqual(DEFAULT_NOTCH_CONFIG.widgets);
+  });
+
+  it("cidade do clima: apara espaços e limita o tamanho", () => {
+    expect(sanitizeNotchConfig({ weatherCity: "  Recife " }).weatherCity).toBe("Recife");
+    expect(sanitizeNotchConfig({ weatherCity: "x".repeat(500) }).weatherCity).toHaveLength(80);
+    expect(sanitizeNotchConfig({ weatherCity: 7 }).weatherCity).toBe("");
+  });
+
+  it("notchConfigsEqual enxerga mudança na lista de widgets", () => {
+    expect(notchConfigsEqual(DEFAULT_NOTCH_CONFIG, { ...DEFAULT_NOTCH_CONFIG, widgets: ["calendar"] })).toBe(false);
+    expect(notchConfigsEqual(DEFAULT_NOTCH_CONFIG, { ...DEFAULT_NOTCH_CONFIG, widgets: [...DEFAULT_NOTCH_CONFIG.widgets] })).toBe(true);
+  });
 });
