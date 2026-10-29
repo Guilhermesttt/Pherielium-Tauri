@@ -26,6 +26,8 @@ import {
   playHapticPattern,
 } from "../../context/GamepadContext";
 import { ControllerButtonGlyph } from "../ui/ControllerButtonGlyph";
+import { LibraryFilterPanel } from "./LibraryFilterPanel";
+import type { LibraryFilters } from "../LibraryFilterModal";
 
 export interface PlatformSelectorModalProps {
   isOpen: boolean;
@@ -35,6 +37,9 @@ export interface PlatformSelectorModalProps {
   games: Game[];
   playSound?: (sound: SoundEffectType) => void;
   openedViaShortcut?: boolean;
+  /** Filtros da biblioteca (favoritos, conquistas, gêneros, ordem): vivem no mesmo painel da plataforma. */
+  filters?: LibraryFilters;
+  onFiltersChange?: (filters: LibraryFilters) => void;
 }
 
 export interface PlatformDefinition {
@@ -230,6 +235,8 @@ export const PlatformSelectorModal: React.FC<PlatformSelectorModalProps> = ({
   games,
   playSound,
   openedViaShortcut = false,
+  filters,
+  onFiltersChange,
 }) => {
   const items: WheelCarouselItem[] = useMemo(() => {
     return PLATFORM_DEFINITIONS.map((def) => {
@@ -403,6 +410,7 @@ export const PlatformSelectorModal: React.FC<PlatformSelectorModalProps> = ({
     if (!isOpen) return;
 
     const handleWheel = (e: WheelEvent) => {
+      if ((e.target as Element | null)?.closest?.("[data-filter-panel]")) return;
       e.preventDefault();
       e.stopPropagation();
 
@@ -455,6 +463,20 @@ export const PlatformSelectorModal: React.FC<PlatformSelectorModalProps> = ({
             <X className="h-4 w-4" />
           </button>
 
+          {/* Filtros: coluna própria na borda direita, fora da área da roda */}
+          {filters && onFiltersChange && (
+            <motion.div
+              initial={{ x: 80, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 80, opacity: 0 }}
+              transition={{ type: "spring", bounce: 0, duration: 0.4, delay: 0.05 }}
+              onClick={(e) => e.stopPropagation()}
+              className="absolute right-8 top-1/2 z-20 -translate-y-1/2 md:right-16 pointer-events-auto"
+            >
+              <LibraryFilterPanel games={games} filters={filters} onChange={onFiltersChange} playSound={playSound} />
+            </motion.div>
+          )}
+
           {/* Left-docked drawer sliding in from left to right */}
           <motion.div
             initial={{ x: -200, opacity: 0 }}
@@ -467,7 +489,7 @@ export const PlatformSelectorModal: React.FC<PlatformSelectorModalProps> = ({
             {/* Header tag */}
             <div className="absolute top-8 left-8 md:left-16 z-20 flex items-center gap-2">
               <span className="text-xs font-bold tracking-widest text-[var(--ink-faint)] uppercase font-display">
-                Filtrar por Plataforma
+                Plataforma e filtros
               </span>
             </div>
 
@@ -529,7 +551,7 @@ export const PlatformSelectorModal: React.FC<PlatformSelectorModalProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-2.5 text-[var(--ink-faint)]">
-                  <span>Gire o scroll para navegar</span>
+                  <span>Gire o scroll para trocar de plataforma</span>
                   {!openedViaShortcut ? (
                     <>
                       <span className="text-[var(--ink-faint)]">•</span>

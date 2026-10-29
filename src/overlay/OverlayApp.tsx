@@ -63,6 +63,7 @@ import { getOverlayThemeTokens } from "../constants/overlayTheme";
 import { resolveOverlayCallPhase } from "./overlayCallPhase";
 import { presenceLabel } from "../services/presenceStatus";
 import { DesktopNotch, NotchIconButton, NOTCH_SPRING, SectionLabel } from "../components/notch/DesktopNotch";
+import { buildNotchGameTab } from "../components/notch/gameTabData";
 import { Avatar } from "./components/panel/Avatar";
 import { PanelRow } from "./components/panel/PanelRow";
 import { PillButton } from "./components/panel/PillButton";
@@ -453,6 +454,14 @@ const OverlayApp: React.FC = () => {
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
+  /**
+   * Som de cada conquista que está na fila do notch, por id. O notch mostra uma de cada vez; tocar o
+   * som na chegada fazia várias conquistas seguidas tocarem todas juntas. Agora cada som sai quando
+   * a sua conquista aparece (`onEventShown`).
+   */
+  const pendingAchievementSounds = useRef(
+    new Map<string, { sound: "unlock" | "unlockGold" | "unlockPlatinum"; theme: string; volume: number }>(),
+  );
   const panelDataRef = useRef<CommandPanelState>(panelData);
   useEffect(() => {
     panelDataRef.current = panelData;
@@ -804,17 +813,23 @@ const OverlayApp: React.FC = () => {
               Number(localStorage.getItem("checkpoint_achievement_volume_global")) / 100) ||
             0.5;
 
-      playOverlaySound(
-        tier === "platinum" ? "unlockPlatinum" : tier === "gold" ? "unlockGold" : "unlock",
-        activeSoundTheme,
-        activeSoundVolume,
-      );
+      const unlockSound = tier === "platinum" ? "unlockPlatinum" : tier === "gold" ? "unlockGold" : "unlock";
+      // Notch ligado: o som fica guardado e toca quando a conquista aparecer na vez dela na fila.
+      // Notch desligado: toca já, junto do cartão do overlay.
+      if (notchEnabledRef.current) {
+        const pending = pendingAchievementSounds.current;
+        if (pending.size >= 60) pending.delete(pending.keys().next().value as string);
+        pending.set(toast.id, { sound: unlockSound, theme: activeSoundTheme, volume: activeSoundVolume });
+      } else {
+        playOverlaySound(unlockSound, activeSoundTheme, activeSoundVolume);
+      }
       // Notch ligado: ele avisa (com a Pherie reagindo); o cartão grande fica só para ouro/platina
       // e para o teste de pré-visualização.
       // Notch ligado: ele abre inteiro revelando a conquista (imagem, nome, descrição, tier) e
       // substitui o cartão do overlay em todos os tiers.
       if (notchEnabledRef.current) {
         announceNotchEvent({
+          id: toast.id,
           kind: "achievement",
           title: toast.title,
           description: toast.description || undefined,
@@ -1489,6 +1504,18 @@ const OverlayApp: React.FC = () => {
   const notchGameElapsed = Number.isFinite(sessionStartMs)
     ? Math.max(0, Math.floor((nowMs - sessionStartMs) / 1000))
     : 0;
+  const notchGameTab = React.useMemo(
+    () =>
+      buildNotchGameTab({
+        title: notchGameTitle,
+        art: gameArt,
+        achievements: achievementList,
+        unlocked: unlockedCount,
+        total: totalCount,
+        friends: panelData.friends || [],
+      }),
+    [notchGameTitle, gameArt, achievementList, unlockedCount, totalCount, panelData.friends],
+  );
   const progressPercent = totalCount > 0 ? Math.round((unlockedCount / totalCount) * 100) : 0;
   const onlineFriends = (panelData.friends || []).filter((f: any) => {
     const st = String(f.status || "").toLowerCase();
@@ -1716,6 +1743,13 @@ const OverlayApp: React.FC = () => {
         onOverlayOpenCall={() => (window as any).achievementOverlay?.panelAction?.({ kind: "voice-open-hub" })}
         activeGameTitle={notchGameTitle}
         activeGameElapsedSeconds={notchGameElapsed}
+        gameTab={notchGameTab}
+        onEventShown={(event) => {
+          const pending = pendingAchievementSounds.current.get(event.id);
+          if (!pending) return;
+          pendingAchievementSounds.current.delete(event.id);
+          playOverlaySound(pending.sound, pending.theme, pending.volume);
+        }}
       />
       )}
 

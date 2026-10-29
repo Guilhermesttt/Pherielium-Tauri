@@ -290,6 +290,8 @@ pub fn start_game_watch(app: AppHandle) {
             handoff_grace_ticks = 0;
             crate::commands::achievement_watcher::stop_all_achievement_watchers(&app);
             reveal_main_window(&app);
+            // O jogo acabou: devolve o controle físico (o motor o escondeu do jogo).
+            std::thread::spawn(crate::commands::pad_engine::shutdown);
             let _ = app.emit("game-watch:ended", json!({ "executable": target }));
         }
     });

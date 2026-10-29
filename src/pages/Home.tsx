@@ -243,9 +243,6 @@ const ChatModal = React.lazy(() =>
     default: m.ChatModal,
   })),
 );
-const LibraryFilterModal = React.lazy(
-  () => import("../components/LibraryFilterModal"),
-);
 const CommandPalette = React.lazy(() => import("../components/CommandPalette"));
 const WelcomeModal = React.lazy(() => import("../components/WelcomeModal"));
 
@@ -449,7 +446,6 @@ const Home: React.FC = () => {
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("general");
   // Jogo cujo perfil de controle deve abrir selecionado em Configurações › Controle.
   const [controllerSettingsGameId, setControllerSettingsGameId] = useState<string | undefined>(undefined);
-  const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [isPlatformModalOpen, setIsPlatformModalOpen] = useState(false);
   const [openedViaShortcut, setOpenedViaShortcut] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -2353,7 +2349,7 @@ const Home: React.FC = () => {
   useGamepadButton("R2", () => {
     if (isAnyModalOpen || searchOpen) return;
     if (isSystemCategory) return;
-    setFilterModalOpen(true);
+    setIsPlatformModalOpen(true);
     playSound("showModal");
     playHapticPattern("action");
   });
@@ -3584,7 +3580,7 @@ const Home: React.FC = () => {
           searchOpen={searchOpen}
           onToggleSearch={setSearchOpen}
           onOpenAddGame={() => openAddGameModal()}
-          onOpenFilterModal={() => setFilterModalOpen(true)}
+          onOpenFilterModal={() => setIsPlatformModalOpen(true)}
           onSyncLibraries={handleSyncLibraries}
           isSyncingLibraries={isAnySyncing}
           onSyncSteam={
@@ -4104,7 +4100,7 @@ const Home: React.FC = () => {
                       playHapticPattern("action");
                     }}
                     onOpenFilters={() => {
-                      setFilterModalOpen(true);
+                      setIsPlatformModalOpen(true);
                       playSound("select");
                       playHapticPattern("action");
                     }}
@@ -4538,23 +4534,11 @@ const Home: React.FC = () => {
         }}
       />
 
-      {/* Library Filter Modal */}
-      <React.Suspense fallback={null}>
-        <LibraryFilterModal
-          isOpen={filterModalOpen}
-          onClose={() => setFilterModalOpen(false)}
-          onApply={(filters) => {
-            setLibraryFilters(filters);
-            setFilterModalOpen(false);
-          }}
-          games={games}
-          currentFilters={libraryFilters}
-        />
-      </React.Suspense>
-
       {/* Platform Selector Modal / Drawer */}
       <PlatformSelectorModal
         isOpen={isPlatformModalOpen}
+        filters={libraryFilters}
+        onFiltersChange={setLibraryFilters}
         onClose={() => {
           setIsPlatformModalOpen(false);
           setOpenedViaShortcut(false);

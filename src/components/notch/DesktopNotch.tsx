@@ -38,19 +38,23 @@ import { RetroBubble } from "./RetroBubble";
 import { ControllerFlashBar, FLASH_MASCOT_MOOD, useControllerFlash } from "./ControllerFlashBar";
 import { CONTROLLER_FLASH_WIDTH } from "./controllerFlash";
 import { NotchEventBar, useNotchEvent } from "./NotchEventBar";
-import { NOTCH_EVENT_MOOD, NOTCH_EVENT_WIDTH, notchEventWaves } from "./notchEvent";
+import { NOTCH_EVENT_MOOD, NOTCH_EVENT_WIDTH, notchEventWaves, type NotchEvent } from "./notchEvent";
 import { AchievementReveal } from "./AchievementReveal";
 import { achievementBoxShadow, tierStyle } from "./achievementTier";
 import { subscribeTicker } from "../../mascot/ticker";
 import { useSituationMood } from "../../mascot/useSituationMood";
 import { MusicWaveform } from "./MusicWaveform";
 import { MediaProgress } from "./live/MediaProgress";
+import { GameTab } from "./live/GameTab";
+import type { NotchGameTabData } from "./gameTabData";
+import { CalendarWidget, LyricsWidget, WeatherWidget } from "./widgets/NotchWidgets";
+import { useNotchLyrics } from "./widgets/useNotchWidgetData";
+import { useCoverColor } from "./widgets/coverColor";
 import { CallIncomingBar } from "./live/CallIncomingBar";
 import { VoiceBars } from "./live/VoiceBars";
 import { LIVE_WIDTH, resolveLiveActivity } from "./live/liveActivity";
 import { ControllerTab } from "./live/ControllerTab";
 import { playPherieVoice, voiceForMoodChange } from "./pherieVoice";
-import { useNotchPeek } from "./useNotchPeek";
 import { useControllerState } from "./controllerState";
 import { parseTimeline, type MediaTimeline } from "./live/progressMath";
 import {
@@ -92,6 +96,13 @@ export interface DesktopNotchProps {
   soundVolume?: number;
   /** Tema sonoro do launcher: os sons do notch seguem o mesmo pacote da interface. */
   soundTheme?: string;
+  /**
+   * Chamado uma vez quando um aviso passa a ser o da vez na tela (não quando chega à fila). É o
+   * momento certo de tocar o som da conquista: com várias na fila, cada uma toca na sua vez.
+   */
+  onEventShown?: (event: NotchEvent) => void;
+  /** Dados da aba "Jogo" (conquistas e amigos jogando); a aba só existe com um jogo em andamento. */
+  gameTab?: NotchGameTabData | null;
 }
 
 export interface DetectedMediaState {
@@ -129,7 +140,8 @@ export function resolveMascotMood(params: {
 
 /** Preto "de notch": levemente quente para não parecer um buraco no wallpaper. */
 export const NOTCH_SPRING = OPEN_SPRING;
-const NOTCH_EXPANDED_WIDTH = 448;
+/** Larga o bastante para música + letra lado a lado (como nos widgets do Notchify). */
+const NOTCH_EXPANDED_WIDTH = 560;
 /**
  * Altura da barra do notch. Exportada porque o hub precisa reservar esse espaço
  * no topo mesmo quando não é ele quem desenha o notch (em Tauri quem desenha é
@@ -407,12 +419,17 @@ const CARD_WASH = {
  */
 export const NotchCard: React.FC<{
   tone?: keyof typeof CARD_WASH;
+  /** "r, g, b" da capa da música: troca o brilho de status por um degradê nessa cor. */
+  rgb?: string | null;
   children: React.ReactNode;
-}> = ({ tone = "neutral", children }) => (
+}> = ({ tone = "neutral", rgb, children }) => (
   <section
     className="overflow-hidden rounded-[24px] bg-[#171717] p-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]"
     style={{
-      backgroundImage: `radial-gradient(120% 140% at 50% 130%, rgba(${CARD_WASH[tone]}, ${tone === "neutral" ? 0.08 : 0.38}) 0%, transparent 62%)`,
+      backgroundImage: rgb
+        ? `linear-gradient(150deg, rgba(${rgb}, 0.62) 0%, rgba(${rgb}, 0.2) 100%)`
+        : `radial-gradient(120% 140% at 50% 130%, rgba(${CARD_WASH[tone]}, ${tone === "neutral" ? 0.08 : 0.38}) 0%, transparent 62%)`,
+      transition: "background-image 400ms ease",
     }}
   >
     {children}
@@ -434,19 +451,22 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   config: configProp,
   soundVolume,
   soundTheme,
+  onEventShown,
+  gameTab = null,
 }) => {
   const voiceCall = useVoiceCallContext();
   // Configuração viva (Configurações → Mascote e Notch). O overlay não tem
   // PreferencesProvider; ela chega de overlay-prefs.json + evento `overlay:prefs`.
   const appearance = useOverlayAppearance();
-  const config = configProp ?? appearance.config;
+  const storedConfig = configProp ?? appearance.config;
+  // A Pherie mora no hub do launcher; a notch fica só com as informações. O ajuste "Mostrar a Pherie"
+  // continua valendo, mas para o hub.
+  const config = useMemo(() => ({ ...storedConfig, showMascot: false }), [storedConfig]);
   // Estilo = tema visual do launcher (cyberpunk, ps5...) + ajustes do usuário.
   const notchStyle = useMemo(
     () => resolveNotchStyle(appearance.visualTheme, config),
     [appearance.visualTheme, config],
   );
-  const mascotBodyColor = config.bodyColor;
-  const mascotShape = config.shape;
 
   // Sons de interação do notch (cada ação tem o seu; mutar/desligar tocam no hook de voz).
   const notchSound = useCallback(
@@ -613,6 +633,32 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     // pode apagar a música: só considera "sem mídia" depois de vários resultados vazios seguidos.
     let misses = 0;
     const MISSES_TO_CLEAR = 3;
+    // A capa é pesada: pedida uma vez por faixa (com algumas novas tentativas, pois alguns players
+    // publicam o título antes da imagem) e guardada aqui, não a cada consulta de 1,5 s.
+    const THUMBNAIL_ATTEMPTS = 4;
+    let thumbKey = "";
+    let thumbUrl = "";
+    let thumbAttempts = 0;
+    let thumbPending = false;
+    const ensureThumbnail = (key: string) => {
+      if (key !== thumbKey) {
+        thumbKey = key;
+        thumbUrl = "";
+        thumbAttempts = 0;
+      }
+      if (thumbUrl || thumbPending || thumbAttempts >= THUMBNAIL_ATTEMPTS) return;
+      thumbPending = true;
+      thumbAttempts += 1;
+      void import("@tauri-apps/api/core")
+        .then(({ invoke }) => invoke<string>("system_get_media_thumbnail"))
+        .then((url) => {
+          if (key === thumbKey && url) thumbUrl = url;
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          thumbPending = false;
+        });
+    };
     const clearIfStillEmpty = () => {
       misses += 1;
       if (active && misses >= MISSES_TO_CLEAR) {
@@ -648,13 +694,14 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             }
 
             misses = 0;
+            ensureThumbnail(`${info.title}\u0000${info.artist ?? ""}`);
             timelineRef.current = parseTimeline(info, Boolean(info.isPlaying), Date.now());
             applyMedia({
               hasMedia: true,
               type: info.playbackType === "video" ? "video" : "music",
               title: info.title,
               artist: info.artist || "Reproduzindo no PC",
-              thumbnail: info.thumbnail ?? "",
+              thumbnail: thumbUrl || info.thumbnail || "",
               isPlaying: Boolean(info.isPlaying),
               sourceApp: info.sourceApp,
             });
@@ -873,7 +920,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   const [dizzy, setDizzy] = useState(false);
   const dizzyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [overloaded, setOverloaded] = useState(false);
-  const [tab, setTab] = useState<"home" | "controller">("home");
+  const [tab, setTab] = useState<"home" | "controller" | "game">("home");
   const controller = useControllerState();
   // Curiosidade: cursor chegou ao topo, na altura do notch.
   const [curious, setCurious] = useState(false);
@@ -943,6 +990,15 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     durationScale: config.eventDurationScale,
   });
   const isAchievement = notchEvent?.kind === "achievement";
+  // avisa o dono quando um aviso entra em cena (uma vez por id), para sincronizar o som com a tela
+  const shownEventId = useRef<string | null>(null);
+  const onEventShownRef = useRef(onEventShown);
+  onEventShownRef.current = onEventShown;
+  useEffect(() => {
+    if (!notchEvent || shownEventId.current === notchEvent.id) return;
+    shownEventId.current = notchEvent.id;
+    onEventShownRef.current?.(notchEvent);
+  }, [notchEvent]);
 
   // Chamada recebendo (janela principal): o notch mostra quem liga com atender/recusar
   // Convite pendente (flag de convite como notificação): vira a mesma barra de atender/recusar, sem toque. `pendingInvite` só existe ocioso.
@@ -1037,14 +1093,6 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   // (inclusive em chamada — ver shouldAutoHide).
   const isHiddenByWindow = autoHideActive && !isRevealed && !isHovered;
 
-  // Notch escondido (outro app em foco): a Pherie espia de vez em quando na borda de cima,
-  // como quem diz "olha eu aqui!". Não em chamada, nem em jogo (aí ela não atrapalha).
-  const peeking = useNotchPeek(
-    isHiddenByWindow && config.showMascot && !isCallActive && !activeGameTitle && !incomingInvite,
-  );
-  useEffect(() => {
-    if (peeking && config.sounds) playPherieVoice("peek", soundVolume);
-  }, [peeking, config.sounds, soundVolume]);
 
   // Sons: abrir/fechar o painel e o notch "descendo" do auto-hide.
   const prevExpandedRef = useRef(false);
@@ -1142,7 +1190,16 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     setIsExpanded(true);
   };
 
-  const hasAnySection = isCallActive || Boolean(activeGameTitle) || mediaState.hasMedia;
+  // cor da capa: tinge o cartão da música e o da letra (sem capa, mantém o rosa de antes)
+  const coverRgb = useCoverColor(mediaState.hasMedia ? mediaState.thumbnail : "");
+  const showLyricsWidget = config.widgets.includes("lyrics") && mediaState.hasMedia;
+  // Busca a letra assim que a música muda, com a notch ainda fechada: ao abrir ela já está no cache
+  // (antes só começava a buscar depois de abrir, e a letra demorava a aparecer).
+  useNotchLyrics(mediaState.title, mediaState.artist, timelineRef.current?.durationSeconds ?? null, showLyricsWidget);
+  const showCalendarWidget = config.widgets.includes("calendar");
+  const showWeatherWidget = config.widgets.includes("weather");
+  const hasWidgets = showLyricsWidget || showCalendarWidget || showWeatherWidget;
+  const hasAnySection = isCallActive || Boolean(activeGameTitle) || mediaState.hasMedia || hasWidgets;
   const sourceLabel = prettySourceApp(mediaState.sourceApp);
 
   // Quem "hospeda" o mascote quando o painel abre (a barra cede o lugar): a chamada,
@@ -1200,10 +1257,6 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         size={size}
         mood={mascotMood}
         isHovered={isHovered}
-        bodyColor={mascotBodyColor}
-        shape={mascotShape}
-        hat={config.hat}
-        items={config.items}
         inCall={isCallActive}
         isMusicPlaying={isPcMediaPlaying}
         ringing={Boolean(incomingInvite)}
@@ -1233,10 +1286,6 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         mood={opts?.mood ?? mascotMood}
         forceHeadphones={opts?.headphones}
         isHovered={isHovered}
-        bodyColor={mascotBodyColor}
-        shape={mascotShape}
-        hat={config.hat}
-        items={config.items}
         inCall={opts?.mood ? false : isCallActive}
         // com humor forçado (aba Controle) ela não dança com a música: só segura o controle
         isMusicPlaying={opts?.mood ? false : isPcMediaPlaying}
@@ -1284,7 +1333,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     // Expandido (inclusive em chamada): sempre as abas, senão a página do controle fica inacessível.
     if (isExpanded) {
       // cabeçalho estilo Coucou: abas só com ícone à esquerda, atalhos à direita
-      const tabBtn = (id: "home" | "controller", label: string, icon: React.ReactNode) => (
+      const tabBtn = (id: "home" | "controller" | "game", label: string, icon: React.ReactNode) => (
         <button
           key={id}
           type="button"
@@ -1308,6 +1357,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
           <div className="flex items-center gap-1" role="tablist">
             {tabBtn("home", "Início", <Home size={17} />)}
             {tabBtn("controller", "Controle", <Gamepad2 size={17} />)}
+            {gameTab && activeGameTitle && tabBtn("game", "Jogo", <Trophy size={17} />)}
           </div>
           <div className="flex items-center gap-1 text-white/60">
             {controller.connected && controller.battery != null && (
@@ -1395,7 +1445,18 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     }
     return (
       <>
-        <div className="flex-1 flex items-center">{barMascot(BAR_MASCOT)}</div>
+        <div className="flex-1 flex items-center">
+          {mediaState.hasMedia && mediaState.thumbnail ? (
+            <img
+              src={mediaState.thumbnail}
+              alt=""
+              draggable={false}
+              className="h-[30px] w-[30px] rounded-full object-cover shadow-[0_0_0_1.5px_rgba(255,255,255,0.18)]"
+            />
+          ) : (
+            barMascot(BAR_MASCOT)
+          )}
+        </div>
         <span className="text-[13px] font-semibold tracking-tight text-white tabular-nums">{config.showClock ? currentTime : ""}</span>
         <div className="flex-1 flex items-center justify-end gap-2">
           {controller.connected && !isExpanded && (
@@ -1432,48 +1493,6 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         onMouseEnter={handleMouseEnter}
         onClick={openNotch}
       />
-
-      {/* Pherie espiando pela borda de cima enquanto o notch está escondido */}
-      <div className="pointer-events-none fixed left-1/2 top-0 z-[10029] -translate-x-1/2">
-        <AnimatePresence>
-          {peeking && (
-            <motion.button
-              key="pherie-peek"
-              type="button"
-              data-overlay-interactive="true"
-              data-notch-peek="true"
-              aria-label="A Pherie está espiando. Clique para mostrar o notch"
-              onClick={revealNotch}
-              initial={{ y: -64 }}
-              animate={{ y: [-64, -14, -22, -14, -22, -14] }}
-              exit={{ y: -64, transition: { duration: 0.28, ease: "easeIn" } }}
-              transition={{ duration: 3.2, times: [0, 0.12, 0.35, 0.58, 0.8, 1], ease: "easeInOut" }}
-              className="pointer-events-auto relative flex cursor-pointer items-center"
-            >
-              <GazingMascot
-                cursor={gazeCursor}
-                size={46}
-                mood="happy"
-                isHovered={false}
-                bodyColor={mascotBodyColor}
-                shape={mascotShape}
-                hat={config.hat}
-                items={config.items}
-                inCall={false}
-                isMusicPlaying={false}
-                ringing={false}
-                levelRef={voiceLevelRef}
-                muted={false}
-                mutedSpeechRef={mutedSpeechRef}
-                isSpeaking={false}
-              />
-              <span className="absolute left-full top-5 ml-1.5 whitespace-nowrap rounded-full bg-black/85 px-2.5 py-1 text-[11px] font-semibold text-white shadow-[0_6px_18px_rgba(0,0,0,0.5)]">
-                Olha eu aqui!
-              </span>
-            </motion.button>
-          )}
-        </AnimatePresence>
-      </div>
 
       <aside
         aria-label="Desktop Notch"
@@ -1563,7 +1582,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                 className="overflow-hidden"
               >
                 <div className="px-4 pb-4 pt-1">
-                  <AchievementReveal event={notchEvent} mascot={config.showMascot ? panelMascot(56) : undefined} />
+                  <AchievementReveal event={notchEvent} mascot={storedConfig.showMascot ? panelMascot(56) : undefined} />
                 </div>
               </motion.div>
             )}
@@ -1640,13 +1659,16 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                       </div>
                     </NotchCard>
                   )}
+                  {tab === "game" && gameTab && !incomingInvite && !overloaded && !dropzone.active && (
+                    <GameTab data={gameTab} elapsedSeconds={activeGameElapsedSeconds} />
+                  )}
                   {tab === "controller" && !incomingInvite && !overloaded && !dropzone.active && (
                     <ControllerTab
                       state={controller}
                       mascot={panelMascot(96, { mood: controller.connected ? "gaming" : "sad", headphones: true })}
                     />
                   )}
-                  <div className={dropzone.active || overloaded || tab === "controller" || Boolean(incomingInvite) ? "hidden" : "contents"}>
+                  <div className={dropzone.active || overloaded || tab === "controller" || (tab === "game" && Boolean(gameTab)) || Boolean(incomingInvite) ? "hidden" : "contents"}>
                   {/* ── Chamada de voz ── */}
                   {isCallActive && (
                     <NotchCard tone="green">
@@ -1711,7 +1733,8 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
                   {/* ── Multimídia do PC ── */}
                   {mediaState.hasMedia && (
-                    <NotchCard tone="pink">
+                    <div className={showLyricsWidget ? "grid grid-cols-2 items-stretch gap-3.5" : ""}>
+                    <NotchCard tone="pink" rgb={coverRgb}>
                       <SectionLabel>{sourceLabel ? `Tocando · ${sourceLabel}` : "Tocando no PC"}</SectionLabel>
                       <div className="flex items-center gap-3">
                         <div
@@ -1735,10 +1758,6 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                                   size={36}
                                   mood={mascotMood}
                                   isHovered={isHovered}
-                                  bodyColor={mascotBodyColor}
-        shape={mascotShape}
-        hat={config.hat}
-        items={config.items}
                                   isMusicPlaying={isPcMediaPlaying}
                                 />
                               </div>
@@ -1757,7 +1776,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                         <Equalizer playing={isPcMediaPlaying} height={18} />
                       </div>
                       <div className="mt-3">
-                        <MediaProgress timelineRef={timelineRef} />
+                        <MediaProgress timelineRef={timelineRef} rgb={coverRgb ?? undefined} />
                       </div>
                       <div className="mt-3 flex items-center justify-center gap-7">
                         <button
@@ -1796,6 +1815,25 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                         <MusicWaveform playing={isPcMediaPlaying} />
                       </div>
                     </NotchCard>
+                    {showLyricsWidget && (
+                      <LyricsWidget
+                        title={mediaState.title}
+                        artist={mediaState.artist}
+                        timelineRef={timelineRef}
+                        enabled={isExpanded}
+                        cover={mediaState.thumbnail}
+                        rgb={coverRgb}
+                      />
+                    )}
+                    </div>
+                  )}
+
+                  {/* ── Widgets: calendário e clima ── */}
+                  {(showCalendarWidget || showWeatherWidget) && (
+                    <div className={`grid items-stretch gap-3.5 ${showCalendarWidget && showWeatherWidget ? "grid-cols-2" : "grid-cols-1"}`}>
+                      {showCalendarWidget && <CalendarWidget />}
+                      {showWeatherWidget && <WeatherWidget city={config.weatherCity} enabled={isExpanded} />}
+                    </div>
                   )}
 
                   {/* ── Nada acontecendo ── */}

@@ -224,14 +224,40 @@ export const updateVirtualPad = (state: PadState) =>
  * Existe o motor que lê o controle físico, aplica o perfil e alimenta o pad
  * virtual enquanto o JOGO está em foco?
  *
- * Ainda não. A Web Gamepad API só reporta com a janela do launcher em foco, então
- * esse motor tem de ler o controle nativamente (Rust). Enquanto ele não existe, o
- * toggle de emulação fica travado: se deixássemos gravar `emulateXinput`, quem
- * ligasse hoje teria a emulação ativada de surpresa no dia em que o motor chegar.
- *
- * Vire para `true` junto com o motor, nunca antes.
+ * Sim: `pad_engine` (Rust) lê o controle por XInput, esconde o físico do jogo pelo HidHide e
+ * alimenta o Xbox 360 virtual (XInput, DualShock 4 e DualSense). Começa ao iniciar um jogo cujo perfil tem `emulateXinput` e
+ * termina quando o jogo fecha.
  */
-export const EMULATION_ENGINE_READY = false;
+export const EMULATION_ENGINE_READY = true;
+
+export interface PadEngineStatus {
+  running: boolean;
+  physicalSlot: number | null;
+  /** De onde vem a leitura. */
+  physicalSource: "xinput" | "dualshock4" | "dualsense" | null;
+  physicalHidden: boolean;
+}
+
+/**
+ * Liga a emulação para o jogo que vai abrir, se o perfil efetivo pedir. Devolve a mensagem de
+ * erro quando não deu (o jogo abre assim mesmo, só sem emulação) e `null` quando deu certo ou
+ * não era necessário.
+ */
+export async function startEmulationForGame(uid: string, gameId: string): Promise<string | null> {
+  try {
+    const { settings } = await resolveControllerProfile(uid, gameId);
+    if (!settings.emulateXinput) return null;
+    await invoke<void>("pad_engine_start", { settings });
+    return null;
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+}
+
+/** Desliga a emulação e devolve o controle físico. Seguro de chamar sem ela ligada. */
+export const stopEmulation = () => invoke<void>("pad_engine_stop");
+
+export const getPadEngineStatus = () => invoke<PadEngineStatus>("pad_engine_status");
 
 export type EmulationBlock = "unknown" | "vigem" | "hidhide" | "engine";
 
@@ -252,5 +278,5 @@ export const EMULATION_BLOCK_HINT: Record<EmulationBlock, string> = {
   unknown: "Disponível apenas no aplicativo desktop.",
   vigem: "Precisa do ViGEmBus instalado.",
   hidhide: "Precisa do HidHide instalado.",
-  engine: "A emulação dentro do jogo chega numa próxima versão.",
+  engine: "O motor de emulação não está disponível nesta versão.",
 };

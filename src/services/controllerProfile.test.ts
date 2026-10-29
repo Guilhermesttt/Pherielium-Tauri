@@ -36,10 +36,9 @@ describe("emulationBlock", () => {
     expect(emulationBlock(drivers(true, false), true)).toBe("hidhide");
   });
 
-  it("o motor ainda não existe: o padrão tem de ser bloqueado", () => {
-    // Se este teste falhar, alguém virou a chave sem ligar o motor.
-    expect(EMULATION_ENGINE_READY).toBe(false);
-    expect(emulationBlock(drivers(true, true))).toBe("engine");
+  it("com o motor presente e os dois drivers instalados, nada bloqueia", () => {
+    expect(EMULATION_ENGINE_READY).toBe(true);
+    expect(emulationBlock(drivers(true, true))).toBeNull();
   });
 
   it("todo bloqueio tem uma mensagem", () => {

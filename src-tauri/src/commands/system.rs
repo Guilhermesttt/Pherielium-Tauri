@@ -269,86 +269,100 @@ static LAST_MEDIA_INFO: once_cell::sync::Lazy<parking_lot::Mutex<serde_json::Val
 
 #[command]
 pub async fn system_get_media_info() -> Result<serde_json::Value, String> {
-    #[cfg(target_os = "windows")]
-    {
-        use std::process::Command;
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x08000000;
-
-        let script = r#"
-Add-Type -AssemblyName System.Runtime.WindowsRuntime
-$asTaskGeneric = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object { $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1' })[0]
-Function Await-WinRt($WinRtTask, $ResultType) {
-    $asTask = $asTaskGeneric.MakeGenericMethod($ResultType)
-    $netTask = $asTask.Invoke($null, @($WinRtTask))
-    $netTask.Wait(-1) | Out-Null
-    $netTask.Result
-}
-try {
-    [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media, ContentType=WindowsRuntime] | Out-Null
-    $asyncOp = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()
-    $mgr = Await-WinRt $asyncOp ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])
-    $sessions = $mgr.GetSessions()
-    $found = $null
-    foreach ($session in $sessions) {
-        $info = $session.GetPlaybackInfo()
-        $propsAsync = $session.TryGetMediaPropertiesAsync()
-        $props = Await-WinRt $propsAsync ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
-        $title = $props.Title
-        if ($title -like "*PHERIELIUM*" -or $title -like "*PHELIERIUM*" -or $session.SourceAppId -like "*pherielium*") {
-            continue
-        }
-        if ($title) {
-            $status = $info.PlaybackStatus.ToString()
-            $playbackType = $props.PlaybackType.ToString()
-            $isPlay = ($status -eq "Playing")
-            $posSec = 0.0; $durSec = 0.0; $updMs = 0
-            try {
-                $tl = $session.GetTimelineProperties()
-                $durSec = [math]::Max(0.0, $tl.EndTime.TotalSeconds - $tl.StartTime.TotalSeconds)
-                $posSec = [math]::Max(0.0, $tl.Position.TotalSeconds - $tl.StartTime.TotalSeconds)
-                $updMs = $tl.LastUpdatedTime.ToUnixTimeMilliseconds()
-            } catch {}
-            $item = [PSCustomObject]@{
-                hasMedia = $true
-                title = $title
-                artist = $props.Artist
-                isPlaying = $isPlay
-                playbackType = if ($playbackType -eq "Video") { "video" } else { "music" }
-                positionSeconds = $posSec
-                durationSeconds = $durSec
-                updatedAtMs = $updMs
-            }
-            if ($isPlay) { $found = $item; break }
-            elseif ($null -eq $found) { $found = $item }
-        }
+    // Chamada direta ao GSMTC (milissegundos); a leitura espera o WinRT, então roda fora do runtime.
+    let info = tokio::task::spawn_blocking(super::media_session::info)
+        .await
+        .map_err(|e| e.to_string())?;
+    if info["hasMedia"] == true {
+        *LAST_MEDIA_INFO.lock() = info.clone();
     }
-    if ($found) { $found | ConvertTo-Json }
-    else { [PSCustomObject]@{ hasMedia = $false; isPlaying = $false } | ConvertTo-Json }
-} catch {
-    [PSCustomObject]@{ hasMedia = $false; isPlaying = $false } | ConvertTo-Json
+    Ok(info)
 }
-"#;
 
-        let output = tokio::task::spawn_blocking(move || {
-            Command::new("powershell")
-                .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script])
-                .creation_flags(CREATE_NO_WINDOW)
-                .output()
-        }).await.map_err(|e| e.to_string())?.map_err(|e| e.to_string())?;
+/// Capa grande demais não vale a pena trafegar em base64 pelo IPC a cada troca de faixa.
+const MAX_THUMBNAIL_BASE64_LEN: usize = 3_000_000;
 
-        if output.status.success() {
-            let text = String::from_utf8_lossy(&output.stdout);
-            if let Ok(val) = serde_json::from_str::<serde_json::Value>(&text) {
-                let mut lock = LAST_MEDIA_INFO.lock();
-                *lock = val.clone();
-                return Ok(val);
-            }
-        }
-        return Ok(LAST_MEDIA_INFO.lock().clone());
+/// Transforma a capa em base64 em `data:` URL, reconhecendo o formato pelos
+/// primeiros bytes (o Windows entrega JPEG, PNG, WebP ou GIF conforme o app). `None` = vazio,
+/// grande demais ou formato desconhecido.
+fn thumbnail_data_url(base64: &str) -> Option<String> {
+    let b64 = base64.trim();
+    if b64.is_empty() || b64.len() > MAX_THUMBNAIL_BASE64_LEN {
+        return None;
     }
-    #[allow(unreachable_code)]
-    Ok(serde_json::json!({ "hasMedia": false, "isPlaying": false }))
+    let mime = if b64.starts_with("/9j/") {
+        "image/jpeg"
+    } else if b64.starts_with("iVBOR") {
+        "image/png"
+    } else if b64.starts_with("UklGR") {
+        "image/webp"
+    } else if b64.starts_with("R0lGOD") {
+        "image/gif"
+    } else {
+        return None;
+    };
+    // só caracteres de base64: nada de texto de erro do PowerShell virando URL
+    if !b64.bytes().all(|c| c.is_ascii_alphanumeric() || matches!(c, b'+' | b'/' | b'=')) {
+        return None;
+    }
+    Some(format!("data:{mime};base64,{b64}"))
+}
+
+/// Capa (ou miniatura do vídeo) da mídia em reprodução, como `data:` URL; vazio se o app não fornece.
+///
+/// Fica fora de `system_get_media_info` porque é pesada: o front pede uma vez por faixa, e não a cada
+/// consulta de 1,5 s. Escolhe a mesma sessão que aquela (a que está tocando, senão a primeira).
+#[command]
+pub async fn system_get_media_thumbnail() -> Result<String, String> {
+    use base64::Engine;
+    let bytes = tokio::task::spawn_blocking(super::media_session::thumbnail_bytes)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(bytes
+        .and_then(|b| thumbnail_data_url(&base64::engine::general_purpose::STANDARD.encode(b)))
+        .unwrap_or_default())
+}
+
+#[cfg(test)]
+mod thumbnail_tests {
+    use super::thumbnail_data_url;
+
+    #[test]
+    fn recognises_image_formats_by_their_first_bytes() {
+        assert_eq!(thumbnail_data_url("/9j/4AAQ").as_deref(), Some("data:image/jpeg;base64,/9j/4AAQ"));
+        assert!(thumbnail_data_url("iVBORw0KGgo=").unwrap().starts_with("data:image/png;"));
+        assert!(thumbnail_data_url("UklGRiQAAAB").unwrap().starts_with("data:image/webp;"));
+        assert!(thumbnail_data_url("R0lGODlh").unwrap().starts_with("data:image/gif;"));
+    }
+
+    #[test]
+    fn rejects_empty_unknown_and_non_base64_output() {
+        assert!(thumbnail_data_url("").is_none());
+        assert!(thumbnail_data_url("  \r\n").is_none());
+        assert!(thumbnail_data_url("QUJD").is_none()); // base64 válido, mas não é imagem
+        assert!(thumbnail_data_url("/9j/ erro do powershell").is_none());
+    }
+
+    #[test]
+    fn trims_the_trailing_newline_powershell_adds() {
+        assert_eq!(thumbnail_data_url("/9j/4AAQ\r\n").as_deref(), Some("data:image/jpeg;base64,/9j/4AAQ"));
+    }
+
+    /// DIAGNÓSTICO NO HARDWARE: com algo tocando no Windows (Spotify, YouTube no navegador...), mostra
+    /// se a capa chega. `cargo test --lib thumbnail_on_this_machine -- --ignored --nocapture`
+    #[test]
+    #[ignore = "depende de uma mídia tocando nesta máquina"]
+    fn thumbnail_on_this_machine() {
+        let url = tauri::async_runtime::block_on(super::system_get_media_thumbnail()).expect("comando");
+        println!("capa: {} caracteres, começa com {:?}", url.len(), url.chars().take(40).collect::<String>());
+        assert!(!url.is_empty(), "nenhuma capa: nada tocando ou o app não fornece imagem");
+    }
+
+    #[test]
+    fn rejects_oversized_covers() {
+        let huge = format!("/9j/{}", "A".repeat(3_000_001));
+        assert!(thumbnail_data_url(&huge).is_none());
+    }
 }
 
 /// Liga ou desliga a reprodução na MESMA sessão de mídia que `system_get_media_info`
@@ -363,109 +377,51 @@ try {
 /// repetir o comando é idempotente, e o retorno diz se a sessão aceitou.
 #[command]
 pub async fn system_media_set_playing(playing: bool) -> Result<bool, String> {
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt;
-        use std::process::Command;
-        const CREATE_NO_WINDOW: u32 = 0x08000000;
-
-        // Injetado como literal booleano: o parâmetro é um `bool` do Rust, nunca
-        // texto vindo de fora.
-        let desired = if playing { "$true" } else { "$false" };
-        let script = format!(
-            r#"
-Add-Type -AssemblyName System.Runtime.WindowsRuntime
-$asTaskGeneric = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object {{ $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1' }})[0]
-Function Await-WinRt($WinRtTask, $ResultType) {{
-    $asTask = $asTaskGeneric.MakeGenericMethod($ResultType)
-    $netTask = $asTask.Invoke($null, @($WinRtTask))
-    $netTask.Wait(-1) | Out-Null
-    $netTask.Result
-}}
-$Desired = {desired}
-try {{
-    [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media, ContentType=WindowsRuntime] | Out-Null
-    $asyncOp = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()
-    $mgr = Await-WinRt $asyncOp ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])
-    $target = $null
-    foreach ($session in $mgr.GetSessions()) {{
-        $propsAsync = $session.TryGetMediaPropertiesAsync()
-        $props = Await-WinRt $propsAsync ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])
-        $title = $props.Title
-        if ($title -like "*PHERIELIUM*" -or $title -like "*PHELIERIUM*" -or $session.SourceAppId -like "*pherielium*") {{
-            continue
-        }}
-        if (-not $title) {{ continue }}
-        $status = $session.GetPlaybackInfo().PlaybackStatus.ToString()
-        if ($Desired -and $status -ne "Playing") {{ $target = $session; break }}
-        if ((-not $Desired) -and $status -eq "Playing") {{ $target = $session; break }}
-        if ($null -eq $target) {{ $target = $session }}
-    }}
-    if ($null -eq $target) {{ "false"; exit }}
-    $op = if ($Desired) {{ $target.TryPlayAsync() }} else {{ $target.TryPauseAsync() }}
-    $ok = Await-WinRt $op ([bool])
-    if ($ok) {{ "true" }} else {{ "false" }}
-}} catch {{
-    "false"
-}}
-"#
-        );
-
-        let output = tokio::task::spawn_blocking(move || {
-            Command::new("powershell")
-                .args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &script])
-                .creation_flags(CREATE_NO_WINDOW)
-                .output()
-        })
+    let accepted = tokio::task::spawn_blocking(move || super::media_session::set_playing(playing))
         .await
-        .map_err(|e| e.to_string())?
         .map_err(|e| e.to_string())?;
-
-        let text = String::from_utf8_lossy(&output.stdout);
-        return Ok(text.trim().eq_ignore_ascii_case("true"));
-    }
-    #[allow(unreachable_code)]
-    {
-        let _ = playing;
-        Ok(false)
-    }
+    Ok(accepted.unwrap_or(false))
 }
 
 #[command]
 pub async fn system_media_play_pause() -> Result<(), String> {
+    press_media_key(0xB3);
+    Ok(())
+}
+
+/// Tecla de mídia global do Windows (`VK_MEDIA_*`): vai para quem tiver o foco de mídia.
+fn press_media_key(_vk: u8) {
     #[cfg(target_os = "windows")]
+    // SAFETY: `keybd_event` só injeta uma tecla; não toca em memória do app.
     unsafe {
         extern "system" {
             fn keybd_event(bVk: u8, bScan: u8, dwFlags: u32, dwExtraInfo: usize);
         }
-        keybd_event(0xB3, 0, 0, 0);
-        keybd_event(0xB3, 0, 2, 0);
+        keybd_event(_vk, 0, 0, 0);
+        keybd_event(_vk, 0, 2, 0);
     }
-    Ok(())
 }
 
 #[command]
 pub async fn system_media_next() -> Result<(), String> {
-    #[cfg(target_os = "windows")]
-    unsafe {
-        extern "system" {
-            fn keybd_event(bVk: u8, bScan: u8, dwFlags: u32, dwExtraInfo: usize);
-        }
-        keybd_event(0xB0, 0, 0, 0);
-        keybd_event(0xB0, 0, 2, 0);
+    // Direto na sessão que está tocando; sem sessão (ou se ela recusar), cai na tecla de mídia global.
+    let handled = tokio::task::spawn_blocking(|| super::media_session::skip(true))
+        .await
+        .map_err(|e| e.to_string())?;
+    if handled != Some(true) {
+        press_media_key(0xB0);
     }
     Ok(())
 }
 
 #[command]
 pub async fn system_media_previous() -> Result<(), String> {
-    #[cfg(target_os = "windows")]
-    unsafe {
-        extern "system" {
-            fn keybd_event(bVk: u8, bScan: u8, dwFlags: u32, dwExtraInfo: usize);
-        }
-        keybd_event(0xB1, 0, 0, 0);
-        keybd_event(0xB1, 0, 2, 0);
+    // Direto na sessão que está tocando; sem sessão (ou se ela recusar), cai na tecla de mídia global.
+    let handled = tokio::task::spawn_blocking(|| super::media_session::skip(false))
+        .await
+        .map_err(|e| e.to_string())?;
+    if handled != Some(true) {
+        press_media_key(0xB1);
     }
     Ok(())
 }

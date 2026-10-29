@@ -51,6 +51,8 @@ export interface Game {
   category?: string;
   description?: string;
   isFavorite?: boolean;
+  /** A pessoa editou o jogo à mão: a sincronização com a loja não sobrescreve nome, arte nem executável. */
+  userEdited?: boolean;
   isInstalled?: boolean;
   executablePath?: string;
   hoursPlayed?: number;

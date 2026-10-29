@@ -53,7 +53,21 @@ export interface NotchConfig {
   mutedEvents: MutableNotchEventKind[];
   /** Fator de duração dos avisos (0,5x a 2x). */
   eventDurationScale: number;
+  /** Widgets da aba Início do notch aberto (a música aparece sozinha quando algo toca). */
+  widgets: NotchWidgetId[];
+  /** Cidade do widget de clima; vazio = widget pede para escolher. */
+  weatherCity: string;
 }
+
+export type NotchWidgetId = "lyrics" | "calendar" | "weather";
+
+export const NOTCH_WIDGET_OPTIONS: { id: NotchWidgetId; label: string; description: string }[] = [
+  { id: "lyrics", label: "Letras", description: "Letra sincronizada ao lado da música que está tocando." },
+  { id: "calendar", label: "Calendário", description: "O mês atual com o dia de hoje em destaque." },
+  { id: "weather", label: "Clima", description: "Temperatura e condição da cidade escolhida." },
+];
+
+export const MAX_WEATHER_CITY_LENGTH = 80;
 
 export type HatId = "none" | "witch" | "party" | "crown" | "beanie" | "top";
 export type ItemId = "sunglasses" | "halo" | "rgbHeadphones";
@@ -104,6 +118,8 @@ export const DEFAULT_NOTCH_CONFIG: NotchConfig = {
   chamfer: null,
   mutedEvents: [],
   eventDurationScale: DEFAULT_EVENT_DURATION_SCALE,
+  widgets: ["lyrics", "calendar", "weather"],
+  weatherCity: "",
 };
 
 /** Formas disponíveis, com rótulo em pt-BR (os ids vêm do bloub, em francês). */
@@ -148,6 +164,21 @@ function nullableNumber(value: unknown, fallback: number | null, min: number, ma
   if (value === null) return null;
   if (typeof value === "number" && Number.isFinite(value)) return clamp(value, min, max);
   return fallback;
+}
+
+const VALID_WIDGETS = new Set<string>(NOTCH_WIDGET_OPTIONS.map((w) => w.id));
+
+function sanitizeWidgets(value: unknown, fallback: NotchWidgetId[]): NotchWidgetId[] {
+  if (!Array.isArray(value)) return fallback;
+  const seen = new Set<string>();
+  const out: NotchWidgetId[] = [];
+  for (const item of value) {
+    if (typeof item === "string" && VALID_WIDGETS.has(item) && !seen.has(item)) {
+      seen.add(item);
+      out.push(item as NotchWidgetId);
+    }
+  }
+  return out;
 }
 
 function sanitizeItems(value: unknown, fallback: ItemId[]): ItemId[] {
@@ -200,6 +231,9 @@ export function sanitizeNotchConfig(raw: unknown, base: NotchConfig = DEFAULT_NO
       typeof v.eventDurationScale === "number" && Number.isFinite(v.eventDurationScale)
         ? clamp(v.eventDurationScale, EVENT_DURATION_SCALE_RANGE.min, EVENT_DURATION_SCALE_RANGE.max)
         : base.eventDurationScale,
+    widgets: sanitizeWidgets(v.widgets, base.widgets),
+    weatherCity:
+      typeof v.weatherCity === "string" ? v.weatherCity.trim().slice(0, MAX_WEATHER_CITY_LENGTH) : base.weatherCity,
   };
 }
 

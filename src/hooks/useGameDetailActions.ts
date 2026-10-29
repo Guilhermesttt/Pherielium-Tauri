@@ -4,6 +4,7 @@ import type { GameDetailState, GameDetailAction, GameDetailCopy } from "../types
 import { launchGame, resolveMonitorableExecutablePath } from "../services/launcher";
 import { deleteLibraryGame, updateLibraryGame } from "../services/localLibrary";
 import { MIN_LAUNCH_SCREEN_MS, wait } from "../types/gameDetail";
+import { startEmulationForGame, stopEmulation } from "../services/controllerProfile";
 import { LAUNCH_INTRO_TIMELINE } from "../components/game-detail/GameLaunchIntro";
 import { playHapticPattern } from "../context/GamepadContext";
 
@@ -18,6 +19,8 @@ interface UseGameDetailActionsProps {
   closeOnLaunch: boolean;
   /** Intro de lançamento ligada: o launcher esconde só depois dela (via `launcher_hide_main`). */
   launchIntroEnabled?: boolean;
+  /** Intro sem mascote (notch desligado): só espera esse tempo antes de abrir; o launcher esconde ao iniciar. */
+  launchIntroDelayMs?: number;
   copy: GameDetailCopy;
   notify: (message: string, type: "success" | "error" | "info" | "warning") => void;
   onClose: () => void;
@@ -34,6 +37,7 @@ export function useGameDetailActions({
   user,
   closeOnLaunch,
   launchIntroEnabled = false,
+  launchIntroDelayMs = 0,
   copy,
   notify,
   onClose,
@@ -54,7 +58,19 @@ export function useGameDetailActions({
       // primeiro plano e a animação é cortada); o hub só esconde depois (onHideHub).
       const launchAfterIntro = async () => {
         if (launchIntroEnabled) await wait(LAUNCH_INTRO_TIMELINE.launch);
-        await launchGame(game, { hideLauncher: closeOnLaunch && !launchIntroEnabled, ...launchProfile });
+        else if (launchIntroDelayMs > 0) await wait(launchIntroDelayMs);
+        // A emulação precisa existir ANTES do jogo abrir; sem ela o jogo ainda abre, com o aviso.
+        if (user?.uid) {
+          const emulationError = await startEmulationForGame(user.uid, game.id);
+          if (emulationError) notify(`Emulação de controle não ligou: ${emulationError}`, "warning");
+        }
+        try {
+          await launchGame(game, { hideLauncher: closeOnLaunch && !launchIntroEnabled, ...launchProfile });
+        } catch (launchError) {
+          // O jogo não abriu: não deixa o controle físico escondido à toa.
+          void stopEmulation().catch(() => undefined);
+          throw launchError;
+        }
       };
       const [result] = await Promise.allSettled([launchAfterIntro(), wait(MIN_LAUNCH_SCREEN_MS)]);
       if (result.status === "rejected") throw result.reason;
@@ -88,7 +104,7 @@ export function useGameDetailActions({
     } finally {
       dispatch({ type: "SET_LAUNCHING", payload: false });
     }
-  }, [closeOnLaunch, launchIntroEnabled, copy.launchGenericError, dispatch, game, launchProfile, onLibraryChanged, playSound, state.isLaunching, user?.uid]);
+  }, [closeOnLaunch, launchIntroEnabled, launchIntroDelayMs, notify, copy.launchGenericError, dispatch, game, launchProfile, onLibraryChanged, playSound, state.isLaunching, user?.uid]);
 
   const handleDeleteGame = React.useCallback(async () => {
     if (!user?.uid) {

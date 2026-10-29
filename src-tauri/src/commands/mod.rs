@@ -26,5 +26,10 @@ pub mod audio_capture;
 pub mod controller_config;
 pub mod system;
 pub mod virtual_pad;
+pub mod hidhide_cloak;
+pub mod pad_engine;
+pub mod pad_hid;
+pub mod media_session;
+pub mod notch_widgets;
 pub mod system_perf;
 

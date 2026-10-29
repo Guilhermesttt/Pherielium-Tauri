@@ -3591,6 +3591,20 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
   opacity: 0.75;
 }
 
+/* barra de "segure para iniciar": enche da esquerda para a direita conforme o botão é segurado */
+.console-start-fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: color-mix(in srgb, var(--tone-0) 28%, transparent);
+  pointer-events: none;
+}
+
+.console-start[data-holding] {
+  transform: scale(0.985);
+}
+
 .console-start-icon {
   background: var(--tone-0);
   color: var(--ink);
@@ -3611,21 +3625,45 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
   padding: 4px;
 }
 
-.console-options button {
+.console-options [role="menuitem"] {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 4px;
+  border-radius: var(--corner-sm);
   font-size: var(--fs-label);
   font-weight: 600;
-  color: var(--ink);
+  color: var(--ink-muted);
   text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background-color var(--dur-focus) ease-out,
+    color var(--dur-focus) ease-out;
+  animation: console-option-in 220ms var(--screen-ease) both;
 }
 
-.console-options button:hover,
-.console-options button:focus-visible {
-  background: var(--tone-3);
+.console-options [role="menuitem"]:nth-child(2) { animation-delay: 30ms; }
+.console-options [role="menuitem"]:nth-child(3) { animation-delay: 60ms; }
+
+/* :focus (e não só :focus-visible): o D-pad foca por código e o mouse foca ao passar por cima */
+.console-options [role="menuitem"]:hover,
+.console-options [role="menuitem"]:focus {
+  background: var(--ink);
+  color: var(--tone-0);
+}
+
+@keyframes console-option-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .console-options [role="menuitem"] {
+    animation: none;
+  }
 }
 
 /* busca da lista de troféus */

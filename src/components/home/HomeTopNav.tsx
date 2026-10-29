@@ -5,6 +5,7 @@ import { PHERIELIUM_LOGO_PATH } from "../../constants/assets";
 import { FOCUS_TRANSITION } from "../../styles/motion";
 import { ConsoleLibraryTabs } from "./ConsoleLibraryTabs";
 import { TopBarClock } from "./TopBarClock";
+import { HubMascot } from "./HubMascot";
 import { ProfileDropdown } from "../ui/ProfileDropdown";
 import {
   DropdownMenu,
@@ -141,6 +142,7 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
           </div>
         </button>
         <TopBarClock />
+        <HubMascot />
       </div>
 
       <div className="flex min-w-0 items-center justify-end gap-[var(--gap-inline)]">
@@ -190,10 +192,16 @@ export const HomeTopNav: React.FC<HomeTopNavProps> = ({
                 >
                   <SlidersHorizontal className="h-4 w-4 text-[var(--ink-muted)]" />
                   <span className="flex min-w-0 flex-col leading-tight">
-                    <span>Filtros</span>
+                    <span>Plataforma e filtros</span>
                     {hasActiveFilters && (
                       <span className="text-[length:var(--fs-label)] font-normal text-[var(--ink-faint)]">Filtros ativos</span>
                     )}
+                  </span>
+                  {/* o atalho que quase ninguém acha sozinho */}
+                  <span className="console-hints ml-auto flex items-center gap-1 pl-4" aria-hidden="true">
+                    <kbd>Alt</kbd>
+                    <span>+</span>
+                    <kbd>Scroll</kbd>
                   </span>
                 </DropdownMenuItem>
                 {onSyncLibraries && (

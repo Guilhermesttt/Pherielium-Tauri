@@ -185,6 +185,18 @@ export const playHapticPattern = (pattern: HapticPatternName) => {
     .forEach((gp) => playPatternOnGamepad(gp, HAPTIC_PATTERNS[pattern]));
 };
 
+/** Vibra todos os controles conectados (efeitos contínuos, como segurar para iniciar). */
+export const playRumble = (weakMagnitude: number, strongMagnitude: number, duration: number) => {
+  if (!isHapticsEnabledGlobal()) return;
+  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+  Array.from(gamepads).forEach((gp) => {
+    if (!gp) return;
+    getHapticActuator(gp)
+      ?.playEffect("dual-rumble", { startDelay: 0, duration, weakMagnitude, strongMagnitude })
+      .catch(() => undefined);
+  });
+};
+
 // ─── Aceleração progressiva do analógico ────────────────────────────────────
 const AXIS_INITIAL_DELAY = 320;
 const AXIS_FAST_INTERVAL = 80;

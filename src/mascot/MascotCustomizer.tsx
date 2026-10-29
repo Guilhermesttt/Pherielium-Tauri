@@ -1,14 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { MascotView } from "./MascotView";
 import {
   BACKGROUND_OPACITY_RANGE,
   CORNER_RADIUS_RANGE,
-  DEFAULT_NOTCH_CONFIG,
-  HAT_OPTIONS,
-  ITEM_OPTIONS,
-  NOTCH_BODY_PRESETS,
-  NOTCH_SHAPES,
-  type ItemId,
   type NotchConfig,
 } from "./notchConfig";
 import { resolveNotchStyle } from "./notchTheme";
@@ -103,91 +96,15 @@ const Slider: React.FC<{
 );
 
 /**
- * Personalização completa da Pherie e do notch. Sem `Switch`/`usePreferences`: o overlay
+ * Estilo do notch (cantos, brilho, opacidade). Sem `Switch`/`usePreferences`: o overlay
  * não tem o PreferencesProvider.
  */
-export const MascotCustomizer: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
+export const MascotCustomizer: React.FC<{ compact?: boolean }> = () => {
   const { draft, update, visualTheme } = useNotchConfigEditor();
   const themed = resolveNotchStyle(visualTheme, draft);
 
-  const toggleItem = (id: ItemId) =>
-    update({ items: draft.items.includes(id) ? draft.items.filter((i) => i !== id) : [...draft.items, id] });
-
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-center rounded-2xl bg-white/[0.04] py-4">
-        <MascotView
-          size={compact ? 88 : 110}
-          mood="idle"
-          bodyColor={draft.bodyColor}
-          shape={draft.shape}
-          hat={draft.hat}
-          items={draft.items}
-        />
-      </div>
-
-      <Section title="Cor">
-        <div className="flex flex-wrap gap-1.5">
-          {NOTCH_BODY_PRESETS.map(({ hex, label }) => (
-            <button
-              key={label}
-              type="button"
-              title={label}
-              onClick={() => update({ bodyColor: hex })}
-              className={`h-7 w-7 rounded-full border-2 ${draft.bodyColor === hex ? "border-white" : "border-white/15"}`}
-              style={{ background: hex ?? "linear-gradient(135deg,#f5f5f7,#8e8e93)" }}
-            />
-          ))}
-        </div>
-      </Section>
-
-      <Section title="Forma">
-        <div className="flex flex-wrap gap-1.5">
-          {NOTCH_SHAPES.map(({ id, label }) => (
-            <button key={id} type="button" onClick={() => update({ shape: id })} className={chip(draft.shape === id)}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </Section>
-
-      <Section title="Chapéu">
-        <div className="flex flex-wrap gap-1.5">
-          {HAT_OPTIONS.map(({ id, label }) => (
-            <button key={id} type="button" onClick={() => update({ hat: id })} className={chip(draft.hat === id)}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </Section>
-
-      <Section title="Itens">
-        <div className="flex flex-wrap gap-1.5">
-          {ITEM_OPTIONS.map(({ id, label }) => (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={draft.items.includes(id)}
-              onClick={() => toggleItem(id)}
-              className={chip(draft.items.includes(id))}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </Section>
-
-      <Section title="Balão de fala">
-        <div className="flex gap-1.5">
-          <button type="button" onClick={() => update({ bubbleStyle: "retro" })} className={chip(draft.bubbleStyle === "retro")}>
-            Retrô
-          </button>
-          <button type="button" onClick={() => update({ bubbleStyle: "soft" })} className={chip(draft.bubbleStyle === "soft")}>
-            Suave
-          </button>
-        </div>
-      </Section>
-
       <Section title="Estilo do notch">
         <div className="flex gap-1.5">
           <button type="button" onClick={() => update({ useThemeStyle: true })} className={chip(draft.useThemeStyle)}>
@@ -249,9 +166,6 @@ export const MascotCustomizer: React.FC<{ compact?: boolean }> = ({ compact = fa
         type="button"
         onClick={() =>
           update({
-            hat: DEFAULT_NOTCH_CONFIG.hat,
-            items: [],
-            bubbleStyle: DEFAULT_NOTCH_CONFIG.bubbleStyle,
             useThemeStyle: true,
             cornerRadius: null,
             glowIntensity: null,

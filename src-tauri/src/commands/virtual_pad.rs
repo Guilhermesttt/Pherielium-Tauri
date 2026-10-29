@@ -19,7 +19,7 @@ use tauri::command;
 
 /// Estado de um gamepad, já com o perfil aplicado pelo front.
 /// Eixos em -1.0..=1.0, gatilhos em 0.0..=1.0.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PadState {
     pub left_x: f32,
@@ -217,6 +217,20 @@ pub fn virtual_pad_attach() -> Result<(), String> {
         );
     }
     imp::attach()
+}
+
+/// Entradas do motor de emulação (`pad_engine`): ele já validou os drivers e esconde o físico,
+/// então aqui não repete a checagem do HidHide feita por `virtual_pad_attach`.
+pub fn attach_engine_pad() -> Result<(), String> {
+    imp::attach()
+}
+
+pub fn detach_engine_pad() -> Result<(), String> {
+    imp::detach()
+}
+
+pub fn update_engine_pad(state: &PadState) -> Result<(), String> {
+    imp::update(state)
 }
 
 /// Desliga o controle virtual. Sem efeito se já estava desligado.

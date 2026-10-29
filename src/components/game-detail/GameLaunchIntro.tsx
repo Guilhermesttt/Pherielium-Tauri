@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { MascotView } from "../../mascot/MascotView";
-import { useNotchConfig } from "../../mascot/useNotchConfig";
 import { hasTauriRuntime } from "../../mascot/useVoiceLevel";
 import { playNotchSound, type NotchSoundId } from "../notch/notchSounds";
 
@@ -50,7 +49,6 @@ export const GameLaunchIntro: React.FC<GameLaunchIntroProps> = ({
   soundTheme,
   onHideHub,
 }) => {
-  const config = useNotchConfig();
   const [dropped, setDropped] = useState(false);
   const [folding, setFolding] = useState(false);
   const [mascotHidden, setMascotHidden] = useState(false);
@@ -132,10 +130,6 @@ export const GameLaunchIntro: React.FC<GameLaunchIntroProps> = ({
             mood="gaming"
             forceHeadphones
             headphonesDrop={dropped}
-            bodyColor={config.bodyColor}
-            shape={config.shape}
-            hat={config.hat}
-            items={config.items}
           />
         </motion.div>
 

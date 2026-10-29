@@ -1,3 +1,4 @@
+import { mergeSyncedGame } from "./librarySyncMerge";
 import { supabase } from "./supabase";
 import {
   AUTH_TIMEOUT_MS,
@@ -853,7 +854,7 @@ export const syncSteamLibraryToLocal = async (
       updatedAt: new Date().toISOString(),
     };
 
-    return clean({ id, ...mapped }) as Game;
+    return clean(mergeSyncedGame(existing, { id, ...mapped })) as Game;
   });
 
   await bulkUpsertLibraryGames(uid, writes);

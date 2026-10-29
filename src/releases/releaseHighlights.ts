@@ -12,7 +12,7 @@ export interface ReleaseHighlights {
   highlights: ReleaseHighlight[];
 }
 
-export const LATEST_RELEASE: ReleaseHighlights = {
+const RELEASE_1_0_3: ReleaseHighlights = {
   version: "1.0.3",
   title: "Pherielium 1.0.3",
   description:
@@ -46,7 +46,42 @@ export const LATEST_RELEASE: ReleaseHighlights = {
   ],
 };
 
+export const LATEST_RELEASE: ReleaseHighlights = {
+  version: "1.0.4",
+  title: "Pherielium 1.0.4",
+  description:
+    "Amigos, Troféus e Perfil redesenhados, downloads de mods que pausam e retomam, foto e banner que você enquadra arrastando, e animações quando um jogo chega à biblioteca.",
+  releaseUrl: "https://github.com/Guilhermesttt/Pherielium-Tauri/releases",
+  highlights: [
+    {
+      id: "ui",
+      title: "Interface renovada",
+      description:
+        "Botões e abas preenchidos, com um bloco que desliza até a aba escolhida. Amigos, Troféus, Perfil, chamadas e salas de voz ganharam telas novas, e rank e nível aparecem juntos.",
+    },
+    {
+      id: "mods",
+      title: "Mods mais fáceis",
+      description:
+        "Pause, retome ou cancele downloads, siga o passo a passo da conta gratuita do Nexus e veja um aviso quando um mod precisa de outro que não está instalado.",
+    },
+    {
+      id: "platforms",
+      title: "Biblioteca que reage",
+      description:
+        "O filtro personalizado atualiza na hora, e os jogos novos entram com animação, uma para quando você adiciona e outra para quando sincroniza.",
+    },
+    {
+      id: "stability",
+      title: "Conquistas contadas",
+      description:
+        "Conquistas de Steam e Epic somam troféu e XP assim que são desbloqueadas, mesmo com a tela do jogo fechada.",
+    },
+  ],
+};
+
 const releasesByVersion = new Map([
+  [RELEASE_1_0_3.version, RELEASE_1_0_3],
   [LATEST_RELEASE.version, LATEST_RELEASE],
 ]);
 
