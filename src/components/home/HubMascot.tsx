@@ -1,11 +1,21 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { appleSprings } from "../../design-system/motion";
 import { PherieMascot, getMascotBaseMood } from "../notch/PherieMascot";
 import { useNotchConfig } from "../../mascot/useNotchConfig";
 import { useSituationMood } from "../../mascot/useSituationMood";
-import { hasTauriRuntime } from "../../mascot/useVoiceLevel";
+import { hasTauriRuntime, useVoiceLevelRef } from "../../mascot/useVoiceLevel";
 import { DIZZY_DURATION_MS, isMouseShake } from "../../mascot/cursorReactions";
 import { registerPoke, resolveHubMood, shakeMetrics, type MoveSample } from "../../mascot/hubPherie";
 import type { MascotMood } from "../../mascot/moods";
+import {
+  HUB_RETURN_DELAY_MS,
+  PHERIE_NOTCH_TAURI_EVENT,
+  PHERIE_NOTCH_WINDOW_EVENT,
+  notchHoldsPherie,
+  parsePresence,
+  type PherieNotchPresence,
+} from "../../mascot/pherieHandoff";
 import { usePreferences } from "../../context/PreferencesContext";
 import { useVoiceCallContext } from "../../context/VoiceCallContext";
 import { playPherieVoice, voiceForMoodChange } from "../notch/pherieVoice";
@@ -30,9 +40,79 @@ const SHAKE_SAMPLES = 24;
  */
 export const HubMascot: React.FC = () => {
   const { showMascot, sounds, followCursor } = useNotchConfig();
+  const heldByNotch = useNotchHoldsPherie();
   if (!showMascot) return null;
-  return <HubPherie sounds={sounds} followCursor={followCursor} />;
+  return (
+    // enquanto a notch está com ela, ela "sobe" para lá; quando a notch a dispensa, ela volta ao hub
+    <AnimatePresence>
+      {!heldByNotch && (
+        <motion.span
+          key="hub-pherie"
+          className="inline-flex"
+          // volta da notch com um pouco de momento (a gaveta da Apple: 0.8) e sai direto para cima, de onde veio
+          initial={{ scale: 0.4, y: -14, opacity: 0 }}
+          animate={{ scale: 1, y: 0, opacity: 1 }}
+          exit={{ scale: 0.4, y: -14, opacity: 0, transition: appleSprings.snap }}
+          transition={appleSprings.sheet}
+        >
+          <HubPherie sounds={sounds} followCursor={followCursor} />
+        </motion.span>
+      )}
+    </AnimatePresence>
+  );
 };
+
+/** A notch (no overlay) está com a Pherie agora? Volta a `false` sozinho se os sinais dela pararem. */
+function useNotchHoldsPherie(): boolean {
+  const [held, setHeld] = useState(false);
+  const presence = useRef<PherieNotchPresence | null>(null);
+  const returnTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const apply = (raw: unknown) => {
+      const next = parsePresence(raw, Date.now());
+      if (!next) return;
+      presence.current = next;
+      if (next.active) {
+        if (returnTimer.current) {
+          clearTimeout(returnTimer.current);
+          returnTimer.current = null;
+        }
+        setHeld(true);
+      } else if (!returnTimer.current) {
+        returnTimer.current = setTimeout(() => {
+          returnTimer.current = null;
+          setHeld(false);
+        }, HUB_RETURN_DELAY_MS);
+      }
+    };
+    const onWindow = (e: Event) => apply((e as CustomEvent).detail);
+    window.addEventListener(PHERIE_NOTCH_WINDOW_EVENT, onWindow);
+    let cancelled = false;
+    let unlisten: (() => void) | undefined;
+    if (hasTauriRuntime()) {
+      void import("@tauri-apps/api/event").then(({ listen }) =>
+        listen<unknown>(PHERIE_NOTCH_TAURI_EVENT, (event) => apply(event.payload)).then((fn) => {
+          if (cancelled) fn();
+          else unlisten = fn;
+        }),
+      );
+    }
+    // rede de segurança: a notch parou de dar sinal (overlay fechou), a Pherie volta
+    const watchdog = window.setInterval(() => {
+      if (!notchHoldsPherie(presence.current, Date.now())) setHeld(false);
+    }, 2000);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(PHERIE_NOTCH_WINDOW_EVENT, onWindow);
+      unlisten?.();
+      window.clearInterval(watchdog);
+      if (returnTimer.current) clearTimeout(returnTimer.current);
+    };
+  }, []);
+
+  return held;
+}
 
 const HubPherie: React.FC<{ sounds: boolean; followCursor: boolean }> = ({ sounds, followCursor }) => {
   const voiceCall = useVoiceCallContext();
@@ -50,6 +130,12 @@ const HubPherie: React.FC<{ sounds: boolean; followCursor: boolean }> = ({ sound
 
   const inCall = voiceCall.callState === "active" || voiceCall.callState === "connecting" || voiceCall.callState === "ringing-out";
   const ringing = voiceCall.callState === "ringing-in";
+
+  // Boca: o volume do microfone chega por evento (ref, sem re-render). Fora do Tauri cai no "falando" do contexto.
+  const hasVoiceFeed = hasTauriRuntime();
+  const mutedSpeechRef = useRef(false);
+  const voiceLevelRef = useVoiceLevelRef(inCall && hasVoiceFeed, mutedSpeechRef);
+  const mouthSpeaking = !hasVoiceFeed && !voiceCall.isMuted && voiceCall.isSpeakingLocal;
 
   // humor escolhido em "Expressões da Pherie"
   useEffect(() => {
@@ -224,6 +310,7 @@ const HubPherie: React.FC<{ sounds: boolean; followCursor: boolean }> = ({ sound
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className="inline-flex shrink-0 cursor-pointer"
+      data-tour="pherie"
       title="Pherie"
     >
       <PherieMascot
@@ -234,6 +321,9 @@ const HubPherie: React.FC<{ sounds: boolean; followCursor: boolean }> = ({ sound
         isMusicPlaying={musicPlaying}
         ringing={ringing}
         muted={inCall && voiceCall.isMuted}
+        levelRef={voiceLevelRef}
+        mutedSpeechRef={mutedSpeechRef}
+        isSpeaking={mouthSpeaking}
         waveAt={eventMood && notchEventWaves(eventMood.kind as Parameters<typeof notchEventWaves>[0]) ? eventMood.at : undefined}
         celebrateAt={eventMood?.kind === "achievement" ? eventMood.at : undefined}
         pointer={followCursor ? pointer : null}

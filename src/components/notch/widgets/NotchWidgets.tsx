@@ -2,8 +2,8 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "re
 import { subscribeTicker } from "../../../mascot/ticker";
 import { currentPosition, type MediaTimeline } from "../live/progressMath";
 import { monthGrid, monthTitle, WEEKDAY_INITIALS } from "./calendarGrid";
-import { activeLineIndex } from "./lyricsMath";
-import { useNotchLyrics, useNotchWeather, type WeatherData } from "./useNotchWidgetData";
+import { activeLineIndex, type Lyrics } from "./lyricsMath";
+import { useNotchLyrics, useNotchWeather, type LyricsState, type WeatherData, type WeatherState } from "./useNotchWidgetData";
 import { CloudIcon, FogIcon, MoonIcon, PartlyCloudyIcon, PinIcon, RainIcon, SnowIcon, StormIcon, SunIcon } from "./WeatherIcons";
 
 const SURFACE =
@@ -19,6 +19,8 @@ interface LyricsWidgetProps {
   /** capa e cor ("r, g, b") da música: o cartão herda o degradê da capa */
   cover?: string;
   rgb?: string | null;
+  /** letra de exemplo (o tutorial mostra o widget sem buscar nada na internet) */
+  demoLyrics?: Lyrics;
 }
 
 /** Quanto cada linha se apaga e desfoca conforme se afasta da linha em curso. */
@@ -30,16 +32,20 @@ export function lineLook(distance: number): { opacity: number; blur: number } {
   return { opacity: 0, blur: 0 };
 }
 
-const SCROLL_TRANSITION = "transform 650ms cubic-bezier(0.22, 1, 0.36, 1)";
+const SCROLL_TRANSITION = "transform 500ms var(--ease-out-strong)";
 const FADE_MASK = "linear-gradient(to bottom, transparent 0%, #000 24%, #000 76%, transparent 100%)";
 
 /**
  * Letra sincronizada: a faixa inteira desliza para manter a linha em curso no centro, com as
  * vizinhas apagando e desfocando e uma máscara que dissolve o topo e o rodapé.
  */
-export const LyricsWidget: React.FC<LyricsWidgetProps> = ({ title, artist, timelineRef, enabled, cover, rgb }) => {
+export const LyricsWidget: React.FC<LyricsWidgetProps> = ({ title, artist, timelineRef, enabled, cover, rgb, demoLyrics }) => {
   const durationSeconds = timelineRef.current?.durationSeconds ?? null;
-  const state = useNotchLyrics(title, artist, durationSeconds, enabled);
+  const lookup = useNotchLyrics(title, artist, durationSeconds, enabled && !demoLyrics);
+  const state: LyricsState = useMemo(
+    () => (demoLyrics ? { status: "ready", lyrics: demoLyrics } : lookup),
+    [demoLyrics, lookup],
+  );
   const lines = useMemo(() => (state.status === "ready" ? state.lyrics.synced : []), [state]);
   const [index, setIndex] = useState(-1);
   const indexRef = useRef(-1);
@@ -188,11 +194,12 @@ const WEATHER_ICON: Record<WeatherData["kind"], React.ComponentType<{ size?: num
   storm: StormIcon,
 };
 
-export const WeatherWidget: React.FC<{ city: string; enabled: boolean }> = ({ city, enabled }) => {
-  const state = useNotchWeather(city, enabled);
+export const WeatherWidget: React.FC<{ city: string; enabled: boolean; demo?: WeatherData }> = ({ city, enabled, demo }) => {
+  const live = useNotchWeather(city, enabled && !demo);
+  const state: WeatherState = demo ? { status: "ready", weather: demo } : live;
 
   let body: React.ReactNode;
-  if (!city.trim()) {
+  if (!demo && !city.trim()) {
     body = <p className="text-[12px] leading-snug text-white/45">Escolha a cidade em Configurações → Notch.</p>;
   } else if (state.status === "ready") {
     const { weather } = state;
