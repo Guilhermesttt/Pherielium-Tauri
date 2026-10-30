@@ -4,7 +4,7 @@ import type { GameDetailState, GameDetailAction, GameDetailCopy } from "../types
 import { launchGame, resolveMonitorableExecutablePath } from "../services/launcher";
 import { deleteLibraryGame, updateLibraryGame } from "../services/localLibrary";
 import { MIN_LAUNCH_SCREEN_MS, wait } from "../types/gameDetail";
-import { startEmulationForGame, stopEmulation } from "../services/controllerProfile";
+import { armEmulationForGame, stopEmulation } from "../services/controllerProfile";
 import { LAUNCH_INTRO_TIMELINE } from "../components/game-detail/GameLaunchIntro";
 import { playHapticPattern } from "../context/GamepadContext";
 
@@ -59,9 +59,9 @@ export function useGameDetailActions({
       const launchAfterIntro = async () => {
         if (launchIntroEnabled) await wait(LAUNCH_INTRO_TIMELINE.launch);
         else if (launchIntroDelayMs > 0) await wait(launchIntroDelayMs);
-        // A emulação precisa existir ANTES do jogo abrir; sem ela o jogo ainda abre, com o aviso.
+        // Arma a emulação antes de abrir; ela só liga com o processo do jogo vivo. Sem ela o jogo ainda abre, com o aviso.
         if (user?.uid) {
-          const emulationError = await startEmulationForGame(user.uid, game.id);
+          const emulationError = await armEmulationForGame(user.uid, game.id);
           if (emulationError) notify(`Emulação de controle não ligou: ${emulationError}`, "warning");
         }
         try {

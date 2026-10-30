@@ -15,7 +15,7 @@ use commands::audio_capture::{
     CaptureManager,
 };
 use commands::notch_widgets::{lyrics_lookup, weather_lookup};
-use commands::pad_engine::{pad_engine_start, pad_engine_status, pad_engine_stop};
+use commands::pad_engine::{pad_engine_arm, pad_engine_start, pad_engine_status, pad_engine_stop};
 use commands::virtual_pad::{
     virtual_pad_attach, virtual_pad_detach, virtual_pad_is_attached, virtual_pad_update,
 };
@@ -258,6 +258,7 @@ pub fn run() {
             virtual_pad_detach,
             virtual_pad_is_attached,
             virtual_pad_update,
+            pad_engine_arm,
             pad_engine_start,
             lyrics_lookup,
             weather_lookup,

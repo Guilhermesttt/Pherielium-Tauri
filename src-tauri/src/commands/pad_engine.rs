@@ -12,6 +12,10 @@
 //! vibração do jogo não é repassada ao controle físico.
 
 use serde::Serialize;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
+use tauri::{AppHandle, Emitter};
 
 use super::virtual_pad::PadState;
 use crate::store::controller_profiles::{apply_axis, apply_trigger, ControllerSettings};
@@ -361,6 +365,10 @@ mod imp {
         }
     }
 
+    pub fn is_running() -> bool {
+        engine().lock().map(|g| g.is_some()).unwrap_or(false)
+    }
+
     pub fn status() -> PadEngineStatus {
         let idle = PadEngineStatus {
             running: false,
@@ -394,19 +402,91 @@ mod imp {
     pub fn stop() -> Result<(), String> {
         Ok(())
     }
+    pub fn is_running() -> bool {
+        false
+    }
     pub fn status() -> PadEngineStatus {
         PadEngineStatus { running: false, physical_slot: None, physical_source: None, physical_hidden: false }
     }
 }
 
-/// Para o motor e devolve o controle físico (chamado também ao fechar o app e quando o jogo termina).
+/// Quanto tempo o perfil armado espera o jogo aparecer (atualizações e launchers demoram).
+const ARM_TTL: Duration = Duration::from_secs(300);
+
+/// Perfil que vai valer para o jogo que acabou de ser iniciado. A emulação só liga quando o PROCESSO do
+/// jogo existe e desliga assim que ele some: antes ela ligava no clique de iniciar e só desligava no fim
+/// da sessão, deixando o controle físico escondido do Windows por mais tempo que o jogo.
+struct Armed {
+    settings: ControllerSettings,
+    at: Instant,
+}
+
+static ARMED: Mutex<Option<Armed>> = Mutex::new(None);
+/// Evita duas partidas ao mesmo tempo: o watcher chama a cada segundo e a partida leva alguns.
+static STARTING: AtomicBool = AtomicBool::new(false);
+
+/// O perfil armado, se ainda não venceu. Separado para testar o prazo sem mexer no relógio.
+fn live_armed(armed: &Option<Armed>, now: Instant) -> Option<ControllerSettings> {
+    armed
+        .as_ref()
+        .filter(|a| now.saturating_duration_since(a.at) <= ARM_TTL)
+        .map(|a| a.settings.clone())
+}
+
+fn set_armed(settings: Option<ControllerSettings>) {
+    if let Ok(mut guard) = ARMED.lock() {
+        *guard = settings.map(|settings| Armed { settings, at: Instant::now() });
+    }
+}
+
+/// Chamado pelo vigia de jogos a cada rodada: `present` = o processo do jogo existe agora.
+pub fn game_presence(app: &AppHandle, present: bool) {
+    if present {
+        if imp::is_running() {
+            return;
+        }
+        let Some(settings) = ARMED.lock().ok().and_then(|g| live_armed(&g, Instant::now())) else {
+            return;
+        };
+        if STARTING.swap(true, Ordering::AcqRel) {
+            return;
+        }
+        let app = app.clone();
+        std::thread::spawn(move || {
+            if let Err(e) = imp::start(settings) {
+                eprintln!("[pad-engine] não ligou: {e}");
+                let _ = app.emit("pad-engine:error", e);
+            }
+            STARTING.store(false, Ordering::Release);
+        });
+    } else if imp::is_running() {
+        // o jogo fechou: devolve o controle na hora (o perfil continua armado se for só um launcher passando a vez)
+        std::thread::spawn(shutdown);
+    }
+}
+
+/// A sessão acabou: desliga a emulação e esquece o perfil armado.
+pub fn game_ended() {
+    set_armed(None);
+    std::thread::spawn(shutdown);
+}
+
+/// Para o motor e devolve o controle físico (também ao fechar o app).
 pub fn shutdown() {
     if let Err(e) = imp::stop() {
         eprintln!("[pad-engine] ao encerrar: {e}");
     }
 }
 
-/// Liga a emulação para o jogo: usa o perfil já resolvido pelo front (jogo > global > fábrica).
+/// Arma a emulação para o jogo que está abrindo: usa o perfil já resolvido pelo front (jogo > global > fábrica).
+/// Não liga nada ainda; o vigia liga quando o processo do jogo aparece. Perfil sem emulação desarma.
+#[tauri::command]
+pub fn pad_engine_arm(settings: ControllerSettings) {
+    let settings = settings.sanitized();
+    set_armed(settings.emulate_xinput.then_some(settings));
+}
+
+/// Liga a emulação agora, sem esperar o jogo (uso manual e testes).
 ///
 /// Assíncrono + `spawn_blocking`: a partida chama o CLI do HidHide e espera o driver do pad
 /// virtual, o que passa de 1 s na primeira vez.
@@ -423,6 +503,7 @@ pub async fn pad_engine_start(settings: ControllerSettings) -> Result<(), String
 
 #[tauri::command]
 pub async fn pad_engine_stop() -> Result<(), String> {
+    set_armed(None);
     tauri::async_runtime::spawn_blocking(imp::stop)
         .await
         .map_err(|e| format!("motor de emulação interrompido: {e}"))?
@@ -558,6 +639,24 @@ mod tests {
         let hidden = crate::commands::hidhide_cloak::hidden_devices().expect("--dev-list");
         println!("escondidos depois de parar: {hidden:?}");
         assert!(hidden.is_empty(), "o controle ficou escondido: {hidden:?}");
+    }
+
+    fn armed_at(at: Instant) -> Option<Armed> {
+        Some(Armed { settings: flat(), at })
+    }
+
+    #[test]
+    fn armed_profile_is_used_until_it_expires() {
+        let start = Instant::now();
+        let armed = armed_at(start);
+        assert!(live_armed(&armed, start).is_some());
+        assert!(live_armed(&armed, start + ARM_TTL).is_some());
+        assert!(live_armed(&armed, start + ARM_TTL + Duration::from_secs(1)).is_none());
+    }
+
+    #[test]
+    fn nothing_armed_means_nothing_to_start() {
+        assert!(live_armed(&None, Instant::now()).is_none());
     }
 
     #[test]

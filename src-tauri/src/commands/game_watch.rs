@@ -211,6 +211,7 @@ pub fn start_game_watch(app: AppHandle) {
                 if was_running {
                     was_running = false;
                     reveal_main_window(&app);
+                    crate::commands::pad_engine::game_ended();
                     let _ = app.emit(
                         "game-watch:ended",
                         json!({ "executable": last_target }),
@@ -253,6 +254,9 @@ pub fn start_game_watch(app: AppHandle) {
                 );
             }
 
+            // A emulação de controle acompanha o PROCESSO do jogo: liga quando ele aparece e desliga na hora em que some.
+            crate::commands::pad_engine::game_presence(&app, located.is_some());
+
             if let Some((pid, matched_path, start_ms)) = located {
                 tracked_pid = Some(pid);
                 handoff_grace_ticks = 0;
@@ -290,8 +294,8 @@ pub fn start_game_watch(app: AppHandle) {
             handoff_grace_ticks = 0;
             crate::commands::achievement_watcher::stop_all_achievement_watchers(&app);
             reveal_main_window(&app);
-            // O jogo acabou: devolve o controle físico (o motor o escondeu do jogo).
-            std::thread::spawn(crate::commands::pad_engine::shutdown);
+            // O jogo acabou: devolve o controle físico (o motor o escondeu do jogo) e esquece o perfil armado.
+            crate::commands::pad_engine::game_ended();
             let _ = app.emit("game-watch:ended", json!({ "executable": target }));
         }
     });

@@ -239,22 +239,22 @@ export interface PadEngineStatus {
 }
 
 /**
- * Liga a emulação para o jogo que vai abrir, se o perfil efetivo pedir. Devolve a mensagem de
- * erro quando não deu (o jogo abre assim mesmo, só sem emulação) e `null` quando deu certo ou
- * não era necessário.
+ * Arma a emulação para o jogo que vai abrir, se o perfil efetivo pedir. Ela NÃO liga aqui: o vigia de
+ * jogos (Rust) a liga quando o processo do jogo aparece e a desliga na hora em que ele fecha, devolvendo
+ * o controle físico ao Windows. Devolve a mensagem de erro se não deu para armar (o jogo abre assim
+ * mesmo) e `null` quando deu certo ou não era necessário.
  */
-export async function startEmulationForGame(uid: string, gameId: string): Promise<string | null> {
+export async function armEmulationForGame(uid: string, gameId: string): Promise<string | null> {
   try {
     const { settings } = await resolveControllerProfile(uid, gameId);
-    if (!settings.emulateXinput) return null;
-    await invoke<void>("pad_engine_start", { settings });
+    await invoke<void>("pad_engine_arm", { settings });
     return null;
   } catch (error) {
     return error instanceof Error ? error.message : String(error);
   }
 }
 
-/** Desliga a emulação e devolve o controle físico. Seguro de chamar sem ela ligada. */
+/** Desliga a emulação, esquece o perfil armado e devolve o controle físico. Seguro de chamar sem ela ligada. */
 export const stopEmulation = () => invoke<void>("pad_engine_stop");
 
 export const getPadEngineStatus = () => invoke<PadEngineStatus>("pad_engine_status");
