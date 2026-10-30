@@ -64,14 +64,15 @@ export const ConsolePageLayout: React.FC<ConsolePageLayoutProps> = ({
       <motion.div
         ref={scrollRef}
         data-system-page={systemPage}
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
         className="thin-scrollbar min-h-0 flex-1 overflow-y-auto"
         style={{ padding: "var(--safe-y) var(--safe-x) 48px", contain: "layout" }}
       >
         <div className="mx-auto flex min-h-full w-full max-w-[1280px] flex-col gap-10">
-          <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
+          <header className="sticky top-0 z-20 -mx-4 -mt-4 flex flex-wrap items-end justify-between gap-x-8 gap-y-5 px-4 pt-4 pb-3 backdrop-blur-md bg-[var(--surface-base)]/60 transition-colors">
             <div className="min-w-0">
               <h1 className="text-[length:var(--fs-label)] font-bold uppercase tracking-[0.08em] text-[var(--ink-muted)]">{title}</h1>
               {readings ? (

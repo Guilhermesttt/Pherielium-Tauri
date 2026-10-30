@@ -20,6 +20,7 @@ interface ModalShellProps {
   ariaLabel?: string;
   gamepadPriority?: number;
   /** Duração do fechamento em ms — deve bater com `--modal-close-dur` (150ms) em src/index.css. */
+  /** Duração do fechamento em ms — deve bater com `--modal-close-dur` (140ms) em src/index.css. */
   closeDurationMs?: number;
 }
 
@@ -45,7 +46,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
   reducedEffects = false,
   gamepadPriority = 100,
   ariaLabel,
-  closeDurationMs = 150,
+  closeDurationMs = 140,
 }) => {
   useModalSounds(isOpen);
   const contentRef = React.useRef<HTMLDivElement>(null);
@@ -194,7 +195,7 @@ const ModalShell: React.FC<ModalShellProps> = ({
         className={cn(
           // bg-black/70 + blur leve: separa o painel do que está atrás (capa do jogo, prévia
           // cheia de detalhe) sem usar um blur pesado (GPU de quem está jogando).
-          "t-modal-backdrop absolute inset-0 bg-black/70 backdrop-blur-sm",
+          "t-modal-backdrop absolute inset-0",
           renderState === "open" ? "is-open" : "",
           backdropClassName
         )}

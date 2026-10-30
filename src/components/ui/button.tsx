@@ -4,14 +4,14 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-xs font-bold transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-150 ease-[var(--ease-mech)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 disabled:pointer-events-none disabled:opacity-50 select-none cursor-pointer active:scale-[0.97]",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-xs font-bold transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-[180ms] ease-[var(--ease-out-strong)] active:duration-75 motion-reduce:transition-colors motion-reduce:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 disabled:pointer-events-none disabled:opacity-50 select-none cursor-pointer active:scale-[0.97]",
   {
     variants: {
       variant: {
         default:
-          "bg-white text-black hover:bg-white/90 shadow-[0_4px_16px_rgba(255,255,255,0.15)]",
+          "bg-white text-black hover:bg-white/90 hover:scale-[1.02] motion-reduce:hover:scale-100 shadow-[0_4px_16px_rgba(255,255,255,0.15)]",
         destructive:
-          "bg-rose-600 text-white hover:bg-rose-500 shadow-[0_4px_16px_rgba(225,29,72,0.25)]",
+          "bg-rose-600 text-white hover:bg-rose-500 hover:scale-[1.02] motion-reduce:hover:scale-100 shadow-[0_4px_16px_rgba(225,29,72,0.25)]",
         outline:
           "border border-white/15 bg-white/[0.04] text-white hover:bg-white/10 hover:border-white/25 backdrop-blur-md",
         secondary:

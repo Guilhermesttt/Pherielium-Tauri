@@ -25,26 +25,31 @@ export const DURATIONS = { instant: 90, quick: 150, base: 220, slow: 360 } as co
  * smooth-out, só escala e opacidade. Espalhe no `motion.div`: `<motion.div {...modalMotion} />`.
  * "Reduzir movimento" é tratado pelo `MotionConfig` do App.
  */
-const SMOOTH_OUT: [number, number, number, number] = [0.22, 1, 0.36, 1];
-const OPEN = { duration: 0.25, ease: SMOOTH_OUT } as const;
-const CLOSE = { duration: 0.15, ease: SMOOTH_OUT } as const;
+const APPLE_EASE_OUT: [number, number, number, number] = [0.23, 1, 0.32, 1];
+const MODAL_OPEN = { duration: 0.22, ease: APPLE_EASE_OUT } as const;
+const MODAL_CLOSE = { duration: 0.14, ease: APPLE_EASE_OUT } as const;
+const DROPDOWN_OPEN = { duration: 0.20, ease: APPLE_EASE_OUT } as const;
+const DROPDOWN_CLOSE = { duration: 0.12, ease: APPLE_EASE_OUT } as const;
 
-/** Cartão de modal: de 0.96 a 1; ao fechar volta a 0.96, mais rápido. */
+export const OPEN = MODAL_OPEN;
+export const CLOSE = MODAL_CLOSE;
+
+/** Cartão de modal: de 0.96 a 1 (220ms Apple Motion); ao fechar volta a 0.98 mais rápido (140ms). */
 export const modalMotion = {
   initial: { opacity: 0, scale: 0.96 },
-  animate: { opacity: 1, scale: 1, transition: OPEN },
-  exit: { opacity: 0, scale: 0.96, transition: CLOSE },
+  animate: { opacity: 1, scale: 1, transition: MODAL_OPEN },
+  exit: { opacity: 0, scale: 0.98, transition: MODAL_CLOSE },
 } as const;
 
 /**
- * Troca de página (Home → Amigos → Ajustes...): a nova sobe 8px enquanto aparece (250ms), a que sai
- * só apaga (150ms). Sem blur nem escala: a página inteira é grande demais para filtros caros, e o
+ * Troca de página (Home → Amigos → Ajustes...): a nova sobe 8px enquanto aparece (240ms), a que sai
+ * só apaga (120ms). Sem blur nem escala: a página inteira é grande demais para filtros caros, e o
  * app roda ao lado de um jogo. As páginas não animam a própria entrada: só este preset.
  */
 export const pageMotion = {
   initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0, transition: OPEN },
-  exit: { opacity: 0, y: 0, transition: CLOSE },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.24, ease: APPLE_EASE_OUT } },
+  exit: { opacity: 0, transition: { duration: 0.12, ease: APPLE_EASE_OUT } },
 } as const;
 
 /**
@@ -67,13 +72,58 @@ export const screenSprings = {
 /** Fundo do modal: só opacidade, no mesmo tempo do cartão. */
 export const modalBackdropMotion = {
   initial: { opacity: 0 },
-  animate: { opacity: 1, transition: OPEN },
-  exit: { opacity: 0, transition: CLOSE },
+  animate: { opacity: 1, transition: MODAL_OPEN },
+  exit: { opacity: 0, transition: MODAL_CLOSE },
 } as const;
 
 /** Dropdown/popover: cresce de 0.97 a 1 a partir da origem; fecha encolhendo só até 0.99. */
 export const dropdownMotion = {
   initial: { opacity: 0, scale: 0.97 },
-  animate: { opacity: 1, scale: 1, transition: OPEN },
-  exit: { opacity: 0, scale: 0.99, transition: CLOSE },
+  animate: { opacity: 1, scale: 1, transition: DROPDOWN_OPEN },
+  exit: { opacity: 0, scale: 0.99, transition: DROPDOWN_CLOSE },
+} as const;
+
+/**
+ * Molas ao estilo Apple (WWDC "Designing Fluid Interfaces"), no framer-motion.
+ *
+ * A Apple descreve uma mola por DOIS números: amortecimento (1.0 = assenta sem passar do ponto;
+ * abaixo de 1 passa e oscila) e resposta (em segundos, o quanto demora a chegar). No framer-motion
+ * isso é `duration` (resposta) + `bounce` (≈ 1 − amortecimento). Padrão da casa: amortecimento 1.0
+ * em tudo; só há sobra quando o gesto traz momento (soltar uma gaveta) ou numa comemoração rara.
+ * Molas partem do valor atual e carregam a velocidade, então podem ser interrompidas a qualquer hora.
+ */
+export function appleSpring(damping: number, response: number) {
+  const clampedDamping = Math.min(1, Math.max(0, damping));
+  return { type: "spring", bounce: Math.round((1 - clampedDamping) * 100) / 100, duration: response } as const;
+}
+
+export const appleSprings = {
+  /** Mover/reposicionar (a tabela da Apple: amortecimento 1.0, resposta 0.4). */
+  move: appleSpring(1, 0.4),
+  /** Resposta direta a um toque: botões, chips, cartões que entram. */
+  snap: appleSpring(1, 0.3),
+  /** Gaveta/folha solta com momento (amortecimento 0.8, resposta 0.3). */
+  sheet: appleSpring(0.8, 0.3),
+  /** Comemoração rara (conquista, tarefa concluída): um pouco mais de sobra. */
+  delight: appleSpring(0.7, 0.5),
+} as const;
+
+/** Curvas fortes (CSS) para o que não é mola; o mesmo valor está em `--ease-out-strong` / `--ease-drawer`. */
+export const APPLE_EASE = {
+  outStrong: [0.23, 1, 0.32, 1],
+  drawer: [0.32, 0.72, 0, 1],
+} as const;
+
+/** Distância entre itens de um grupo que entra (ms). Decorativo: nunca bloqueia a interação. */
+export const STAGGER_MS = 40;
+
+/**
+ * "Materializar": uma superfície de vidro chega crescendo e focando ao mesmo tempo (desfoque e escala
+ * juntos), em vez de só aparecer. Desfoque curto (8px): filtros grandes custam caro, sobretudo no Safari.
+ * Sai pelo mesmo caminho, mais rápido.
+ */
+export const materialize = {
+  initial: { opacity: 0, scale: 0.96, filter: "blur(8px)" },
+  animate: { opacity: 1, scale: 1, filter: "blur(0px)", transition: appleSprings.move },
+  exit: { opacity: 0, scale: 0.98, filter: "blur(6px)", transition: { duration: 0.18, ease: APPLE_EASE.outStrong } },
 } as const;

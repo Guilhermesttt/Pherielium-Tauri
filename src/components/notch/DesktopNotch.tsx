@@ -50,6 +50,8 @@ import type { NotchGameTabData } from "./gameTabData";
 import { CalendarWidget, LyricsWidget, WeatherWidget } from "./widgets/NotchWidgets";
 import { useNotchLyrics } from "./widgets/useNotchWidgetData";
 import { useCoverColor } from "./widgets/coverColor";
+import { appleSprings } from "../../design-system/motion";
+import { PRESENCE_HEARTBEAT_MS, announcePherieInNotch } from "../../mascot/pherieHandoff";
 import { CallIncomingBar } from "./live/CallIncomingBar";
 import { VoiceBars } from "./live/VoiceBars";
 import { LIVE_WIDTH, resolveLiveActivity } from "./live/liveActivity";
@@ -262,6 +264,14 @@ const Equalizer: React.FC<{ playing: boolean; height?: number }> = ({ playing, h
   );
 };
 
+/** Toque dos botões da notch: só propriedades nomeadas, aperta rápido (75 ms) e solta macio (160 ms). */
+const NOTCH_PRESS =
+  "transition-[transform,background-color,color,opacity,filter] duration-[160ms] ease-[var(--ease-out-strong)] active:duration-75 motion-reduce:transition-colors motion-reduce:active:scale-100";
+
+const TAB_ORDER = ["home", "controller", "game"] as const;
+/** Largura do botão da aba (w-11) + espaço entre eles (gap-1): o passo da pílula deslizante. */
+const TAB_STEP_PX = 48;
+
 export const NotchIconButton: React.FC<{
   onClick: (e: React.MouseEvent) => void;
   title: string;
@@ -284,7 +294,7 @@ export const NotchIconButton: React.FC<{
       title={title}
       aria-label={title}
       onClick={onClick}
-      className={`h-9 ${wide ? "px-4" : "w-9"} shrink-0 rounded-full flex items-center justify-center gap-1.5 text-[11px] font-semibold transition-all duration-150 active:scale-[0.94] ${toneClass}`}
+      className={`h-9 ${wide ? "px-4" : "w-9"} shrink-0 rounded-full flex items-center justify-center gap-1.5 text-[11px] font-semibold ${NOTCH_PRESS} active:scale-[0.94] ${toneClass}`}
     >
       {children}
     </button>
@@ -458,10 +468,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   // Configuração viva (Configurações → Mascote e Notch). O overlay não tem
   // PreferencesProvider; ela chega de overlay-prefs.json + evento `overlay:prefs`.
   const appearance = useOverlayAppearance();
-  const storedConfig = configProp ?? appearance.config;
-  // A Pherie mora no hub do launcher; a notch fica só com as informações. O ajuste "Mostrar a Pherie"
-  // continua valendo, mas para o hub.
-  const config = useMemo(() => ({ ...storedConfig, showMascot: false }), [storedConfig]);
+  const config = configProp ?? appearance.config;
   // Estilo = tema visual do launcher (cyberpunk, ps5...) + ajustes do usuário.
   const notchStyle = useMemo(
     () => resolveNotchStyle(appearance.visualTheme, config),
@@ -480,6 +487,11 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   // Estados de visualização do Notch
   const [isExpanded, setIsExpanded] = useState(false);
+  // O tutorial (na janela do hub) espera a notch abrir de verdade; o overlay é outro documento, então avisa por evento.
+  useEffect(() => {
+    if (!isExpanded || !isOverlay || !hasTauriRuntime()) return;
+    void import("@tauri-apps/api/event").then(({ emit }) => emit("overlay:notch-expanded", {})).catch(() => undefined);
+  }, [isExpanded, isOverlay]);
   const [isHovered, setIsHovered] = useState(false);
   const [currentTime, setCurrentTime] = useState("");
   const collapseTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -921,6 +933,24 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   const dizzyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [overloaded, setOverloaded] = useState(false);
   const [tab, setTab] = useState<"home" | "controller" | "game">("home");
+  // Troca de aba: o conteúdo entra vindo do lado da aba nova (WAAPI: opacity + transform, fora da main thread).
+  const paneRef = useRef<HTMLDivElement | null>(null);
+  const previousTab = useRef(tab);
+  useEffect(() => {
+    const from = TAB_ORDER.indexOf(previousTab.current);
+    previousTab.current = tab;
+    const pane = paneRef.current;
+    if (!pane || from === TAB_ORDER.indexOf(tab) || typeof pane.animate !== "function") return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const dx = TAB_ORDER.indexOf(tab) > from ? 14 : -14;
+    pane.animate(
+      [
+        { opacity: 0, transform: reduce ? "none" : `translateX(${dx}px)` },
+        { opacity: 1, transform: "none" },
+      ],
+      { duration: 220, easing: "cubic-bezier(0.23, 1, 0.32, 1)" },
+    );
+  }, [tab]);
   const controller = useControllerState();
   // Curiosidade: cursor chegou ao topo, na altura do notch.
   const [curious, setCurious] = useState(false);
@@ -1021,6 +1051,22 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   });
   const reactMood = situation.react;
 
+  // A Pherie mora no hub; na notch ela só acompanha o que pede companhia: a chamada (de fone, falando junto
+  // com você, como sempre foi), os avisos ("Divirta-se", pedido de amizade, mensagem, conquista...) e o
+  // controle que conecta ou desconecta, reagindo com o humor do aviso. Em música, jogo ou ociosa, a notch
+  // fica só com a informação.
+  const mascotInNotch =
+    config.showMascot && (isCallActive || Boolean(incomingInvite) || Boolean(notchEvent) || Boolean(controllerFlash));
+
+  // Enquanto a Pherie está aqui, o hub a esconde (ela "sobe" para a notch) e a devolve quando ela some.
+  useEffect(() => {
+    announcePherieInNotch(mascotInNotch);
+    if (!mascotInNotch) return;
+    const beat = window.setInterval(() => announcePherieInNotch(true), PRESENCE_HEARTBEAT_MS);
+    return () => window.clearInterval(beat);
+  }, [mascotInNotch]);
+  useEffect(() => () => announcePherieInNotch(false), []);
+
   const mascotMood: MascotMood = useMemo(() => {
     if (dizzy) return "dizzy"; // chacoalharam o mouse
     if (incomingInvite) return "excited"; // alguém está ligando
@@ -1047,12 +1093,12 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   useEffect(() => {
     const prev = prevVoiceMoodRef.current;
     prevVoiceMoodRef.current = mascotMood;
-    if (!config.sounds || !config.showMascot) return;
+    if (!config.sounds || !mascotInNotch) return;
     if (moodHasOwnSound) return;
     if (performance.now() < voiceMuteUntilRef.current) return;
     const voice = voiceForMoodChange(prev, mascotMood);
     if (voice) playPherieVoice(voice, soundVolume);
-  }, [mascotMood, config.sounds, config.showMascot, moodHasOwnSound, soundVolume]);
+  }, [mascotMood, config.sounds, mascotInNotch, moodHasOwnSound, soundVolume]);
 
   // Boca do mascote: no Tauri o volume do microfone chega por evento dedicado
   // (overlay:voice-level, ref sem re-render). Fora do Tauri (dev no navegador) cai
@@ -1179,10 +1225,10 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     } else {
       // pip que fica mais agudo a cada clique; o humor que ela reage não fala por cima
       voiceMuteUntilRef.current = performance.now() + 700;
-      if (config.sounds && config.showMascot) playPherieVoice("poke", soundVolume, 1 + 0.14 * (recent.length - 1));
+      if (config.sounds && mascotInNotch) playPherieVoice("poke", soundVolume, 1 + 0.14 * (recent.length - 1));
       reactMood(recent.length === 1 ? "surprised" : "annoyed");
     }
-  }, [notchSound, revealNotch, reactMood, config.sounds, config.showMascot, soundVolume]);
+  }, [notchSound, revealNotch, reactMood, config.sounds, mascotInNotch, soundVolume]);
 
   const openNotch = () => {
     if (!pointerRevealRef.current) return;
@@ -1204,7 +1250,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   // Quem "hospeda" o mascote quando o painel abre (a barra cede o lugar): a chamada,
   // o slot da capa (música sem capa) ou o balão ocioso. Jogo sozinho não hospeda.
-  const mascotHost: "call" | "game" | "media" | "idle" | null = !isExpanded || !config.showMascot
+  const mascotHost: "call" | "game" | "media" | "idle" | null = !isExpanded || !mascotInNotch
     ? null
     : isCallActive
     ? "call"
@@ -1241,16 +1287,19 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
 
   // ── Barra superior (sempre visível; vira o "cabeçalho" quando expande) ──
   // Mascote sempre à esquerda (também ocioso): é o ponto de interação do notch.
-  const barMascot = (size: number) => !config.showMascot ? null : (
-    <div
+  const barMascot = (size: number) => (
+    <AnimatePresence>
+      {mascotInNotch && (
+    <motion.div
+      key="bar-mascot"
       data-notch-mascot="true"
       className="shrink-0"
-      style={{
-        width: size,
-        height: size,
-        opacity: mascotHost ? 0 : 1,
-        transition: "opacity 0.18s ease",
-      }}
+      style={{ width: size, height: size }}
+      // ela surge na notch (vinda do hub) e some do mesmo jeito
+      initial={{ scale: 0.4, y: -14, opacity: 0 }}
+      animate={{ scale: 1, y: 0, opacity: mascotHost ? 0 : 1 }}
+      exit={{ scale: 0.4, y: -14, opacity: 0, transition: appleSprings.snap }}
+      transition={appleSprings.sheet}
     >
       <GazingMascot
         cursor={gazeCursor}
@@ -1268,7 +1317,9 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         isSpeaking={mouthSpeaking}
         onClick={handleMascotPoke}
       />
-    </div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 
   // Mascote dentro do painel: "pula" para o lugar (slot da capa / chamada / balão).
@@ -1345,8 +1396,8 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             e.stopPropagation();
             setTab(id);
           }}
-          className={`flex h-9 w-11 items-center justify-center rounded-full transition-colors ${
-            tab === id ? "bg-white/[0.10] text-white" : "text-white/55 hover:bg-white/[0.06] hover:text-white"
+          className={`relative z-10 flex h-9 w-11 items-center justify-center rounded-full transition-colors duration-150 ${
+            tab === id ? "text-white" : "text-white/55 hover:bg-white/[0.06] hover:text-white"
           }`}
         >
           {icon}
@@ -1354,7 +1405,13 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
       );
       return (
         <div className="flex w-full items-center justify-between">
-          <div className="flex items-center gap-1" role="tablist">
+          <div className="relative flex items-center gap-1" role="tablist">
+            {/* pílula ativa: desliza entre as abas só com transform (sem medir layout) */}
+            <span
+              aria-hidden
+              className="notch-tab-pill pointer-events-none absolute left-0 top-0 h-9 w-11 rounded-full bg-white/[0.10]"
+              style={{ transform: `translateX(${Math.max(0, TAB_ORDER.indexOf(tab)) * TAB_STEP_PX}px)` }}
+            />
             {tabBtn("home", "Início", <Home size={17} />)}
             {tabBtn("controller", "Controle", <Gamepad2 size={17} />)}
             {gameTab && activeGameTitle && tabBtn("game", "Jogo", <Trophy size={17} />)}
@@ -1582,7 +1639,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                 className="overflow-hidden"
               >
                 <div className="px-4 pb-4 pt-1">
-                  <AchievementReveal event={notchEvent} mascot={storedConfig.showMascot ? panelMascot(56) : undefined} />
+                  <AchievementReveal event={notchEvent} mascot={config.showMascot ? panelMascot(56) : undefined} />
                 </div>
               </motion.div>
             )}
@@ -1598,7 +1655,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                 }}
                 className="overflow-hidden"
               >
-                <div className="px-4 pb-4 pt-1 flex flex-col gap-3.5">
+                <div ref={paneRef} className="notch-stagger px-4 pb-4 pt-1 flex flex-col gap-3.5">
                   {/* ── Dropzone: arraste imagens até aqui para salvá-las nas capturas ── */}
                   {dropzone.active && (
                     <section className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-white/25 bg-white/[0.05] px-4 py-5 text-center">
@@ -1616,7 +1673,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                   {overloaded && (
                     <NotchCard>
                       <div className="flex items-center gap-4">
-                        {config.showMascot && panelMascot(64)}
+                        {mascotInNotch && panelMascot(64)}
                         <div className="min-w-0">
                           <p className="text-[14px] font-semibold text-white">Muitos cliques de uma vez.</p>
                           <p className="mt-0.5 text-[12px] leading-snug text-white/55">
@@ -1630,7 +1687,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                     <NotchCard tone="green">
                       <SectionLabel>Chamada recebida</SectionLabel>
                       <div className="flex items-center gap-3">
-                        {config.showMascot && panelMascot(64, { mood: "excited" })}
+                        {mascotInNotch && panelMascot(64, { mood: "excited" })}
                         <div className="flex min-w-0 flex-1 items-center gap-2.5">
                           <CallAvatar src={incomingInvite.callerAvatar || undefined} name={incomingInvite.callerName} size={34} />
                           <div className="min-w-0 leading-tight">
@@ -1643,7 +1700,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                             type="button"
                             onClick={() => (overlayIncomingCall ? overlayIncomingCall.onReject() : void voiceCall.rejectCall())}
                             aria-label="Recusar"
-                            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#ff453a] text-white transition-all hover:brightness-110 active:scale-90"
+                            className={`flex h-11 w-11 items-center justify-center rounded-full bg-[#ff453a] text-white ${NOTCH_PRESS} hover:brightness-110 active:scale-90`}
                           >
                             <PhoneOff size={19} />
                           </button>
@@ -1651,7 +1708,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                             type="button"
                             onClick={() => (overlayIncomingCall ? overlayIncomingCall.onAccept() : void voiceCall.answerCall())}
                             aria-label="Atender"
-                            className="flex h-11 w-11 items-center justify-center rounded-full bg-[#30d158] text-white transition-all hover:brightness-110 active:scale-90"
+                            className={`flex h-11 w-11 items-center justify-center rounded-full bg-[#30d158] text-white ${NOTCH_PRESS} hover:brightness-110 active:scale-90`}
                           >
                             <Phone size={19} />
                           </button>
@@ -1674,7 +1731,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                     <NotchCard tone="green">
                       <SectionLabel>Chamada de voz</SectionLabel>
                       <div className="flex items-center gap-3">
-                        {config.showMascot && panelMascot(64)}
+                        {mascotInNotch && panelMascot(64)}
                         <div className="min-w-0 flex-1">
                           <p className="flex items-center gap-1.5 text-[13px] font-semibold text-white leading-tight min-w-0">
                             <CallAvatar src={callFriendAvatar} name={callFriendName} size={18} speaking={isSpeaking && !isMuted} />
@@ -1752,7 +1809,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                                 className="w-full h-full rounded-2xl object-cover"
                                 draggable={false}
                               />
-                              <div className={`absolute -bottom-2 -right-2 rounded-full bg-black p-0.5 ${config.showMascot && mascotHost !== "game" ? "" : "hidden"}`}>
+                              <div className={`absolute -bottom-2 -right-2 rounded-full bg-black p-0.5 ${mascotInNotch && mascotHost !== "game" ? "" : "hidden"}`}>
                                 <GazingMascot
                                   cursor={gazeCursor}
                                   size={36}
@@ -1782,7 +1839,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                         <button
                           type="button"
                           onClick={handleSkipPrev}
-                          className="text-white/75 hover:text-white transition-all active:scale-90"
+                          className={`text-white/75 hover:text-white ${NOTCH_PRESS} active:scale-90`}
                           title="Faixa anterior"
                           aria-label="Faixa anterior"
                         >
@@ -1791,7 +1848,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                         <button
                           type="button"
                           onClick={handleTogglePlayPause}
-                          className="w-11 h-11 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition-all active:scale-90"
+                          className={`w-11 h-11 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 ${NOTCH_PRESS} active:scale-90`}
                           title={mediaState.isPlaying ? "Pausar" : "Reproduzir"}
                           aria-label={mediaState.isPlaying ? "Pausar" : "Reproduzir"}
                         >
@@ -1804,7 +1861,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                         <button
                           type="button"
                           onClick={handleSkipNext}
-                          className="text-white/75 hover:text-white transition-all active:scale-90"
+                          className={`text-white/75 hover:text-white ${NOTCH_PRESS} active:scale-90`}
                           title="Próxima faixa"
                           aria-label="Próxima faixa"
                         >
@@ -1842,7 +1899,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                       className="flex flex-col items-center gap-3 rounded-[24px] bg-[#171717] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] px-5 pb-4 pt-5"
                       style={{ backgroundImage: "radial-gradient(70% 90% at 50% 38%, rgba(255,255,255,0.075) 0%, transparent 70%)" }}
                     >
-                      {config.showMascot && panelMascot(92)}
+                      {mascotInNotch && panelMascot(92)}
                       {(() => {
                         const tip = (
                           <AnimatePresence mode="wait" initial={false}>
