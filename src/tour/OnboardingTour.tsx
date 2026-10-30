@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { animated, useSpring } from "@react-spring/web";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { MascotView } from "../mascot/MascotView";
 import { useNotchConfig } from "../mascot/useNotchConfig";
 import { SPRINGS } from "../design-system/motion";
@@ -9,20 +9,40 @@ import {
   TOUR_STEPS,
   coachPlacement,
   loadTourState,
+  progressOf,
   saveTourState,
   stepIndexFrom,
   tourForceKey,
   type Rect,
   type TourStep,
 } from "./tourSteps";
-import { isInstallSetupActive } from "../components/InstallSetupScreen";
+import { TourFlash, TourSad, TourScene } from "./TourScene";
+import { appleSprings } from "../design-system/motion";
+import { useGamepadButton } from "../context/GamepadContext";
+import { GAMEPAD_PRIORITY } from "../context/gamepadSubscribers";
+import { TourPanelView, TourVisualView } from "./TourVisuals";
 
-const INTRO_KEY = "pherielium_intro_v1";
 const Z = 320; // acima de ModalShell (100) e GameLaunchIntro (200)
 const HOLE_PAD = 8;
-const COACH = { width: 360, height: 188 };
+/** Quanto o selo "Feito!" com a Pherie comemorando fica na tela antes do próximo passo. */
+const FLASH_MS = 2400;
+const COACH_BASE = { width: 360, height: 188 };
+const COACH_RICH = { width: 400, height: 300 };
+const COACH_PANEL = { width: 420, height: 400 };
 
-/** Retângulo do alvo, remedido a cada quadro (abas e carrosséis se mexem). */
+/** Tamanho do cartão: passos com ilustração ou painel de ajustes precisam de mais espaço. */
+const coachSizeFor = (step: TourStep | undefined) =>
+  step?.panel ? COACH_PANEL : step?.visual || step?.task ? COACH_RICH : COACH_BASE;
+
+/** Quanto tempo o alvo é medido quadro a quadro depois de mudar de passo (abas e gavetas deslizando). */
+const FOLLOW_BURST_MS = 1600;
+/** Depois disso basta conferir algumas vezes por segundo: nada se mexe, e medir layout a 60 Hz custa CPU. */
+const FOLLOW_IDLE_MS = 250;
+
+/**
+ * Retângulo do alvo. Acompanha o movimento em quadros logo depois de o passo começar; depois só
+ * remede 4x por segundo e a cada resize/scroll.
+ */
 function useTargetRect(selector: string | null): Rect | null {
   const [rect, setRect] = useState<Rect | null>(null);
   useLayoutEffect(() => {
@@ -31,9 +51,11 @@ function useTargetRect(selector: string | null): Rect | null {
       return;
     }
     let raf = 0;
+    let idle = 0;
     let last = "";
     let scrolled = false;
-    const tick = () => {
+    const startedAt = performance.now();
+    const measure = () => {
       const el = document.querySelector<HTMLElement>(selector);
       if (el) {
         if (!scrolled) {
@@ -47,64 +69,45 @@ function useTargetRect(selector: string | null): Rect | null {
           setRect({ x: r.x, y: r.y, width: r.width, height: r.height });
         }
       }
-      raf = requestAnimationFrame(tick);
     };
-    tick();
-    return () => cancelAnimationFrame(raf);
+    const burst = () => {
+      measure();
+      if (performance.now() - startedAt < FOLLOW_BURST_MS) raf = requestAnimationFrame(burst);
+    };
+    burst();
+    idle = window.setInterval(measure, FOLLOW_IDLE_MS);
+    window.addEventListener("resize", measure, { passive: true });
+    window.addEventListener("scroll", measure, { passive: true, capture: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearInterval(idle);
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, { capture: true });
+    };
   }, [selector]);
   return rect;
+}
+
+/** Tamanho da janela, atualizado no resize (o cartão da Pherie reposiciona se a janela mudar). */
+function useViewportSize() {
+  const read = () => ({
+    width: typeof window !== "undefined" ? window.innerWidth : 1280,
+    height: typeof window !== "undefined" ? window.innerHeight : 720,
+  });
+  const [size, setSize] = useState(read);
+  useEffect(() => {
+    const onResize = () => setSize(read);
+    window.addEventListener("resize", onResize, { passive: true });
+    return () => window.removeEventListener("resize", onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return size;
 }
 
 /** Tem algum diálogo modal aberto? (o tour espera ele fechar antes de seguir) */
 const modalOpen = () => document.querySelector('[aria-modal="true"], [role="dialog"][data-state="open"]') !== null;
 
-/** Abertura no overlay (a Pherie na área de trabalho → notch). Só no app instalado e só na 1ª vez. */
-async function playIntroOnce(force: boolean): Promise<void> {
-  if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) return;
-  try {
-    if (!force && localStorage.getItem(INTRO_KEY)) return;
-    localStorage.setItem(INTRO_KEY, "1");
-    const { emit, listen } = await import("@tauri-apps/api/event");
-    await new Promise<void>((resolve) => {
-      let unlisten: (() => void) | undefined;
-      const finish = () => {
-        unlisten?.();
-        resolve();
-      };
-      const timer = window.setTimeout(finish, 12_000);
-      void listen("overlay:intro-done", () => {
-        window.clearTimeout(timer);
-        finish();
-      }).then((fn) => {
-        unlisten = fn;
-      });
-      void emit("overlay:intro", {});
-    });
-  } catch {
-    /* sem overlay: segue direto para o tutorial */
-  }
-}
-
 const hasTarget = (selector: string) => document.querySelector(selector) !== null;
-
-/** Dica visual da Alt + rolagem. */
-const AltScrollHint: React.FC = () => (
-  <div className="mt-2 flex items-center gap-2" aria-hidden>
-    <kbd className="rounded-md border border-white/25 bg-white/10 px-2 py-0.5 text-[length:var(--step-0)] font-semibold text-white">Alt</kbd>
-    <span className="text-[var(--ink-muted)]">+</span>
-    <motion.span
-      className="relative flex h-7 w-5 justify-center rounded-full border border-white/40 pt-1"
-      animate={{ opacity: [0.6, 1, 0.6] }}
-      transition={{ duration: 1.4, repeat: Infinity }}
-    >
-      <motion.span
-        className="h-2 w-[3px] rounded-full bg-white"
-        animate={{ y: [0, 8, 0] }}
-        transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
-      />
-    </motion.span>
-  </div>
-);
 
 const Confetti: React.FC = () => {
   const bits = useMemo(
@@ -146,6 +149,31 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
   const [active, setActive] = useState(false);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const viewport = useViewportSize();
+  /** timeouts do tutorial: todos morrem junto com ele (pular no meio de um selo não pode "avançar" depois) */
+  const timersRef = useRef(new Set<number>());
+  const later = useCallback((fn: () => void, ms: number) => {
+    const id = window.setTimeout(() => {
+      timersRef.current.delete(id);
+      fn();
+    }, ms);
+    timersRef.current.add(id);
+  }, []);
+  const clearTimers = useCallback(() => {
+    timersRef.current.forEach((id) => window.clearTimeout(id));
+    timersRef.current.clear();
+  }, []);
+  useEffect(() => clearTimers, [clearTimers]);
+  /** rótulo da tarefa recém-concluída: mostra o selo "Feito!" por um instante antes do próximo passo */
+  const [flash, setFlash] = useState<string | null>(null);
+  /** recado do passo anterior (ex.: "você soltou o Alt cedo demais"), mostrado no cartão da Pherie */
+  const [notice, setNotice] = useState<string | null>(null);
+  /** a pessoa tem controle? Decide se as etapas do controle entram no roteiro. */
+  const controllerModeRef = useRef<"unknown" | "yes" | "no">("unknown");
+  /** a Pherie triste ("não tenho controle agora") antes de seguir sem as etapas do controle */
+  const [sad, setSad] = useState(false);
+  /** para qual lado o usuário está andando: decide de onde a próxima cena entra */
+  const directionRef = useRef<1 | -1>(1);
   const indexRef = useRef(0);
   indexRef.current = index;
   // lido dentro do loop de espera sem recriar o efeito de início
@@ -160,23 +188,27 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
     let cancelled = false;
     let retry: number | undefined;
 
-    // Em conta nova a tela de configuração inicial (App.tsx) e o modal de
-    // boas-vindas ainda estão por cima da Home. Antes o tutorial começava
-    // mesmo assim e os dois apareciam juntos; agora ele espera a tela sair.
-    const somethingElseOnScreen = () => blockedRef.current || isInstallSetupActive();
+    // Se o modal de novidades ou outra tela estiver na frente, o tutorial espera ela sair.
+    const somethingElseOnScreen = () => blockedRef.current || modalOpen();
+    let waitedForModal = false;
 
     const start = async () => {
       if (cancelled) return;
       if (somethingElseOnScreen()) {
+        waitedForModal = true;
         retry = window.setTimeout(start, 600);
+        return;
+      }
+      if (waitedForModal) {
+        // o modal já fechou, mas a animação de saída ainda está correndo
+        waitedForModal = false;
+        retry = window.setTimeout(start, 450);
         return;
       }
       const forced = localStorage.getItem(tourForceKey(uid)) === "1";
       const state = loadTourState(uid, localStorage);
       if ((forced || (eligible && !state.done)) && !(state.done && !forced)) {
         localStorage.removeItem(tourForceKey(uid));
-        await playIntroOnce(forced);
-        if (cancelled) return;
         setIndex(state.step);
         setActive(true);
       }
@@ -199,12 +231,13 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
 
   const goTo = useCallback(
     (from: number, dir: 1 | -1) => {
-      const next = stepIndexFrom(from, dir, TOUR_STEPS, hasTarget);
+      const next = stepIndexFrom(from, dir, TOUR_STEPS, hasTarget, (s) => Boolean(s.requiresController) && controllerModeRef.current === "no");
       if (next === null) {
         if (uid) saveTourState(uid, { step: TOUR_STEPS.length - 1, done: true }, localStorage);
         setActive(false);
         return;
       }
+      directionRef.current = dir;
       setIndex(next);
       if (uid) saveTourState(uid, { step: next, done: false }, localStorage);
       playSound?.("select");
@@ -213,34 +246,46 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
   );
 
   const finish = useCallback(() => {
+    clearTimers();
+    setFlash(null);
+    setSad(false);
+    setPaused(false);
     if (uid) saveTourState(uid, { step: TOUR_STEPS.length - 1, done: true }, localStorage);
     setActive(false);
     playSound?.("select");
-  }, [uid, playSound]);
+  }, [uid, playSound, clearTimers]);
 
   // passo sem alvo na tela (ex.: sincronizar sem contas): pula sozinho
   useEffect(() => {
     if (!active || blocked || paused || !step || step.selector === null) return;
     const id = window.setTimeout(() => {
       if (!hasTarget(step.selector as string)) goTo(indexRef.current + 1, 1);
-    }, 400);
+    }, 400 + (step.waitForTargetMs ?? 0));
     return () => window.clearTimeout(id);
   }, [active, blocked, paused, step, goTo]);
 
   // avanço por ação do usuário (clicar no botão / Alt + rolagem): espera o modal que abrir fechar
+  const celebrate = useCallback((label: string) => {
+    setFlash(label);
+    later(() => setFlash(null), FLASH_MS);
+  }, [later]);
+
   const advanceAfterAction = useCallback(() => {
     setPaused(true);
     const from = indexRef.current;
+    celebrate(TOUR_STEPS[from]?.task ?? "Muito bem");
+    const startedAt = Date.now();
     let tries = 0;
     const id = window.setInterval(() => {
       tries += 1;
-      if (!modalOpen() || tries > 600) {
+      // só segue quando o selo já foi visto e o modal que a ação abriu (se houve) fechou
+      if ((!modalOpen() && Date.now() - startedAt >= FLASH_MS) || tries > 600) {
         window.clearInterval(id);
         setPaused(false);
         goTo(from + 1, 1);
       }
     }, 350);
-  }, [goTo]);
+  }, [goTo, celebrate]);
 
   useEffect(() => {
     if (!active || blocked || paused || !step) return;
@@ -248,17 +293,103 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
       const el = document.querySelector<HTMLElement>(step.selector);
       if (!el) return;
       const onClick = () => advanceAfterAction();
-      el.addEventListener("click", onClick, { once: true });
-      return () => el.removeEventListener("click", onClick);
+      // captura: o mascote chama stopPropagation no próprio clique, e o evento nunca chegaria ao alvo na fase normal
+      el.addEventListener("click", onClick, { once: true, capture: true });
+      return () => el.removeEventListener("click", onClick, { capture: true });
     }
     if (step.advanceOn === "alt-scroll") {
+      // Sem selo nem pausa: o seletor acabou de abrir e o usuário ainda está com o Alt apertado.
+      let advanced = false;
       const onWheel = (e: WheelEvent) => {
-        if (e.altKey) advanceAfterAction();
+        if (!e.altKey || advanced) return;
+        advanced = true;
+        setNotice(null);
+        goTo(indexRef.current + 1, 1);
       };
       window.addEventListener("wheel", onWheel, { passive: true });
       return () => window.removeEventListener("wheel", onWheel);
     }
-  }, [active, blocked, paused, step, advanceAfterAction]);
+    if (step.advanceOn === "notch-open") {
+      // a notch vive na janela do overlay: ela avisa por evento quando abre
+      let cancelled = false;
+      let unlisten: (() => void) | undefined;
+      if ("__TAURI_INTERNALS__" in window) {
+        void import("@tauri-apps/api/event").then(({ listen }) =>
+          listen("overlay:notch-expanded", () => advanceAfterAction()).then((fn) => {
+            if (cancelled) fn();
+            else unlisten = fn;
+          }),
+        );
+      }
+      return () => {
+        cancelled = true;
+        unlisten?.();
+      };
+    }
+    if (step.advanceOn === "target-gone" && step.selector) {
+      // só vale depois de o alvo ter aparecido: o painel abre um instante depois do passo anterior
+      let seenAt = 0;
+      const selector = step.selector;
+      const minOpenMs = step.minOpenMs ?? 0;
+      const id = window.setInterval(() => {
+        const present = hasTarget(selector);
+        if (present) {
+          if (!seenAt) seenAt = Date.now();
+        } else if (seenAt) {
+          window.clearInterval(id);
+          if (Date.now() - seenAt < minOpenMs) {
+            // soltou o Alt antes de escolher: não conta, volta para o passo de segurar
+            setNotice("Você soltou o Alt cedo demais. Segure o Alt, role o mouse e só solte quando a plataforma estiver no centro.");
+            goTo(indexRef.current - 1, -1);
+            return;
+          }
+          setPaused(true);
+          celebrate(step.task ?? "Muito bem");
+          later(() => {
+            setPaused(false);
+            goTo(indexRef.current + 1, 1);
+          }, FLASH_MS);
+        }
+      }, 200);
+      return () => window.clearInterval(id);
+    }
+  }, [active, blocked, paused, step, advanceAfterAction, goTo, celebrate, later]);
+
+  const handleNoController = useCallback(() => {
+    controllerModeRef.current = "no";
+    setSad(true);
+    later(() => {
+      setSad(false);
+      goTo(indexRef.current + 1, 1);
+    }, 2200);
+  }, [goTo, later]);
+
+  const handleTaskDone = useCallback(() => {
+    if (TOUR_STEPS[indexRef.current]?.id === "controller-connect") controllerModeRef.current = "yes";
+    advanceAfterAction();
+  }, [advanceAfterAction]);
+
+  // Controle: X confirma e O volta nos passos de "Continuar" (as práticas usam o X para a própria tarefa).
+  const manualStepActive = active && !blocked && !paused && !sad && Boolean(step) && step.advanceOn === "next";
+  useGamepadButton(
+    "X",
+    () => {
+      if (indexRef.current >= TOUR_STEPS.length - 1) finish();
+      else goTo(indexRef.current + 1, 1);
+    },
+    manualStepActive,
+    GAMEPAD_PRIORITY.overlayMenu,
+  );
+  useGamepadButton("O", () => goTo(indexRef.current - 1, -1), manualStepActive && index > 0, GAMEPAD_PRIORITY.overlayMenu);
+
+  // A gaveta lateral começa fechada; o tutorial a abre só nos passos que a mostram e a fecha depois.
+  const sidebarOpenedRef = useRef(false);
+  useEffect(() => {
+    const wantsOpen = active && !blocked && Boolean(step?.sidebar);
+    if (wantsOpen === sidebarOpenedRef.current) return;
+    sidebarOpenedRef.current = wantsOpen;
+    window.dispatchEvent(new CustomEvent("checkpoint:sidebar-toggle", { detail: { expanded: wantsOpen } }));
+  }, [active, blocked, step?.sidebar]);
 
   // teclado: Enter/→ próximo, Esc pular
   useEffect(() => {
@@ -272,11 +403,17 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
     return () => window.removeEventListener("keydown", onKey);
   }, [active, blocked, paused, step, goTo, finish]);
 
-  const vp = { width: typeof window !== "undefined" ? window.innerWidth : 1280, height: typeof window !== "undefined" ? window.innerHeight : 720 };
+  const vp = viewport;
   const hole = rect
     ? { x: rect.x - HOLE_PAD, y: rect.y - HOLE_PAD, width: rect.width + HOLE_PAD * 2, height: rect.height + HOLE_PAD * 2 }
     : { x: vp.width / 2, y: vp.height / 2, width: 0, height: 0 };
-  const place = coachPlacement(rect ? hole : null, vp, COACH);
+  const coach = coachSizeFor(step);
+  // Em passos que o usuário executa por cima de outra tela (o seletor de filtros), a Pherie fica no fundo,
+  // fora do caminho, em vez de colada ao alvo.
+  const place =
+    step?.coachAt === "bottom-center"
+      ? { x: (vp.width - coach.width) / 2, y: vp.height - coach.height - 28, side: "bottom" as const }
+      : coachPlacement(rect ? hole : null, vp, coach);
 
   const holeSpring = useSpring({
     ...hole,
@@ -285,16 +422,50 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
   });
   const coachSpring = useSpring({ x: place.x, y: place.y, immediate: Boolean(reduce), config: SPRINGS.soft });
 
-  if (!active || blocked || paused || !step || typeof document === "undefined") return null;
+  if (typeof document === "undefined") return null;
+  // selo "Feito!" entre uma tarefa e o próximo passo (o tutorial fica pausado enquanto a tela por baixo muda)
+  if (active && !blocked && paused) {
+    return createPortal(<AnimatePresence>{flash && <TourFlash key="flash" label={flash} zIndex={Z} bodyColor={config.bodyColor} />}</AnimatePresence>, document.body);
+  }
+  if (!active || blocked || !step) return null;
+  if (sad) return createPortal(<TourSad zIndex={Z} bodyColor={config.bodyColor} />, document.body);
 
   const isLast = index === TOUR_STEPS.length - 1;
-  const total = TOUR_STEPS.length;
+  const progress = progressOf(TOUR_STEPS, step.id, (s) => Boolean(s.requiresController) && controllerModeRef.current === "no");
+  const total = progress.total;
   const manual = step.advanceOn === "next";
 
+  // passos sem alvo viram cenas em tela cheia
+  if (step.scene) {
+    return createPortal(
+      <TourScene
+        step={step}
+        index={progress.index}
+        total={total}
+        direction={directionRef.current}
+        isLast={isLast}
+        onNext={() => (isLast ? finish() : goTo(index + 1, 1))}
+        onBack={() => goTo(index - 1, -1)}
+        onSkip={finish}
+        onTaskDone={handleTaskDone}
+        onNoController={handleNoController}
+        bodyColor={config.bodyColor}
+        zIndex={Z}
+      />,
+      document.body,
+    );
+  }
+
   return createPortal(
-    <div className="fixed inset-0 select-none" style={{ zIndex: Z }} role="dialog" aria-modal="false" aria-label="Tutorial de boas-vindas">
+    <div
+      className={`fixed inset-0 select-none ${step.interactive ? "pointer-events-none" : ""}`}
+      style={{ zIndex: Z }}
+      role="dialog"
+      aria-modal="false"
+      aria-label="Tutorial de boas-vindas"
+    >
       {/* fundo escuro com recorte (mola de um alvo ao outro) */}
-      <svg className="absolute inset-0 h-full w-full" aria-hidden>
+      <svg className={`absolute inset-0 h-full w-full ${step.interactive ? "hidden" : ""}`} aria-hidden>
         <defs>
           <mask id="tour-mask">
             <rect width="100%" height="100%" fill="white" />
@@ -312,7 +483,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
       </svg>
 
       {/* bloqueia cliques fora do recorte; no recorte, só passa quando o passo é "clique no botão" */}
-      {rect ? (
+      {rect && !step.interactive ? (
         <>
           <animated.div className="absolute left-0 top-0 w-full bg-transparent" style={{ height: holeSpring.y }} />
           <animated.div
@@ -331,7 +502,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
             className="absolute left-0 w-full bg-transparent"
             style={{ top: holeSpring.y.to((y) => y + holeSpring.height.get()), bottom: 0 }}
           />
-          {step.advanceOn === "next" && (
+          {(step.advanceOn === "next") && (
             <animated.div
               className="absolute bg-transparent"
               style={{ left: holeSpring.x, top: holeSpring.y, width: holeSpring.width, height: holeSpring.height }}
@@ -342,24 +513,20 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
             className="pointer-events-none absolute rounded-2xl"
             style={{ left: holeSpring.x, top: holeSpring.y, width: holeSpring.width, height: holeSpring.height }}
           >
-            <motion.div
-              className="h-full w-full rounded-2xl border-2 border-white/80"
-              animate={reduce ? undefined : { boxShadow: ["0 0 0 0 rgba(255,255,255,0.45)", "0 0 0 14px rgba(255,255,255,0)"] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
-            />
+            <div className="tour-halo h-full w-full rounded-2xl border-2 border-white/80" />
           </animated.div>
         </>
-      ) : (
+      ) : step.interactive ? null : (
         <div className="absolute inset-0 bg-transparent" />
       )}
 
       {/* Pherie + balão */}
-      <animated.div className="absolute" style={{ left: coachSpring.x, top: coachSpring.y, width: COACH.width }}>
+      <animated.div className="pointer-events-auto absolute" style={{ left: coachSpring.x, top: coachSpring.y, width: coach.width }}>
         <motion.div
           key={step.id}
           initial={reduce ? false : { opacity: 0, y: 10, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ type: "spring", stiffness: 380, damping: 26 }}
+          transition={appleSprings.move}
           className="relative flex items-end gap-3"
         >
           {isLast && !reduce && <Confetti />}
@@ -373,13 +540,38 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
               isHovered
             />
           </div>
-          <div className="relative min-w-0 flex-1 rounded-[var(--corner-md)] rounded-bl-md border border-white/10 bg-[var(--tone-2)]/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl">
-            <p className="text-[length:var(--step-0)] font-medium tabular-nums text-[var(--ink-faint)]">
-              {index + 1} de {total}
-            </p>
-            <h3 className="mt-0.5 text-[length:var(--step-1)] font-semibold leading-tight text-white">{step.title}</h3>
+          <div className="relative min-w-0 flex-1 rounded-[var(--corner-md)] rounded-bl-md apple-material p-4 shadow-[0_24px_60px_rgba(0,0,0,0.55)]">
+            <div className="flex items-center gap-[3px]" role="progressbar" aria-valuemin={1} aria-valuemax={total} aria-valuenow={progress.index + 1} aria-label={`Passo ${progress.index + 1} de ${total}`}>
+              {Array.from({ length: total }, (_, i) => (
+                <span
+                  key={i}
+                  className={`h-[3px] flex-1 rounded-full transition-colors duration-300 ${i <= progress.index ? "bg-white" : "bg-white/20"}`}
+                />
+              ))}
+            </div>
+            <h3 className="mt-2.5 text-[length:var(--step-1)] font-semibold leading-tight text-white">{step.title}</h3>
             <p className="mt-1.5 text-[length:var(--step-0)] leading-snug text-[var(--ink-muted)]">{step.text}</p>
-            {step.altScrollHint && <AltScrollHint />}
+            {step.visual && (
+              <div className="mt-3 rounded-2xl bg-black/30 p-3">
+                <TourVisualView visual={step.visual} />
+              </div>
+            )}
+            {step.panel && <TourPanelView panel={step.panel} />}
+            {notice && step.id === "platform-filter" && (
+              <p role="alert" className="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-[length:var(--step-0)] font-medium leading-snug text-amber-100">
+                {notice}
+              </p>
+            )}
+            {step.task && (
+              <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-3 py-1 text-[length:var(--step-0)] font-semibold text-white">
+                <motion.span
+                  className="h-2 w-2 rounded-full bg-emerald-400"
+                  animate={reduce ? undefined : { opacity: [1, 0.35, 1] }}
+                  transition={{ duration: 1.3, repeat: Infinity }}
+                />
+                Tarefa: {step.task}
+              </p>
+            )}
             <div className="mt-3 flex items-center justify-between gap-2">
               {!isLast ? (
                 <button type="button" onClick={finish} className="cursor-pointer text-[length:var(--step-0)] font-medium text-[var(--ink-faint)] transition hover:text-white">
@@ -402,7 +594,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ uid, eligible, b
                   <button
                     type="button"
                     onClick={() => (isLast ? finish() : goTo(index + 1, 1))}
-                    className="h-8 cursor-pointer rounded-full bg-white px-4 text-[length:var(--step-0)] font-semibold text-black transition hover:bg-white/90 active:scale-95"
+                    className="h-8 cursor-pointer rounded-full bg-white px-4 text-[length:var(--step-0)] font-semibold text-black apple-press transition hover:bg-white/90"
                   >
                     {isLast ? "Começar" : "Próximo"}
                   </button>

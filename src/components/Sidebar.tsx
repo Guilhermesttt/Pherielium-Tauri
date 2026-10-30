@@ -587,13 +587,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const prefersReducedMotion = useReducedMotion();
 
-  const [isExpanded, setIsExpanded] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem("checkpoint_sidebar_expanded") === "true";
-    } catch {
-      return false;
-    }
-  });
+  // Sempre começa fechada: o que ficou salvo da última sessão não reabre a gaveta ao abrir o app.
+  // Só o tutorial a abre sozinho (passos de amigos e mods), e ela volta a fechar depois.
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
   // Só abrir/fechar toca. Com `playSound` nas dependências do efeito, mexer no volume ou trocar o
   // tema (o `playSound` muda) repetia o som da sidebar sem ninguém ter aberto nada.

@@ -82,6 +82,7 @@ import {
   EmptyState,
 } from "../components/home/HomePanels";
 import { useNotification } from "../components/NotificationCenter";
+import { usePadEngineErrors } from "../hooks/usePadEngineErrors";
 import ModalShell from "../components/ui/ModalShell";
 import FriendProfileModal from "../components/friends/FriendProfileModal";
 import { ProfileDropdown } from "../components/ui/ProfileDropdown";
@@ -345,6 +346,7 @@ const APP_THEME_OPTIONS: Array<{
 const Home: React.FC = () => {
   const { user, userProfile, signOutUser, refreshProfile } = useAuth();
   const { notify } = useNotification();
+  usePadEngineErrors(notify);
   const gamepad = useGamepad();
   const gamepadFamily = gamepad?.gamepadFamily || "xbox";
   const isGamepadConnected = Boolean(gamepad?.isGamepadConnected);
@@ -570,14 +572,8 @@ const Home: React.FC = () => {
     useState<LauncherType | undefined>(undefined);
   const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [isAddFriendModalOpen, setIsAddFriendModalOpen] = useState(false);
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(() => {
-    try {
-      const stored = localStorage.getItem("checkpoint_sidebar_expanded");
-      return stored !== null ? stored === "true" : true;
-    } catch {
-      return true;
-    }
-  });
+  // Acompanha a gaveta, que sempre começa fechada (ver Sidebar).
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(false);
 
   useEffect(() => {
     const handleToggle = (e: CustomEvent<{ expanded: boolean }>) => {
@@ -818,6 +814,8 @@ const Home: React.FC = () => {
   useEffect(() => {
     const handleAltWheelTrigger = (e: WheelEvent) => {
       if (e.altKey) {
+        // Com outro diálogo aberto (configurações, adicionar jogo, novidades...) o Alt + rolagem não é nosso.
+        if (document.querySelector('[aria-modal="true"], [role="dialog"][data-state="open"]')) return;
         e.preventDefault();
         if (!isPlatformModalOpen) {
           setIsPlatformModalOpen(true);

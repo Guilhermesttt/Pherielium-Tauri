@@ -17,9 +17,6 @@ import { TooltipProvider } from "./components/ui/tooltip";
 import { VoiceCallProvider } from "./context/VoiceCallContext";
 import ControllerVirtualKeyboard from "./components/ui/ControllerVirtualKeyboard";
 import WhatsNewModal from "./components/WhatsNewModal";
-import InstallSetupScreen, {
-  isInstallSetupDone,
-} from "./components/InstallSetupScreen";
 import { useWhatsNewRelease } from "./hooks/useWhatsNewRelease";
 import { isBackendHealthy } from "./services/api";
 import { usePrefersReducedMotion } from "./hooks/usePrefersReducedMotion";
@@ -97,7 +94,6 @@ const AppContent: React.FC = () => {
   const [isIntroVisible, setIsIntroVisible] = React.useState<boolean | null>(null);
   // Começa ligado: o app abre direto na tela de carregamento, sem um quadro do hub antes dela.
   const [isPreloaderVisible, setIsPreloaderVisible] = React.useState<boolean>(true);
-  const [isInstallSetupVisible, setIsInstallSetupVisible] = React.useState(false);
 
   const musicRef = React.useRef<HTMLAudioElement | null>(null);
   const musicAudioContextRef = React.useRef<AudioContext | null>(null);
@@ -115,8 +111,7 @@ const AppContent: React.FC = () => {
   } = useWhatsNewRelease(
     Boolean(user?.uid) &&
       isIntroVisible === false &&
-      isPreloaderVisible === false &&
-      !isInstallSetupVisible,
+      isPreloaderVisible === false,
   );
 
   React.useEffect(() => {
@@ -237,10 +232,7 @@ const AppContent: React.FC = () => {
   }, [ensureMusicSource, fadeMusicTo, musicVolume, lowPerformanceMode]);
 
   const finishBootSequence = React.useCallback(() => {
-    if (!isInstallSetupDone()) {
-      setIsInstallSetupVisible(true);
-      return;
-    }
+    // Sem tela de configuração inicial: os ajustes de janela agora são um passo do tutorial da Pherie.
     window.requestAnimationFrame(() => {
       startBackgroundMusic();
     });
@@ -313,7 +305,6 @@ const AppContent: React.FC = () => {
       completedIntroUserRef.current = null;
       setIsIntroVisible(null);
       setIsPreloaderVisible(false);
-      setIsInstallSetupVisible(false);
       if (musicStartTimerRef.current) {
         window.clearTimeout(musicStartTimerRef.current);
         musicStartTimerRef.current = null;
@@ -325,11 +316,7 @@ const AppContent: React.FC = () => {
     if (completedIntroUserRef.current === currentUid) {
       setIsIntroVisible(false);
       setIsPreloaderVisible(false);
-      if (!isInstallSetupDone()) {
-        setIsInstallSetupVisible(true);
-      } else {
-        musicStartTimerRef.current = window.setTimeout(startBackgroundMusic, 1200);
-      }
+      musicStartTimerRef.current = window.setTimeout(startBackgroundMusic, 1200);
       return;
     }
 
@@ -399,8 +386,7 @@ const AppContent: React.FC = () => {
         user?.uid &&
         !loading &&
         isIntroVisible === false &&
-        isPreloaderVisible === false &&
-        !isInstallSetupVisible
+        isPreloaderVisible === false
       ) {
         startBackgroundMusic();
       }
@@ -418,7 +404,7 @@ const AppContent: React.FC = () => {
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [user?.uid, loading, isIntroVisible, isPreloaderVisible, isInstallSetupVisible, startBackgroundMusic]);
+  }, [user?.uid, loading, isIntroVisible, isPreloaderVisible, startBackgroundMusic]);
 
   // Fluxo de abertura: carregamento -> animação de abertura -> hub. O hub só é montado depois
   // da animação; antes disso a tela é a mesma instância do carregamento (sem piscar entre o
@@ -492,16 +478,6 @@ const AppContent: React.FC = () => {
                 }}
               />
             </MotionConfig>
-          ) : isInstallSetupVisible ? (
-            <InstallSetupScreen
-              key="install-setup"
-              onFinish={() => {
-                setIsInstallSetupVisible(false);
-                window.requestAnimationFrame(() => {
-                  startBackgroundMusic();
-                });
-              }}
-            />
           ) : null}
         </AnimatePresence>
       </div>

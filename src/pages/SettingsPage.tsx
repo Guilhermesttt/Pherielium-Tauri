@@ -1,4 +1,4 @@
-import { restartTour } from "../tour/tourSteps";
+import { restartTour, resetOnboardingForUser } from "../tour/tourSteps";
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SectionTransition } from "../components/ui/SectionTransition";
@@ -2297,8 +2297,32 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                           <span>Rever tutorial</span>
                         </button>
                       }
-                      hasBorder={false}
+                      hasBorder={import.meta.env.DEV}
                     />
+
+                    {/* Só no desenvolvimento: em produção este botão nem é montado. */}
+                    {import.meta.env.DEV && (
+                      <SettingsRow
+                        icon={<Sparkles className="h-4 w-4" />}
+                        title="Simular novo usuário (dev)"
+                        description="Apaga o progresso do tutorial desta conta e recarrega o app, como se fosse a primeira vez."
+                        action={
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!user?.uid) return;
+                              resetOnboardingForUser(user.uid, localStorage);
+                              window.location.reload();
+                            }}
+                            className="inline-flex h-8 items-center justify-center gap-2 rounded-[var(--corner-sm)] bg-[var(--tone-4)] px-3.5 text-[length:var(--step-0)] font-semibold text-[var(--ink)] transition-colors cursor-pointer active:scale-95"
+                          >
+                            <Sparkles className="h-3.5 w-3.5" />
+                            <span>Simular</span>
+                          </button>
+                        }
+                        hasBorder={false}
+                      />
+                    )}
                   </section>
 
                   <div className="h-px w-full bg-[var(--color-surface)]" />
