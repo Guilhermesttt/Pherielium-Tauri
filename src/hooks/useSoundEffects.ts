@@ -108,6 +108,9 @@ import ps2LaunchGameSound from "../sounds/PS2 System Sounds/deck_ui_launch_game.
 import ps2ShowModalSound from "../sounds/PS2 System Sounds/deck_ui_show_modal.wav";
 import ps2DetailOpenSound from "../sounds/PS2 System Sounds/deck_ui_into_game_detail.wav";
 import ps2ToastSound from "../sounds/PS2 System Sounds/deck_ui_toast.wav";
+import ps2FlyInSound from "../sounds/PS2 System Sounds/deck_ui_side_menu_fly_in.wav";
+import ps2FlyOutSound from "../sounds/PS2 System Sounds/deck_ui_side_menu_fly_out.wav";
+import ps2VolumeSound from "../sounds/PS2 System Sounds/deck_ui_volume.wav";
 
 import gcNavigateSound from "../sounds/Nintendo GameCube Menu SFX/deck_ui_navigation.wav";
 import gcHoverSound from "../sounds/Nintendo GameCube Menu SFX/deck_ui_slider_down.wav";
@@ -293,19 +296,23 @@ export const soundThemes = {
     overlayAchievementGold: cyberpunkAchievementToastSound,
     overlayAchievementPlatinum: cyberpunkAchievementToastSound,
   },
+  // PS2: o pacote tem 15 sons e cada um tem um papel (durações medidas em `ps2SoundPack.test.ts`).
+  // Curtos (< 0,8 s): misc_10 (toque do cursor), tab_transition_01 (clique suave), switch on/off,
+  // launch_game, volume (estalo). Longos, com cauda de eco (1,7–2,8 s): navigation, show/hide_modal,
+  // into/out_of_game_detail, side_menu_fly_in/out (abrir/fechar), toast, achievement_toast.
   ps2: {
-    navigate: ps2NavigateSound,
-    hover: ps2HoverSound,
-    select: ps2ActivationSound,
-    back: ps2BackSound,
-    edit: ps2EditModalSound,
-    modalClose: ps2BackSound,
+    navigate: ps2NavigateSound, // mover a seleção
+    hover: ps2HoverSound, // passar o mouse: o mais curto e discreto
+    select: ps2ActivationSound, // confirmar (clique)
+    back: ps2BackSound, // voltar / cancelar
+    edit: ps2ActivationSound, // ação de menu de contexto: um clique curto (o modal abre com o seu próprio som)
+    modalClose: ps2EditModalSound, // fechar modal: hide_modal, par de show_modal
     favoriteOn: ps2FavoriteOnSound,
     favoriteOff: ps2FavoriteOffSound,
-    delete: ps2BackSound,
+    delete: ps2BackSound, // descartar: o mesmo tom descendente do cancelar
     play: ps2LaunchGameSound,
     boot: ps2LaunchGameSound,
-    search: ps2ShowModalSound,
+    search: ps2ActivationSound, // abrir a busca: curto, sem a cauda de 2 s do modal
     detailOpen: ps2DetailOpenSound,
     friendRequest: ps2ToastSound,
     chatSent: ps2ActivationSound,
@@ -314,11 +321,18 @@ export const soundThemes = {
     callEnter: ps2DetailOpenSound,
     switchOn: ps2FavoriteOnSound,
     switchOff: ps2FavoriteOffSound,
-    screenshot: ps2ToastSound,
+    screenshot: ps2VolumeSound, // estalo seco e alto, como um obturador
     showModal: ps2ShowModalSound,
     overlayAchievement: ps2AchievementSound,
     overlayAchievementGold: ps2AchievementSound,
     overlayAchievementPlatinum: ps2AchievementSound,
+    // papéis de navegação que o pacote cobre com arquivo próprio (sem a cauda longa do fallback)
+    menuClick: ps2ActivationSound,
+    tabSwitch: ps2ActivationSound,
+    edgeBump: ps2HoverSound,
+    sidebarOpen: ps2FlyInSound,
+    sidebarClose: ps2FlyOutSound,
+    keyTyping: ps2HoverSound,
   },
   gamecube: {
     navigate: gcNavigateSound,
