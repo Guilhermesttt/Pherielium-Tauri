@@ -12,6 +12,8 @@ interface GameDetailSocialModsProps {
   activeTab: string;
   copy: GameDetailCopy;
   localScreenshots: string[];
+  /** Imagens da loja (Steam/Epic): aparecem no mural da aba Sobre. `index` é a posição na galeria. */
+  storeScreenshots?: Array<{ url: string; index: number }>;
   gameMods: GamePanelMod[];
   sanitizedAboutHtml: string;
   sanitizedSupportedLanguagesHtml?: string;
@@ -49,11 +51,46 @@ const TechnicalDetail: React.FC<{ label: string; value?: string | null; fallback
   </div>
 );
 
+/** Mural de fotos: a grade de imagens que abre a galeria ao clicar (usada nas abas Capturas e Sobre). */
+const PhotoWall: React.FC<{
+  items: Array<{ url: string; index: number }>;
+  copy: GameDetailCopy;
+  onSelect: (index: number) => void;
+  playSound: (type: SoundEffectType) => void;
+}> = ({ items, copy, onSelect, playSound }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {items.map((item, position) => (
+      <button
+        key={`${item.index}-${position}`}
+        type="button"
+        onClick={() => {
+          onSelect(item.index);
+          playSound("select");
+        }}
+        className="group relative rounded-[var(--corner-md)] overflow-hidden border border-transparent aspect-video cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-white transition-all bg-black/40"
+      >
+        <img
+          src={item.url}
+          alt={`Foto ${position + 1}`}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <span className="text-[length:var(--step-0)] font-bold text-[var(--ink)] uppercase tracking-widest px-4 py-2 bg-[var(--tone-3)] rounded-full ">
+            {copy.viewGallery}
+          </span>
+        </div>
+      </button>
+    ))}
+  </div>
+);
+
 export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.memo(({
   game,
   activeTab,
   copy,
   localScreenshots,
+  storeScreenshots = [],
   gameMods,
   sanitizedAboutHtml,
   sanitizedSupportedLanguagesHtml,
@@ -106,31 +143,12 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
             <p className="text-sm font-semibold text-[var(--ink-muted)]">{copy.noScreenshot}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {localScreenshots.map((src, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => {
-                  onSelectCapture(idx);
-                  playSound("select");
-                }}
-                className="group relative rounded-[var(--corner-md)] overflow-hidden border border-transparent aspect-video cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-white transition-all bg-black/40"
-              >
-                <img
-                  src={src}
-                  alt={`Captura ${idx + 1}`}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <span className="text-[length:var(--step-0)] font-bold text-[var(--ink)] uppercase tracking-widest px-4 py-2 bg-[var(--tone-3)] rounded-full ">
-                    {copy.viewGallery}
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
+          <PhotoWall
+            items={localScreenshots.map((url, index) => ({ url, index }))}
+            copy={copy}
+            onSelect={onSelectCapture}
+            playSound={playSound}
+          />
         )}
       </div>
     );
@@ -205,6 +223,15 @@ export const GameDetailSocialMods: React.FC<GameDetailSocialModsProps> = React.m
             />
           )}
         </div>
+
+        {storeScreenshots.length > 0 && (
+          <div>
+            <h3 className="text-[length:var(--step-0)] font-semibold text-[var(--ink-muted)] mb-4">
+              {copy.photoWall} ({storeScreenshots.length})
+            </h3>
+            <PhotoWall items={storeScreenshots} copy={copy} onSelect={onSelectCapture} playSound={playSound} />
+          </div>
+        )}
 
         {sanitizedSupportedLanguagesHtml && (
           <div>

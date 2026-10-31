@@ -69,8 +69,12 @@ fn to_iso(ts: SystemTime) -> String {
 }
 
 fn thumbnail_data_url(path: &Path) -> Option<String> {
+    thumbnail_data_url_sized(path, 480)
+}
+
+fn thumbnail_data_url_sized(path: &Path, width: u32) -> Option<String> {
     let img = image::open(path).ok()?;
-    let thumb = img.thumbnail(480, 270);
+    let thumb = img.thumbnail(width, width * 9 / 16);
     let mut buf = Vec::new();
     let mut cursor = std::io::Cursor::new(&mut buf);
     thumb.write_to(&mut cursor, image::ImageFormat::Jpeg).ok()?;
@@ -113,12 +117,22 @@ fn collect_images(root: &Path, out: &mut Vec<(PathBuf, Option<String>, SystemTim
     }
 }
 
-#[tauri::command]
-pub fn list_recent_captures(limit: Option<u32>) -> Result<Vec<CaptureItem>, String> {
+#[tauri::command(async)]
+pub fn list_recent_captures(
+    limit: Option<u32>,
+    thumb_width: Option<u32>,
+    game_title: Option<String>,
+) -> Result<Vec<CaptureItem>, String> {
     let root = captures_dir()?;
     let mut files: Vec<(PathBuf, Option<String>, SystemTime)> = Vec::new();
     collect_images(&root, &mut files);
+    // só as capturas da pasta deste jogo (o nome da pasta é o título sem os caracteres proibidos)
+    if let Some(title) = game_title.as_deref().map(str::trim).filter(|t| !t.is_empty()) {
+        let folder = safe_folder_name(title).to_lowercase();
+        files.retain(|(_, game, _)| game.as_deref().map(|g| g.trim().to_lowercase()) == Some(folder.clone()));
+    }
     files.sort_by(|a, b| b.2.cmp(&a.2));
+    let width = thumb_width.unwrap_or(480).clamp(160, 1920);
 
     let max = limit.unwrap_or(60).clamp(1, 120) as usize;
     let mut items = Vec::with_capacity(max.min(files.len()));
@@ -134,7 +148,7 @@ pub fn list_recent_captures(limit: Option<u32>) -> Result<Vec<CaptureItem>, Stri
             .duration_since(SystemTime::UNIX_EPOCH)
             .map(|d| d.as_millis())
             .unwrap_or(0);
-        let url = thumbnail_data_url(&path).unwrap_or_else(|| path_str.clone());
+        let url = thumbnail_data_url_sized(&path, width).unwrap_or_else(|| path_str.clone());
         items.push(CaptureItem {
             id: format!("{mtime_ms}:{name}"),
             name,
@@ -161,7 +175,7 @@ pub fn get_captures_dir() -> Result<String, String> {
 
 /// Captura a tela do jogo/monitor ativo (ou a área de trabalho inteira caso explicitamente solicitada)
 /// e salva em Pictures/Phelierium Captures.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn capture_screen(
     app: AppHandle,
     game_title: Option<String>,
@@ -313,7 +327,7 @@ pub struct ImportResult {
 
 /// Dropzone do notch: copia as imagens soltas para Pictures/Phelierium Captures (na pasta do
 /// jogo atual, se houver). A cópia é feita aqui no Rust: a capability do overlay é mínima.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn capture_import_files(paths: Vec<String>, game_title: Option<String>) -> Result<ImportResult, String> {
     let folder = match game_title.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
         Some(title) => captures_dir()?.join(safe_folder_name(title)),
@@ -345,7 +359,7 @@ pub fn capture_import_files(paths: Vec<String>, game_title: Option<String>) -> R
     Ok(ImportResult { imported, skipped })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_capture_full_image(path: String) -> Result<String, String> {
     let p = PathBuf::from(path.trim());
     if !p.exists() || !p.is_file() {

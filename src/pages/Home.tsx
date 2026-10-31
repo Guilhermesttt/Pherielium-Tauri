@@ -1130,6 +1130,8 @@ const Home: React.FC = () => {
   const [overlayChatTyping, setOverlayChatTyping] = useState(false);
   const [overlayChatSending, setOverlayChatSending] = useState(false);
   const [overlayChatError, setOverlayChatError] = useState<string | null>(null);
+  // true entre abrir a conversa pelo overlay e a primeira leva de mensagens chegar
+  const [overlayChatLoading, setOverlayChatLoading] = useState(false);
   const [showLevelUp, setShowLevelUp] = useState(false);
   const [levelUpData, setLevelUpData] = useState<{
     level: number;
@@ -2754,15 +2756,21 @@ const Home: React.FC = () => {
       return;
     }
     void markMessagesAsRead(overlayChatFriendUid);
-    const unsubscribeMessages = subscribeToChatMessages(
-      overlayChatFriendUid,
-      setOverlayChatMessages,
-    );
+    setOverlayChatLoading(true);
+    // se a primeira leva demorar demais, o esqueleto sai e aparece o estado vazio normal
+    const loadingTimeout = window.setTimeout(() => setOverlayChatLoading(false), 8000);
+    const unsubscribeMessages = subscribeToChatMessages(overlayChatFriendUid, (messages) => {
+      setOverlayChatMessages(messages);
+      setOverlayChatLoading(false);
+      window.clearTimeout(loadingTimeout);
+    });
     const unsubscribeTyping = subscribeToFriendTyping(
       overlayChatFriendUid,
       setOverlayChatTyping,
     );
     return () => {
+      window.clearTimeout(loadingTimeout);
+      setOverlayChatLoading(false);
       unsubscribeMessages();
       unsubscribeTyping();
     };
@@ -2913,6 +2921,7 @@ const Home: React.FC = () => {
               friendAvatar: overlayChatFriend.avatar,
               typing: overlayChatTyping,
               sending: overlayChatSending,
+              loading: overlayChatLoading,
               error: overlayChatError || "",
               messages: overlayChatMessages.map((message) => ({
                 id: message.id || `${message.senderId}:${message.createdAt}`,
@@ -2999,6 +3008,7 @@ const Home: React.FC = () => {
     overlayChatFriend,
     overlayChatFriendUid,
     overlayChatMessages,
+    overlayChatLoading,
     overlayChatSending,
     overlayChatTyping,
     overlayCurrentGame,

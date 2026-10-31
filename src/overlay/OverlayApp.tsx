@@ -47,6 +47,7 @@ import { SocialToastCard } from "./components/SocialToastCard";
 import { normalizeSocialToast } from "./socialToast";
 import { WelcomeToastCard } from "./components/WelcomeToastCard";
 import { CaptureToastCard } from "./components/CaptureToastCard";
+import { ChatSkeleton } from "../components/ui/ChatSkeleton";
 import { OverlayToggle } from "./components/OverlayToggle";
 import { PerfMonitorHud } from "../components/performance/PerfMonitorHud";
 import { usePerfMonitor } from "../hooks/usePerfMonitor";
@@ -163,6 +164,8 @@ export interface OverlayChatSession {
   friendAvatar?: string;
   typing?: boolean;
   sending?: boolean;
+  /** a conversa ainda está carregando: mostra o esqueleto no lugar das mensagens */
+  loading?: boolean;
   error?: string;
   messages: OverlayChatMessage[];
 }
@@ -2238,7 +2241,9 @@ const OverlayApp: React.FC = () => {
                         </div>
 
                         <div className="flex-1 overflow-y-auto space-y-3 pr-2 thin-scrollbar">
-                          {panelData.chat.messages.length === 0 ? (
+                          {panelData.chat.loading && panelData.chat.messages.length === 0 ? (
+                            <ChatSkeleton className="py-1" />
+                          ) : panelData.chat.messages.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-center text-xs text-white/50">
                               <MessageSquare className="h-8 w-8 mb-2 opacity-50" />
                               <span>Nenhuma mensagem anterior.</span>

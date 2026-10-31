@@ -365,6 +365,16 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
     asyncData.steamDetails.data?.screenshots,
   ]);
 
+  // imagens da loja (Steam/Epic/biblioteca), com a posição de cada uma na galeria
+  const storeScreenshots = React.useMemo(
+    () =>
+      galleryItems
+        .map((item, index) => ({ url: item.url, index, local: item.id.startsWith("local-") }))
+        .filter((item) => !item.local)
+        .map(({ url, index }) => ({ url, index })),
+    [galleryItems],
+  );
+
   const achievementsTotal = asyncData.achievements.data.length || game?.totalAchievements || 0;
   const achievementsUnlocked = asyncData.achievements.data.length
     ? asyncData.achievements.data.filter((a) => a.achieved).length
@@ -394,6 +404,7 @@ export const GameDetailPanel: React.FC<GameDetailPanelProps> = ({
         activeTab={state.activeTab}
         copy={copy}
         localScreenshots={asyncData.localScreenshots}
+        storeScreenshots={storeScreenshots}
         gameMods={asyncData.gameMods}
         sanitizedAboutHtml={sanitizedAboutHtml}
         sanitizedSupportedLanguagesHtml={sanitizedSupportedLanguagesHtml}

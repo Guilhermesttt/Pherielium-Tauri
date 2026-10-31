@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { animated, useSpring, useSprings } from "@react-spring/web";
 import { ImagePlus, MessageSquare, Pencil, Phone, Send, Trash2, Video, X, User } from "lucide-react";
 import ModalShell from "../ui/ModalShell";
-import { LoadingState } from "../ui/loading-state";
+import { ChatSkeleton } from "../ui/ChatSkeleton";
 import { useNotification } from "../NotificationCenter";
 import { useAuth } from "../../auth/AuthProvider";
 import { useVoiceCallContext } from "../../context/VoiceCallContext";
@@ -674,9 +674,7 @@ export const ChatMessageList: React.FC<{
   return (
   <div className="chat-scrollbar flex-1 overflow-y-auto px-7 py-5 pr-4 md:px-9">
     {isLoading ? (
-      <div className="flex flex-1 min-h-65 flex-col items-center justify-center space-y-3 py-16 text-center">
-        <LoadingState label="Carregando conversa..." variant="searching" size="md" showTimer={false} />
-      </div>
+      <ChatSkeleton className="py-2" />
     ) : loadError ? (
       <div className="flex flex-1 min-h-65 flex-col items-center justify-center space-y-4 py-16 text-center">
         <MessageSquare className="h-6 w-6 text-[var(--ink)]" />

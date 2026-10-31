@@ -697,7 +697,7 @@ export const tauriAPI = {
     }),
 
   // ─── Captures ─────────────────────────────────────────────────────────────
-  listRecentCaptures: (limit?: number) =>
+  listRecentCaptures: (limit?: number, thumbWidth?: number, gameTitle?: string) =>
     invoke<Array<{
       id: string;
       name: string;
@@ -705,7 +705,7 @@ export const tauriAPI = {
       url: string;
       createdAt: string;
       gameTitle?: string;
-    }>>("list_recent_captures", { limit: limit ?? null }),
+    }>>("list_recent_captures", { limit: limit ?? null, thumbWidth: thumbWidth ?? null, gameTitle: gameTitle ?? null }),
 
   openCapturesFolder: () =>
     invoke<void>("open_captures_folder"),
@@ -853,7 +853,17 @@ export const tauriAPI = {
       return [];
     }
   },
-  getLocalGameScreenshots: (_request: unknown) => Promise.resolve([]),
+  // As capturas tiradas no jogo vão para a pasta de capturas (uma subpasta por jogo): a aba Capturas lista essa pasta.
+  getLocalGameScreenshots: async (request: unknown): Promise<string[]> => {
+    const title = (request as { title?: string } | null)?.title?.trim();
+    if (!title) return [];
+    try {
+      const items = await tauriAPI.listRecentCaptures(60, 1280, title);
+      return items.map((item) => item.url).filter(Boolean);
+    } catch {
+      return [];
+    }
+  },
   importRetroArtwork: (_imageUrl: string) => Promise.reject("Not implemented"),
   searchTheGamesDb: (_request: unknown) => Promise.resolve([]),
   getTheGamesDbScreenshots: (_request: unknown) => Promise.resolve({ screenshots: [] }),

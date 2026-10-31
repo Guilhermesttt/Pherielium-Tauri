@@ -593,6 +593,7 @@ declare global {
           friendAvatar?: string;
           typing?: boolean;
           sending?: boolean;
+          loading?: boolean;
           error?: string;
           messages: Array<{
             id: string;
