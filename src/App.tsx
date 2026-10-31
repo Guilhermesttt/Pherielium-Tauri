@@ -3,7 +3,6 @@ import { AnimatePresence, MotionConfig } from "framer-motion";
 import { Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import GameBootIntro from "./components/GameBootIntro";
-import { preloadBootIntro } from "./components/boot-intro/bootIntroScenes";
 import AsyncLoader from "./components/AsyncLoader";
 import { AuthProvider, useAuth } from "./auth/AuthProvider";
 import { AuthSessionAlert } from "./components/AuthSessionAlert";
@@ -35,8 +34,8 @@ const menuMusicLoaders: Record<SoundTheme, () => Promise<string | null>> = {
     import("./sounds/PS5_Plus/003. Home Menu.mp3").then((module) => module.default),
   ps4: () => import("./sounds/PS4/01 Main.mp3").then((module) => module.default),
   psp: () => import("./sounds/PSP Sounds/menu_music.mp3").then((module) => module.default),
-  // O pacote do PS2 não traz mais música de menu: sem arquivo, o menu fica sem trilha neste tema.
-  ps2: () => Promise.resolve(null),
+  ps2: () =>
+    import("./sounds/PS2 System Sounds/Background_Music.mp3").then((module) => module.default),
   gamecube: () =>
     import("./sounds/Nintendo GameCube Menu SFX/menu_music.mp3").then((module) => module.default),
   xbox360: () =>
@@ -54,7 +53,8 @@ const menuMusicGain: Record<SoundTheme, number> = {
   ps5: 0.7,
   ps4: 25,
   psp: 1,
-  ps2: 1,
+  // trilha de 10 min com pico em -18 dBFS (RMS -39,5 dB): ×6 leva o pico a ~-2 dB
+  ps2: 6,
   gamecube: 1,
   xbox360: 1,
   cyberpunk: 16,
@@ -460,7 +460,7 @@ const AppContent: React.FC = () => {
               minDurationMs={2400}
               // Pré-aquece o chunk lazy do toast de troféus durante o boot
               // para a Home não travar no primeiro unlock
-              preload={[() => import("./components/TrophyUnlockToast"), () => preloadBootIntro(soundTheme)]}
+              preload={[() => import("./components/TrophyUnlockToast")]}
               // Sem `onFinish` enquanto a sessão ainda carrega: o tempo mínimo só conta depois.
               onFinish={loading ? undefined : handlePreloaderFinish}
             />

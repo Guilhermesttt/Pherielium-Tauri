@@ -1,43 +1,63 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import lottie, { type AnimationItem } from "lottie-web";
+import { animated, to, useSpring, useTrail } from "@react-spring/web";
 import { setLauncherInputLocked } from "../utils/launcherInputLock";
 import type { SoundTheme } from "../context/PreferencesContext";
 import { resolveBootIntro } from "./boot-intro/bootIntroTheme";
-import { backdropOpacity } from "./boot-intro/bootIntroBackdrop";
 import backdropVideoSrc from "../assets/karavanbraam_pindown.io.webm";
-import { SCENE_FPS, SCENE_TIMING, STARTUP_SOUNDS, loadBootScene, type SceneSoundId } from "./boot-intro/bootIntroScenes";
+import logoSrc from "../assets/Pherielium_logo.png";
+import { SCENE_TIMING, STARTUP_SOUNDS, type SceneSoundId, type SceneStage } from "./boot-intro/bootIntroScenes";
 import swooshSoftSrc from "../sounds/Pherielium Intro/swoosh-soft.mp3";
 import swooshAir1Src from "../sounds/Pherielium Intro/swoosh-air-1.mp3";
 import swooshAir2Src from "../sounds/Pherielium Intro/swoosh-air-2.mp3";
 import defaultLeadSrc from "../sounds/Phelierium Default/Intro_Music.mp3";
 
 /**
- * Intro de abertura: uma cena Lottie (logo que se forma, atravessa a tela e vira o nome da marca)
- * escolhida pelo tema sonoro. O tema do Xbox tem a sua cena (versão em verde); os demais usam a
- * padrão. O som de partida é o som de abertura do console do tema, se o arquivo existir em
- * `src/sounds/<pasta do tema>/startup.*`, ou a música de abertura padrão. Os efeitos entram nos
- * momentos-chave da cena (`SCENE_TIMING`).
- *
- * O fundo de pontos que antes era uma imagem estática dentro da cena é o vídeo de fundo padrão
- * (campo de estrelas), por cima da cena com opacidade baixa e o mesmo ritmo de aparecer/sumir.
- *
- * A animação não carrega áudio: toda a parte sonora é tocada por aqui.
- * Qualquer tecla ou clique pula; com "reduzir movimento", mostra só o quadro final.
+ * Intro de abertura (12,6 s), feita com molas reais do `@react-spring/web`: um brilho acende e o logo
+ * surge pequeno, girando e desfocado, e assenta com overshoot; faíscas e duas ondas de choque abrem, uma
+ * faixa de luz atravessa o logo, ele se contrai e dispara 25×
+ * para a câmera (devagar, com inércia), e o nome "Pherielium" entra letra a
+ * letra (`useTrail`) e sai subindo e desfocando. Sobre o fundo radial, o vídeo de pontos de luz sobe
+ * junto do logo. Os sons são tocados nos marcos de `SCENE_TIMING`. Qualquer tecla (Esc, Enter, Espaço…)
+ * ou clique pula; com "reduzir movimento", mostra só o nome completo, sem molas.
  */
 
 interface GameBootIntroProps {
   onFinish?: () => void;
   /** Toca o áudio da intro (preferência `gameBootIntroSoundEnabled`). */
   soundEnabled?: boolean;
-  /** Tema sonoro escolhido: decide a cena e o som de partida. */
+  /** Tema sonoro escolhido: decide o som de partida e se os efeitos tocam. */
   soundTheme?: SoundTheme;
 }
 
-const BG = "#000000";
-const FADE_OUT_MS = 500;
-const END_HOLD_MS = 300;
+const FADE_OUT_MS = 400;
 const REDUCED_MOTION_HOLD_MS = 1200;
 const SKIP_HINT_DELAY_MS = 1200;
+const BRAND = "Pherielium";
+
+const LOGO_SPRING = { tension: 120, friction: 15, mass: 1.2 }; // subamortecida: passa um pouco do ponto e assenta
+const BLOOM_SPRING = { tension: 90, friction: 20 };
+const BURST_SPRING = { tension: 55, friction: 22 };
+const SHINE_SPRING = { tension: 60, friction: 26 };
+
+/** Faíscas que saem do logo na onda de choque: ângulo, distância e tamanho fixos (sem aleatório). */
+const SPARKS = Array.from({ length: 14 }, (_, i) => {
+  const angle = (i / 14) * Math.PI * 2 + (i % 2 ? 0.18 : -0.12);
+  return { angle, distance: 230 + ((i * 53) % 170), size: 4 + ((i * 7) % 5) };
+});
+const ANTICIPATE_SPRING = { tension: 160, friction: 26, mass: 1.4 };
+// Hiper-zoom: uma mola de progresso 0 → 1 (pesada e sem quique). A escala cresce de forma
+// exponencial com ele (zoom de câmera) e o logo some junto, atrelado ao mesmo progresso.
+const ZOOM_SPRING = { tension: 46, friction: 24, mass: 2 };
+const ZOOM_FACTOR = 25;
+const LETTER_SPRING = { tension: 140, friction: 24 };
+const LETTER_OUT_SPRING = { tension: 120, friction: 26 };
+const SHOCK_SPRING = { tension: 70, friction: 20 };
+
+/** Opacidade do logo durante o zoom: some entre 35% e 85% do trajeto (suave nas duas pontas). */
+function zoomFade(progress: number): number {
+  const t = Math.min(Math.max((progress - 0.35) / 0.5, 0), 1);
+  return 1 - t * t * (3 - 2 * t);
+}
 
 const EFFECT_SOUNDS: Record<Exclude<SceneSoundId, "lead">, { src: string; volume: number }> = {
   swooshSoft: { src: swooshSoftSrc, volume: 0.9 },
@@ -63,24 +83,37 @@ function fadeOutAudio(audio: HTMLAudioElement, durationMs = 450): void {
 
 const GameBootIntro: React.FC<GameBootIntroProps> = ({ onFinish, soundEnabled = true, soundTheme = "default" }) => {
   const choice = useMemo(() => resolveBootIntro(soundTheme, STARTUP_SOUNDS), [soundTheme]);
-  const timing = SCENE_TIMING[choice.scene];
+  const reducedMotion = useMemo(() => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false, []);
 
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const animationRef = useRef<AnimationItem | null>(null);
-  const backdropRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<Partial<Record<SceneSoundId, HTMLAudioElement>>>({});
   const finishedRef = useRef(false);
   const onFinishRef = useRef(onFinish);
-  const [sceneData, setSceneData] = useState<unknown>(null);
+  const [stage, setStage] = useState<SceneStage>("idle");
   const [isExiting, setIsExiting] = useState(false);
   const [showSkipHint, setShowSkipHint] = useState(false);
-  const reducedMotion = useMemo(() => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false, []);
+
+  // Placa e selo (o conjunto que se contrai e dispara): começam pequenos e ocultos.
+  const [logo, logoApi] = useSpring(() => ({ scale: 0, rotateZ: -45, opacity: 0, blur: 14, config: LOGO_SPRING }));
+  const [bloom, bloomApi] = useSpring(() => ({ scale: 0.3, opacity: 0, config: BLOOM_SPRING }));
+  const [burst, burstApi] = useSpring(() => ({ progress: 0, config: BURST_SPRING }));
+  const [shine, shineApi] = useSpring(() => ({ x: -130, config: SHINE_SPRING }));
+  const [zoom, zoomApi] = useSpring(() => ({ progress: 0, config: ZOOM_SPRING }));
+  const [shock, shockApi] = useSpring(() => ({ scale: 0.6, opacity: 0, config: SHOCK_SPRING }));
+  const [shock2, shock2Api] = useSpring(() => ({ scale: 0.6, opacity: 0, config: SHOCK_SPRING }));
+  // Uma mola por letra; cada uma segue a anterior (cascata).
+  const [letters, lettersApi] = useTrail(BRAND.length, () => ({
+    opacity: reducedMotion ? 1 : 0,
+    y: reducedMotion ? 0 : 16,
+    scale: reducedMotion ? 1 : 0.92,
+    blur: reducedMotion ? 0 : 6,
+    config: LETTER_SPRING,
+  }));
 
   useEffect(() => {
     onFinishRef.current = onFinish;
   }, [onFinish]);
 
-  // Estável de propósito: o efeito de animação não pode reiniciar se `onFinish` mudar.
+  // Estável de propósito: os relógios abaixo não podem reiniciar se `onFinish` mudar.
   const handleFinish = useCallback(() => {
     if (finishedRef.current) return;
     finishedRef.current = true;
@@ -114,24 +147,6 @@ const GameBootIntro: React.FC<GameBootIntroProps> = ({ onFinish, soundEnabled = 
     };
   }, [handleFinish]);
 
-  // A cena já deve estar no cache (carregada na tela de carregamento); se não, baixa agora.
-  // Se falhar, a intro é pulada em vez de travar o boot.
-  useEffect(() => {
-    let cancelled = false;
-    loadBootScene(choice.scene)
-      .then((data) => {
-        // O lottie-web altera o objeto que recebe; cada exibição usa a sua cópia.
-        if (!cancelled) setSceneData(structuredClone(data));
-      })
-      .catch((err: unknown) => {
-        console.warn("Cena de abertura não carregou; pulando a intro.", err);
-        if (!cancelled) handleFinish();
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [choice.scene, handleFinish]);
-
   // Sons: criados já na abertura para estarem carregados quando chegar o momento.
   useEffect(() => {
     const created: Partial<Record<SceneSoundId, HTMLAudioElement>> = {};
@@ -160,66 +175,79 @@ const GameBootIntro: React.FC<GameBootIntroProps> = ({ onFinish, soundEnabled = 
     return () => window.clearTimeout(timer);
   }, []);
 
-  // Cria o player quando a cena chega. Usa o lottie-web direto (o componente de `lottie-react`
-  // não expõe o quadro atual e tem problema de importação com o empacotador).
+  // Relógio da intro: avança as fases, dispara os sons e encerra nos instantes da coreografia.
   useEffect(() => {
-    const container = containerRef.current;
-    if (!sceneData || !container) return;
-    const animation = lottie.loadAnimation({
-      container,
-      renderer: "svg",
-      loop: false,
-      autoplay: !reducedMotion,
-      animationData: sceneData,
-      rendererSettings: { preserveAspectRatio: "xMidYMid slice" },
-    });
-    animationRef.current = animation;
-    return () => {
-      animationRef.current = null;
-      animation.destroy();
-    };
-  }, [sceneData, reducedMotion]);
-
-  // Relógio da intro: acompanha o quadro atual da animação para disparar os sons e encerrar.
-  useEffect(() => {
-    if (!sceneData) return;
-
     if (reducedMotion) {
-      // Sem movimento (e sem som): mostra só o quadro mais completo e segue.
-      animationRef.current?.goToAndStop(timing.restFrame * SCENE_FPS, true);
-      if (backdropRef.current) backdropRef.current.style.opacity = String(backdropOpacity(timing.restFrame));
+      // Sem movimento (e sem som): mostra só o nome completo e segue.
       const timer = window.setTimeout(handleFinish, REDUCED_MOTION_HOLD_MS);
       return () => window.clearTimeout(timer);
     }
+    const timers = SCENE_TIMING.cues.map((cue) =>
+      window.setTimeout(() => {
+        const audio = audioRef.current[cue.sound];
+        if (audio) audio.currentTime = 0;
+        audio?.play().catch((err: unknown) => {
+          console.warn("Som da intro bloqueado ou pendente de interação:", err);
+        });
+      }, cue.at * 1000),
+    );
+    SCENE_TIMING.stages.forEach(({ at, stage: next }) => {
+      timers.push(window.setTimeout(() => setStage(next), at * 1000));
+    });
+    timers.push(window.setTimeout(handleFinish, SCENE_TIMING.endAt * 1000));
+    return () => timers.forEach((id) => window.clearTimeout(id));
+  }, [reducedMotion, handleFinish]);
 
-    let rafId = 0;
-    let nextCue = 0;
-    let endTimer: number | null = null;
-    const tick = (): void => {
-      const item = animationRef.current;
-      if (item) {
-        const t = item.currentFrame / SCENE_FPS;
-        if (backdropRef.current) backdropRef.current.style.opacity = String(backdropOpacity(t));
-        while (nextCue < timing.cues.length && timing.cues[nextCue].at <= t) {
-          const audio = audioRef.current[timing.cues[nextCue].sound];
-          if (audio) audio.currentTime = 0;
-          audio?.play().catch((err: unknown) => {
-            console.warn("Som da intro bloqueado ou pendente de interação:", err);
-          });
-          nextCue += 1;
-        }
-        if (t >= timing.endAt && endTimer === null) {
-          endTimer = window.setTimeout(handleFinish, END_HOLD_MS);
-        }
-      }
-      rafId = requestAnimationFrame(tick);
-    };
-    rafId = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(rafId);
-      if (endTimer !== null) window.clearTimeout(endTimer);
-    };
-  }, [sceneData, reducedMotion, timing, handleFinish]);
+  // Cada fase dispara as molas correspondentes.
+  useEffect(() => {
+    if (reducedMotion) return;
+    switch (stage) {
+      case "plate":
+        // brilho que acende e se espalha atrás do logo, enquanto ele sai do desfoque girando
+        logoApi.start({ scale: 1, rotateZ: 0, opacity: 1, blur: 0, config: LOGO_SPRING });
+        bloomApi.start({
+          from: { scale: 0.3, opacity: 0 },
+          to: async (next) => {
+            await next({ scale: 0.9, opacity: 0.55, config: BLOOM_SPRING });
+            await next({ scale: 1.6, opacity: 0, config: { tension: 40, friction: 18 } });
+          },
+        });
+        break;
+      case "shock":
+        shockApi.start({
+          from: { scale: 0.6, opacity: 0.4 },
+          to: { scale: 1.4, opacity: 0 },
+          config: SHOCK_SPRING,
+        });
+        // segunda onda, um pouco atrás e mais larga
+        shock2Api.start({
+          from: { scale: 0.5, opacity: 0.28 },
+          to: { scale: 1.9, opacity: 0 },
+          delay: 220,
+          config: SHOCK_SPRING,
+        });
+        burstApi.start({ from: { progress: 0 }, to: { progress: 1 }, config: BURST_SPRING });
+        break;
+      case "shine":
+        shineApi.start({ from: { x: -130 }, to: { x: 130 }, config: SHINE_SPRING });
+        break;
+      case "anticipate":
+        // Contração rápida antes do disparo.
+        logoApi.start({ scale: 0.94, config: ANTICIPATE_SPRING });
+        break;
+      case "launch":
+        zoomApi.start({ progress: 1, config: ZOOM_SPRING });
+        break;
+      case "name":
+        lettersApi.start({ opacity: 1, y: 0, scale: 1, blur: 0, config: LETTER_SPRING });
+        break;
+      case "nameOut":
+        lettersApi.start({ opacity: 0, y: -10, blur: 4, config: LETTER_OUT_SPRING });
+        break;
+      default:
+        break;
+    }
+  }, [stage, reducedMotion, logoApi, zoomApi, shockApi, shock2Api, bloomApi, burstApi, shineApi, lettersApi]);
 
   const onSkipClick = useCallback(
     (e: React.MouseEvent) => {
@@ -231,37 +259,135 @@ const GameBootIntro: React.FC<GameBootIntroProps> = ({ onFinish, soundEnabled = 
 
   return (
     <div
-      className="fixed inset-0 z-500 overflow-hidden select-none cursor-default"
-      style={{
-        backgroundColor: BG,
-        opacity: isExiting ? 0 : 1,
-        transition: `opacity ${FADE_OUT_MS}ms cubic-bezier(0.65, 0, 0.25, 1)`,
-      }}
+      className="boot-intro fixed inset-0 z-500 overflow-hidden select-none cursor-default"
+      data-reduced={reducedMotion ? "true" : undefined}
+      data-exiting={isExiting ? "true" : undefined}
+      style={{ "--boot-fade-out": `${FADE_OUT_MS}ms` } as React.CSSProperties}
       role="presentation"
       onClick={handleFinish}
     >
-      <div ref={containerRef} className="pointer-events-none absolute inset-0 h-full w-full" />
-      {/* Fica acima da cena para não depender do fundo opaco dela; com 15% de opacidade e "screen"
-          só acrescenta os pontos de luz, inclusive sobre o logo, sem escurecer nada. */}
-      <video
-        ref={backdropRef}
-        src={backdropVideoSrc}
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-        disablePictureInPicture
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover mix-blend-screen"
-        style={{ opacity: 0 }}
-      />
+      <div className="boot-stage pointer-events-none absolute inset-0 flex items-center justify-center">
+        {/* Luz ambiente que se move desde o primeiro quadro (gira e respira devagar) */}
+        <div className="boot-glow absolute inset-0" aria-hidden="true" />
+        {/* Pontos de luz: sobem quando a logo aparece. Com "screen" só acrescentam luz, sem escurecer. */}
+        <video
+          src={backdropVideoSrc}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          disablePictureInPicture
+          aria-hidden="true"
+          data-playing={reducedMotion ? undefined : "true"}
+          className="boot-backdrop absolute inset-0 h-full w-full object-cover mix-blend-screen"
+        />
+
+        {/* Brilho atrás do logo: acende quando ele surge e se espalha */}
+        <animated.div
+          aria-hidden="true"
+          className="absolute h-[520px] w-[520px] rounded-full will-change-transform"
+          style={{
+            opacity: bloom.opacity,
+            scale: bloom.scale,
+            background: "radial-gradient(closest-side, rgba(255,255,255,0.5), rgba(255,255,255,0.12) 55%, transparent)",
+          }}
+        />
+
+        {/* Ondas de choque: anéis de borda difusa que abrem e somem (a segunda vem um pouco depois) */}
+        <animated.div
+          aria-hidden="true"
+          className="absolute h-[360px] w-[360px] rounded-full border-2 border-white/60 blur-[6px] will-change-transform"
+          style={{ opacity: shock.opacity, scale: shock.scale }}
+        />
+        <animated.div
+          aria-hidden="true"
+          className="absolute h-[360px] w-[360px] rounded-full border border-white/40 blur-[4px] will-change-transform"
+          style={{ opacity: shock2.opacity, scale: shock2.scale }}
+        />
+
+        {/* Faíscas: saem do logo junto da primeira onda e apagam no caminho */}
+        {SPARKS.map((spark, i) => (
+          <animated.span
+            key={i}
+            aria-hidden="true"
+            className="absolute rounded-full bg-white shadow-[0_0_10px_2px_rgba(255,255,255,0.55)] will-change-transform"
+            style={{
+              width: spark.size,
+              height: spark.size,
+              opacity: burst.progress.to((p) => (p < 0.12 ? p / 0.12 : Math.max(0, 1 - (p - 0.12) / 0.75))),
+              transform: burst.progress.to((p) => {
+                const e = 1 - Math.pow(1 - p, 3);
+                return `translate3d(${Math.cos(spark.angle) * spark.distance * e}px, ${Math.sin(spark.angle) * spark.distance * e}px, 0) scale(${1 - 0.6 * p})`;
+              }),
+            }}
+          />
+        ))}
+
+        {/* Logo da marca, sem placa: sai do desfoque girando, assenta com overshoot, recebe uma faixa de luz e dispara para a câmera */}
+        <animated.div
+          aria-hidden="true"
+          className="absolute w-[min(22vw,200px)] will-change-transform"
+          style={{
+            opacity: to([logo.opacity, zoom.progress], (o, p) => o * zoomFade(p)),
+            scale: to([logo.scale, zoom.progress], (sc, p) => sc * Math.pow(ZOOM_FACTOR, p)),
+            rotateZ: logo.rotateZ,
+            filter: logo.blur.to((b) => `blur(${b}px)`),
+          }}
+        >
+          <img
+            src={logoSrc}
+            alt=""
+            draggable={false}
+            className="block w-full drop-shadow-[0_12px_28px_rgba(0,0,0,0.6)]"
+          />
+          {/* faixa de luz: recortada pelo próprio desenho do logo */}
+          <div
+            className="absolute inset-0 overflow-hidden"
+            style={{
+              WebkitMask: `url(${logoSrc}) center / contain no-repeat`,
+              mask: `url(${logoSrc}) center / contain no-repeat`,
+            }}
+          >
+            <animated.div
+              className="absolute inset-y-0 left-0 w-[55%] will-change-transform"
+              style={{
+                transform: shine.x.to((x) => `translateX(${x}%) skewX(-18deg)`),
+                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.95), transparent)",
+              }}
+            />
+          </div>
+        </animated.div>
+
+        {/* Nome em cascata */}
+        <h1
+          aria-label={BRAND}
+          className="absolute m-0 flex font-bold text-white text-[clamp(3rem,9vw,8rem)] leading-none tracking-[0.14em] antialiased"
+          style={{ fontFamily: "'Inter Variable', 'Inter', system-ui, sans-serif" }}
+        >
+          {letters.map((style, index) => (
+            <animated.span
+              key={index}
+              aria-hidden="true"
+              className="inline-block will-change-transform"
+              style={{
+                opacity: style.opacity,
+                y: style.y,
+                scale: style.scale,
+                filter: style.blur.to((b) => `blur(${b}px)`),
+              }}
+            >
+              {BRAND[index]}
+            </animated.span>
+          ))}
+        </h1>
+      </div>
 
       {showSkipHint && !isExiting && (
         <button
           type="button"
           onClick={onSkipClick}
-          className="absolute bottom-8 right-8 md:bottom-10 md:right-12 z-30 group flex items-center gap-2.5 px-4 py-2 rounded-[var(--corner-sm)] border border-white/20 bg-white/4 hover:bg-white/10 hover:border-white/40 transition-all duration-200 cursor-pointer backdrop-blur-md active:scale-95"
+          className="absolute bottom-8 right-8 md:bottom-10 md:right-12 z-30 group flex items-center gap-2.5 px-4 py-2 rounded-[var(--corner-sm)] border border-white/20 bg-white/4 hover:bg-white/10 hover:border-white/40 transition-[transform,background-color,border-color] duration-[180ms] ease-[var(--ease-out-strong)] active:duration-75 cursor-pointer backdrop-blur-md active:scale-[0.97]"
         >
           <span className="text-[length:var(--step-0)] font-mono tracking-[0.16em] uppercase text-[var(--ink-muted)] group-hover:text-white transition-colors">
             Pular Introdução
