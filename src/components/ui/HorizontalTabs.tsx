@@ -57,7 +57,13 @@ export const HorizontalTabs: React.FC<HorizontalTabsProps> = ({
 
     const handleResize = () => updatePill(true);
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    // fontes que terminam de carregar (ou rótulos que mudam) mexem na largura das abas: a pílula as acompanha
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(handleResize);
+    observer?.observe(activeTab);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      observer?.disconnect();
+    };
   }, [activeId, mounted]);
 
   return (

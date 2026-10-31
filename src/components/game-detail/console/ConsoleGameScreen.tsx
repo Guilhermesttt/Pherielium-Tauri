@@ -300,7 +300,7 @@ export const ConsoleGameScreen: React.FC<ConsoleGameScreenProps> = (props) => {
               initial="out"
               animate={isOpen ? "in" : "out"}
               transition={enterTransition(0.02)}
-              className="console-tabs-row flex min-w-0 items-center gap-2"
+              className="console-tabs-row flex min-w-0 items-center gap-3"
             >
               {isGamepadConnected && (
                 <span className="console-bumper" title="Aba anterior" aria-hidden="true">

@@ -581,10 +581,8 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                 setSortBy(opt.value);
                 setIsSortOpen(false);
               }}
-              className={`flex h-11 w-full cursor-pointer items-center rounded-[var(--corner-sm)] px-4 text-left text-[length:var(--step-0)] transition-colors ${
-                sortBy === opt.value
-                  ? "bg-[var(--ink)] font-semibold text-[var(--tone-0)]"
-                  : "text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
+              className={`sel-pill flex h-11 w-full cursor-pointer items-center rounded-[var(--corner-sm)] px-4 text-left text-[length:var(--step-0)] ${
+                sortBy === opt.value ? "" : "text-[var(--ink-muted)]"
               }`}
             >
               {opt.label}
@@ -631,10 +629,8 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                 setFilterByPlat(opt.value);
                 setIsPlatformFilterOpen(false);
               }}
-              className={`flex h-11 w-full cursor-pointer items-center rounded-[var(--corner-sm)] px-4 text-left text-[length:var(--step-0)] transition-colors ${
-                filterByPlat === opt.value
-                  ? "bg-[var(--ink)] font-semibold text-[var(--tone-0)]"
-                  : "text-[var(--ink-muted)] hover:bg-[var(--tone-4)] hover:text-[var(--ink)]"
+              className={`sel-pill flex h-11 w-full cursor-pointer items-center rounded-[var(--corner-sm)] px-4 text-left text-[length:var(--step-0)] ${
+                filterByPlat === opt.value ? "" : "text-[var(--ink-muted)]"
               }`}
             >
               {opt.label}
@@ -681,7 +677,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
         <HorizontalTabs
           activeId={filter}
           onChange={(id) => handleFilterSelect(id as TrophyFilter)}
-          className="t-tabs--squircle flex-wrap"
+          className="t-tabs--squircle t-tabs--neon flex-wrap"
           tabClassName="flex h-12 items-center gap-2.5 whitespace-nowrap"
           tabs={filterTabs.map((f) => ({
             id: f.id,
@@ -707,9 +703,9 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
       }
     >
       <div className="space-y-8">
-        {/* Patente e escalada lado a lado: um degrau de tom separa, sem borda nem brilho */}
+        {/* Patente e escalada lado a lado: a patente leva a borda neon (o que é importante), a escalada só no degrau atual */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-          <section aria-label="Sua patente" className="rounded-[var(--corner-lg)] bg-[var(--tone-1)] p-8">
+          <section aria-label="Sua patente" className="neon-border rounded-[var(--corner-lg)] bg-[var(--tone-1)] p-8">
             <div className="flex min-w-0 items-center gap-7">
               <PSNTierBadge tier={levelInfo.tier} subTier={levelInfo.subTier} level={levelInfo.level} playSound={playSound} />
               <div className="min-w-0 flex-1 space-y-5">
@@ -774,7 +770,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                   <li
                     key={item.type}
                     aria-current={isCurrentTier ? "true" : undefined}
-                    className={`flex items-center gap-4 rounded-[var(--corner-md)] px-5 py-4 ${isCurrentTier ? "bg-[var(--tone-4)]" : "bg-[var(--tone-2)]"}`}
+                    className={`flex items-center gap-4 rounded-[var(--corner-md)] px-5 py-4 ${isCurrentTier ? "neon-border bg-[var(--tone-3)]" : "bg-[var(--tone-2)]"}`}
                   >
                     <PSNTrophyIcon type={item.type} size={44} dimmed={item.count === 0} />
                     <span className="min-w-0">
@@ -799,7 +795,7 @@ const TrophiesPage: React.FC<TrophiesPageProps> = ({ games, onOpenGame, playSoun
                 onOpenGame?.(platinumGoal.game);
               }}
               onMouseEnter={() => playSound?.("hover")}
-              className="group relative isolate flex w-full cursor-pointer items-center gap-6 overflow-hidden rounded-[var(--corner-lg)] bg-[var(--tone-1)] p-7 text-left transition-transform active:scale-[0.995]"
+              className="neon-border neon-border--animated group relative isolate flex w-full cursor-pointer items-center gap-6 overflow-hidden rounded-[var(--corner-lg)] bg-[var(--tone-1)] p-7 text-left transition-transform active:scale-[0.995]"
             >
               {(platinumGoal.game.backgroundImage || platinumGoal.game.cardImage || platinumGoal.game.image) && (
                 <img

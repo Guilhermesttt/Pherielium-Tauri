@@ -154,7 +154,7 @@ export const ConsoleTrophyList: React.FC<ConsoleTrophyListProps> = ({
       <header className="mb-[var(--gap-stack)] flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-[length:var(--fs-label)] font-bold uppercase tracking-[0.08em] text-[var(--ink-muted)]">{t.title}</h2>
         <div className="flex items-center gap-2">
-          <div role="group" aria-label="Filtro" className="flex items-center gap-1">
+          <div role="group" aria-label="Filtro" className="flex items-center gap-2.5 px-1">
             {filters.map((item) => (
               <button
                 key={item.id}
@@ -164,7 +164,7 @@ export const ConsoleTrophyList: React.FC<ConsoleTrophyListProps> = ({
                   onFilterChange(item.id);
                   playSound("navigate");
                 }}
-                className="console-tab-item flex h-[calc(var(--control-h)-14px)] items-center rounded-full px-3"
+                className="console-tab-item neon-chip flex h-[calc(var(--control-h)-14px)] items-center rounded-full px-3.5"
                 data-active={filter === item.id}
               >
                 {item.label}

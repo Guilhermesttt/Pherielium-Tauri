@@ -13,9 +13,9 @@
 }
 
 :focus-visible {
-  outline: 2px solid rgba(var(--launcher-accent), 0.96);
+  outline: 2px solid rgba(var(--launcher-accent-ring, var(--launcher-accent)), 0.96);
   outline-offset: 3px;
-  box-shadow: 0 0 0 4px rgba(var(--launcher-accent), 0.14);
+  box-shadow: 0 0 0 4px rgba(var(--launcher-accent-ring, var(--launcher-accent)), 0.14), var(--selection-glow, 0 0 0 transparent);
 }
 
 /* Accessible, gentle transitions for users who prefer reduced motion */
@@ -106,24 +106,24 @@ html[data-launcher-theme="checkpoint"] {
 
   --color-bg-main: var(--surface-base);
   --color-surface: var(--surface-raised);
-  --color-ui-detail: #2A2A2A;
-  --color-text-main: #FFFFFF;
-  --color-text-sub: #D4D4D4;
+  --color-ui-detail: #333333;
+  --color-text-main: #F9F9F9;
+  --color-text-sub: #A7A7A7;
 
   --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-selected: rgba(255, 255, 255, 0.40);
+  --border-selected: rgba(232, 80, 2, 0.60);
   --border-strong: rgba(255, 255, 255, 0.22);
 
   --radius-panel: 22px;
   --radius-card: 16px;
   --radius-control: 12px;
 
-  --selection-bg: #242424;
-  --selection-text: #FFFFFF;
-  --selection-border: rgba(255, 255, 255, 0.16);
+  --selection-bg: rgba(232, 80, 2, 0.16);
+  --selection-text: #FF9A5C;
+  --selection-border: rgba(232, 80, 2, 0.55);
 
-  --focus-ring: 2px solid rgba(255, 255, 255, 0.95);
-  --focus-shadow: 0 0 0 3px rgba(255, 255, 255, 0.16);
+  --focus-ring: 2px solid rgba(255, 154, 92, 0.95);
+  --focus-shadow: 0 0 0 3px rgba(232, 80, 2, 0.22);
   --surface-chamfer: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
   /* Fallback legacy remapping */
@@ -140,10 +140,21 @@ html[data-launcher-theme="checkpoint"] {
   --text-disabled: rgba(210, 210, 210, 0.38);
   --border: var(--border-subtle);
 
-  --launcher-accent: 255 255 255;
-  --launcher-accent-soft: rgba(255, 255, 255, 0.18);
-  --launcher-tint: rgba(255, 255, 255, 0.06);
-  --theme-ambient-bg: radial-gradient(circle at 50% 25%, rgba(255, 255, 255, 0.03) 0%, transparent 65%);
+  /* Laranja Pherielium: primária #E85002, secundária #FF6A1A, destaque suave #FF9A5C */
+  --launcher-accent: 232 80 2;
+  /* anel de foco e realces pequenos: sempre uma versão clara da primária (a primária do PS2 é escura demais) */
+  --launcher-accent-ring: 255 154 92;
+  /* texto sobre a primária (contraste ≥ 4,5:1 em cada tema) */
+  --on-accent: #120600;
+  --launcher-accent-soft: rgba(232, 80, 2, 0.22);
+  --launcher-tint: rgba(255, 106, 26, 0.12);
+  --theme-ambient-bg: radial-gradient(circle at 50% 25%, rgba(232, 80, 2, 0.07) 0%, transparent 65%);
+  /* Glow suave de quem está selecionado (vale para todos os temas: usa o realce claro do tema) */
+  /* preenchimento da aba ativa: a primária com um brilho leve no topo; a sombra cai para baixo e é recolhida
+     (spread negativo), então não alcança as abas vizinhas */
+  --accent-fill: linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0) 55%), rgb(var(--launcher-accent));
+  --accent-fill-shadow: 0 7px 16px -9px rgb(var(--launcher-accent) / 0.75);
+  --selection-glow: 0 0 14px 1px rgb(var(--launcher-accent-ring) / 0.32), 0 0 34px rgb(var(--launcher-accent-ring) / 0.14);
   --cosmos-glow: none;
 
   /* Malha Base 4/8 */
@@ -404,34 +415,36 @@ html[data-launcher-theme="checkpoint"] {
 html[data-launcher-theme="playstation"] {
   --surface-base: #03050D;
   --surface-raised: #080D1A;
-  --surface-overlay: #0E162C;
+  --surface-overlay: #10172A;
 
   --color-bg-main: var(--surface-base);
   --color-surface: var(--surface-raised);
-  --color-ui-detail: #162444;
-  --color-text-main: #FFFFFF;
-  --color-text-sub: #829ABF;
+  --color-ui-detail: #26304D;
+  --color-text-main: #F2F4FF;
+  --color-text-sub: #8290B5;
 
-  --border-subtle: rgba(40, 75, 140, 0.25);
-  --border-selected: #2563EB;
-  --border-strong: rgba(59, 130, 246, 0.45);
+  --border-subtle: #26304D;
+  --border-selected: #5367B8;
+  --border-strong: rgba(83, 103, 184, 0.45);
 
   --radius-panel: 14px;
   --radius-card: 10px;
   --radius-control: 8px;
 
-  --selection-bg: rgba(37, 99, 235, 0.16);
-  --selection-text: #60A5FA;
-  --selection-border: #2563EB;
+  --selection-bg: rgba(38, 59, 143, 0.22);
+  --selection-text: #8297E8;
+  --selection-border: #5367B8;
 
-  --focus-ring: 2px solid #3B82F6;
-  --focus-shadow: 0 0 10px rgba(37, 99, 235, 0.45);
-  --surface-chamfer: inset 0 1px 0 rgba(96, 165, 250, 0.16);
+  --focus-ring: 2px solid #8297E8;
+  --focus-shadow: 0 0 12px rgba(130, 151, 232, 0.4);
+  --surface-chamfer: inset 0 1px 0 rgba(130, 151, 232, 0.2);
 
-  --launcher-accent: 29 78 216;
-  --launcher-accent-soft: rgba(0, 210, 255, 0.25);
-  --launcher-tint: rgba(10, 25, 60, 0.35);
-  --theme-ambient-bg: radial-gradient(ellipse at 80% 20%, rgba(29, 78, 216, 0.20) 0%, rgba(10, 25, 60, 0.10) 45%, transparent 75%);
+  --launcher-accent: 38 59 143;
+  --launcher-accent-ring: 130 151 232;
+  --on-accent: #FFFFFF;
+  --launcher-accent-soft: rgba(38, 59, 143, 0.22);
+  --launcher-tint: rgba(83, 103, 184, 0.16);
+  --theme-ambient-bg: radial-gradient(ellipse at 70% 10%, rgba(83, 103, 184, 0.18) 0%, rgba(99, 166, 201, 0.07) 45%, transparent 70%);
 
   --motion-fast: 120ms;
   --motion-normal: 200ms;
@@ -444,17 +457,17 @@ html[data-launcher-theme="playstation"] {
 html[data-launcher-theme="ps5"] {
   --surface-base: #0B0D12;
   --surface-raised: #131620;
-  --surface-overlay: #1A1F2D;
+  --surface-overlay: #1C2230;
 
   --color-bg-main: var(--surface-base);
   --color-surface: var(--surface-raised);
-  --color-ui-detail: #232838;
-  --color-text-main: #FFFFFF;
+  --color-ui-detail: #303541;
+  --color-text-main: #F8FAFC;
   --color-text-sub: #9AA0B2;
 
-  --border-subtle: rgba(255, 255, 255, 0.09);
-  --border-selected: rgba(255, 255, 255, 0.75);
-  --border-strong: rgba(255, 255, 255, 0.28);
+  --border-subtle: #303541;
+  --border-selected: rgba(244, 244, 246, 0.75);
+  --border-strong: rgba(244, 244, 246, 0.28);
 
   --radius-panel: 28px;
   --radius-card: 20px;
@@ -462,16 +475,18 @@ html[data-launcher-theme="ps5"] {
 
   --selection-bg: #F4F4F6;
   --selection-text: #0B0D12;
-  --selection-border: rgba(255, 255, 255, 0.35);
+  --selection-border: rgba(244, 244, 246, 0.35);
 
-  --focus-ring: 2px solid #FFFFFF;
-  --focus-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
-  --surface-chamfer: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --focus-ring: 2px solid #F4F4F6;
+  --focus-shadow: 0 0 12px rgba(139, 191, 255, 0.4);
+  --surface-chamfer: inset 0 1px 0 rgba(139, 191, 255, 0.2);
 
   --launcher-accent: 244 244 246;
-  --launcher-accent-soft: rgba(41, 121, 255, 0.24);
-  --launcher-tint: rgba(41, 121, 255, 0.10);
-  --theme-ambient-bg: radial-gradient(ellipse at 50% -10%, rgba(244, 244, 246, 0.08) 0%, rgba(41, 121, 255, 0.06) 45%, transparent 70%);
+  --launcher-accent-ring: 244 244 246;
+  --on-accent: #0B0D12;
+  --launcher-accent-soft: rgba(244, 244, 246, 0.22);
+  --launcher-tint: rgba(203, 213, 225, 0.16);
+  --theme-ambient-bg: radial-gradient(ellipse at 70% 10%, rgba(203, 213, 225, 0.18) 0%, rgba(41, 121, 255, 0.07) 45%, transparent 70%);
 
   --motion-fast: 150ms;
   --motion-normal: 240ms;
@@ -488,30 +503,32 @@ html[data-launcher-theme="ps4"] {
 
   --color-bg-main: var(--surface-base);
   --color-surface: var(--surface-raised);
-  --color-ui-detail: #192D5A;
+  --color-ui-detail: #1D416B;
   --color-text-main: #FFFFFF;
-  --color-text-sub: #8CA3CF;
+  --color-text-sub: #8CAFE0;
 
-  --border-subtle: rgba(0, 112, 209, 0.25);
-  --border-selected: #0070D1;
+  --border-subtle: #1D416B;
+  --border-selected: #1685FF;
   --border-strong: rgba(0, 112, 209, 0.45);
 
   --radius-panel: 18px;
   --radius-card: 14px;
   --radius-control: 10px;
 
-  --selection-bg: rgba(0, 112, 209, 0.25);
-  --selection-text: #FFFFFF;
-  --selection-border: #0070D1;
+  --selection-bg: rgba(22, 133, 255, 0.22);
+  --selection-text: #38BDF8;
+  --selection-border: #1685FF;
 
-  --focus-ring: 2px solid #0070D1;
-  --focus-shadow: 0 0 12px rgba(0, 112, 209, 0.4);
-  --surface-chamfer: inset 0 1px 0 rgba(0, 112, 209, 0.2);
+  --focus-ring: 2px solid #38BDF8;
+  --focus-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+  --surface-chamfer: inset 0 1px 0 rgba(56, 189, 248, 0.2);
 
-  --launcher-accent: 0 112 209;
-  --launcher-accent-soft: rgba(0, 112, 209, 0.32);
-  --launcher-tint: rgba(0, 55, 145, 0.30);
-  --theme-ambient-bg: radial-gradient(ellipse at 60% 0%, rgba(0, 112, 209, 0.22) 0%, transparent 70%);
+  --launcher-accent: 22 133 255;
+  --launcher-accent-ring: 56 189 248;
+  --on-accent: #04101F;
+  --launcher-accent-soft: rgba(22, 133, 255, 0.22);
+  --launcher-tint: rgba(0, 112, 209, 0.16);
+  --theme-ambient-bg: radial-gradient(ellipse at 70% 10%, rgba(0, 112, 209, 0.18) 0%, rgba(125, 211, 252, 0.07) 45%, transparent 70%);
 }
 
 /* ========================================================
@@ -524,30 +541,32 @@ html[data-launcher-theme="psp"] {
 
   --color-bg-main: var(--surface-base);
   --color-surface: var(--surface-raised);
-  --color-ui-detail: #2A2E38;
-  --color-text-main: #FFFFFF;
+  --color-ui-detail: #363B46;
+  --color-text-main: #F8FAFC;
   --color-text-sub: #A0A5B5;
 
-  --border-subtle: rgba(203, 213, 225, 0.16);
+  --border-subtle: #363B46;
   --border-selected: #CBD5E1;
-  --border-strong: rgba(203, 213, 225, 0.32);
+  --border-strong: rgba(226, 232, 240, 0.45);
 
   --radius-panel: 16px;
   --radius-card: 12px;
   --radius-control: 8px;
 
-  --selection-bg: rgba(203, 213, 225, 0.18);
-  --selection-text: #FFFFFF;
+  --selection-bg: rgba(203, 213, 225, 0.22);
+  --selection-text: #F8FAFC;
   --selection-border: #CBD5E1;
 
-  --focus-ring: 2px solid #CBD5E1;
-  --focus-shadow: 0 0 10px rgba(203, 213, 225, 0.3);
-  --surface-chamfer: inset 0 1px 0 rgba(203, 213, 225, 0.18);
+  --focus-ring: 2px solid #F8FAFC;
+  --focus-shadow: 0 0 12px rgba(248, 250, 252, 0.4);
+  --surface-chamfer: inset 0 1px 0 rgba(248, 250, 252, 0.2);
 
   --launcher-accent: 203 213 225;
-  --launcher-accent-soft: rgba(203, 213, 225, 0.25);
-  --launcher-tint: rgba(214, 188, 145, 0.14);
-  --theme-ambient-bg: radial-gradient(ellipse at 80% 0%, rgba(214, 188, 145, 0.14) 0%, transparent 65%);
+  --launcher-accent-ring: 248 250 252;
+  --on-accent: #0B0C0E;
+  --launcher-accent-soft: rgba(203, 213, 225, 0.22);
+  --launcher-tint: rgba(226, 232, 240, 0.16);
+  --theme-ambient-bg: radial-gradient(ellipse at 70% 10%, rgba(226, 232, 240, 0.18) 0%, rgba(214, 188, 145, 0.07) 45%, transparent 70%);
 }
 
 /* ========================================================
@@ -560,30 +579,32 @@ html[data-launcher-theme="cyberpunk"] {
 
   --color-bg-main: var(--surface-base);
   --color-surface: var(--surface-raised);
-  --color-ui-detail: #26293A;
+  --color-ui-detail: #30313D;
   --color-text-main: #FFFFFF;
   --color-text-sub: #A5A8BD;
 
-  --border-subtle: rgba(255, 238, 0, 0.2);
+  --border-subtle: #30313D;
   --border-selected: #FFEE00;
-  --border-strong: rgba(255, 238, 0, 0.45);
+  --border-strong: rgba(0, 240, 255, 0.45);
 
   --radius-panel: 8px;
   --radius-card: 6px;
   --radius-control: 4px;
 
-  --selection-bg: rgba(255, 238, 0, 0.15);
-  --selection-text: #FFEE00;
+  --selection-bg: rgba(255, 238, 0, 0.22);
+  --selection-text: #FFF566;
   --selection-border: #FFEE00;
 
-  --focus-ring: 2px solid #FFEE00;
-  --focus-shadow: 0 0 12px rgba(255, 238, 0, 0.45);
-  --surface-chamfer: inset 0 1px 0 rgba(255, 238, 0, 0.25);
+  --focus-ring: 2px solid #FFF566;
+  --focus-shadow: 0 0 12px rgba(255, 245, 102, 0.4);
+  --surface-chamfer: inset 0 1px 0 rgba(255, 245, 102, 0.2);
 
   --launcher-accent: 255 238 0;
-  --launcher-accent-soft: rgba(255, 238, 0, 0.36);
-  --launcher-tint: rgba(0, 240, 255, 0.34);
-  --theme-ambient-bg: radial-gradient(circle at 85% 10%, rgba(255, 238, 0, 0.10) 0%, rgba(0, 240, 255, 0.08) 40%, transparent 70%);
+  --launcher-accent-ring: 255 245 102;
+  --on-accent: #050507;
+  --launcher-accent-soft: rgba(255, 238, 0, 0.22);
+  --launcher-tint: rgba(0, 240, 255, 0.16);
+  --theme-ambient-bg: radial-gradient(ellipse at 70% 10%, rgba(0, 240, 255, 0.18) 0%, rgba(103, 247, 255, 0.07) 45%, transparent 70%);
 }
 
 /* ========================================================
@@ -596,30 +617,32 @@ html[data-launcher-theme="gamecube"] {
 
   --color-bg-main: var(--surface-base);
   --color-surface: var(--surface-raised);
-  --color-ui-detail: #2C224B;
+  --color-ui-detail: #382A55;
   --color-text-main: #FFFFFF;
-  --color-text-sub: #A59BC2;
+  --color-text-sub: #B0A4CE;
 
-  --border-subtle: rgba(124, 58, 237, 0.24);
-  --border-selected: #7C3AED;
-  --border-strong: rgba(124, 58, 237, 0.45);
+  --border-subtle: #382A55;
+  --border-selected: #8B5CF6;
+  --border-strong: rgba(109, 74, 255, 0.45);
 
   --radius-panel: 16px;
   --radius-card: 12px;
   --radius-control: 10px;
 
-  --selection-bg: rgba(124, 58, 237, 0.22);
-  --selection-text: #A78BFA;
-  --selection-border: #7C3AED;
+  --selection-bg: rgba(139, 92, 246, 0.22);
+  --selection-text: #C4B5FD;
+  --selection-border: #8B5CF6;
 
-  --focus-ring: 2px solid #7C3AED;
-  --focus-shadow: 0 0 12px rgba(124, 58, 237, 0.4);
-  --surface-chamfer: inset 0 1px 0 rgba(167, 139, 250, 0.2);
+  --focus-ring: 2px solid #C4B5FD;
+  --focus-shadow: 0 0 12px rgba(196, 181, 253, 0.4);
+  --surface-chamfer: inset 0 1px 0 rgba(196, 181, 253, 0.2);
 
-  --launcher-accent: 124 58 237;
-  --launcher-accent-soft: rgba(124, 58, 237, 0.36);
-  --launcher-tint: rgba(76, 29, 149, 0.34);
-  --theme-ambient-bg: radial-gradient(ellipse at 70% 10%, rgba(124, 58, 237, 0.16) 0%, transparent 65%);
+  --launcher-accent: 139 92 246;
+  --launcher-accent-ring: 196 181 253;
+  --on-accent: #090610;
+  --launcher-accent-soft: rgba(139, 92, 246, 0.22);
+  --launcher-tint: rgba(109, 74, 255, 0.16);
+  --theme-ambient-bg: radial-gradient(ellipse at 70% 10%, rgba(109, 74, 255, 0.18) 0%, rgba(221, 214, 254, 0.07) 45%, transparent 70%);
 }
 
 /* ========================================================
@@ -632,30 +655,32 @@ html[data-launcher-theme="xbox360"] {
 
   --color-bg-main: var(--surface-base);
   --color-surface: var(--surface-raised);
-  --color-ui-detail: #223B1A;
+  --color-ui-detail: #304526;
   --color-text-main: #FFFFFF;
-  --color-text-sub: #9EBD94;
+  --color-text-sub: #A7C49C;
 
-  --border-subtle: rgba(132, 204, 22, 0.22);
+  --border-subtle: #304526;
   --border-selected: #84CC16;
-  --border-strong: rgba(132, 204, 22, 0.45);
+  --border-strong: rgba(77, 124, 15, 0.45);
 
   --radius-panel: 16px;
   --radius-card: 12px;
   --radius-control: 8px;
 
-  --selection-bg: rgba(132, 204, 22, 0.20);
-  --selection-text: #A3E635;
+  --selection-bg: rgba(132, 204, 22, 0.22);
+  --selection-text: #BEF264;
   --selection-border: #84CC16;
 
-  --focus-ring: 2px solid #84CC16;
-  --focus-shadow: 0 0 12px rgba(132, 204, 22, 0.4);
-  --surface-chamfer: inset 0 1px 0 rgba(163, 230, 53, 0.2);
+  --focus-ring: 2px solid #BEF264;
+  --focus-shadow: 0 0 12px rgba(190, 242, 100, 0.4);
+  --surface-chamfer: inset 0 1px 0 rgba(190, 242, 100, 0.2);
 
   --launcher-accent: 132 204 22;
-  --launcher-accent-soft: rgba(132, 204, 22, 0.34);
-  --launcher-tint: rgba(77, 124, 15, 0.34);
-  --theme-ambient-bg: radial-gradient(ellipse at 70% 15%, rgba(132, 204, 22, 0.14) 0%, transparent 65%);
+  --launcher-accent-ring: 190 242 100;
+  --on-accent: #060B04;
+  --launcher-accent-soft: rgba(132, 204, 22, 0.22);
+  --launcher-tint: rgba(77, 124, 15, 0.16);
+  --theme-ambient-bg: radial-gradient(ellipse at 70% 10%, rgba(77, 124, 15, 0.18) 0%, rgba(217, 249, 157, 0.07) 45%, transparent 70%);
 }
 
 /* ========================================================
@@ -1980,8 +2005,8 @@ video {
   --tabs-badge-active-bg: rgb(255 255 255 / 0.2);
   --tabs-badge-active-text: #ffffff;
   /* Item ativo da navegação: segue a aba (pílula do tema, branca no padrão) */
-  --nav-active-bg: var(--tone-3);
-  --nav-active-ink: var(--ink);
+  --nav-active-bg: rgb(var(--launcher-accent));
+  --nav-active-ink: var(--on-accent);
 }
 
 .t-tabs {
@@ -2043,6 +2068,7 @@ video {
 }
 
 .t-tabs-pill {
+  box-shadow: var(--accent-fill-shadow);
   position: absolute;
   top: 0;
   left: 0;
@@ -2064,10 +2090,10 @@ video {
 /* Abas em cantos squircle e preenchidas (sem contorno): a ativa é um bloco de tinta que desliza */
 .t-tabs--squircle {
   --tabs-bar-bg: transparent;
-  --tabs-pill-bg: var(--ink);
+  --tabs-pill-bg: var(--accent-fill);
   --tabs-text-muted: var(--ink-muted);
   --tabs-text-active: var(--ink);
-  --tabs-text-on-pill: var(--tone-0);
+  --tabs-text-on-pill: var(--on-accent);
   --tabs-hover-bg: var(--tone-3);
   padding: 0;
   gap: 6px;
@@ -2735,8 +2761,8 @@ html[data-ui-style="refined"]:is(:not([data-launcher-theme]), [data-launcher-the
   --tabs-hover-bg: var(--gray-3);
   --tabs-badge-active-bg: rgb(0 0 0 / 0.12);
   --tabs-badge-active-text: var(--gray-1);
-  --nav-active-bg: var(--gray-11);
-  --nav-active-ink: var(--gray-1);
+  --nav-active-bg: rgb(var(--launcher-accent));
+  --nav-active-ink: var(--on-accent);
 
   /* bordas discretas: o olho percebe o tom, não a linha */
   --border-subtle: rgba(255, 255, 255, 0.06);
@@ -3241,7 +3267,7 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
 }
 
 .console-tab-item[data-active="true"] {
-  color: var(--tone-0);
+  color: var(--on-accent);
   background: transparent;
 }
 
@@ -3255,8 +3281,9 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
   height: 0;
   opacity: 0;
   pointer-events: none;
-  background: var(--ink);
+  background: var(--accent-fill);
   border-radius: var(--corner-sm);
+  box-shadow: var(--accent-fill-shadow);
   transition:
     transform var(--tabs-dur, 250ms) var(--tabs-ease, cubic-bezier(0.22, 1, 0.36, 1)),
     width var(--tabs-dur, 250ms) var(--tabs-ease, cubic-bezier(0.22, 1, 0.36, 1)),
@@ -3677,10 +3704,14 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
 .console-options [role="menuitem"]:nth-child(3) { animation-delay: 60ms; }
 
 /* :focus (e não só :focus-visible): o D-pad foca por código e o mouse foca ao passar por cima */
-.console-options [role="menuitem"]:hover,
 .console-options [role="menuitem"]:focus {
-  background: var(--ink);
-  color: var(--tone-0);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+}
+
+.console-options [role="menuitem"]:hover {
+  background: color-mix(in srgb, var(--ink) 11%, var(--tone-2));
+  color: var(--ink);
 }
 
 @keyframes console-option-in {
@@ -4275,4 +4306,347 @@ html[data-launcher-theme]:not([data-launcher-theme="phelierium"]):not([data-laun
     transform: none !important;
     transition-duration: 100ms !important;
   }
+}
+
+/* ── Intro de abertura (GameBootIntro) ─────────────────────────────────────────────────────
+   Fundo: preto com luz ambiente radial (--gray-2 no centro, --gray-1 nas bordas). As molas da
+   placa, do selo e das letras ficam no componente (react-spring). Aqui ficam a saída suave (fade +
+   zoom de 1,02 → 1,00) e o vídeo de pontos de luz, que sobe quando a logo aparece (2,0 s → 3,6 s,
+   40%), acende até 70% no hiper-zoom (4,6 s → 5,4 s, clareando o nome que vem depois) e some devagar
+   até o fim da intro (10,8 s). Só `opacity` e `transform`. */
+.boot-intro {
+  /* laranja do tema no lugar do cinza: o centro acende em laranja escuro e as bordas ficam pretas */
+  background: radial-gradient(circle at 50% 46%, rgb(var(--launcher-accent) / 0.2) 0%, rgb(var(--launcher-accent) / 0.07) 38%, var(--gray-0) 100%), var(--gray-0);
+  transition: opacity var(--boot-fade-out, 400ms) cubic-bezier(0.65, 0, 0.25, 1);
+}
+
+.boot-intro[data-exiting="true"] {
+  opacity: 0;
+}
+
+.boot-stage {
+  transform: scale(1.02);
+  transform-origin: 50% 50%;
+  transition: transform var(--boot-fade-out, 400ms) cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.boot-intro[data-exiting="true"] .boot-stage {
+  transform: scale(1);
+}
+
+/* Luz ambiente em movimento: dois focos que orbitam em sentidos opostos e respiram, para o degradê
+   nunca ficar parado (só `transform` e `opacity`). */
+.boot-glow {
+  opacity: 0;
+  animation: boot-glow-in 1.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.boot-glow::before,
+.boot-glow::after {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  will-change: transform;
+}
+
+.boot-glow::before {
+  background:
+    radial-gradient(circle at 62% 40%, rgb(var(--launcher-accent) / 0.22) 0%, transparent 34%),
+    radial-gradient(circle at 36% 64%, rgb(var(--launcher-accent-ring) / 0.1) 0%, transparent 30%);
+  animation: boot-glow-orbit 16s linear infinite;
+}
+
+.boot-glow::after {
+  background: radial-gradient(circle at 44% 56%, rgb(var(--launcher-accent) / 0.16) 0%, transparent 38%);
+  animation: boot-glow-orbit 22s linear infinite reverse, boot-glow-breathe 5s ease-in-out infinite alternate;
+}
+
+.boot-intro[data-reduced="true"] .boot-glow::before,
+.boot-intro[data-reduced="true"] .boot-glow::after {
+  animation: none;
+}
+
+@keyframes boot-glow-in {
+  to { opacity: 1; }
+}
+
+@keyframes boot-glow-orbit {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes boot-glow-breathe {
+  from { opacity: 0.45; }
+  to { opacity: 1; }
+}
+
+.boot-backdrop {
+  opacity: 0;
+}
+
+.boot-backdrop[data-playing="true"] {
+  animation: boot-backdrop 12.6s linear both;
+}
+
+@keyframes boot-backdrop {
+  0%, 15.9% { opacity: 0; }
+  28.6%, 36.5% { opacity: 0.4; }
+  42.9% { opacity: 0.7; }
+  50.8% { opacity: 0.45; }
+  61.9% { opacity: 0.4; }
+  100% { opacity: 0.06; }
+}
+
+/* ── Glow suave de seleção (todos os temas) ───────────────────────────────────────────────
+   O que está selecionado ganha um brilho difuso na cor de destaque do tema (`--selection-glow`).
+   `:where` tem especificidade zero: um componente que já define a própria sombra continua mandando. */
+:where(
+  [aria-current="true"],
+  [aria-pressed="true"],
+  [data-focused="true"],
+  .ctl-circle[data-active="true"],
+  .theme-tab-item[data-active="true"]
+) {
+  box-shadow: var(--selection-glow);
+}
+
+
+/* ── Seletor de plataformas ──────────────────────────────────────────────────────────────
+   Pílula do item selecionado: brilho forte na ponta esquerda que se apaga para a direita, com
+   um fio de luz em cima e embaixo (tudo na cor de destaque do tema). */
+.wheel-pill {
+  position: absolute;
+  min-width: 400px;
+  height: 72px;
+  padding: 0 24px 0 26px;
+  gap: 14px;
+}
+
+/* o brilho da pílula é um elemento à parte (400×72, preso à esquerda do item): assim ele aparece e some
+   com a distância ao centro, em vez de ligar de uma vez quando o item vira o selecionado */
+.wheel-pill-bg {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  z-index: -1;
+  width: 400px;
+  height: 72px;
+  transform: translateY(-50%);
+  border-radius: 9999px;
+  corner-shape: round;
+  background: linear-gradient(
+    90deg,
+    rgb(var(--launcher-accent)) 0%,
+    rgb(var(--launcher-accent) / 0.78) 6%,
+    rgb(var(--launcher-accent) / 0.38) 30%,
+    rgb(var(--launcher-accent) / 0.12) 66%,
+    transparent 100%
+  );
+  box-shadow: 0 0 52px -6px rgb(var(--launcher-accent) / 0.75), 0 0 14px rgb(var(--launcher-accent) / 0.35);
+  pointer-events: none;
+}
+
+.wheel-pill-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgb(var(--launcher-accent-ring) / 0.85), rgb(var(--launcher-accent-ring) / 0) 82%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+.wheel-pill-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 10px rgb(var(--launcher-accent-ring) / 0.9);
+}
+
+.wheel-pill > span:not(.wheel-pill-dot) {
+  font-size: 1.75rem;
+}
+
+.wheel-pill svg {
+  width: 44px;
+  height: 44px;
+}
+
+/* luz de ambiente do seletor: manchas e o arco de luz no canto, na cor do tema */
+.platform-ambient {
+  background:
+    radial-gradient(ellipse 30% 20% at 96% 20%, rgb(var(--launcher-accent) / 0.3), transparent 70%),
+    radial-gradient(ellipse 34% 30% at 52% 84%, rgb(var(--launcher-accent) / 0.3), transparent 70%),
+    radial-gradient(ellipse 22% 26% at 92% 80%, rgb(var(--launcher-accent) / 0.22), transparent 70%),
+    radial-gradient(ellipse 30% 24% at 30% 16%, rgb(255 255 255 / 0.045), transparent 70%),
+    #000;
+}
+
+.platform-arc {
+  position: absolute;
+  top: 255px;
+  left: 250px;
+  width: 3000px;
+  height: 3000px;
+  border-radius: 9999px;
+  corner-shape: round;
+  background: radial-gradient(
+    circle closest-side,
+    transparent calc(100% - 5px),
+    rgb(var(--launcher-accent-ring)) calc(100% - 2px),
+    transparent 100%
+  );
+  filter: drop-shadow(0 0 22px rgb(var(--launcher-accent) / 0.9)) drop-shadow(0 0 6px rgb(var(--launcher-accent)));
+  -webkit-mask-image: linear-gradient(to right, transparent 28%, #000 45%);
+  mask-image: linear-gradient(to right, transparent 28%, #000 45%);
+  pointer-events: none;
+}
+
+/* ── Borda neon ────────────────────────────────────────────────────────────────────────────
+   Para o que é importante na tela: um fio de 1,5px em gradiente (realce → primária) e um brilho
+   curto por fora e por dentro, tudo na cor do tema. `.neon-border--animated` faz um trecho de luz
+   percorrer a borda (só uma ou duas por tela; parado com "reduzir movimento"). */
+@property --neon-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.neon-border,
+.neon-chip[data-active="true"],
+.neon-chip[aria-pressed="true"] {
+  position: relative;
+  box-shadow:
+    0 0 20px -6px rgb(var(--launcher-accent) / 0.5),
+    inset 0 0 26px -14px rgb(var(--launcher-accent) / 0.4);
+}
+
+.neon-border::before,
+.neon-chip[data-active="true"]::before,
+.neon-chip[aria-pressed="true"]::before,
+.t-tabs--neon .t-tabs-pill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: var(--neon-width, 1.5px);
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgb(var(--launcher-accent-ring) / 0.95) 0%,
+    rgb(var(--launcher-accent)) 48%,
+    rgb(var(--launcher-accent) / 0.7) 100%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+.neon-border--animated::before {
+  background: conic-gradient(
+    from var(--neon-angle),
+    rgb(var(--launcher-accent) / 0.4) 0deg,
+    rgb(var(--launcher-accent-ring)) 60deg,
+    rgb(var(--launcher-accent)) 110deg,
+    rgb(var(--launcher-accent) / 0.4) 190deg,
+    rgb(var(--launcher-accent) / 0.4) 360deg
+  );
+  animation: neon-spin 6s linear infinite;
+}
+
+@keyframes neon-spin {
+  to {
+    --neon-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neon-border--animated::before {
+    animation: none;
+  }
+}
+
+/* chip de filtro: escuro, com a borda neon quando ativo (sem pílula deslizante) */
+.neon-chip {
+  border-radius: 9999px;
+  transition: color 140ms var(--ease-out-strong), background-color 140ms var(--ease-out-strong);
+}
+
+.console-tab-item.neon-chip[data-active="true"],
+.neon-chip[data-active="true"] {
+  color: var(--ink);
+  background: rgb(var(--launcher-accent) / 0.1);
+}
+
+/* abas em estilo neon (Troféus): a pílula que desliza fica escura e ganha a borda */
+.t-tabs--neon {
+  --tabs-pill-bg: rgb(var(--launcher-accent) / 0.1);
+  --tabs-text-on-pill: var(--ink);
+  gap: 12px;
+}
+
+.t-tabs--neon .t-tabs-pill {
+  box-shadow: 0 0 20px -6px rgb(var(--launcher-accent) / 0.5), inset 0 0 26px -14px rgb(var(--launcher-accent) / 0.4);
+}
+
+/* ── Pílula de seleção (menus, listas suspensas, navegação lateral) ────────────────────────
+   Selecionado = a cor do tema, com a sombra curta e redonda das abas; passar o mouse (ou o foco
+   do teclado) = cinza neutro. Vale para qualquer elemento com `.sel-pill`; o estado vem dos
+   atributos que o componente já tem (aria-selected, aria-current, aria-checked, data-state). */
+.sel-pill {
+  transition:
+    background-color 150ms var(--ease-out-strong),
+    color 150ms var(--ease-out-strong),
+    box-shadow 150ms var(--ease-out-strong);
+}
+
+.sel-pill:is(:hover, [data-highlighted], :focus-visible):not(
+    :is([aria-selected="true"], [aria-current="page"], [aria-current="true"], [aria-checked="true"], [data-state="checked"], [data-active="true"])
+  ) {
+  background: color-mix(in srgb, var(--ink) 10%, var(--tone-2));
+  color: var(--ink);
+}
+
+.sel-pill:is([aria-selected="true"], [aria-current="page"], [aria-current="true"], [aria-checked="true"], [data-state="checked"], [data-active="true"]) {
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  box-shadow: var(--accent-fill-shadow);
+  font-weight: 600;
+}
+
+.sel-pill:is([aria-selected="true"], [aria-current="page"], [aria-current="true"], [aria-checked="true"], [data-state="checked"], [data-active="true"]) svg {
+  color: currentColor;
+}
+
+/* a roda de plataformas mostra o foco pela própria pílula: sem o contorno fino do foco global */
+.wheel-stage:focus-visible,
+.wheel-item:focus-visible,
+html[data-ui-style="refined"] .wheel-stage:focus-visible,
+html[data-ui-style="refined"] .wheel-item:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* esqueleto das conversas: balões que pulsam enquanto as mensagens chegam */
+.chat-skel-bubble {
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--ink, #fff) 9%, transparent);
+  animation: chat-skel-pulse 1.4s ease-in-out infinite;
+}
+
+.chat-skel-bubble[data-mine="true"] {
+  background: color-mix(in srgb, rgb(var(--launcher-accent)) 22%, transparent);
+}
+
+@keyframes chat-skel-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-skel-bubble { animation: none; }
 }

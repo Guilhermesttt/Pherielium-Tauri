@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { Info, Settings2, X } from "lucide-react";
+import { faPlaystation } from "@fortawesome/free-brands-svg-icons";
 import type { Game } from "../../types/domain";
 import type { SoundEffectType } from "../../hooks/useSoundEffects";
 import {
@@ -47,6 +48,8 @@ export interface PlatformDefinition {
   label: string;
   badge: string;
   subtitle: string;
+  /** frase curta que aparece abaixo do nome na vitrine */
+  description: string;
   image: string;
   icon: React.ReactNode;
 }
@@ -57,6 +60,7 @@ export const PLATFORM_DEFINITIONS: PlatformDefinition[] = [
     label: "Todas as Plataformas",
     badge: "TODOS",
     subtitle: "Biblioteca completa unificada",
+    description: "Acesse todos os seus jogos de diferentes plataformas em um só lugar.",
     image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200&q=80&auto=format&fit=crop",
     icon: <PlatformAllIcon className="w-full h-full text-white" />,
   },
@@ -65,6 +69,7 @@ export const PLATFORM_DEFINITIONS: PlatformDefinition[] = [
     label: "Steam",
     badge: "STEAM",
     subtitle: "Valve Corporation",
+    description: "A biblioteca da Valve com conquistas e tempo de jogo sincronizados.",
     image: "https://images.unsplash.com/photo-1612287270846-9d33b3a32f91?w=1200&q=80&auto=format&fit=crop",
     icon: <PlatformSteamIcon className="w-full h-full text-white" />,
   },
@@ -73,6 +78,7 @@ export const PLATFORM_DEFINITIONS: PlatformDefinition[] = [
     label: "Epic Games",
     badge: "EPIC",
     subtitle: "Epic Games Store",
+    description: "Seus jogos da Epic Games Store, incluindo os resgatados de graça.",
     image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&q=80&auto=format&fit=crop",
     icon: <PlatformEpicIcon className="w-full h-full text-white" />,
   },
@@ -81,6 +87,7 @@ export const PLATFORM_DEFINITIONS: PlatformDefinition[] = [
     label: "EA App",
     badge: "EA",
     subtitle: "Electronic Arts",
+    description: "Os jogos da Electronic Arts instalados pelo EA App.",
     image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&q=80&auto=format&fit=crop",
     icon: <PlatformEaIcon className="w-full h-full text-white" />,
   },
@@ -89,6 +96,7 @@ export const PLATFORM_DEFINITIONS: PlatformDefinition[] = [
     label: "Ubisoft",
     badge: "UBISOFT",
     subtitle: "Ubisoft Connect",
+    description: "Sua biblioteca da Ubisoft Connect, lado a lado com o resto.",
     image: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=1200&q=80&auto=format&fit=crop",
     icon: <PlatformUbisoftIcon className="w-full h-full text-white" />,
   },
@@ -97,6 +105,7 @@ export const PLATFORM_DEFINITIONS: PlatformDefinition[] = [
     label: "GOG Galaxy",
     badge: "GOG",
     subtitle: "CD Projekt",
+    description: "Jogos sem DRM da GOG Galaxy, direto na sua coleção.",
     image: "https://images.unsplash.com/photo-1551103782-8ab07afd45c1?w=1200&q=80&auto=format&fit=crop",
     icon: <PlatformGogIcon className="w-full h-full text-white" />,
   },
@@ -105,6 +114,7 @@ export const PLATFORM_DEFINITIONS: PlatformDefinition[] = [
     label: "Xbox",
     badge: "XBOX",
     subtitle: "Microsoft Gaming",
+    description: "Os jogos da Microsoft Store e do Xbox Game Pass no PC.",
     image: "https://images.unsplash.com/photo-1605901309584-818e25960a8f?w=1200&q=80&auto=format&fit=crop",
     icon: <PlatformXboxIcon className="w-full h-full text-white" />,
   },
@@ -113,6 +123,7 @@ export const PLATFORM_DEFINITIONS: PlatformDefinition[] = [
     label: "Riot Games",
     badge: "RIOT",
     subtitle: "Riot Client",
+    description: "VALORANT, League of Legends e outros jogos do Riot Client.",
     image: "https://images.unsplash.com/photo-1563089145-599997674d42?w=1200&q=80&auto=format&fit=crop",
     icon: <PlatformRiotIcon className="w-full h-full text-white" />,
   },
@@ -121,6 +132,7 @@ export const PLATFORM_DEFINITIONS: PlatformDefinition[] = [
     label: "Battle.net",
     badge: "BATTLE.NET",
     subtitle: "Blizzard Entertainment",
+    description: "Os clássicos e lançamentos da Blizzard no Battle.net.",
     image: "https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?w=1200&q=80&auto=format&fit=crop",
     icon: <PlatformBattlenetIcon className="w-full h-full text-white" />,
   },
@@ -129,6 +141,7 @@ export const PLATFORM_DEFINITIONS: PlatformDefinition[] = [
     label: "Rockstar Games",
     badge: "ROCKSTAR",
     subtitle: "Rockstar Games Launcher",
+    description: "GTA, Red Dead e os demais jogos do Rockstar Games Launcher.",
     image: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1200&q=80&auto=format&fit=crop",
     icon: <PlatformRockstarIcon className="w-full h-full text-white" />,
   },
@@ -137,6 +150,7 @@ export const PLATFORM_DEFINITIONS: PlatformDefinition[] = [
     label: "Jogos Locais",
     badge: "LOCAIS",
     subtitle: "Instalações e emuladores locais",
+    description: "Instalações avulsas e emuladores que você adicionou à mão.",
     image: "https://images.unsplash.com/photo-1526738549149-8e07eca6c147?w=1200&q=80&auto=format&fit=crop",
     icon: <PlatformLocalIcon className="w-full h-full text-white" />,
   },
@@ -172,8 +186,49 @@ export const countGamesForPlatform = (platformId: string, gamesList: Game[]): nu
 };
 
 /**
- * Floating brand showcase without enclosing boxes or card borders
+ * Ícone da plataforma com o anel orbital: uma elipse inclinada que passa por trás do ícone (metade
+ * de cima) e pela frente (metade de baixo), na cor de destaque do tema.
  */
+const PlatformOrbitIcon: React.FC<{ icon: React.ReactNode; size: number; className?: string }> = ({ icon, size, className }) => {
+  const gradientId = React.useId();
+  const w = size;
+  const h = size * 0.82;
+  const cx = w / 2;
+  const cy = h / 2;
+  const rx = w * 0.5;
+  const ry = w * 0.17;
+  return (
+    <div className={`relative shrink-0 ${className ?? ""}`} style={{ width: w, height: h }}>
+      <svg className="pointer-events-none absolute inset-0 overflow-visible" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" style={{ stopColor: "rgb(var(--launcher-accent))" }} />
+            <stop offset="0.55" style={{ stopColor: "rgb(var(--launcher-accent-ring))" }} />
+            <stop offset="1" style={{ stopColor: "rgb(var(--launcher-accent))", stopOpacity: 0.9 }} />
+          </linearGradient>
+          <clipPath id={`${gradientId}-back`}><rect x={cx - rx - 8} y={cy - ry - 8} width={rx * 2 + 16} height={ry + 8} /></clipPath>
+        </defs>
+        <g transform={`rotate(-24 ${cx} ${cy})`} style={{ filter: "drop-shadow(0 0 6px rgb(var(--launcher-accent) / 0.7))" }}>
+          <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="none" stroke={`url(#${gradientId})`} strokeWidth={Math.max(2.5, size * 0.045)} strokeOpacity="0.8" clipPath={`url(#${gradientId}-back)`} />
+        </g>
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center p-[17%] text-white [&_svg]:h-full [&_svg]:w-full">{icon}</div>
+      <svg className="pointer-events-none absolute inset-0 overflow-visible" width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+        <g transform={`rotate(-24 ${cx} ${cy})`} style={{ filter: "drop-shadow(0 0 6px rgb(var(--launcher-accent) / 0.8))" }}>
+          <path
+            d={`M ${cx - rx} ${cy} A ${rx} ${ry} 0 0 0 ${cx + rx} ${cy}`}
+            fill="none"
+            stroke={`url(#${gradientId})`}
+            strokeWidth={Math.max(3, size * 0.06)}
+            strokeLinecap="round"
+          />
+        </g>
+      </svg>
+    </div>
+  );
+};
+
+/** Compacto à esquerda da roda: ícone com anel orbital, nome da plataforma e quantidade de jogos. */
 const FloatingPlatformShowcase: React.FC<{
   item: WheelCarouselItem;
 }> = ({ item }) => {
@@ -184,27 +239,18 @@ const FloatingPlatformShowcase: React.FC<{
 
   return (
     <div className="relative flex flex-col items-center justify-center select-none text-center">
-      {/* Floating Logo (Much larger, no box/enclosure, subtle elegant ambient glow) */}
       <AnimatePresence mode="wait">
         <motion.div
           key={`logo-${item.id}`}
-          initial={{ opacity: 0, scale: 0.88, y: 8 }}
+          initial={{ opacity: 0, scale: 0.9, y: 8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.88, y: -8 }}
-          transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
-          className="relative flex items-center justify-center text-white"
+          exit={{ opacity: 0, scale: 0.9, y: -8 }}
+          transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
         >
-          {/* Subtle soft ambient back-glow behind the logo */}
-          <div className="absolute inset-0 -z-10 rounded-full blur-2xl opacity-20 bg-white/20 scale-125 pointer-events-none" />
-
-          {/* Logo icon itself */}
-          <div className="w-28 h-28 md:w-32 md:h-32 flex items-center justify-center text-white drop-shadow-[0_12px_36px_rgba(255,255,255,0.25)] [&_svg]:w-full [&_svg]:h-full transition-transform">
-            {item.icon}
-          </div>
+          <PlatformOrbitIcon icon={item.icon} size={132} />
         </motion.div>
       </AnimatePresence>
 
-      {/* Plataforma (ponto flutuante) quantidade de jogos */}
       <AnimatePresence mode="wait">
         <motion.div
           key={`meta-${item.id}`}
@@ -212,18 +258,87 @@ const FloatingPlatformShowcase: React.FC<{
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ type: "spring", bounce: 0, duration: 0.25 }}
-          className="mt-6 flex items-center justify-center gap-2.5 select-none"
+          className="mt-5 flex items-center justify-center gap-2.5 whitespace-nowrap select-none"
         >
-          <span className="font-semibold text-white tracking-tight font-display text-base">
-            {platformName}
-          </span>
-          <span className="text-[var(--ink-faint)] font-normal text-xs">•</span>
-          <span className="text-[var(--ink-muted)] font-medium text-sm">
-            {countText}
-          </span>
+          <span className="text-[13px] font-semibold text-white tracking-tight">{platformName}</span>
+          <span className="text-[var(--ink-faint)] text-xs">•</span>
+          <span className="text-[13px] text-[var(--ink-muted)]">{countText}</span>
         </motion.div>
       </AnimatePresence>
     </div>
+  );
+};
+
+/** Faixa de logos das plataformas principais: PlayStation, Xbox, Steam, Epic, EA, Ubisoft e "mais". */
+const PlatformLogoStrip: React.FC = () => {
+  const rawPath = faPlaystation.icon[4];
+  const pathData = Array.isArray(rawPath) ? rawPath.join(" ") : rawPath;
+  const logos: Array<{ key: string; node: React.ReactNode }> = [
+    {
+      key: "ps",
+      node: (
+        <svg viewBox={`0 0 ${faPlaystation.icon[0]} ${faPlaystation.icon[1]}`} fill="currentColor" aria-hidden="true">
+          <path d={pathData} />
+        </svg>
+      ),
+    },
+    ...["XBOX", "STEAM", "EPIC", "EA", "UBISOFT"].map((id) => ({
+      key: id,
+      node: PLATFORM_DEFINITIONS.find((def) => def.id === id)?.icon,
+    })),
+  ];
+  return (
+    <div className="flex items-center rounded-full border border-white/[0.12] bg-black/35 p-px backdrop-blur-md">
+      {logos.map((logo) => (
+        <span
+          key={logo.key}
+          className="-ml-px flex h-[64px] w-[64px] items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.03] p-[19px] text-white first:ml-0 [&_svg]:h-full [&_svg]:w-full"
+        >
+          {logo.node}
+        </span>
+      ))}
+      <span className="-ml-px flex h-[64px] w-[64px] items-center justify-center gap-[3px] rounded-full border border-white/[0.1] bg-white/[0.03]" aria-label="e outras">
+        {[0, 1, 2].map((dot) => (
+          <span key={dot} className="h-[4px] w-[4px] rounded-full bg-white" />
+        ))}
+      </span>
+    </div>
+  );
+};
+
+/** Vitrine grande à direita: ícone orbital, nome, descrição e a faixa de logos (ou a contagem da plataforma). */
+const PlatformHero: React.FC<{ item: WheelCarouselItem }> = ({ item }) => {
+  const definition = PLATFORM_DEFINITIONS.find((def) => def.id === item.id);
+  const count = item.count ?? 0;
+  const countText = count === 1 ? "1 jogo" : `${count} jogos`;
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={item.id}
+        initial={{ opacity: 0, y: 14, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -10, scale: 0.98 }}
+        transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+        className="relative flex max-w-[520px] flex-col items-center text-center"
+      >
+        {/* órbitas finas atrás do ícone */}
+        <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-[88px] h-[170px] w-[580px] -translate-x-1/2 -translate-y-1/2 -rotate-[8deg] rounded-[50%] border border-white/[0.07]" />
+        <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-[88px] h-[128px] w-[440px] -translate-x-1/2 -translate-y-1/2 -rotate-[8deg] rounded-[50%] border border-white/[0.05]" />
+        <PlatformOrbitIcon icon={item.icon} size={200} />
+        <h2 className="mt-9 font-display text-[34px] font-bold leading-tight tracking-tight text-white">{definition?.label ?? item.label}</h2>
+        <p className="mt-3 max-w-[470px] text-[18px] leading-snug text-[var(--ink-muted)]">{definition?.description ?? item.subtitle}</p>
+        <div className="mt-9">
+          {item.id === "ALL" ? (
+            <PlatformLogoStrip />
+          ) : (
+            <div className="flex items-center gap-3 rounded-full border border-white/[0.12] bg-black/35 py-2 pl-2 pr-6 backdrop-blur-md">
+              <span className="flex h-[52px] w-[52px] items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.03] p-[15px] text-white [&_svg]:h-full [&_svg]:w-full">{item.icon}</span>
+              <span className="text-[15px] font-semibold text-white">{countText}</span>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 
@@ -258,12 +373,14 @@ export const PlatformSelectorModal: React.FC<PlatformSelectorModalProps> = ({
   }, [activePlatform, items]);
 
   const [currentIndex, setCurrentIndex] = useState(initialIdx);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const currentIndexRef = useRef(currentIndex);
   currentIndexRef.current = currentIndex;
 
   useEffect(() => {
     if (isOpen) {
       setCurrentIndex(initialIdx);
+      setFiltersOpen(false);
     }
   }, [isOpen, initialIdx]);
 
@@ -436,65 +553,98 @@ export const PlatformSelectorModal: React.FC<PlatformSelectorModalProps> = ({
     };
   }, [isOpen, items.length, playSound]);
 
+  const selectedItem = items[currentIndex] ?? items[0];
+
   return (
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 select-none overflow-hidden">
-          {/* Blurred backdrop with dark vignette */}
+          {/* Fundo: preto com luz do tema (manchas e o arco de luz no canto) */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.3 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/65 backdrop-blur-2xl"
-          />
+            className="platform-ambient absolute inset-0"
+          >
+            <div className="platform-arc" aria-hidden="true" />
+          </motion.div>
 
-          {/* Close button in top right corner */}
+          {/* Fechar */}
           <button
             type="button"
             onClick={() => {
               playSound?.("back");
               onClose();
             }}
-            className="absolute top-6 right-8 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[var(--ink-muted)] backdrop-blur-xl transition-all hover:bg-white/15 hover:text-white active:scale-95 shadow-lg cursor-pointer"
+            className="absolute right-11 top-[22px] z-20 flex h-[38px] w-[38px] items-center justify-center rounded-full bg-white/[0.08] text-[var(--ink-muted)] backdrop-blur-xl transition-[background-color,color,transform] duration-[180ms] ease-[var(--ease-out-strong)] hover:bg-white/15 hover:text-white active:scale-[0.97] active:duration-75 cursor-pointer"
             aria-label="Fechar"
           >
             <X className="h-4 w-4" />
           </button>
 
-          {/* Filtros: coluna própria na borda direita, fora da área da roda */}
-          {filters && onFiltersChange && (
+          {/* Vitrine grande da plataforma selecionada */}
+          {selectedItem && (
             <motion.div
-              initial={{ x: 80, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 80, opacity: 0 }}
-              transition={{ type: "spring", bounce: 0, duration: 0.4, delay: 0.05 }}
-              onClick={(e) => e.stopPropagation()}
-              className="absolute right-8 top-1/2 z-20 -translate-y-1/2 md:right-16 pointer-events-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: filtersOpen ? 0.2 : 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="pointer-events-none absolute inset-y-0 right-0 z-[5] hidden items-center justify-center min-[1500px]:flex"
+              style={{ left: 812 }}
             >
-              <LibraryFilterPanel games={games} filters={filters} onChange={onFiltersChange} playSound={playSound} />
+              <PlatformHero item={selectedItem} />
             </motion.div>
           )}
 
-          {/* Left-docked drawer sliding in from left to right */}
+          {/* Filtros: abrem por cima, no lado direito, a partir do botão "Filtros" */}
+          {filters && onFiltersChange && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  playSound?.("select");
+                  setFiltersOpen((open) => !open);
+                }}
+                aria-pressed={filtersOpen}
+                className="absolute bottom-9 right-11 z-20 flex h-10 cursor-pointer items-center gap-2 rounded-full border border-white/[0.12] bg-black/40 px-4 text-[13px] font-medium text-[var(--ink)] backdrop-blur-md transition-[background-color,transform] duration-[180ms] ease-[var(--ease-out-strong)] hover:bg-white/10 active:scale-[0.97] active:duration-75"
+              >
+                <Settings2 className="h-4 w-4" />
+                Filtros
+              </button>
+              <AnimatePresence>
+                {filtersOpen && (
+                  <motion.div
+                    initial={{ x: 80, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: 80, opacity: 0 }}
+                    transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute right-11 top-1/2 z-20 -translate-y-1/2 pointer-events-auto"
+                  >
+                    <LibraryFilterPanel games={games} filters={filters} onChange={onFiltersChange} playSound={playSound} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </>
+          )}
+
+          {/* Roda à esquerda */}
           <motion.div
             initial={{ x: -200, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -200, opacity: 0 }}
             transition={{ type: "spring", bounce: 0, duration: 0.4 }}
             onClick={(e) => e.stopPropagation()}
-            className="absolute left-0 top-0 bottom-0 z-10 flex flex-col justify-center pl-8 md:pl-16 pr-8 w-full max-w-[1100px] pointer-events-auto h-screen"
+            className="absolute left-0 top-0 bottom-0 z-10 flex h-screen w-full max-w-[900px] flex-col justify-center pl-[52px] pointer-events-auto"
           >
-            {/* Header tag */}
-            <div className="absolute top-8 left-8 md:left-16 z-20 flex items-center gap-2">
-              <span className="text-xs font-bold tracking-widest text-[var(--ink-faint)] uppercase font-display">
-                Plataforma e filtros
-              </span>
+            <div className="absolute left-[52px] top-9 z-20">
+              <span className="text-sm font-normal text-[var(--ink-muted)]">Plataforma e filtros</span>
             </div>
 
-            {/* Full-height sweeping Wheel Carousel */}
-            <div className="w-full h-full flex items-center">
+            <div className="flex h-full w-[760px] items-center">
               <WheelCarousel
                 items={items}
                 activeIndex={currentIndex}
@@ -502,35 +652,36 @@ export const PlatformSelectorModal: React.FC<PlatformSelectorModalProps> = ({
                   setCurrentIndex(idx);
                 }}
                 onItemSelect={(item) => handleConfirm(item)}
-                renderCover={(item) => (
-                  <FloatingPlatformShowcase item={item} />
-                )}
+                renderCover={(item) => <FloatingPlatformShowcase item={item} />}
                 mode="dark"
-                contentWidth={1080}
-                photoWidth={28}
+                contentWidth={760}
+                photoWidth={32}
                 minHeight="100%"
-                visibleItems={10}
-                spacing={8.5}
-                apexInset={18}
-                radius={750}
-                markerGap={18}
-                markerSize={8}
-                edgeFadeSize={12}
+                visibleItems={6}
+                spacing={9.2}
+                apexInset={12.5}
+                radius={640}
+                rotateFactor={0.6}
+                unselectedPadding={76}
+                unselectedScale={0.86}
+                scaleFalloff={0.015}
+                showMarker={false}
+                selectedPill
+                edgeFadeSize={17}
                 showItemIcons={false}
                 showItemCounts={false}
                 textColor="rgba(255, 255, 255, 0.45)"
                 selectedColor="#FFFFFF"
-                markerColor="#FFFFFF"
                 className="w-full h-full bg-transparent"
               />
             </div>
 
-            {/* Borderless hint text */}
+            {/* Dica de uso */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.3 }}
-              className="absolute bottom-8 left-8 md:left-16 z-20 flex items-center gap-4 text-xs select-none font-normal"
+              className="absolute bottom-9 left-[52px] z-20 flex items-center gap-3 text-xs select-none font-normal"
             >
               {isGamepadConnected ? (
                 <div className="flex items-center gap-5 text-[var(--ink-muted)]">
@@ -550,19 +701,11 @@ export const PlatformSelectorModal: React.FC<PlatformSelectorModalProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2.5 text-[var(--ink-faint)]">
+                <div className="flex items-center gap-2.5 text-[var(--ink-muted)]">
+                  <Info className="h-[18px] w-[18px] text-[var(--ink-faint)]" />
                   <span>Gire o scroll para trocar de plataforma</span>
-                  {!openedViaShortcut ? (
-                    <>
-                      <span className="text-[var(--ink-faint)]">•</span>
-                      <span className="text-[var(--ink-muted)] font-medium">Enter para confirmar</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-[var(--ink-faint)]">•</span>
-                      <span className="text-[var(--ink-muted)] font-medium">Solte Alt para confirmar</span>
-                    </>
-                  )}
+                  <span className="text-[var(--ink-faint)]">•</span>
+                  <span>{openedViaShortcut ? "Solte Alt para confirmar" : "Enter para confirmar"}</span>
                 </div>
               )}
             </motion.div>

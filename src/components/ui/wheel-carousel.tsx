@@ -68,6 +68,16 @@ export interface WheelCarouselProps {
   captureWindowWheel?: boolean;
   showItemIcons?: boolean;
   showItemCounts?: boolean;
+  /** Item selecionado vira uma pílula com brilho (cor do tema), ponto à esquerda e o ícone do item. */
+  selectedPill?: boolean;
+  /** Fração do ângulo do arco aplicada à rotação do texto (1 = acompanha o arco). */
+  rotateFactor?: number;
+  /** Escala dos itens que não estão selecionados (o selecionado fica maior). */
+  unselectedScale?: number;
+  /** Quanto cada item encolhe por posição de distância do selecionado. */
+  scaleFalloff?: number;
+  /** Recuo à esquerda (px) dos itens não selecionados: alinha o texto deles ao da pílula. */
+  unselectedPadding?: number;
   minHeight?: number | string;
   className?: string;
   photoClassName?: string;
@@ -159,6 +169,11 @@ export function WheelCarousel({
   captureWindowWheel = false,
   showItemIcons = true,
   showItemCounts = true,
+  selectedPill = false,
+  rotateFactor = 1,
+  unselectedScale = 1,
+  scaleFalloff = 0.04,
+  unselectedPadding,
   minHeight,
   className,
   photoClassName,
@@ -198,6 +213,9 @@ export function WheelCarousel({
   const dragOriginRef = useRef({ y: 0, rotation: startingIndex });
   const previousDragRotationRef = useRef(startingIndex);
   const frameRef = useRef<number | null>(null);
+  /** Rotação para onde a roda desliza (passos de scroll/teclas): a seleção muda já, a roda acompanha. */
+  const targetRef = useRef<number | null>(null);
+  const lastFrameRef = useRef(0);
 
   useEffect(() => setThemeReady(true), []);
 
@@ -265,13 +283,35 @@ export function WheelCarousel({
   const commitRotationRef = useRef(commitRotation);
   commitRotationRef.current = commitRotation;
 
+  /** Move só a roda (a seleção já foi decidida): usado enquanto ela desliza até o alvo. */
+  const setRotationOnly = useCallback((next: number) => {
+    rotationRef.current = next;
+    setRotation(next);
+  }, []);
+
   const runAnimation = useCallback(() => {
     if (frameRef.current !== null) return;
 
+    lastFrameRef.current = performance.now();
+
     const tick = () => {
       let keepAnimating = false;
+      const now = performance.now();
+      const dt = Math.min((now - lastFrameRef.current) / 1000, 0.05);
+      lastFrameRef.current = now;
 
-      if (!draggingRef.current && Math.abs(velocityRef.current) > 0.0008) {
+      if (!draggingRef.current && targetRef.current !== null) {
+        // desliza até o alvo com uma aproximação exponencial (independe da taxa de quadros)
+        const target = targetRef.current;
+        const diff = target - rotationRef.current;
+        if (Math.abs(diff) < 0.002 || reduceMotion) {
+          setRotationOnly(target);
+          targetRef.current = null;
+        } else {
+          setRotationOnly(rotationRef.current + diff * (1 - Math.exp(-dt * 15)));
+          keepAnimating = true;
+        }
+      } else if (!draggingRef.current && Math.abs(velocityRef.current) > 0.0008) {
         commitRotation(rotationRef.current + velocityRef.current);
         velocityRef.current *=
           momentum && !reduceMotion ? (snap ? 0.9 : 0.94) : 0.8;
@@ -295,11 +335,16 @@ export function WheelCarousel({
     };
 
     frameRef.current = requestAnimationFrame(tick);
-  }, [commitRotation, momentum, reduceMotion, snap]);
+  }, [commitRotation, momentum, reduceMotion, setRotationOnly, snap]);
 
   useEffect(
     () => () => {
-      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+        // sem isto o id cancelado ficava guardado e `runAnimation` achava que já havia um quadro agendado:
+        // a roda nunca mais andava (acontece quando o React remonta o efeito)
+        frameRef.current = null;
+      }
     },
     [],
   );
@@ -312,6 +357,7 @@ export function WheelCarousel({
       if (event.ctrlKey || event.metaKey) return; // don't hijack pinch-zoom
       event.preventDefault();
       const delta = event.deltaY * scrollSpeed;
+      targetRef.current = null;
       commitRotation(rotationRef.current + delta);
       velocityRef.current = delta * 0.2;
       runAnimation();
@@ -328,19 +374,31 @@ export function WheelCarousel({
     const controlledIndex = wrapIndex(activeIndex, itemCount);
     if (appliedActiveIndexRef.current === controlledIndex) return;
     appliedActiveIndexRef.current = controlledIndex;
-    const currentIndex = wrapIndex(Math.round(rotationRef.current), itemCount);
+    // parte do alvo atual (se a roda ainda está deslizando) para vários passos seguidos somarem certo
+    const base = targetRef.current ?? rotationRef.current;
+    const currentIndex = wrapIndex(Math.round(base), itemCount);
     let delta = controlledIndex - currentIndex;
     if (delta > itemCount / 2) delta -= itemCount;
     if (delta < -itemCount / 2) delta += itemCount;
     selectedRef.current = controlledIndex;
     setSelectedIndex(controlledIndex);
-    commitRotationRef.current(rotationRef.current + delta);
+    velocityRef.current = 0;
+    targetRef.current = Math.round(base) + delta;
     runAnimation();
   }, [activeIndex, itemCount, runAnimation]);
 
   const moveBy = (amount: number) => {
     velocityRef.current = 0;
-    commitRotation(rotationRef.current + amount);
+    const base = Math.round(targetRef.current ?? rotationRef.current);
+    const target = base + amount;
+    targetRef.current = target;
+    const nextIndex = wrapIndex(target, itemCount);
+    if (nextIndex !== selectedRef.current) {
+      selectedRef.current = nextIndex;
+      setSelectedIndex(nextIndex);
+      appliedActiveIndexRef.current = nextIndex;
+      onActiveChange?.(carouselItems[nextIndex]!, nextIndex);
+    }
     runAnimation();
   };
 
@@ -349,6 +407,7 @@ export function WheelCarousel({
     draggingRef.current = true;
     setIsDragging(true);
     velocityRef.current = 0;
+    targetRef.current = null;
     dragOriginRef.current = { y: event.clientY, rotation: rotationRef.current };
     previousDragRotationRef.current = rotationRef.current;
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -440,7 +499,7 @@ export function WheelCarousel({
         }
         tabIndex={0}
         className={cn(
-          "flex h-full w-full touch-none select-none items-stretch outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-current",
+          "wheel-stage flex h-full w-full touch-none select-none items-stretch outline-none",
           photoSide === "right" && "flex-row-reverse",
           isDragging ? "cursor-grabbing" : "cursor-grab",
         )}
@@ -538,8 +597,10 @@ export function WheelCarousel({
             const y = radius * Math.sin(radians);
             const distance = Math.min(Math.abs(offset) / visibleItems, 1);
             const opacity = Math.cos((distance * Math.PI) / 2);
-            const scale = 1 - Math.min(Math.abs(offset) * 0.04, 0.45);
             const selected = Math.abs(offset) < 0.5;
+            // 1 no centro e 0 a um item de distância: a pílula e o tamanho acompanham a roda sem saltar
+            const closeness = Math.max(0, 1 - Math.abs(offset));
+            const scale = (1 - Math.min(Math.abs(offset) * scaleFalloff, 0.45)) * (unselectedScale + (1 - unselectedScale) * closeness);
 
             return (
               <div
@@ -553,22 +614,29 @@ export function WheelCarousel({
                   if (selected) {
                     onItemSelect?.(item, index);
                   } else {
+                    targetRef.current = null;
                     commitRotation(rotationRef.current + offset);
                     runAnimation();
                   }
                 }}
                 className={cn(
-                  "absolute top-1/2 origin-left whitespace-nowrap text-[clamp(1.15rem,2.4vw,1.75rem)] font-medium leading-none tracking-tight cursor-pointer select-none transition-all duration-150 flex items-center gap-3 py-1.5 px-3 rounded-xl group",
+                  "wheel-item absolute top-1/2 origin-left whitespace-nowrap text-[clamp(1.15rem,2.4vw,1.75rem)] font-medium leading-none tracking-tight cursor-pointer select-none transition-[color,opacity] duration-150 flex items-center gap-3 py-1.5 px-3 rounded-xl group",
+                  selectedPill && selected && "wheel-pill",
                   itemClassName,
                 )}
                 style={{
                   left: `${apexInset}%`,
+                  ...(!selected && unselectedPadding !== undefined ? { paddingLeft: unselectedPadding } : {}),
                   color: selected ? palette.selected : palette.text,
                   opacity,
-                  transform: `translate(${x}px, ${y}px) translateY(-50%) rotate(${angle}deg) scale(${scale})`,
+                  transform: `translate(${x}px, ${y}px) translateY(-50%) rotate(${angle * rotateFactor}deg) scale(${scale})`,
                 }}
               >
-                {showItemIcons && item.icon && (
+                {selectedPill && closeness > 0.02 && (
+                  <span aria-hidden="true" className="wheel-pill-bg" style={{ opacity: Math.min(1, closeness * 1.15) ** 1.5 }} />
+                )}
+                {selectedPill && selected && <span aria-hidden="true" className="wheel-pill-dot" />}
+                {((showItemIcons && item.icon) || (selectedPill && selected && item.icon)) && (
                   <span
                     className={cn(
                       "shrink-0 flex items-center justify-center transition-all duration-150 [&>svg]:w-5 [&>svg]:h-5 [&>img]:w-5 [&>img]:h-5",
@@ -582,9 +650,9 @@ export function WheelCarousel({
                 )}
                 <span
                   className={cn(
-                    "transition-all duration-150",
+                    "transition-colors duration-150",
                     selected
-                      ? "font-bold text-white tracking-tight scale-[1.03]"
+                      ? "font-bold text-white tracking-tight"
                       : "font-medium text-[var(--ink-faint)] group-hover:text-[var(--ink-muted)]",
                   )}
                 >

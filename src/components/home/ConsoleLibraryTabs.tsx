@@ -131,7 +131,7 @@ export const ConsoleLibraryTabs: React.FC<ConsoleLibraryTabsProps> = ({
   return (
     <>
       <div
-        className="console-tabs flex max-w-full min-w-0 items-center gap-2"
+        className="console-tabs flex max-w-full min-w-0 items-center gap-3"
         role="tablist"
         aria-label="Abas da Biblioteca"
       >

@@ -118,7 +118,7 @@ export const GhostSelect: React.FC<GhostSelectProps> = ({
                     onBlur={() => setHovered((prev) => (prev === option.value ? null : prev))}
                     role="option"
                     aria-selected={isSelected}
-                    className={`relative flex h-10 w-full cursor-pointer items-center justify-between rounded-[var(--node)] px-3.5 text-[length:var(--step-0)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-white/40 text-left ${
+                    className={`sel-pill relative flex h-10 w-full cursor-pointer items-center justify-between rounded-[var(--node)] px-3.5 text-[length:var(--step-0)] outline-none focus-visible:ring-2 focus-visible:ring-white/40 text-left ${
                       glideOff
                         ? isSelected
                           ? "bg-[var(--tone-4)] text-[var(--ink)] font-semibold"
@@ -128,7 +128,7 @@ export const GhostSelect: React.FC<GhostSelectProps> = ({
                           : "text-[var(--ink-muted)] hover:text-[var(--ink)]"
                     }`}
                   >
-                    {glideActive && (
+                    {glideActive && !isSelected && (
                       <motion.span
                         aria-hidden
                         layoutId="ghost-select-glide"
@@ -143,7 +143,7 @@ export const GhostSelect: React.FC<GhostSelectProps> = ({
                       <span className="truncate">{option.label}</span>
                     </div>
                     {isSelected && (
-                      <Check className="h-4 w-4 text-[var(--ink)] z-10" aria-hidden="true" />
+                      <Check className="h-4 w-4 z-10" aria-hidden="true" />
                     )}
                   </button>
                 );

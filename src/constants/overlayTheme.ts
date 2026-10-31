@@ -7,15 +7,15 @@ export interface OverlayThemeTokens {
 }
 
 const OVERLAY_THEME_TOKENS: Record<VisualTheme, OverlayThemeTokens> = {
-  phelierium: { accent: "#ffffff", accentMuted: "rgba(255,255,255,0.72)", accentGlow: "rgba(255,255,255,0.35)" },
-  checkpoint: { accent: "#ffffff", accentMuted: "rgba(255,255,255,0.72)", accentGlow: "rgba(255,255,255,0.35)" },
-  ps5: { accent: "#38bdf8", accentMuted: "rgba(56,189,248,0.85)", accentGlow: "rgba(56,189,248,0.4)" },
-  ps4: { accent: "#2563eb", accentMuted: "rgba(37,99,235,0.85)", accentGlow: "rgba(37,99,235,0.4)" },
-  playstation: { accent: "#1d4ed8", accentMuted: "rgba(29,78,216,0.85)", accentGlow: "rgba(29,78,216,0.4)" },
-  psp: { accent: "#06b6d4", accentMuted: "rgba(6,182,212,0.85)", accentGlow: "rgba(6,182,212,0.4)" },
+  phelierium: { accent: "#e85002", accentMuted: "rgba(232,80,2,0.85)", accentGlow: "rgba(232,80,2,0.4)" },
+  checkpoint: { accent: "#e85002", accentMuted: "rgba(232,80,2,0.85)", accentGlow: "rgba(232,80,2,0.4)" },
+  ps5: { accent: "#8bbfff", accentMuted: "rgba(139,191,255,0.85)", accentGlow: "rgba(139,191,255,0.4)" },
+  ps4: { accent: "#1685ff", accentMuted: "rgba(22,133,255,0.85)", accentGlow: "rgba(22,133,255,0.4)" },
+  playstation: { accent: "#5367b8", accentMuted: "rgba(83,103,184,0.85)", accentGlow: "rgba(83,103,184,0.4)" },
+  psp: { accent: "#cbd5e1", accentMuted: "rgba(203,213,225,0.85)", accentGlow: "rgba(203,213,225,0.4)" },
   gamecube: { accent: "#8b5cf6", accentMuted: "rgba(139,92,246,0.85)", accentGlow: "rgba(139,92,246,0.4)" },
-  xbox360: { accent: "#22c55e", accentMuted: "rgba(34,197,94,0.85)", accentGlow: "rgba(34,197,94,0.4)" },
-  cyberpunk: { accent: "#fcee0a", accentMuted: "rgba(252,238,10,0.9)", accentGlow: "rgba(252,238,10,0.45)" },
+  xbox360: { accent: "#84cc16", accentMuted: "rgba(132,204,22,0.85)", accentGlow: "rgba(132,204,22,0.4)" },
+  cyberpunk: { accent: "#ffee00", accentMuted: "rgba(255,238,0,0.9)", accentGlow: "rgba(255,238,0,0.45)" },
 };
 
 export function getOverlayThemeTokens(visualTheme?: string | null): OverlayThemeTokens {

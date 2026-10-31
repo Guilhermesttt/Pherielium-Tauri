@@ -1136,9 +1136,9 @@ export const COMPLETE_THEME_OPTIONS: ThemeOptionItem[] = [
   {
     id: "default",
     label: "Phelierium",
-    hint: "Preto carvão + branco neutro, superfícies foscas",
-    accentColor: "#ffffff",
-    glowColor: "rgba(255, 255, 255, 0.25)",
+    hint: "Preto carvão + laranja Pherielium, superfícies foscas",
+    accentColor: "#E85002",
+    glowColor: "rgba(232, 80, 2, 0.3)",
     soundTheme: "default",
     visualTheme: "phelierium",
   },
@@ -1164,8 +1164,8 @@ export const COMPLETE_THEME_OPTIONS: ThemeOptionItem[] = [
     id: "ps4",
     label: "PlayStation 4",
     hint: "Azul médio intenso com gradientes amplos",
-    accentColor: "#0070D1",
-    glowColor: "rgba(0, 112, 209, 0.35)",
+    accentColor: "#1685FF",
+    glowColor: "rgba(22, 133, 255, 0.35)",
     soundTheme: "ps4",
     visualTheme: "ps4",
   },
@@ -1173,8 +1173,8 @@ export const COMPLETE_THEME_OPTIONS: ThemeOptionItem[] = [
     id: "playstation",
     label: "PlayStation 2",
     hint: "Azul profundo com detalhes ciano e profundidade",
-    accentColor: "#1d4ed8",
-    glowColor: "rgba(29, 78, 216, 0.35)",
+    accentColor: "#263B8F",
+    glowColor: "rgba(83, 103, 184, 0.35)",
     soundTheme: "ps2",
     visualTheme: "playstation",
   },
@@ -1191,8 +1191,8 @@ export const COMPLETE_THEME_OPTIONS: ThemeOptionItem[] = [
     id: "xbox360",
     label: "Xbox",
     hint: "Verde Xbox + sons Metro UI",
-    accentColor: "#22c55e",
-    glowColor: "rgba(34, 197, 94, 0.35)",
+    accentColor: "#84CC16",
+    glowColor: "rgba(132, 204, 22, 0.35)",
     soundTheme: "xbox360",
     visualTheme: "xbox360",
   },
@@ -1200,12 +1200,88 @@ export const COMPLETE_THEME_OPTIONS: ThemeOptionItem[] = [
     id: "cyberpunk",
     label: "Cyberpunk 2077",
     hint: "Amarelo Neon + sons Cyberpunk 2077",
-    accentColor: "#fcee0a",
-    glowColor: "rgba(252, 238, 10, 0.4)",
+    accentColor: "#FFEE00",
+    glowColor: "rgba(255, 238, 0, 0.4)",
     soundTheme: "cyberpunk",
     visualTheme: "cyberpunk",
   },
 ];
+
+/** Cores das miniaturas de tema: as mesmas paletas do `index.css` (`html[data-launcher-theme]`). */
+interface MiniaturePalette {
+  /** fundo da janela */
+  bg: string;
+  /** barra de cima e barra lateral (superfície) */
+  surface: string;
+  /** cartão (painel elevado) */
+  card: string;
+  /** borda */
+  border: string;
+  text: string;
+  textSub: string;
+  /** primária (a cor do tema); no PS5 é a cápsula clara */
+  accent: string;
+  /** secundária */
+  secondary: string;
+  /** destaque luminoso */
+  light: string;
+  /** quarta cor da paleta (ciano, azul atmosférico, champanhe, lavanda, verde suave) */
+  pop: string;
+  /** cor do pontinho de status da barra (precisa ser legível: nem sempre é a primária) */
+  dot: string;
+}
+
+const THEME_MINIATURE_PALETTES: Record<string, MiniaturePalette> = {
+  default: { bg: "#000000", surface: "#0A0A0A", card: "#171717", border: "#333333", text: "#F9F9F9", textSub: "#A7A7A7", accent: "#E85002", secondary: "#FF6A1A", light: "#FF9A5C", pop: "#FF9A5C", dot: "#E85002" },
+  playstation: { bg: "#03050D", surface: "#080D1A", card: "#10172A", border: "#26304D", text: "#F2F4FF", textSub: "#8290B5", accent: "#263B8F", secondary: "#5367B8", light: "#8297E8", pop: "#63A6C9", dot: "#8297E8" },
+  ps5: { bg: "#0B0D12", surface: "#131620", card: "#1C2230", border: "#303541", text: "#F8FAFC", textSub: "#9AA0B2", accent: "#F4F4F6", secondary: "#CBD5E1", light: "#8BBFFF", pop: "#2979FF", dot: "#2979FF" },
+  ps4: { bg: "#040914", surface: "#0A1326", card: "#101E3D", border: "#1D416B", text: "#FFFFFF", textSub: "#8CAFE0", accent: "#1685FF", secondary: "#0070D1", light: "#38BDF8", pop: "#7DD3FC", dot: "#1685FF" },
+  psp: { bg: "#0B0C0E", surface: "#14161B", card: "#1D2027", border: "#363B46", text: "#F8FAFC", textSub: "#A0A5B5", accent: "#CBD5E1", secondary: "#E2E8F0", light: "#F8FAFC", pop: "#D6BC91", dot: "#E2E8F0" },
+  cyberpunk: { bg: "#050507", surface: "#0E0F14", card: "#171822", border: "#30313D", text: "#FFFFFF", textSub: "#A5A8BD", accent: "#FFEE00", secondary: "#00F0FF", light: "#FFF566", pop: "#67F7FF", dot: "#FFEE00" },
+  gamecube: { bg: "#090610", surface: "#120E1E", card: "#1C1630", border: "#382A55", text: "#FFFFFF", textSub: "#B0A4CE", accent: "#8B5CF6", secondary: "#6D4AFF", light: "#C4B5FD", pop: "#DDD6FE", dot: "#8B5CF6" },
+  xbox360: { bg: "#060B04", surface: "#0D160A", card: "#152410", border: "#304526", text: "#FFFFFF", textSub: "#A7C49C", accent: "#84CC16", secondary: "#4D7C0F", light: "#BEF264", pop: "#D9F99D", dot: "#84CC16" },
+};
+
+const rgba = (hex: string, alpha: number): string => {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+};
+
+/** Janela em miniatura: barra de cima, barra lateral e a área dos cartões (passada como filho). */
+const MiniatureShell: React.FC<{ p: MiniaturePalette; className: string; background?: string; children: React.ReactNode }> = ({
+  p,
+  className,
+  background,
+  children,
+}) => (
+  <div
+    className={`${className} rounded-[var(--corner-sm)] overflow-hidden flex flex-col shadow-inner relative`}
+    style={{ background: background ?? p.bg, border: `1px solid ${rgba(p.border, 0.6)}` }}
+  >
+    <div className="h-4 w-full flex items-center px-2.5 justify-between shrink-0 z-10" style={{ background: p.surface, borderBottom: `1px solid ${rgba(p.border, 0.7)}` }}>
+      <div className="h-1 w-6 rounded-full" style={{ background: rgba(p.textSub, 0.45) }} />
+      <div className="h-1.5 w-1.5 rounded-full" style={{ background: p.dot, boxShadow: `0 0 6px ${p.dot}` }} />
+    </div>
+    <div className="flex flex-1 min-h-0 z-10">
+      <div className="w-[34px] h-full p-1.5 flex flex-col gap-1" style={{ background: p.surface, borderRight: `1px solid ${rgba(p.border, 0.7)}` }}>
+        <div className="h-1 w-full rounded-full" style={{ background: rgba(p.textSub, 0.5) }} />
+        <div className="h-1 w-3/4 rounded-full" style={{ background: rgba(p.textSub, 0.3) }} />
+        <div className="h-1 w-4/5 rounded-full" style={{ background: rgba(p.textSub, 0.3) }} />
+      </div>
+      {children}
+    </div>
+  </div>
+);
+
+/** Área dos dois cartões: o selecionado (cada tema desenha o seu) e um apagado ao lado. */
+const MiniatureCards: React.FC<{ p: MiniaturePalette; selected: React.ReactNode }> = ({ p, selected }) => (
+  <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
+    {selected}
+    <div className="w-1/2 h-7 rounded-[10px] opacity-60 flex items-center justify-center" style={{ background: p.card, border: `1px solid ${rgba(p.border, 0.7)}` }}>
+      <div className="h-1 w-3 rounded-full" style={{ background: rgba(p.textSub, 0.5) }} />
+    </div>
+  </div>
+);
 
 export const renderThemeMiniatureContent = (
   themeId: string,
@@ -1214,253 +1290,135 @@ export const renderThemeMiniatureContent = (
   containerClassName = "w-[122px] h-[78px]",
 ) => {
   switch (themeId) {
-    case "default":
-      // Pherielium: Preto carvão + branco neutro, superfícies foscas, luz localizada no elemento em foco
+    case "default": {
+      // Pherielium: preto carvão + laranja Pherielium, superfícies foscas e glow suave no elemento selecionado
+      const p = THEME_MINIATURE_PALETTES.default;
       return (
-        <div
-          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-[var(--tone-1)] shadow-inner relative`}
-        >
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[var(--tone-2)] shrink-0">
-            <div className="h-1 w-5 rounded-full bg-[var(--tone-4)]" />
-            <div className="h-1.5 w-1.5 rounded-full bg-[var(--ink)] shadow-[0_0_4px_rgba(255,255,255,0.8)]" />
-          </div>
-          <div className="flex flex-1 min-h-0">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-[var(--tone-2)]">
-              <div className="h-1 w-full rounded-full bg-[var(--tone-4)]" />
-              <div className="h-1 w-3/4 rounded-full bg-[var(--tone-4)]" />
-              <div className="h-1 w-4/5 rounded-full bg-[var(--tone-4)]" />
+        <MiniatureShell p={p} className={containerClassName}>
+          <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(circle at 50% 25%, ${rgba(p.accent, 0.1)} 0%, transparent 65%)` }} />
+          <MiniatureCards p={p} selected={
+            <div className="w-1/2 h-8 rounded-[10px] flex flex-col items-center justify-center gap-1" style={{ background: p.card, border: `1px solid ${rgba(p.accent, 0.6)}`, boxShadow: `0 0 12px ${rgba(p.light, 0.35)}` }}>
+              <div className="h-1 w-4 rounded-full" style={{ background: p.text }} />
+              <div className="h-0.5 w-2.5 rounded-full" style={{ background: p.light }} />
             </div>
-            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center bg-[var(--tone-1)]">
-              <div className="w-1/2 h-8 rounded-[10px] border border-transparent bg-[var(--tone-3)] shadow-[0_0_12px_rgba(255,255,255,0.15),inset_0_1px_0_rgba(255,255,255,0.25)] flex flex-col items-center justify-center gap-1">
-                <div className="h-1 w-4 rounded-full bg-[var(--ink)]" />
-                <div className="h-0.5 w-2.5 rounded-full bg-[var(--tone-4)]" />
-              </div>
-              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-40 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-[var(--tone-4)]" />
-              </div>
-            </div>
-          </div>
-        </div>
+          } />
+        </MiniatureShell>
       );
+    }
 
-    case "ps5":
-      // PS5: Branco porcelana + azul elétrico pontual, contornos suaves e iluminação fria nas bordas
+    case "ps5": {
+      // PS5: branco porcelana + azul elétrico pontual, contornos suaves e iluminação fria nas bordas
+      const p = THEME_MINIATURE_PALETTES.ps5;
       return (
-        <div
-          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-[var(--tone-1)] shadow-inner relative`}
-        >
-          <div className="absolute top-0 inset-x-0 h-[1.5px] bg-[#2979FF] opacity-90 shadow-[0_0_8px_#2979FF]" />
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[#121620] shrink-0">
-            <div className="h-1 w-6 rounded-full bg-[var(--tone-4)]" />
-            <div className="h-1.5 w-1.5 rounded-full bg-[#2979FF] shadow-[0_0_6px_#2979FF]" />
-          </div>
-          <div className="flex flex-1 min-h-0">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-[#0F131C]">
-              <div className="h-1 w-full rounded-full bg-[var(--tone-4)]" />
-              <div className="h-1 w-3/4 rounded-full bg-[var(--tone-4)]" />
-              <div className="h-1 w-4/5 rounded-full bg-[var(--tone-4)]" />
+        <MiniatureShell p={p} className={containerClassName}>
+          <div className="absolute top-0 inset-x-0 h-[1.5px] opacity-90" style={{ background: p.pop, boxShadow: `0 0 8px ${p.pop}` }} />
+          {/* Cápsula porcelana com linha azul discreta no estado selecionado */}
+          <MiniatureCards p={p} selected={
+            <div className="w-1/2 h-8 rounded-[10px] shadow-[0_4px_12px_rgba(0,0,0,0.6)] flex flex-col items-center justify-between p-1 relative overflow-hidden" style={{ background: p.accent }}>
+              <div className="h-1 w-4 rounded-full mt-0.5" style={{ background: p.bg }} />
+              <div className="h-[2px] w-full rounded-full" style={{ background: p.pop, boxShadow: `0 0 5px ${p.pop}` }} />
             </div>
-            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center bg-[var(--tone-1)]">
-              {/* Botão/Card Branco Porcelana com linha azul discreta no estado selecionado */}
-              <div className="w-1/2 h-8 rounded-[10px] bg-[#F5F6F8] shadow-[0_4px_12px_rgba(0,0,0,0.6)] flex flex-col items-center justify-between p-1 relative overflow-hidden">
-                <div className="h-1 w-4 rounded-full bg-[#111] mt-0.5" />
-                <div className="h-[2px] w-full bg-[#2979FF] rounded-full shadow-[0_0_5px_#2979FF]" />
-              </div>
-              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-40 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-[var(--tone-4)]" />
-              </div>
-            </div>
-          </div>
-        </div>
+          } />
+        </MiniatureShell>
       );
+    }
 
-    case "psp":
-      // PSP: Grafite + prata com champagne discreto, reflexos de vidro fumê e ondas horizontais suaves
+    case "psp": {
+      // PSP: grafite + prata com champanhe discreto, reflexos de vidro fumê e ondas horizontais suaves
+      const p = THEME_MINIATURE_PALETTES.psp;
       return (
-        <div
-          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-[var(--tone-2)] shadow-inner relative`}
-        >
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_0%,rgba(214,188,145,0.18)_0%,transparent_65%)] pointer-events-none" />
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none opacity-25"
-            viewBox="0 0 122 78"
-            fill="none"
-          >
-            <path
-              d="M-10 45 C 30 25, 70 60, 135 35"
-              stroke="rgba(226, 232, 240, 0.8)"
-              strokeWidth="1.5"
-            />
-            <path
-              d="M-10 52 C 35 32, 75 66, 135 42"
-              stroke="rgba(214, 188, 145, 0.6)"
-              strokeWidth="1"
-            />
+        <MiniatureShell p={p} className={containerClassName}>
+          <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 80% 0%, ${rgba(p.pop, 0.18)} 0%, transparent 65%)` }} />
+          <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-25" viewBox="0 0 122 78" fill="none">
+            <path d="M-10 45 C 30 25, 70 60, 135 35" stroke={rgba(p.light, 0.8)} strokeWidth="1.5" />
+            <path d="M-10 52 C 35 32, 75 66, 135 42" stroke={rgba(p.pop, 0.6)} strokeWidth="1" />
           </svg>
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[var(--tone-3)] backdrop-blur-xs shrink-0 z-10">
-            <div className="h-1 w-6 rounded-full bg-[#CBD5E1]/40" />
-            <div className="h-1.5 w-1.5 rounded-full bg-[#E2E8F0] shadow-[0_0_4px_rgba(226,232,240,0.6)]" />
-          </div>
-          <div className="flex flex-1 min-h-0 z-10">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-black/30 backdrop-blur-xs">
-              <div className="h-1 w-full rounded-full bg-[#CBD5E1]/50" />
-              <div className="h-1 w-3/4 rounded-full bg-[#CBD5E1]/25" />
-              <div className="h-1 w-4/5 rounded-full bg-[#CBD5E1]/25" />
+          <MiniatureCards p={p} selected={
+            <div className="w-1/2 h-8 rounded-[10px] backdrop-blur-sm shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.4)] flex flex-col items-center justify-center gap-1" style={{ border: `1px solid ${rgba(p.accent, 0.6)}`, background: rgba(p.accent, 0.2) }}>
+              <div className="h-1 w-4 rounded-full" style={{ background: p.light }} />
+              <div className="h-0.5 w-2.5 rounded-full" style={{ background: rgba(p.pop, 0.9) }} />
             </div>
-            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
-              <div className="w-1/2 h-8 rounded-[10px] border border-[#CBD5E1]/60 bg-[#CBD5E1]/20 backdrop-blur-sm shadow-[0_4px_12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.4)] flex flex-col items-center justify-center gap-1">
-                <div className="h-1 w-4 rounded-full bg-[#E2E8F0]" />
-                <div className="h-0.5 w-2.5 rounded-full bg-[#D4AF37]/80" />
-              </div>
-              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-40 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-[var(--tone-4)]" />
-              </div>
-            </div>
-          </div>
-        </div>
+          } />
+        </MiniatureShell>
       );
+    }
 
-    case "ps4":
-      // PS4: Azul médio intenso com gradientes amplos e sensação de ondas
+    case "ps4": {
+      // PS4: azul médio intenso com gradientes amplos e sensação de ondas
+      const p = THEME_MINIATURE_PALETTES.ps4;
       return (
-        <div
-          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-gradient-to-b from-[#002466] to-[#001033] shadow-inner relative`}
-        >
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none opacity-30"
-            viewBox="0 0 122 78"
-            fill="none"
-          >
-            <path d="M-10 38 Q 40 18 135 50" stroke="#0070D1" strokeWidth="2" />
-            <path d="M-10 50 Q 50 25 135 60" stroke="#38BDF8" strokeWidth="1" />
+        <MiniatureShell p={p} className={containerClassName} background={`linear-gradient(to bottom, ${p.card}, ${p.bg})`}>
+          <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-40" viewBox="0 0 122 78" fill="none">
+            <path d="M-10 38 Q 40 18 135 50" stroke={p.accent} strokeWidth="2" />
+            <path d="M-10 50 Q 50 25 135 60" stroke={p.light} strokeWidth="1" />
           </svg>
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[var(--tone-3)] shrink-0 z-10">
-            <div className="h-1 w-6 rounded-full bg-[var(--tone-3)]" />
-            <div className="h-1.5 w-1.5 rounded-full bg-[#0070D1] shadow-[0_0_6px_#0070D1]" />
-          </div>
-          <div className="flex flex-1 min-h-0 z-10">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-[var(--tone-3)]">
-              <div className="h-1 w-full rounded-full bg-[var(--tone-3)]" />
-              <div className="h-1 w-3/4 rounded-full bg-[var(--tone-3)]" />
+          <MiniatureCards p={p} selected={
+            <div className="w-1/2 h-8 rounded-[10px] flex items-center justify-center" style={{ background: rgba(p.accent, 0.28), border: `1px solid ${rgba(p.accent, 0.6)}`, boxShadow: `0 0 12px ${rgba(p.accent, 0.35)}` }}>
+              <div className="h-1 w-4 rounded-full" style={{ background: p.text }} />
             </div>
-            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
-              <div className="w-1/2 h-8 rounded-[10px] border border-transparent bg-[var(--tone-3)] shadow-[0_0_12px_rgba(0,112,209,0.35)] flex items-center justify-center">
-                <div className="h-1 w-4 rounded-full bg-[var(--ink)]" />
-              </div>
-              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-50 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-[var(--tone-3)]" />
-              </div>
-            </div>
-          </div>
-        </div>
+          } />
+        </MiniatureShell>
       );
+    }
 
-    case "playstation":
-      // PS2: Azul profundo + ciano em pequenos detalhes, profundidade escura e formas geométricas
+    case "playstation": {
+      // PS2: azul profundo, secundária índigo e ciano atmosférico em pequenos detalhes
+      const p = THEME_MINIATURE_PALETTES.playstation;
       return (
-        <div
-          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-[#00081C] shadow-inner relative`}
-        >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_100%,rgba(0,210,255,0.08)_0%,transparent_60%)] pointer-events-none" />
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[#000D2B] shrink-0">
-            <div className="h-1 w-6 rounded-full bg-[var(--tone-3)]" />
-            <div className="h-1.5 w-1.5 rounded-full bg-[#00D2FF] shadow-[0_0_6px_#00D2FF]" />
-          </div>
-          <div className="flex flex-1 min-h-0">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-[#000A24]">
-              <div className="h-1 w-full rounded-full bg-[var(--tone-3)]" />
-              <div className="h-1 w-3/4 rounded-full bg-[var(--tone-3)]" />
+        <MiniatureShell p={p} className={containerClassName}>
+          <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(circle at 30% 100%, ${rgba(p.pop, 0.14)} 0%, transparent 60%)` }} />
+          <MiniatureCards p={p} selected={
+            <div className="w-1/2 h-8 rounded-[10px] flex flex-col items-center justify-center gap-1" style={{ border: `1px solid ${p.secondary}`, background: rgba(p.accent, 0.45), boxShadow: `0 0 10px ${rgba(p.secondary, 0.35)}` }}>
+              <div className="h-1 w-4 rounded-full" style={{ background: p.text }} />
+              <div className="h-0.5 w-1.5 rounded-full" style={{ background: p.pop }} />
             </div>
-            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
-              <div className="w-1/2 h-8 rounded-[10px] border border-[#1D4ED8] bg-[#1D4ED8]/30 shadow-[0_0_10px_rgba(29,78,216,0.3)] flex flex-col items-center justify-center gap-1">
-                <div className="h-1 w-4 rounded-full bg-[var(--ink)]" />
-                <div className="h-0.5 w-1.5 rounded-full bg-[#00D2FF]" />
-              </div>
-              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-40 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-[var(--tone-3)]" />
-              </div>
-            </div>
-          </div>
-        </div>
+          } />
+        </MiniatureShell>
       );
+    }
 
-    case "gamecube":
+    case "gamecube": {
+      const p = THEME_MINIATURE_PALETTES.gamecube;
       return (
-        <div
-          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-[#10081C] shadow-inner relative`}
-        >
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[#1A0D30] shrink-0">
-            <div className="h-1 w-6 rounded-full bg-[var(--tone-3)]" />
-            <div className="h-1.5 w-1.5 rounded-full bg-[#8B5CF6] shadow-[0_0_6px_#8B5CF6]" />
-          </div>
-          <div className="flex flex-1 min-h-0">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-[#160B28]">
-              <div className="h-1 w-full rounded-full bg-[var(--tone-3)]" />
-              <div className="h-1 w-3/4 rounded-full bg-[var(--tone-3)]" />
+        <MiniatureShell p={p} className={containerClassName}>
+          <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 70% 10%, ${rgba(p.accent, 0.16)} 0%, transparent 65%)` }} />
+          <MiniatureCards p={p} selected={
+            <div className="w-1/2 h-8 rounded-[10px] flex flex-col items-center justify-center gap-1" style={{ background: p.card, border: `1px solid ${rgba(p.accent, 0.55)}`, boxShadow: `0 0 10px ${rgba(p.accent, 0.35)}` }}>
+              <div className="h-1 w-4 rounded-full" style={{ background: p.text }} />
+              <div className="h-0.5 w-2 rounded-full" style={{ background: p.pop }} />
             </div>
-            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
-              <div className="w-1/2 h-8 rounded-[10px] border border-transparent bg-[var(--tone-3)] shadow-[0_0_10px_rgba(139,92,246,0.3)] flex items-center justify-center">
-                <div className="h-1 w-4 rounded-full bg-[var(--ink)]" />
-              </div>
-              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-40 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-[var(--tone-3)]" />
-              </div>
-            </div>
-          </div>
-        </div>
+          } />
+        </MiniatureShell>
       );
+    }
 
-    case "xbox360":
+    case "xbox360": {
+      const p = THEME_MINIATURE_PALETTES.xbox360;
       return (
-        <div
-          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-[var(--tone-1)] shadow-inner relative`}
-        >
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[var(--tone-2)] shrink-0">
-            <div className="h-1 w-6 rounded-full bg-[var(--tone-3)]" />
-            <div className="h-1.5 w-1.5 rounded-full bg-[#22C55E] shadow-[0_0_6px_#22C55E]" />
-          </div>
-          <div className="flex flex-1 min-h-0">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-[var(--tone-1)]">
-              <div className="h-1 w-full rounded-full bg-[var(--tone-3)]" />
-              <div className="h-1 w-3/4 rounded-full bg-[var(--tone-3)]" />
+        <MiniatureShell p={p} className={containerClassName}>
+          <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 70% 15%, ${rgba(p.accent, 0.14)} 0%, transparent 65%)` }} />
+          <MiniatureCards p={p} selected={
+            <div className="w-1/2 h-8 rounded-[10px] flex flex-col items-center justify-center gap-1" style={{ background: p.card, border: `1px solid ${rgba(p.accent, 0.55)}`, boxShadow: `0 0 10px ${rgba(p.accent, 0.35)}` }}>
+              <div className="h-1 w-4 rounded-full" style={{ background: p.text }} />
+              <div className="h-0.5 w-2 rounded-full" style={{ background: p.pop }} />
             </div>
-            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
-              <div className="w-1/2 h-8 rounded-[10px] border border-transparent bg-[var(--tone-3)] shadow-[0_0_10px_rgba(34,197,94,0.3)] flex items-center justify-center">
-                <div className="h-1 w-4 rounded-full bg-[var(--ink)]" />
-              </div>
-              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-40 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-[var(--tone-3)]" />
-              </div>
-            </div>
-          </div>
-        </div>
+          } />
+        </MiniatureShell>
       );
+    }
 
-    case "cyberpunk":
+    case "cyberpunk": {
+      const p = THEME_MINIATURE_PALETTES.cyberpunk;
       return (
-        <div
-          className={`${containerClassName} rounded-[var(--corner-sm)] overflow-hidden flex flex-col border border-transparent bg-[var(--tone-1)] shadow-inner relative`}
-        >
-          <div className="h-4 w-full flex items-center px-2.5 justify-between border-b border-transparent bg-[var(--tone-2)] shrink-0">
-            <div className="h-1 w-6 rounded-full bg-[var(--tone-3)]" />
-            <div className="h-1.5 w-1.5 rounded-full bg-[#FCEE0A] shadow-[0_0_6px_#FCEE0A]" />
-          </div>
-          <div className="flex flex-1 min-h-0">
-            <div className="w-[34px] h-full p-1.5 flex flex-col gap-1 border-r border-transparent bg-[var(--tone-1)]">
-              <div className="h-1 w-full rounded-full bg-[var(--tone-3)]" />
-              <div className="h-1 w-3/4 rounded-full bg-[var(--tone-3)]" />
+        <MiniatureShell p={p} className={containerClassName}>
+          <MiniatureCards p={p} selected={
+            <div className="w-1/2 h-8 rounded-[10px] flex items-center justify-center" style={{ border: `1px solid ${p.accent}`, background: rgba(p.accent, 0.25), boxShadow: `0 0 12px ${rgba(p.accent, 0.35)}` }}>
+              <div className="h-1 w-4 rounded-full" style={{ background: p.accent }} />
             </div>
-            <div className="flex-1 p-2 flex gap-1.5 items-center justify-center">
-              <div className="w-1/2 h-8 rounded-[10px] border border-[#FCEE0A] bg-[#FCEE0A]/25 shadow-[0_0_12px_rgba(252,238,10,0.35)] flex items-center justify-center">
-                <div className="h-1 w-4 rounded-full bg-[#FCEE0A]" />
-              </div>
-              <div className="w-1/2 h-7 rounded-[10px] border border-transparent bg-[var(--tone-3)] opacity-40 flex items-center justify-center">
-                <div className="h-1 w-3 rounded-full bg-[var(--tone-3)]" />
-              </div>
-            </div>
-          </div>
-        </div>
+          } />
+        </MiniatureShell>
       );
+    }
 
     default:
       return null;
@@ -2186,10 +2144,8 @@ export const SettingsPageV2: React.FC<SettingsPageV2Props> = React.memo(
                     onMouseEnter={() => setHoveredTab(id)}
                     onMouseLeave={() => setHoveredTab(null)}
                     aria-current={isActive ? "page" : undefined}
-                    className={`group flex h-11 w-full items-center gap-3 rounded-[var(--node)] px-4 text-[length:var(--step-1)] font-medium transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] ${
-                      isActive
-                        ? "bg-[var(--tone-3)] text-[var(--ink)] font-semibold"
-                        : "text-[var(--ink-muted)] hover:bg-[var(--tone-2)] hover:text-[var(--ink)]"
+                    className={`sel-pill group flex h-11 w-full items-center gap-3 rounded-[var(--node)] px-4 text-[length:var(--step-1)] font-medium cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] ${
+                      isActive ? "" : "text-[var(--ink-muted)]"
                     }`}
                   >
                     <IconComponent

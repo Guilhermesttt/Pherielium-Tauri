@@ -369,8 +369,9 @@ const RailButton: React.FC<NavButtonProps> = ({
       transition={{ type: "spring", bounce: 0.2, duration: 0.3 }}
       className="relative group flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--node)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)]"
       style={{
-        background: active ? "var(--tone-3)" : "transparent",
-        color: active ? "var(--ink)" : undefined,
+        background: active ? "var(--accent-fill)" : "transparent",
+        boxShadow: active ? "var(--accent-fill-shadow)" : undefined,
+        color: active ? "var(--on-accent)" : undefined,
       }}
     >
       {showGlide && (
