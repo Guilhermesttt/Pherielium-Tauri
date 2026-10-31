@@ -1014,6 +1014,20 @@ pub fn init(app: &AppHandle) {
     }
 }
 
+/// Tempo que a janela principal tem para aparecer sozinha antes de o overlay (um segundo
+/// WebView2 em tela cheia) ser criado. Eventos enviados antes disso já o criam sob demanda.
+const OVERLAY_START_DELAY: std::time::Duration = std::time::Duration::from_millis(2000);
+
+/// Cria o overlay fora do caminho crítico da abertura: criar um segundo WebView2 dentro do
+/// `setup` bloqueava a thread principal e disputava CPU com o carregamento da janela principal.
+pub fn init_deferred(app: &AppHandle) {
+    let handle = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(OVERLAY_START_DELAY);
+        init(&handle);
+    });
+}
+
 #[allow(dead_code)]
 pub fn show_splash(app: &AppHandle) -> Result<(), String> {
     if app.get_webview_window("splash").is_some() {

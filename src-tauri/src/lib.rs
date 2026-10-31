@@ -142,7 +142,7 @@ pub fn run() {
                 let launch_args: Vec<String> = std::env::args().collect();
                 commands::nexus_download::handle_nxm_args(app.handle(), &launch_args);
             }
-            commands::overlay::init(app.handle());
+            commands::overlay::init_deferred(app.handle());
             commands::overlay::register_overlay_shortcut(app.handle());
             commands::game_watch::start_game_watch(app.handle().clone());
             Ok(())

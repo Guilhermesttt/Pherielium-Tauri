@@ -639,7 +639,7 @@ pub fn read_goldberg_settings_achievements(game_dir: &Path) -> Option<Vec<Goldbe
     None
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn emulator_detect_for_game(
     game_dir: Option<String>,
     app_id: String,
@@ -648,7 +648,7 @@ pub fn emulator_detect_for_game(
     Ok(detect_emulator(dir_buf.as_deref(), &app_id))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn detect_app_id_from_path(path: String) -> Result<Option<String>, String> {
     let p = PathBuf::from(&path);
     let dir = if p.is_dir() {

@@ -336,7 +336,7 @@ pub fn screen_share_request_permission() -> Result<Value, String> {
     Ok(json!({ "requested": true, "hasPermission": win_targets::has_permission() }))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn screen_share_list_targets() -> Result<Value, String> {
     Ok(json!(win_targets::list_targets()))
 }
@@ -379,7 +379,7 @@ pub fn screen_share_stop(app: AppHandle, state: State<'_, ScreenCaptureState>) -
     Ok(json!({ "active": false }))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn screen_share_start_frames(
     app: AppHandle,
     state: State<'_, ScreenCaptureState>,
@@ -491,7 +491,7 @@ pub fn screen_share_start_frames(
     }))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn screen_share_start(
     app: AppHandle,
     state: State<'_, ScreenCaptureState>,
@@ -571,7 +571,7 @@ pub fn grab_target_bgra_scaled(
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn capture_target_jpeg(
     target_id: String,
     max_width: Option<u32>,
