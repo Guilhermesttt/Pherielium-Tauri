@@ -1,7 +1,6 @@
 /**
  * Reações do mascote ao cursor (puro, testável): tontura ao chacoalhar o mouse perto do
- * notch, curiosidade quando o cursor chega ao topo e detecção de "arrastando algo" para a
- * dropzone. As métricas (`speed`, `reversals`, `dragging`) vêm do thread de cursor do Rust.
+ * notch e curiosidade quando o cursor chega ao topo. As métricas (`speed`, `reversals`, `dragging`) vêm do thread de cursor do Rust.
  */
 export interface CursorMotion {
   x: number;
@@ -51,29 +50,4 @@ export function isMouseShake(motion: Pick<CursorMotion, "speed" | "reversals">, 
 export function isCursorAtTop(motion: Pick<CursorMotion, "x" | "y">, rect: RectLike | null, viewportWidth: number): boolean {
   if (motion.y > CURIOUS_TOP_BAND_PX) return false;
   return distanceToRect(motion.x, motion.y, rect, viewportWidth) <= 120;
-}
-
-/** Arrastando algo (botão pressionado) em direção ao notch: arma a dropzone. */
-export function isDragNearNotch(
-  motion: Pick<CursorMotion, "x" | "y" | "dragging">,
-  rect: RectLike | null,
-  viewportWidth: number,
-): boolean {
-  if (!motion.dragging || motion.y > 140) return false;
-  return distanceToRect(motion.x, motion.y, rect, viewportWidth) <= 220;
-}
-
-/** Mensagem do resultado da dropzone (pt-BR). */
-export function summarizeImport(imported: number, skipped: number): string {
-  if (imported <= 0) {
-    return skipped > 0 ? "Só imagens (PNG, JPG, WEBP, BMP) — nada foi salvo" : "Nada para salvar";
-  }
-  const saved = imported === 1 ? "1 imagem salva nas capturas" : `${imported} imagens salvas nas capturas`;
-  return skipped > 0 ? `${saved} (${skipped} ignorada${skipped === 1 ? "" : "s"})` : saved;
-}
-
-/** Converte a posição física de um evento de drag do Tauri para px CSS do overlay. */
-export function dragPositionToCss(position: { x: number; y: number }, scaleFactor: number): { x: number; y: number } {
-  const scale = scaleFactor > 0 ? scaleFactor : 1;
-  return { x: position.x / scale, y: position.y / scale };
 }

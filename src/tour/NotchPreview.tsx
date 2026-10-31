@@ -73,7 +73,7 @@ export const NotchPreview: React.FC<{ config: NotchConfig; focus: PreviewFocus }
   return (
     <div className="mx-auto w-full" style={{ zoom: 0.74 }} aria-label="Prévia da notch" role="img">
       {/* barra do hub: é onde a Pherie mora */}
-      <div className="mx-auto mb-2 flex w-[560px] items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-2 text-[13px] text-white/60">
+      <div className="mx-auto mb-2 flex w-[500px] items-center justify-between rounded-2xl bg-white/[0.04] px-4 py-2 text-[13px] text-white/60">
         <span className="font-semibold tabular-nums">14:32</span>
         <AnimatePresence>
           {config.showMascot && (
@@ -84,7 +84,7 @@ export const NotchPreview: React.FC<{ config: NotchConfig; focus: PreviewFocus }
         </AnimatePresence>
       </div>
 
-      <div className="mx-auto w-[560px] rounded-b-[40px] bg-black p-4 pt-3 shadow-[0_18px_50px_rgba(0,0,0,0.6)]">
+      <div className="mx-auto w-[500px] rounded-b-[40px] bg-black p-4 pt-3 shadow-[0_18px_50px_rgba(0,0,0,0.6)]">
         {!config.enabled ? (
           <p className="py-16 text-center text-[14px] text-white/40">Notch desligada. O resto continua funcionando normalmente.</p>
         ) : (

@@ -27,7 +27,7 @@ describe("resolveNotchStyle", () => {
     const s = resolveNotchStyle("cyberpunk");
     expect(s.surface).toBe("#0a0a0c");
     expect(s.surfaceOpacity).toBeCloseTo(0.88, 5);
-    expect(s.borderColor).toContain("252,238,10"); // #fcee0a
+    expect(s.borderColor).toContain("255,238,0"); // #ffee00
     expect(s.chamfer).toBe(true);
     expect(s.glow).toBeGreaterThan(0);
     expect(s.isDefault).toBe(false);

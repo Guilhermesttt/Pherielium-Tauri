@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Home,
   Settings2,
@@ -17,7 +17,6 @@ import {
   SkipForward,
   Sparkles,
   Trophy,
-  Camera,
 } from "../../design-system/sf-symbols/lucideCompat";
 import { useVoiceCallContext } from "../../context/VoiceCallContext";
 import { PherieMascot, getMascotBaseMood, type MascotMood, type PherieMascotProps } from "./PherieMascot";
@@ -30,10 +29,18 @@ import {
   resolveNotchStyle,
   surfaceColor,
 } from "../../mascot/notchTheme";
-import { CLOSE_TRANSITION, OPEN_SPRING, VIEW_IN_S, VIEW_OUT_S, geometryTransition } from "../../mascot/motion";
+import {
+  CLOSE_TRANSITION,
+  NOTCH_EXPAND_SPRING,
+  NOTCH_HIDDEN_Y,
+  OPEN_SPRING,
+  VIEW_IN_S,
+  VIEW_OUT_S,
+  geometryTransition,
+  notchPositionTransition,
+} from "../../mascot/motion";
 import { playNotchSound, type NotchSoundId } from "./notchSounds";
 import { usePreferences } from "../../context/PreferencesContext";
-import { useNotchDropzone } from "./useNotchDropzone";
 import { RetroBubble } from "./RetroBubble";
 import { ControllerFlashBar, FLASH_MASCOT_MOOD, useControllerFlash } from "./ControllerFlashBar";
 import { CONTROLLER_FLASH_WIDTH } from "./controllerFlash";
@@ -143,15 +150,15 @@ export function resolveMascotMood(params: {
 /** Preto "de notch": levemente quente para não parecer um buraco no wallpaper. */
 export const NOTCH_SPRING = OPEN_SPRING;
 /** Larga o bastante para música + letra lado a lado (como nos widgets do Notchify). */
-const NOTCH_EXPANDED_WIDTH = 560;
+const NOTCH_EXPANDED_WIDTH = 500;
 /**
  * Altura da barra do notch. Exportada porque o hub precisa reservar esse espaço
  * no topo mesmo quando não é ele quem desenha o notch (em Tauri quem desenha é
  * a janela de overlay, que é outro documento).
  */
-export const NOTCH_BAR_HEIGHT = 52;
+export const NOTCH_BAR_HEIGHT = 42;
 /** Tamanho da Pherie na barra compacta (antes 26: pequena demais para ver o rosto). */
-const BAR_MASCOT = 38;
+const BAR_MASCOT = 30;
 /** Tempo de tontura depois de cliques demais na Pherie. */
 const OVERLOAD_MS = 3000;
 
@@ -933,6 +940,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
   const dizzyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [overloaded, setOverloaded] = useState(false);
   const [tab, setTab] = useState<"home" | "controller" | "game">("home");
+  const reduceMotion = useReducedMotion() ?? false;
   // Troca de aba: o conteúdo entra vindo do lado da aba nova (WAAPI: opacity + transform, fora da main thread).
   const paneRef = useRef<HTMLDivElement | null>(null);
   const previousTab = useRef(tab);
@@ -977,40 +985,6 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     },
     [],
   );
-
-  // Dropzone: arrastar imagens até o notch as salva nas capturas.
-  const [digested, setDigested] = useState(false);
-  const digestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dropzone = useNotchDropzone({
-    enabled: config.enabled,
-    cursor: { x: cursor.x, y: cursor.y, dragging: Boolean(cursor.dragging), t: cursor.t },
-    gameTitle: activeGameTitle,
-    onImported: () => {
-      setDigested(true);
-      if (digestTimer.current) clearTimeout(digestTimer.current);
-      digestTimer.current = setTimeout(() => setDigested(false), 1800);
-    },
-  });
-  useEffect(
-    () => () => {
-      if (digestTimer.current) clearTimeout(digestTimer.current);
-    },
-    [],
-  );
-  // o painel "Solte aqui" abre sozinho e fecha quando a dropzone termina
-  const dropForcedOpen = useRef(false);
-  useEffect(() => {
-    if (dropzone.active) {
-      if (!isExpanded) {
-        dropForcedOpen.current = true;
-        setIsExpanded(true);
-      }
-    } else if (dropForcedOpen.current) {
-      dropForcedOpen.current = false;
-      setIsExpanded(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dropzone.active]);
 
   // Controle conectou/desconectou: o notch encena o aviso em vez de um popup no hub.
   const controllerFlash = useControllerFlash(config.enabled);
@@ -1072,8 +1046,6 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     if (incomingInvite) return "excited"; // alguém está ligando
     if (controllerFlash) return FLASH_MASCOT_MOOD[controllerFlash.kind];
     if (notchEvent) return NOTCH_EVENT_MOOD[notchEvent.kind];
-    if (dropzone.armed || dropzone.over || dropzone.importing) return "surprised"; // boca aberta
-    if (digested) return "happy"; // "digeriu" o arquivo
     if (situation.transient) return situation.transient; // reação curta (cutucada, fim de jogo/chamada...)
     if (isCallActive) return isMuted ? "muted" : "calling";
     if (activeGameTitle) return "gaming";
@@ -1082,7 +1054,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
     if (baseMood) return baseMood;
     if (isHovered && !situation.ambient) return "attentive"; // o cursor está no notch
     return situation.ambient ?? "idle"; // parada: entedia, dá sono, dorme
-  }, [incomingInvite, situation.transient, situation.ambient, isHovered, dizzy, controllerFlash, notchEvent, dropzone.armed, dropzone.over, dropzone.importing, digested, isCallActive, isMuted, activeGameTitle, isPcMediaPlaying, curious, baseMood]);
+  }, [incomingInvite, situation.transient, situation.ambient, isHovered, dizzy, controllerFlash, notchEvent, isCallActive, isMuted, activeGameTitle, isPcMediaPlaying, curious, baseMood]);
 
   // A "voz" da Pherie: um gorjeio por reação (susto, confusão, sono, alegria...). Humores
   // que vêm de chamada, aviso ou controle já têm som próprio, então ficam de fora; e a
@@ -1508,7 +1480,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
               src={mediaState.thumbnail}
               alt=""
               draggable={false}
-              className="h-[30px] w-[30px] rounded-full object-cover shadow-[0_0_0_1.5px_rgba(255,255,255,0.18)]"
+              className="h-[26px] w-[26px] rounded-full object-cover shadow-[0_0_0_1.5px_rgba(255,255,255,0.18)]"
             />
           ) : (
             barMascot(BAR_MASCOT)
@@ -1551,22 +1523,24 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
         onClick={openNotch}
       />
 
-      <aside
+      {/* Surgir = mola com overshoot; sumir = mola amortecida (sem quicar no topo). O `x` centraliza
+          sem usar `translate` do CSS, que a mola de `y` sobrescreveria. */}
+      <motion.aside
         aria-label="Desktop Notch"
         data-overlay-interactive="true"
         data-notch-root="true"
         data-notch-expanded={isExpanded ? "true" : "false"}
         data-notch-theme={appearance.visualTheme}
-        style={
-          notchStyle.chamfer && notchStyle.glow > 0
+        initial={false}
+        animate={{ y: isHiddenByWindow ? NOTCH_HIDDEN_Y : 0 }}
+        transition={notchPositionTransition(isHiddenByWindow, reduceMotion)}
+        style={{
+          x: "-50%",
+          ...(notchStyle.chamfer && notchStyle.glow > 0
             ? { filter: `drop-shadow(0 0 ${Math.round(5 + notchStyle.glow * 12)}px ${notchStyle.glowColor})` }
-            : undefined
-        }
-        className={`fixed top-0 left-1/2 -translate-x-1/2 z-[10030] pointer-events-auto select-none transition-transform ${
-          isHiddenByWindow
-            ? "-translate-y-[64px] duration-[340ms] delay-[420ms] [transition-timing-function:cubic-bezier(0.45,0,0.2,1)]"
-            : "translate-y-0 duration-300 [transition-timing-function:cubic-bezier(0.3,1.2,0.4,1)]"
-        } ${className}`}
+            : {}),
+        }}
+        className={`fixed top-0 left-1/2 z-[10030] pointer-events-auto select-none ${className}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -1580,7 +1554,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             // conquista: aro estático na cor do tier; senão o estilo normal do notch
             boxShadow: isAchievement ? achievementBoxShadow(notchEvent?.tier) : notchBoxShadow(notchStyle, isExpanded),
           }}
-          transition={geometryTransition(isExpanded || isAchievement)}
+          transition={geometryTransition(isExpanded || isAchievement, reduceMotion)}
           style={{
             backgroundColor: chamferBorder ? (notchStyle.borderColor as string) : notchBg,
             clipPath: notchStyle.chamfer ? chamferClipPath(chamferCut) : undefined,
@@ -1617,6 +1591,15 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
           >
             <path d="M 14 0 C 6.27 0 0 6.27 0 14 L 0 0 Z" />
           </svg>
+          {/* Faixa acima da ilha (e das asas): no overshoot do surgimento a ilha passa um pouco do topo
+              e esta faixa, que anda junto, cobre a fresta entre ela e a borda da tela. */}
+          {!notchStyle.chamfer && (
+            <>
+              <span aria-hidden className="pointer-events-none absolute -top-3 inset-x-0 h-3" style={{ backgroundColor: notchBg }} />
+              <span aria-hidden className="pointer-events-none absolute -top-3 -left-[13.5px] h-3 w-[14px]" style={{ backgroundColor: notchBg }} />
+              <span aria-hidden className="pointer-events-none absolute -top-3 -right-[13.5px] h-3 w-[14px]" style={{ backgroundColor: notchBg }} />
+            </>
+          )}
 
           {/* Barra */}
           <div
@@ -1632,10 +1615,14 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             {isAchievement && !isExpanded && notchEvent && (
               <motion.div
                 key={`achievement-${notchEvent.id}`}
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
+                initial={{ height: 0, opacity: 0, y: reduceMotion ? 0 : -6 }}
+                animate={{ height: "auto", opacity: 1, y: 0 }}
                 exit={{ height: 0, opacity: 0, transition: { height: CLOSE_TRANSITION, opacity: { duration: VIEW_OUT_S } } }}
-                transition={{ height: geometryTransition(true), opacity: { duration: VIEW_IN_S, delay: 0.05 } }}
+                transition={{
+                  height: geometryTransition(true, reduceMotion),
+                  opacity: { duration: VIEW_IN_S, delay: 0.05 },
+                  y: { ...NOTCH_EXPAND_SPRING, delay: 0.05 },
+                }}
                 className="overflow-hidden"
               >
                 <div className="px-4 pb-4 pt-1">
@@ -1646,30 +1633,18 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
             {isExpanded && (
               <motion.div
                 key="panel"
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
+                initial={{ height: 0, opacity: 0, y: reduceMotion ? 0 : -6 }}
+                animate={{ height: "auto", opacity: 1, y: 0 }}
                 exit={{ height: 0, opacity: 0, transition: { height: CLOSE_TRANSITION, opacity: { duration: VIEW_OUT_S } } }}
                 transition={{
-                  height: geometryTransition(true),
-                  opacity: { duration: VIEW_IN_S, delay: VIEW_OUT_S },
+                  height: geometryTransition(true, reduceMotion),
+                  // o conteúdo espera ~50 ms para não competir com a mola da casca
+                  opacity: { duration: VIEW_IN_S, delay: 0.05 },
+                  y: { ...NOTCH_EXPAND_SPRING, delay: 0.05 },
                 }}
                 className="overflow-hidden"
               >
                 <div ref={paneRef} className="notch-stagger px-4 pb-4 pt-1 flex flex-col gap-3.5">
-                  {/* ── Dropzone: arraste imagens até aqui para salvá-las nas capturas ── */}
-                  {dropzone.active && (
-                    <section className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-white/25 bg-white/[0.05] px-4 py-5 text-center">
-                      <Camera size={20} className="text-white/70" />
-                      <p className="text-[13px] font-semibold text-white">
-                        {dropzone.importing
-                          ? "Salvando…"
-                          : dropzone.message ?? (dropzone.over ? "Solte para salvar" : "Solte imagens aqui")}
-                      </p>
-                      {!dropzone.message && !dropzone.importing && (
-                        <p className="text-[11px] text-white/45">Elas vão para as suas capturas</p>
-                      )}
-                    </section>
-                  )}
                   {overloaded && (
                     <NotchCard>
                       <div className="flex items-center gap-4">
@@ -1683,7 +1658,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                       </div>
                     </NotchCard>
                   )}
-                  {incomingInvite && !overloaded && !dropzone.active && (
+                  {incomingInvite && !overloaded && (
                     <NotchCard tone="green">
                       <SectionLabel>Chamada recebida</SectionLabel>
                       <div className="flex items-center gap-3">
@@ -1716,16 +1691,16 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
                       </div>
                     </NotchCard>
                   )}
-                  {tab === "game" && gameTab && !incomingInvite && !overloaded && !dropzone.active && (
+                  {tab === "game" && gameTab && !incomingInvite && !overloaded && (
                     <GameTab data={gameTab} elapsedSeconds={activeGameElapsedSeconds} />
                   )}
-                  {tab === "controller" && !incomingInvite && !overloaded && !dropzone.active && (
+                  {tab === "controller" && !incomingInvite && !overloaded && (
                     <ControllerTab
                       state={controller}
                       mascot={panelMascot(96, { mood: controller.connected ? "gaming" : "sad", headphones: true })}
                     />
                   )}
-                  <div className={dropzone.active || overloaded || tab === "controller" || (tab === "game" && Boolean(gameTab)) || Boolean(incomingInvite) ? "hidden" : "contents"}>
+                  <div className={overloaded || tab === "controller" || (tab === "game" && Boolean(gameTab)) || Boolean(incomingInvite) ? "hidden" : "contents"}>
                   {/* ── Chamada de voz ── */}
                   {isCallActive && (
                     <NotchCard tone="green">
@@ -1926,7 +1901,7 @@ export const DesktopNotch: React.FC<DesktopNotchProps> = ({
           </AnimatePresence>
           </div>
         </motion.div>
-      </aside>
+      </motion.aside>
     </>
   );
 };

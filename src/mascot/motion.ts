@@ -34,7 +34,46 @@ export function springFromResponse(response: number, damping: number) {
   };
 }
 
-export const OPEN_SPRING = springFromResponse(OPEN_SPRING_RESPONSE, OPEN_SPRING_DAMPING);
+/** Valor de `springFromResponse`, mantido para quem ainda pensa em response/damping (ver o teste). */
+export const COUCOU_OPEN_SPRING = springFromResponse(OPEN_SPRING_RESPONSE, OPEN_SPRING_DAMPING);
+
+// ── Molas do notch (padrão Apple Spring, inspiradas no macOS e no Coucou) ───────────────────
+
+/** Surgimento da ilha vindo do topo: desce, passa um pouco do ponto (overshoot elástico) e assenta. */
+export const NOTCH_DROP_IN_SPRING = {
+  type: "spring" as const,
+  stiffness: 320,
+  damping: 22,
+  mass: 0.9,
+};
+
+/** Expansão morfológica (compacto → expandido): largura, altura e raio acompanham a mesma mola. */
+export const NOTCH_EXPAND_SPRING = {
+  type: "spring" as const,
+  stiffness: 340,
+  damping: 28,
+  mass: 0.85,
+};
+
+/** Recolhimento para fora da tela: amortecimento alto, sem quicar contra o topo da moldura. */
+export const NOTCH_RETRACT_TRANSITION = {
+  type: "spring" as const,
+  stiffness: 380,
+  damping: 38,
+  mass: 0.8,
+};
+
+/** Fim de curso da ilha escondida (px acima do topo): sai por inteiro, com a sombra e os cantos. */
+export const NOTCH_HIDDEN_Y = -70;
+
+/** Com "reduzir movimento": sem overshoot nem deslocamento longo, só um ajuste curto. */
+export const NOTCH_REDUCED_TRANSITION = {
+  type: "tween" as const,
+  duration: 0.14,
+  ease: "easeOut" as const,
+};
+
+export const OPEN_SPRING = NOTCH_EXPAND_SPRING;
 
 export const CLOSE_TRANSITION = {
   type: "tween" as const,
@@ -42,7 +81,17 @@ export const CLOSE_TRANSITION = {
   ease: [...CLOSE_EASE] as [number, number, number, number],
 };
 
-/** Crescer usa a mola, encolher usa a curva (sem quicar para dentro da borda). */
-export function geometryTransition(growing: boolean) {
-  return growing ? OPEN_SPRING : CLOSE_TRANSITION;
+/** Crescer usa a mola de expansão; encolher usa a de recolhimento (amortecida, sem quicar para dentro da borda). */
+export function geometryTransition(growing: boolean, reduced = false) {
+  if (reduced) return NOTCH_REDUCED_TRANSITION;
+  return growing ? NOTCH_EXPAND_SPRING : NOTCH_RETRACT_TRANSITION;
+}
+
+/**
+ * Transição do container raiz: ao aparecer usa a mola com overshoot; ao se esconder espera o
+ * atraso de recolhimento e usa a mola amortecida.
+ */
+export function notchPositionTransition(hidden: boolean, reduced = false) {
+  if (reduced) return hidden ? { ...NOTCH_REDUCED_TRANSITION, delay: HIDE_DELAY_MS / 1000 } : NOTCH_REDUCED_TRANSITION;
+  return hidden ? { ...NOTCH_RETRACT_TRANSITION, delay: HIDE_DELAY_MS / 1000 } : NOTCH_DROP_IN_SPRING;
 }
